@@ -80,6 +80,8 @@ details and references.
   <https://vlbthambawita.github.io/torchtsetlin/> (or `mkdocs serve` locally).
 * Runnable scripts in [`examples/`](examples): Noisy XOR, MNIST (flat and convolutional),
   tabular data with thermometer encoding, regression.
+* Worked notebooks in [`examples/notebooks/`](examples/notebooks): Iris (rules you can read),
+  MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images).
 
 ## Citation
 

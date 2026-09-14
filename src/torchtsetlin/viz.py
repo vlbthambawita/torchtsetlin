@@ -63,7 +63,7 @@ def plot_confusion_matrix(cm, class_names: Optional[Sequence[str]] = None, norma
         _, ax = plt.subplots(figsize=(5, 4.5))
     im = ax.imshow(cm, cmap=cmap)
     K = cm.shape[0]
-    names = list(class_names) if class_names else [str(i) for i in range(K)]
+    names = list(class_names) if class_names is not None else [str(i) for i in range(K)]
     ax.set_xticks(range(K), names, rotation=45, ha="right")
     ax.set_yticks(range(K), names)
     ax.set_xlabel("predicted")

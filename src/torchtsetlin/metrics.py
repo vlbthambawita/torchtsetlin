@@ -59,7 +59,7 @@ def classification_report(
     cm = confusion_matrix(votes_or_pred, y)
     m = precision_recall_f1(cm)
     K = cm.shape[0]
-    names = list(class_names) if class_names else [str(k) for k in range(K)]
+    names = list(class_names) if class_names is not None else [str(k) for k in range(K)]
     w = max(len(n) for n in names + ["macro avg"])
     lines = [f"{'':{w}}  precision  recall  f1-score  support"]
     for k in range(K):
