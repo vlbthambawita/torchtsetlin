@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-09-14)
+
+- Fixed: the 0.1.0 wheel on PyPI was missing the `torchtsetlin.data` subpackage (it had been
+  excluded from git by an over-broad `.gitignore` rule), which made `import torchtsetlin` fail.
+  0.1.0 should not be used.
+- The publish workflow now runs the test-suite and smoke-imports the built wheel before uploading.
+
 ## 0.1.0 (2026-09-14)
 
 First public release.
