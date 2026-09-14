@@ -1,0 +1,3 @@
+# `torchtsetlin.functional`
+
+::: torchtsetlin.functional

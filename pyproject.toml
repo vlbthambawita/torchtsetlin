@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torchtsetlin"
+version = "0.1.0"
+description = "GPU-enabled, PyTorch-native Tsetlin Machine framework: models, data preparation, training, evaluation, interpretation and visualization."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Vajira Thambawita", email = "vajira@simula.no" }]
+keywords = ["tsetlin machine", "pytorch", "interpretable machine learning", "logic-based learning", "gpu"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "torch>=2.0",
+  "numpy>=1.22",
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib>=3.5"]
+vision = ["torchvision>=0.15"]
+sklearn = ["scikit-learn>=1.1"]
+docs = [
+  "mkdocs>=1.5",
+  "mkdocs-material>=9.4",
+  "mkdocstrings[python]>=0.24",
+  "mkdocs-autorefs>=0.5",
+]
+dev = [
+  "pytest>=7",
+  "pytest-timeout",
+  "matplotlib>=3.5",
+  "scikit-learn>=1.1",
+  "torchvision>=0.15",
+  "ruff",
+  "build",
+  "twine",
+]
+all = ["torchtsetlin[viz,vision,sklearn,docs,dev]"]
+
+[project.urls]
+Homepage = "https://github.com/vlbthambawita/torchtsetlin"
+Documentation = "https://vlbthambawita.github.io/torchtsetlin/"
+Repository = "https://github.com/vlbthambawita/torchtsetlin"
+Issues = "https://github.com/vlbthambawita/torchtsetlin/issues"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+torchtsetlin = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+timeout = 600
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "B", "UP"]
+# UP006/UP007/UP035: keep typing.Optional/List/... for Python 3.9 runtime compatibility.
+ignore = ["E501", "B028", "UP006", "UP007", "UP035", "E731", "B905"]

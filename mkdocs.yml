@@ -1,0 +1,102 @@
+site_name: torchtsetlin
+site_description: GPU-enabled, PyTorch-native Tsetlin machines
+site_url: https://vlbthambawita.github.io/torchtsetlin/
+repo_url: https://github.com/vlbthambawita/torchtsetlin
+repo_name: vlbthambawita/torchtsetlin
+copyright: Copyright &copy; 2026 Vajira Thambawita
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - toc.follow
+  palette:
+    - scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_javascript:
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quick start: getting-started/quickstart.md
+      - Choosing a device: getting-started/devices.md
+  - Concepts:
+      - How a Tsetlin machine learns: concepts/tsetlin-machine.md
+      - Batched vs sequential feedback: concepts/batching.md
+      - Convolution: concepts/convolution.md
+      - Booleanization: concepts/booleanization.md
+      - Hyper-parameters: concepts/hyperparameters.md
+  - Guides:
+      - Training loops and the Trainer: guides/training.md
+      - Evaluation and metrics: guides/evaluation.md
+      - Interpreting a model: guides/interpretability.md
+      - Visualisation: guides/visualization.md
+      - Saving and loading: guides/saving.md
+      - Regression and multi-label: guides/regression-multilabel.md
+      - Extending torchtsetlin: guides/extending.md
+  - Examples:
+      - Noisy XOR: examples/noisy-xor.md
+      - MNIST: examples/mnist.md
+      - Tabular data with thermometers: examples/tabular.md
+  - API reference:
+      - Models: api/models.md
+      - functional: api/functional.md
+      - data: api/data.md
+      - train: api/train.md
+      - metrics: api/metrics.md
+      - interpret: api/interpret.md
+      - viz: api/viz.md
+  - Benchmarks: benchmarks.md
+  - Changelog: changelog.md
