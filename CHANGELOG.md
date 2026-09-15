@@ -9,6 +9,9 @@
   gained `--stride`, `--no-position-encoding`, `--coalesced` and `--max-samples`, keeps the
   encoder on the compute device, and prints the clauses it learned. New `examples/README.md`
   indexes all of them.
+- Docs: new *Convolution on generated data* example page (`docs/examples/convolution.md`) in
+  the Examples nav, a runnable-examples table on the Convolution concept page, and measured
+  `--stride` / `--coalesced` / `position_encoding` comparisons on the MNIST example page.
 
 ## 0.1.2 (2026-09-15)
 

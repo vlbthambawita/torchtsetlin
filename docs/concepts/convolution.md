@@ -43,6 +43,9 @@ Variants: `ConvCoalescedTsetlinMachine` (shared clauses, multi-label capable),
 
 ## Runnable examples
 
+Walked through in [Convolution on generated data](../examples/convolution.md) and
+[MNIST](../examples/mnist.md):
+
 | script | model | what it demonstrates |
 |---|---|---|
 | `examples/shapes_conv.py` | `ConvTsetlinMachine` | one clause beats a flat machine that has to memorise every position (1.000 on every seed, against 0.55–0.91), and what `position_encoding` costs on a translation-invariant task |

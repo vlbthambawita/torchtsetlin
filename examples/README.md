@@ -72,6 +72,9 @@ python examples/shapes_conv.py --flat
 python examples/mnist_conv.py --clauses 2000 --T 2500 --epochs 30
 ```
 
-MNIST downloads to `--root` (default `./data`, gitignored) on first use. See
-[`docs/concepts/convolution.md`](../docs/concepts/convolution.md) for the algorithm and
-[`docs/benchmarks.md`](../docs/benchmarks.md) for throughput numbers.
+MNIST downloads to `--root` (default `./data`, gitignored) on first use.
+
+The same material in the documentation site: [Convolution on generated
+data](../docs/examples/convolution.md) and [MNIST](../docs/examples/mnist.md) walk through
+these scripts, [`docs/concepts/convolution.md`](../docs/concepts/convolution.md) has the
+algorithm, and [`docs/benchmarks.md`](../docs/benchmarks.md) the throughput numbers.
