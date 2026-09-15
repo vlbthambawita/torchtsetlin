@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from .. import metrics as M
 from ..models import CoalescedTsetlinMachine, RegressionTsetlinMachine, TsetlinMachineBase
-from ..utils import as_bool_tensor
+from ..utils import _to_device, as_bool_tensor
 from .callbacks import Callback, ProgressLogger
 from .history import History
 
@@ -121,9 +121,9 @@ class Trainer:
 
     def _move(self, x, y):
         if isinstance(x, Tensor) and x.device != self.device:
-            x = x.to(self.device, non_blocking=True)
+            x = _to_device(x, self.device)
         if isinstance(y, Tensor) and y.device != self.device:
-            y = y.to(self.device, non_blocking=True)
+            y = _to_device(y, self.device)
         return x, y
 
     def _call(self, hook: str, *args) -> None:

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.2 (2026-09-15)
+
+- **Fixed (silent data corruption on GPU):** `as_bool_tensor` / `as_long_tensor` /
+  `as_float_tensor` moved tensors with `non_blocking=True` regardless of direction. A
+  *device-to-host* copy issued that way returns before the transfer completes, so a CPU-resident
+  `BooleanEncoder` handed a CUDA tensor thresholded stale memory and returned roughly 40% wrong
+  bits — with no error, just a quietly worse model. All three now route through
+  `utils._to_device`, which uses `non_blocking=True` only when the destination is CUDA;
+  `Trainer` used the same pattern and is fixed too.
+- Added: two notebooks working through the Tsetlin-machine segmentation literature —
+  `examples/notebooks/04_convolutional_regression_tsetlin.ipynb` (C-RTM, ICMLT 2021) and
+  `examples/notebooks/05_ctm_unet_segmentation.ipynb` (CTM-UNet, ISTM 2025), the latter
+  including a dense per-pixel Tsetlin segmentation head built on `TsetlinMachine`.
+
 ## 0.1.1 (2026-09-14)
 
 - Fixed: the 0.1.0 wheel on PyPI was missing the `torchtsetlin.data` subpackage (it had been

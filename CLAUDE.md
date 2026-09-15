@@ -92,6 +92,14 @@ do not reuse them after the call.
   `src/torchtsetlin/data` from the 0.1.0 wheel.
 - **Ruff config targets py39**: `UP006/UP007/UP035/UP045` are ignored on purpose so `typing.Optional`/`List`
   keep working at runtime on 3.9. Keep using them rather than PEP 604/585 syntax in annotations.
+- **Never `.to(cpu, non_blocking=True)`.** Encoders keep their thresholds on the CPU, so handing
+  one a CUDA tensor triggers a device-to-host copy inside `utils.as_*_tensor`; issued
+  non-blocking into pageable memory it returns *before* the data lands and the encoder
+  thresholds garbage — ~40% wrong bits, no error, just a worse model. All coercion helpers go
+  through `utils._to_device`, which only sets `non_blocking` for CUDA destinations. A test that
+  allocates on the host and moves the tensor across will **not** catch a regression here; build
+  the tensor on the device (`torch.rand(..., device=dev)`) so work stays queued on the stream
+  (`tests/test_data_train.py::test_encoder_on_non_cpu_input_matches_cpu`).
 - Optional dependencies are import-guarded: `viz` needs matplotlib, `data.load_*_boolean` needs torchvision,
   some examples need scikit-learn.
 

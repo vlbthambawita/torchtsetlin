@@ -78,6 +78,23 @@ def test_other_encoders():
     assert comp.output_size(3) == 6
 
 
+def test_encoder_on_non_cpu_input_matches_cpu(device):
+    """A CPU-resident encoder handed a CUDA tensor must not read the copy before it lands.
+
+    ``as_float_tensor`` used to issue the device-to-host copy with ``non_blocking=True``, so the
+    thresholding ran against pageable memory the transfer had not filled in yet and roughly 40%
+    of the output bits were stale.
+
+    The image has to be *built* on the device (leaving work queued on the stream) and be large
+    enough that the copy does not finish by luck; allocating on the host and moving it across
+    hides the bug, because a host-to-device copy synchronises anyway.
+    """
+    enc = ColorThermometerEncoder(4, value_range=(0.0, 255.0))
+    for _ in range(3):
+        img = torch.rand(256, 3, 32, 32, device=device) * 255
+        assert torch.equal(enc(img), enc(img.cpu()))
+
+
 def test_boolean_tensor_dataset():
     ds = BooleanTensorDataset([[1, 0], [0, 1]], [0, 1])
     assert ds.x.dtype == torch.bool and ds.y.dtype == torch.long and len(ds) == 2

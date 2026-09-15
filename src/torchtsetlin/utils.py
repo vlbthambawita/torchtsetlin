@@ -42,6 +42,18 @@ def seed_everything(seed: int) -> None:
         torch.cuda.manual_seed_all(seed)
 
 
+def _to_device(t: Tensor, device: torch.device) -> Tensor:
+    """Move ``t`` to ``device``.
+
+    ``non_blocking=True`` is used only when the destination is a CUDA device. A
+    *device-to-host* copy issued non-blocking into ordinary (pageable) memory returns before
+    the transfer has completed, so the caller can read the destination while it still holds
+    stale data — which silently corrupts, for example, an encoder that holds its thresholds on
+    the CPU but is handed a CUDA tensor.
+    """
+    return t.to(device, non_blocking=(device.type == "cuda"))
+
+
 def as_bool_tensor(x, device: Optional[torch.device] = None) -> Tensor:
     """Coerce ``x`` (tensor / ndarray / sequence) to a boolean tensor.
 
@@ -56,7 +68,7 @@ def as_bool_tensor(x, device: Optional[torch.device] = None) -> Tensor:
         else:
             x = x != 0
     if device is not None and x.device != device:
-        x = x.to(device, non_blocking=True)
+        x = _to_device(x, device)
     return x
 
 
@@ -66,7 +78,7 @@ def as_long_tensor(y, device: Optional[torch.device] = None) -> Tensor:
     if y.dtype != torch.long:
         y = y.long()
     if device is not None and y.device != device:
-        y = y.to(device, non_blocking=True)
+        y = _to_device(y, device)
     return y
 
 
@@ -76,7 +88,7 @@ def as_float_tensor(y, device: Optional[torch.device] = None, dtype=torch.float3
     if y.dtype != dtype:
         y = y.to(dtype)
     if device is not None and y.device != device:
-        y = y.to(device, non_blocking=True)
+        y = _to_device(y, device)
     return y
 
 

@@ -81,7 +81,10 @@ details and references.
 * Runnable scripts in [`examples/`](examples): Noisy XOR, MNIST (flat and convolutional),
   tabular data with thermometer encoding, regression.
 * Worked notebooks in [`examples/notebooks/`](examples/notebooks): Iris (rules you can read),
-  MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images).
+  MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images),
+  plus two that work through the Tsetlin-machine segmentation literature — the Convolutional
+  Regression TM (ICMLT 2021) and CTM-UNet (ISTM 2025), the latter building a dense per-pixel
+  Tsetlin segmentation head.
 
 ## Citation
 
