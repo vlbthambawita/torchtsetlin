@@ -85,6 +85,12 @@ do not reuse them after the call.
   Noisy XOR, 200 degrades noticeably (see `docs/benchmarks.md`). `"sequential"` (or `update(..., sequential=True)`)
   is the exact per-example algorithm. Aggregating *all* events is deliberate: thinning Type II/Ia events per
   clause was tried and made learning much worse.
+- **The convolutional random patch is drawn in `_feedback_counts`, not `_evaluate`.** `_evaluate`
+  returns the whole `(B, P, C)` match tensor as its feedback context and nothing else; drawing
+  there instead costs a `(B, P, C)` `rand` + `argmax` on *every* forward pass (~5x slower
+  prediction and training on MNIST-sized inputs) and forces Type Ia and Type II to share one
+  patch, which is wrong for coalesced/multi-label models. `tests/test_models.py::
+  test_conv_prediction_draws_no_random_patches` pins the RNG-free prediction path.
 - **`_chunk_elements_per_example` must scale with the real intermediates** — `P*C` for convolutional models,
   only `C + 2F` for flat ones. Getting it wrong produces many tiny chunks per batch and a 4–20× slowdown.
 - **Convolutional `position_encoding=True` pins clauses to locations.** On translation-invariant toys

@@ -25,8 +25,10 @@ literals are used for the update; Type Ib (no match) needs no patch.
 
 `torchtsetlin` implements this with `torch.nn.functional.unfold` for the patches, a single
 matmul for all (patch, clause) matches and a gather of the randomly chosen patch rows for the
-feedback counts. Memory is bounded by chunking the batch (see
-[Batched vs sequential feedback](batching.md)).
+feedback counts. The draw happens in `_feedback_counts`, over the selected feedback events
+only, so prediction costs one matmul and an OR — no randomness at all — and each event draws
+its own patch (a coalesced clause can take Type Ia and Type II in the same update). Memory is
+bounded by chunking the batch (see [Batched vs sequential feedback](batching.md)).
 
 ```python
 model = tt.ConvTsetlinMachine(

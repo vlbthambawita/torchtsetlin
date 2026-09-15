@@ -211,6 +211,123 @@ def test_conv_position_encoding_structure(device):
     assert row == [1, 1, 0, 0, 0, 1, 1, 1, 0, 0]
 
 
+def _ref_patch_feats(img, kh, kw, sh, sw, Py, Px):
+    """Chapter 4 sec 4.2/4.5: patch pixels (z, row, col) then the position thermometers."""
+    Z = img.shape[0]
+    out = []
+    for y in range(Py):
+        for x in range(Px):
+            feats = [bool(img[z, y * sh + i, x * sw + j])
+                     for z in range(Z) for i in range(kh) for j in range(kw)]
+            out.append(feats + [y >= k for k in range(1, Py)] + [x >= k for k in range(1, Px)])
+    return out
+
+
+def _ref_match(feats, include, Fn, empty_value):
+    if not include.any():
+        return empty_value
+    return not any((include[k] and not feats[k]) or (include[Fn + k] and feats[k])
+                   for k in range(Fn))
+
+
+def test_conv_evaluation_is_or_over_patches(device):
+    """A clause is True for the image iff it matches at least one patch (Ch. 4 sec 4.3)."""
+    m = tt.ConvTsetlinMachine(2, 6, T=4, s=3.9, patch_size=(3, 2), stride=(2, 1),
+                              n_states=8, input_shape=(2, 7, 6)).to(device)
+    m.ta_state.copy_(torch.randint(0, 2 * m.n_states, m.ta_state.shape,
+                                   dtype=m.ta_state.dtype, device=device))
+    m.ta_state[torch.rand(m.ta_state.shape, device=device) < 0.9] = m.n_states - 1
+    m._refresh_include()
+    x = torch.randint(0, 2, (5, 2, 7, 6), device=device).bool()
+    Py, Px = m._grid(7, 6)
+    assert m.n_features == 2 * 3 * 2 + (Py - 1) + (Px - 1)
+    literals = m._encode(x)
+    inc, Fn = m.included_mask(), int(m.n_features)
+    for empty_value in (True, False):
+        out, matches = m._evaluate(literals, empty_value)
+        assert matches.shape == (5, Py * Px, m.n_clauses_total)
+        for b in range(5):
+            ref = _ref_patch_feats(x[b], 3, 2, 2, 1, Py, Px)
+            # patch features and their negations
+            for p, feats in enumerate(ref):
+                assert literals[b, p, :Fn].bool().tolist() == feats
+                assert literals[b, p, Fn:].bool().tolist() == [not f for f in feats]
+            for j in range(m.n_clauses_total):
+                want = any(_ref_match(f, inc[j], Fn, empty_value) for f in ref)
+                assert bool(out[b, j]) is want
+
+
+def test_conv_feedback_uses_a_random_matching_patch(device):
+    """Ch. 4 sec 4.4: Recognize/Reject update from a uniformly random *matching* patch;
+    Erase needs no patch at all."""
+    from torchtsetlin.models.base import FeedbackAccumulator
+
+    m = tt.ConvTsetlinMachine(2, 6, T=4, s=3.9, patch_size=3, n_states=8,
+                              input_shape=(1, 6, 6)).to(device)
+    m.ta_state.copy_(torch.randint(0, 2 * m.n_states, m.ta_state.shape,
+                                   dtype=m.ta_state.dtype, device=device))
+    m.ta_state[torch.rand(m.ta_state.shape, device=device) < 0.92] = m.n_states - 1
+    m._refresh_include()
+    x = torch.randint(0, 2, (7, 1, 6, 6), device=device).bool()
+    literals = m._encode(x)
+    clause_out, matches = m._evaluate(literals, True)
+    C, L, cd = m.n_clauses_total, m.n_literals, m.compute_dtype
+    fire = clause_out.to(cd)
+    nofire = (~clause_out).to(cd)
+    inc = m.included_mask().to(cd)
+    for _ in range(20):
+        acc = FeedbackAccumulator(C, L, x.device, cd)
+        m._feedback_counts(literals, matches, fire, nofire, fire, acc)
+        # a matching patch makes every *included* literal True, so none may be counted False
+        assert float((acc.n_false * inc).sum()) == 0.0
+        assert float((acc.n2 * inc).sum()) == 0.0
+        # one Type Ia event per matching clause, one Type Ib event per non-matching one
+        assert torch.equal(acc.n_true + acc.n_false, fire.sum(0).unsqueeze(1).expand(C, L))
+        assert torch.equal(acc.n_ib, nofire.sum(0))
+
+    # the draw is uniform over the matching patches of the clause
+    P = matches.shape[1]
+    b, j, mp = next(
+        (b, j, mp)
+        for b in range(7)
+        for j in range(C)
+        for mp in [[p for p in range(P) if matches[b, p, j]]]
+        if len(mp) >= 3 and len({tuple(literals[b, p].tolist()) for p in mp}) == len(mp)
+    )
+    sel = torch.zeros(7, C, dtype=cd, device=x.device)
+    sel[b, j] = 1
+    zero = torch.zeros(7, C, dtype=cd, device=x.device)
+    counts = dict.fromkeys(mp, 0)
+    n_draws = 600
+    for _ in range(n_draws):
+        acc = FeedbackAccumulator(C, L, x.device, cd)
+        m._feedback_counts(literals, matches, sel, zero, zero, acc)
+        used = [p for p in mp if torch.equal(literals[b, p], acc.n_true[j])]
+        assert len(used) == 1, "feedback used a patch the clause does not match"
+        counts[used[0]] += 1
+    assert all(c > n_draws / (4 * len(mp)) for c in counts.values()), counts
+
+
+def test_conv_prediction_draws_no_random_patches(device):
+    """Only learning picks a patch, so prediction must be deterministic and RNG-free
+    (drawing per prediction cost ~5x on MNIST-sized inputs)."""
+    m = tt.ConvTsetlinMachine(3, 20, T=8, s=3.9, patch_size=3, input_shape=(1, 8, 8)).to(device)
+    x = torch.randint(0, 2, (16, 1, 8, 8), device=device).bool()
+    m.update(x, torch.randint(0, 3, (16,), device=device))
+    m.eval()
+    rng_state = (
+        (lambda: torch.cuda.get_rng_state(device)) if device.type == "cuda"
+        else torch.random.get_rng_state
+    )
+    before = rng_state()
+    first = m(x)
+    assert torch.equal(rng_state(), before), "forward() consumed randomness"
+    assert torch.equal(m(x), first)
+    before = rng_state()
+    assert torch.equal(m.evaluate_clauses(x), m.evaluate_clauses(x))
+    assert torch.equal(rng_state(), before), "evaluate_clauses() consumed randomness"
+
+
 def test_conv_variants_construct(device):
     x = torch.randint(0, 2, (8, 2, 6, 6), device=device).bool()
     c = tt.ConvCoalescedTsetlinMachine(3, 12, T=5, patch_size=2, stride=2).to(device)

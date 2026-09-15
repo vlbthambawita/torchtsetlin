@@ -39,7 +39,8 @@ class _ConvMixin:
     ``Z*kh*kw`` pixels followed by thermometer-encoded patch coordinates: ``P_y - 1`` bits
     ``[y > k]`` and ``P_x - 1`` bits ``[x > k]`` where ``P_y, P_x`` are the numbers of patch
     positions along each axis. A clause is True for an image iff it matches at least one
-    patch; learning uses one randomly chosen matching patch per clause (Granmo et al., 2019).
+    patch; each feedback event updates the clause from one randomly chosen matching patch
+    (Granmo et al., 2019).
     """
 
     patch_size: Tuple[int, int]
@@ -103,7 +104,8 @@ class _ConvMixin:
         return Py * Px
 
     def _chunk_elements_per_example(self, xb: Tensor) -> int:  # type: ignore[override]
-        # (B, P, C) match/score tensors plus the worst-case gathered literal rows (B*C, 2F).
+        # The (B, P, C) match tensor plus, per feedback kind, the (n_sel <= B*C, P) patch
+        # draw, and the worst-case gathered literal rows (B*C, 2F).
         P = self._patches_per_example(xb)
         C = self.n_clauses_total  # type: ignore[attr-defined]
         return 3 * P * C + 2 * C * self.n_literals + P * self.n_literals  # type: ignore[attr-defined]
@@ -138,11 +140,10 @@ class _ConvMixin:
         matches = F.clause_outputs(
             literals.reshape(B * P, L), self.include, self.include_count, empty_value
         ).view(B, P, -1)  # (B, P, C)
-        clause_out = matches.any(dim=1)
-        # One random matching patch per (example, clause) for feedback.
-        scores = torch.rand(matches.shape, device=literals.device) * matches
-        patch_idx = scores.argmax(dim=1)  # (B, C)
-        return clause_out, patch_idx
+        # A clause is True for the image iff it matches at least one patch. The per-patch
+        # matches travel on as the feedback context: :meth:`_feedback_counts` draws the random
+        # matching patch from them, so prediction never pays for the draw.
+        return matches.any(dim=1), matches
 
     def _feedback_counts(  # type: ignore[override]
         self,
@@ -153,8 +154,8 @@ class _ConvMixin:
         sel_fire_ii: Tensor,
         acc: FeedbackAccumulator,
     ) -> None:
-        patch_idx: Tensor = ctx
-        acc.n_ib += sel_nofire_i.sum(dim=0)
+        matches: Tensor = ctx
+        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no patch features
         B, P, L = literals.shape
         flat = literals.reshape(B * P, L)
         for sel, kind in ((sel_fire_i, "i"), (sel_fire_ii, "ii")):
@@ -162,7 +163,12 @@ class _ConvMixin:
             if nz[0].numel() == 0:
                 continue
             b_idx, j_idx = nz
-            rows = flat[b_idx * P + patch_idx[b_idx, j_idx]]  # (n_sel, 2F)
+            # One uniformly random *matching* patch per feedback event. The draws are
+            # independent per event (and so between Type Ia and Type II), because a coalesced
+            # clause can receive both in the same update.
+            cand = matches[b_idx, :, j_idx]  # (n_sel, P)
+            p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
+            rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
             if kind == "i":
                 acc.n_true.index_add_(0, j_idx, rows)
                 acc.n_false.index_add_(0, j_idx, 1.0 - rows)
@@ -212,7 +218,7 @@ class _ConvMixin:
             pos = mask[offset : offset + n]
             neg = mask[Fn + offset : Fn + offset + n]
             lo = 0
-            hi = n  # n-1 bits -> positions 0..n
+            hi = n  # n thermometer bits -> coordinates 0..n
             if pos.any():
                 lo = int(torch.nonzero(pos).max()) + 1  # coord > k  -> coord >= k+1
             if neg.any():
