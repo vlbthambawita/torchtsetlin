@@ -14,6 +14,10 @@ pytest -k "conv" -q                         # by keyword
 ruff check src tests                        # lint (CI runs exactly this)
 ruff check --fix src tests
 mkdocs serve                                # docs at localhost:8000
+
+./benchmarks/run_benchmarks.sh              # all suites -> results JSON + docs figures/page
+./benchmarks/run_benchmarks.sh --quick      # ~1 min smoke test of the benchmark pipeline
+./benchmarks/run_benchmarks.sh --plots-only # re-render figures/tables/page from the JSON
 python -m build && python -m twine check dist/*
 ```
 
@@ -102,6 +106,21 @@ do not reuse them after the call.
   (`tests/test_data_train.py::test_encoder_on_non_cpu_input_matches_cpu`).
 - Optional dependencies are import-guarded: `viz` needs matplotlib, `data.load_*_boolean` needs torchvision,
   some examples need scikit-learn.
+
+## Benchmarks
+
+`benchmarks/run_benchmarks.sh` is the driver: it runs `bench_device.py` **one suite at a time**
+(so a crash costs only the running suite — the JSON is merged after each), then
+`plot_benchmarks.py`, which writes `docs/assets/benchmarks/*.png` (light + `_dark` pairs for the
+MkDocs Material theme), `benchmarks/results/tables.md`, and regenerates `docs/cpu-vs-gpu.md`
+whole — prose, figures and tables are derived from the records, so **do not hand-edit that page**.
+Figures skip suites that are missing from the results, so partial runs plot fine.
+
+Progress output: the driver exports `PYTHONUNBUFFERED=1` because it tees stdout into a log —
+without it Python block-buffers the pipe and a suite looks frozen for minutes. `bench_device.py`
+reports `[k/n] <config> (elapsed, eta)` per measured configuration through the module-level
+`PROG` (`Progress`), which `main()` resets per (suite, device); a new suite should call
+`PROG.plan(n)` once and `PROG.item(label)` per configuration.
 
 ## Docs
 

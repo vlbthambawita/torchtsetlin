@@ -88,6 +88,43 @@ def batch_views(x: torch.Tensor, y: torch.Tensor, batch_size: int, n_batches: in
     return out
 
 
+def hms(seconds: float) -> str:
+    m, s = divmod(int(seconds + 0.5), 60)
+    return f"{m}m{s:02d}s" if m else f"{s}s"
+
+
+class Progress:
+    """Counts the configurations of one suite on one device and reports them as they run.
+
+    Each line is flushed immediately, so progress is visible even when stdout is a pipe
+    (``run_benchmarks.sh`` tees it into a log file, which block-buffers otherwise).
+    """
+
+    def __init__(self, suite: str = "", device: str = "") -> None:
+        self.suite, self.device = suite, device
+        self.total = 0
+        self.done = 0
+        self.t0 = time.perf_counter()
+
+    def plan(self, total: int) -> None:
+        """Declare how many configurations this suite will measure."""
+        self.total = total
+
+    def item(self, label: str) -> None:
+        """Announce the configuration that is about to be measured."""
+        self.done += 1
+        elapsed = time.perf_counter() - self.t0
+        eta = ""
+        if self.done > 1 and self.total:
+            per_item = elapsed / (self.done - 1)
+            eta = f", eta {hms(per_item * (self.total - self.done + 1))}"
+        counter = f"{self.done}/{self.total}" if self.total else f"{self.done}"
+        print(f"  [{counter:>5s}] {label:<44s} ({hms(elapsed)} elapsed{eta})", flush=True)
+
+
+PROG = Progress()
+
+
 @dataclass
 class Record:
     suite: str
@@ -286,7 +323,7 @@ def bench_config(
             )
         )
         print(f"    {phase:5s} {out[-1].examples_per_s:12,.0f} ex/s  "
-              f"({out[-1].sec_per_batch * 1e3:8.2f} ms/batch, {iters} iters)")
+              f"({out[-1].sec_per_batch * 1e3:8.2f} ms/batch, {iters} iters)", flush=True)
     del model, x, y, batches
     if device.type == "cuda":
         torch.cuda.empty_cache()
@@ -305,8 +342,9 @@ REF_BATCH = 256
 
 def suite_batch(device: torch.device) -> List[Record]:
     out = []
+    PROG.plan(len(BATCH_SIZES))
     for bs in BATCH_SIZES:
-        print(f"  batch={bs}")
+        PROG.item(f"batch={bs}")
         out += bench_config("batch", device, batch_size=bs, n_batches=8,
                             n_examples=max(8 * bs, 4096), **REF)
     return out
@@ -314,8 +352,9 @@ def suite_batch(device: torch.device) -> List[Record]:
 
 def suite_clauses(device: torch.device) -> List[Record]:
     out = []
+    PROG.plan(len(CLAUSE_COUNTS))
     for c in CLAUSE_COUNTS:
-        print(f"  clauses/class={c}")
+        PROG.item(f"clauses/class={c}")
         cfg = dict(REF, clauses=c)
         out += bench_config("clauses", device, batch_size=REF_BATCH, **cfg)
     return out
@@ -323,8 +362,9 @@ def suite_clauses(device: torch.device) -> List[Record]:
 
 def suite_features(device: torch.device) -> List[Record]:
     out = []
+    PROG.plan(len(FEATURE_COUNTS))
     for f in FEATURE_COUNTS:
-        print(f"  features={f}")
+        PROG.item(f"features={f}")
         cfg = dict(REF, n_features=f)
         out += bench_config("features", device, batch_size=REF_BATCH, **cfg)
     return out
@@ -348,8 +388,9 @@ def suite_models(device: torch.device) -> List[Record]:
                                                            T=100.0))),
     ]
     out = []
+    PROG.plan(len(configs))
     for label, cfg in configs:
-        print(f"  {label}")
+        PROG.item(label)
         kw = dict(cfg)
         mk = kw.pop("model_kw", {})
         T = mk.pop("T", 25.0)
@@ -366,9 +407,11 @@ SMALL = dict(kind="flat", n_features=12, n_classes=2, clauses=10)
 
 def suite_small(device: torch.device) -> List[Record]:
     """A tiny (Noisy-XOR scale) machine across batch sizes — where launch overhead rules."""
+    batches = [1, 4, 16, 64, 256, 1024]
     out = []
-    for bs in [1, 4, 16, 64, 256, 1024]:
-        print(f"  batch={bs}")
+    PROG.plan(len(batches))
+    for bs in batches:
+        PROG.item(f"batch={bs}")
         out += bench_config("small", device, batch_size=bs, n_examples=max(8 * bs, 4096),
                             label="flat (12 features, 20 clauses)",
                             model_kw=dict(T=15.0, s=3.9), **SMALL)
@@ -382,21 +425,26 @@ def suite_feedback(device: torch.device) -> List[Record]:
         ("mnist-1k", dict(kind="flat", n_features=784, n_classes=10, clauses=100),
          dict(T=25.0), [1, 32, 256]),
     ]
+    jobs = [
+        (scale, cfg, mk, mode, bs)
+        for scale, cfg, mk, batches in scales
+        for mode in ("batch", "sequential")
+        for bs in batches
+        # sequential commits once per example: batch 32 is already enough to extrapolate
+        if not (mode == "sequential" and bs > 32)
+    ]
     out = []
-    for scale, cfg, mk, batches in scales:
-        for mode in ("batch", "sequential"):
-            for bs in batches:
-                if mode == "sequential" and bs > 32:
-                    continue  # one commit per example: 32 is already enough to extrapolate
-                print(f"  {scale} feedback_mode={mode} batch={bs}")
-                out += bench_config(
-                    "feedback", device, batch_size=bs, phases=("train",),
-                    label=f"{scale}/{mode}",
-                    extra=dict(feedback_mode=mode, scale=scale),
-                    model_kw=dict(feedback_mode=mode, **mk),
-                    timing=dict(budget=2.0, max_iters=60 if mode == "batch" else 10),
-                    n_examples=max(8 * bs, 2048), **cfg,
-                )
+    PROG.plan(len(jobs))
+    for scale, cfg, mk, mode, bs in jobs:
+        PROG.item(f"{scale} feedback_mode={mode} batch={bs}")
+        out += bench_config(
+            "feedback", device, batch_size=bs, phases=("train",),
+            label=f"{scale}/{mode}",
+            extra=dict(feedback_mode=mode, scale=scale),
+            model_kw=dict(feedback_mode=mode, **mk),
+            timing=dict(budget=2.0, max_iters=60 if mode == "batch" else 10),
+            n_examples=max(8 * bs, 2048), **cfg,
+        )
     return out
 
 
@@ -404,14 +452,16 @@ def suite_threads(device: torch.device) -> List[Record]:
     """CPU thread scaling. On CUDA a single point is measured as a reference line."""
     out = []
     if device.type != "cpu":
-        print("  (cuda reference point)")
+        PROG.plan(1)
+        PROG.item("cuda reference point")
         return bench_config("threads", device, batch_size=REF_BATCH, extra=dict(threads_axis=True), **REF)
     default = torch.get_num_threads()
     counts = [n for n in (1, 2, 4, 8, 16, 32) if n <= os.cpu_count()]
+    PROG.plan(len(counts))
     try:
         for n in counts:
             torch.set_num_threads(n)
-            print(f"  threads={n}")
+            PROG.item(f"threads={n}")
             out += bench_config("threads", device, batch_size=REF_BATCH,
                                 extra=dict(threads_axis=True), **REF)
     finally:
@@ -422,9 +472,10 @@ def suite_threads(device: torch.device) -> List[Record]:
 def suite_transfer(device: torch.device) -> List[Record]:
     """Dataset resident on the device vs a host-resident dataset copied in per batch."""
     out = []
+    PROG.plan(3 * 2)
     for bs in (32, 256, 2048):
         for resident in (True, False):
-            print(f"  batch={bs} data_on={'device' if resident else 'host'}")
+            PROG.item(f"batch={bs} data_on={'device' if resident else 'host'}")
             data_device = device if resident else torch.device("cpu")
             n = max(8 * bs, 4096)
             x = make_bool(n, [REF["n_features"]], data_device)
@@ -437,7 +488,7 @@ def suite_transfer(device: torch.device) -> List[Record]:
                               peak, n_clauses_per_class=REF["clauses"],
                               n_classes=REF["n_classes"],
                               extra=dict(data_resident_on_device=resident)))
-            print(f"    train {out[-1].examples_per_s:12,.0f} ex/s")
+            print(f"    train {out[-1].examples_per_s:12,.0f} ex/s", flush=True)
             del model, x, y, batches
             if device.type == "cuda":
                 torch.cuda.empty_cache()
@@ -456,7 +507,9 @@ def suite_mnist(device: torch.device, root: str = "./data", epochs: int = 3) -> 
                                                     T=100.0, flatten=False, subset=10000,
                                                     epochs=1)),
     ]
+    PROG.plan(len(configs))
     for label, cfg in configs:
+        PROG.item(label)
         n = cfg["subset"]
         xt = x_tr[:n] if n else x_tr
         yt = y_tr[:n] if n else y_tr
@@ -470,7 +523,7 @@ def suite_mnist(device: torch.device, root: str = "./data", epochs: int = 3) -> 
             model = build("conv", device, n_features=None, n_classes=10, clauses=cfg["clauses"],
                           T=cfg["T"], patch_size=10, position_encoding=True, input_shape=(1, 28, 28))
         trainer = tt.Trainer(model, device=device, batch_size=cfg["batch_size"], verbose=True)
-        print(f"  {label} on {device} ({xt.shape[0]} train examples, {cfg['epochs']} epochs)")
+        print(f"    {xt.shape[0]:,} train examples, {cfg['epochs']} epoch(s)", flush=True)
         sync(device)
         t0 = time.perf_counter()
         hist = trainer.fit((xt, yt), epochs=cfg["epochs"], val_data=(xv, yv))
@@ -492,7 +545,7 @@ def suite_mnist(device: torch.device, root: str = "./data", epochs: int = 3) -> 
                        epoch_times=epoch_times,
                        batch_accuracy=float(hist.epochs[-1].get("batch_accuracy", float("nan")))),
         ))
-        print(f"    {med:.2f} s/epoch, val accuracy {acc:.4f}")
+        print(f"    {med:.2f} s/epoch, val accuracy {acc:.4f}", flush=True)
         del model, trainer
         if device.type == "cuda":
             torch.cuda.empty_cache()
@@ -508,6 +561,8 @@ def suite_phases(device: torch.device) -> List[Record]:
     measured as ``update`` minus the accumulation stages, so it includes ``apply_feedback``
     and ``_refresh_include``.
     """
+    PROG.plan(1)
+    PROG.item("update() stage breakdown")
     bs = REF_BATCH
     n = max(8 * bs, 4096)
     x = make_bool(n, [REF["n_features"]], device)
@@ -571,8 +626,8 @@ def suite_phases(device: torch.device) -> List[Record]:
         out.append(record("phases", "stage", device, model, "flat", bs, sec, [sec], 0, None,
                           n_clauses_per_class=REF["clauses"], n_classes=REF["n_classes"],
                           extra=dict(stage=name)))
-        print(f"    {name:26s} {sec * 1e3:9.3f} ms")
-    print(f"    {'update (total)':26s} {t_update * 1e3:9.3f} ms")
+        print(f"    {name:26s} {sec * 1e3:9.3f} ms", flush=True)
+    print(f"    {'update (total)':26s} {t_update * 1e3:9.3f} ms", flush=True)
     if device.type == "cuda":
         torch.cuda.empty_cache()
     return out
@@ -650,11 +705,13 @@ def main() -> None:
     devices = args.devices or (["cpu"] + (["cuda:0"] if torch.cuda.is_available() else []))
     devices = [torch.device(d) for d in devices]
 
+    global PROG
     records: List[Record] = []
     t_start = time.perf_counter()
     for suite in suites:
         for device in devices:
             print(f"\n=== {suite} on {device} ({device_name(device)}) ===", flush=True)
+            PROG = Progress(suite, str(device))
             fn = SUITE_FN[suite]
             if suite == "mnist":
                 records += fn(device, root=args.root, epochs=args.epochs)  # type: ignore[call-arg]
@@ -680,7 +737,8 @@ def main() -> None:
         payload["devices"] = sorted({*old.get("devices", []), *payload["devices"]})
     with open(args.out, "w") as fh:
         json.dump(payload, fh, indent=1)
-    print(f"\nWrote {len(payload['records'])} records to {args.out} in {elapsed:.1f} s")
+    print(f"\nWrote {len(payload['records'])} records to {args.out} in {hms(elapsed)}",
+          flush=True)
 
 
 if __name__ == "__main__":

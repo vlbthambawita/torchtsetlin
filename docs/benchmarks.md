@@ -6,6 +6,11 @@ the *throughput* of the batched update and that accuracy is on par with the lite
 a few epochs — not to be state-of-the-art results (those need hundreds of epochs and larger
 clause budgets).
 
+The systematic CPU-vs-GPU sweep — throughput against batch size, clause budget and feature
+count, the model zoo, and where the time inside one `update()` goes — lives on its own page:
+**[CPU vs GPU](cpu-vs-gpu.md)**. That page is generated end to end by
+`benchmarks/run_benchmarks.sh`, so you can replace its numbers with your own hardware's.
+
 ## MNIST (`pixel > 0.3`, 60 000 training images)
 
 | Model | batch | examples / s | s / epoch | test accuracy after 3 epochs | peak memory |
@@ -39,8 +44,22 @@ See [Batched vs sequential feedback](concepts/batching.md) for the interpretatio
 
 ## Reproducing
 
+The accuracy numbers above come from the example scripts:
+
 ```bash
 python examples/mnist_flat.py --clauses 500 --T 25 --epochs 5 --batch-size 100
 python examples/mnist_conv.py --clauses 200 --T 100 --epochs 3 --batch-size 32
 python examples/noisy_xor.py --batch-size 10
+```
+
+The throughput numbers on [CPU vs GPU](cpu-vs-gpu.md) come from the benchmark driver, which
+runs every suite, writes `benchmarks/results/cpu_vs_gpu.json`, and regenerates the figures,
+tables and that page:
+
+```bash
+./benchmarks/run_benchmarks.sh                  # every suite, cpu + cuda:0 (~20-25 min)
+./benchmarks/run_benchmarks.sh --quick          # ~1 min smoke test, docs untouched
+./benchmarks/run_benchmarks.sh -s batch models  # a subset
+./benchmarks/run_benchmarks.sh --plots-only     # re-render from the results already on disk
+./benchmarks/run_benchmarks.sh --help           # every option
 ```
