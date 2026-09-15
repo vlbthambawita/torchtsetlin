@@ -78,6 +78,9 @@ details and references.
 
 * Getting started, concepts, guides, examples and the full API reference:
   <https://vlbthambawita.github.io/torchtsetlin/> (or `mkdocs serve` locally).
+* Measured CPU vs GPU performance (throughput, scaling, memory, where the time goes):
+  [Benchmarks -> CPU vs GPU](https://vlbthambawita.github.io/torchtsetlin/cpu-vs-gpu/); the
+  harness lives in [`benchmarks/`](benchmarks).
 * Runnable scripts in [`examples/`](examples) (see its
   [README](examples/README.md)): Noisy XOR, tabular data with thermometer encoding,
   regression, MNIST flat and convolutional, and four convolutional walkthroughs covering 2-D
