@@ -1,7 +1,21 @@
 # Changelog
 
-## Unreleased
+## 0.1.3 (2026-09-15)
 
+- **Fixed / faster (convolutional models):** the random matching patch used for Recognize and
+  Reject feedback was drawn in `_ConvMixin._evaluate`, which builds a `(B, P, C)` `rand` tensor
+  on *every* call — including `forward()` / `predict()` / `evaluate_clauses()`, where the draw is
+  discarded. `_evaluate` now returns the per-patch match tensor as its feedback context and
+  `_feedback_counts` draws from it, over the selected feedback events only. Prediction is
+  RNG-free: on a 400-clause 10x10-window MNIST config, `predict()` went 885 -> 180 ms and
+  `update()` 914 -> 216 ms per 64 images (4.9x / 4.2x). Each feedback event now also draws its
+  own patch; a `ConvCoalescedTsetlinMachine` clause that takes Type Ia and Type II in the same
+  update (16% of feedback pairs in a 4-output probe, 43% multi-label) was sharing one. Learning
+  is unchanged for `ConvTsetlinMachine`, where the two feedback types never coincide.
+- Verified the convolutional implementation against chapter 4 of *An Introduction to Tsetlin
+  Machines* — patch layout, the OR over patches, the thermometer position bits (`P-1` per axis,
+  bit `k` = `coord >= k+1`) and Recognize / Erase / Reject feedback all match the theory. Three
+  new tests pin those semantics against a brute-force reference.
 - Examples: three new convolutional scripts — `examples/shapes_conv.py` (2-D clauses vs a flat
   machine, and what `position_encoding` costs on a translation-invariant task),
   `examples/conv1d_ramps.py` (`Conv1dTsetlinMachine` on thermometer-encoded signals) and
