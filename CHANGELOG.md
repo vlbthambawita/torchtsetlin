@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- Examples: three new convolutional scripts — `examples/shapes_conv.py` (2-D clauses vs a flat
+  machine, and what `position_encoding` costs on a translation-invariant task),
+  `examples/conv1d_ramps.py` (`Conv1dTsetlinMachine` on thermometer-encoded signals) and
+  `examples/conv_regression_blobs.py` (`ConvRegressionTsetlinMachine`). `examples/mnist_conv.py`
+  gained `--stride`, `--no-position-encoding`, `--coalesced` and `--max-samples`, keeps the
+  encoder on the compute device, and prints the clauses it learned. New `examples/README.md`
+  indexes all of them.
+
 ## 0.1.2 (2026-09-15)
 
 - **Fixed (silent data corruption on GPU):** `as_bool_tensor` / `as_long_tensor` /

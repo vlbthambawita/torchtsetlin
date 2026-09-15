@@ -41,6 +41,15 @@ tt.viz.plot_conv_clauses(model, range(16))
 Variants: `ConvCoalescedTsetlinMachine` (shared clauses, multi-label capable),
 `ConvRegressionTsetlinMachine`, and `Conv1dTsetlinMachine` for sequences `(B, Z, L)`.
 
+## Runnable examples
+
+| script | model | what it demonstrates |
+|---|---|---|
+| `examples/shapes_conv.py` | `ConvTsetlinMachine` | one clause beats a flat machine that has to memorise every position (1.000 on every seed, against 0.55–0.91), and what `position_encoding` costs on a translation-invariant task |
+| `examples/conv1d_ramps.py` | `Conv1dTsetlinMachine` | a motif anywhere in a thermometer-encoded signal; the clauses print as the ramp they detect |
+| `examples/conv_regression_blobs.py` | `ConvRegressionTsetlinMachine` | reading a continuous quantity (a square's side length) off an image |
+| `examples/mnist_conv.py` | `ConvTsetlinMachine`, `ConvCoalescedTsetlinMachine` | the real thing: 10×10 windows, adaptive thresholding, `--stride`, `--coalesced` |
+
 ## Tips
 
 * Booleanize images with `AdaptiveThresholdEncoder` (MNIST-like) or

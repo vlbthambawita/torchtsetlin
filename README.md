@@ -78,8 +78,11 @@ details and references.
 
 * Getting started, concepts, guides, examples and the full API reference:
   <https://vlbthambawita.github.io/torchtsetlin/> (or `mkdocs serve` locally).
-* Runnable scripts in [`examples/`](examples): Noisy XOR, MNIST (flat and convolutional),
-  tabular data with thermometer encoding, regression.
+* Runnable scripts in [`examples/`](examples) (see its
+  [README](examples/README.md)): Noisy XOR, tabular data with thermometer encoding,
+  regression, MNIST flat and convolutional, and four convolutional walkthroughs covering 2-D
+  clauses (`shapes_conv.py`), 1-D signals (`conv1d_ramps.py`), convolutional regression
+  (`conv_regression_blobs.py`) and shared clause pools (`mnist_conv.py --coalesced`).
 * Worked notebooks in [`examples/notebooks/`](examples/notebooks): Iris (rules you can read),
   MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images),
   plus two that work through the Tsetlin-machine segmentation literature — the Convolutional
