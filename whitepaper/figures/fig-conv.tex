@@ -1,0 +1,88 @@
+% Figure: convolutional evaluation — patches, OR over patches, and where the random patch is drawn.
+\begin{tikzpicture}[font=\sffamily\small]
+
+  \def\g{0.32}   % pixel size
+
+  % ---------------------------------------------------------------- input image
+  \node[tttitle, anchor=south west, font=\sffamily\bfseries\small] at (0,0.55)
+    {Boolean image};
+  \foreach \r in {0,...,5}{
+    \foreach \c in {0,...,5}{
+      \pgfmathsetmacro{\on}{mod(\r*3+\c*2,5)<2 ? 1 : 0}
+      \ifdim \on pt > 0.5pt
+        \fill[ttorange!75] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+      \fi
+      \draw[ttgray!35, line width=0.3pt] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+    }
+  }
+  \draw[ttdeep, line width=1.3pt] (1*\g,-1*\g) rectangle ++(3*\g,3*\g);
+  \draw[ttdeep!45, line width=0.9pt, dashed] (2*\g,-2*\g) rectangle ++(3*\g,3*\g);
+
+  % ---------------------------------------------------------------- patch matrix
+  \node[tttitle, anchor=south west, font=\sffamily\bfseries\small] at (3.0,0.55)
+    {patch literals $(B,P,2F)$};
+  \begin{scope}[shift={(3.0,0)}]
+    \foreach \r in {0,...,4}{
+      \foreach \c in {0,...,9}{
+        \pgfmathsetmacro{\on}{mod(\r*5+\c*3,7)<3 ? 1 : 0}
+        \ifdim \on pt > 0.5pt \fill[ttorange!60] (\c*\g,-\r*\g) rectangle ++(\g,\g); \fi
+        \draw[ttgray!30, line width=0.3pt] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+      }
+    }
+  \end{scope}
+  \draw[ttarrow] (2.15,-0.8*\g) -- (2.85,-0.8*\g);
+  \node[ttlabel, anchor=south, font=\sffamily\scriptsize] at (2.5,-0.75*\g) {\code{unfold}};
+
+  % ---------------------------------------------------------------- match tensor
+  \node[tttitle, anchor=south west, font=\sffamily\bfseries\small] at (7.2,0.55)
+    {matches $(B,P,C)$};
+  \begin{scope}[shift={(7.2,0)}]
+    \foreach \r in {0,...,4}{
+      \foreach \c in {0,...,5}{
+        \pgfmathsetmacro{\on}{mod(\r*4+\c*5,9)<2 ? 1 : 0}
+        \ifdim \on pt > 0.5pt
+          \fill[ttdeep] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+        \else
+          \fill[white] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+        \fi
+        \draw[ttgray!30, line width=0.3pt] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+      }
+    }
+  \end{scope}
+  \draw[ttarrow] (6.35,-0.8*\g) -- (7.05,-0.8*\g);
+
+  % ---------------------------------------------------------------- OR over patches
+  \node[ttnode dark, anchor=west, text width=2.5cm, align=center] (orr) at (9.6,-0.4)
+    {$c_j(X) = \bigvee_{p} m_{p,j}$\\[2pt]\scriptsize the clause fires if \emph{any} patch matches};
+  \draw[ttarrow] (9.2,-0.4) -- (9.55,-0.4);
+
+  \node[ttnode, anchor=west, text width=1.85cm, align=center] (vot) at (12.75,-0.4)
+    {votes $(B,K)$\\[1pt]\scriptsize unchanged};
+  \draw[ttarrow] (12.35,-0.4) -- (12.7,-0.4);
+
+  % ---------------------------------------------------------------- sub-labels
+  \node[ttlabel, anchor=north west, text width=2.6cm, font=\sffamily\scriptsize] at (0,-2.05)
+    {$(Z,H,W)$ planes; a $k_h\times k_w$ window with stride $s$ gives $P$ positions};
+  \node[ttlabel, anchor=north west, text width=3.2cm, font=\sffamily\scriptsize] at (3.0,-2.05)
+    {$Z k_h k_w$ pixel bits, then thermometer position bits $[y>k]$, $[x>k]$};
+  \node[ttlabel, anchor=north west, text width=2.1cm, font=\sffamily\scriptsize] at (7.2,-2.05)
+    {one matmul over all (patch, clause) pairs};
+
+  % ---------------------------------------------------------------- feedback path
+  \node[ttnode, fill=ttamber!22, draw=ttamber, anchor=north west, text width=14.0cm]
+    (fb) at (0,-3.75)
+    {\textbf{Feedback} \textemdash\ for each selected (example, clause) event, \emph{one
+     uniformly random matching patch} is drawn from the match tensor and its literals are
+     counted: \code{p = argmax(rand(n,P) * cand)} over the candidate mask \code{cand}, then
+     \code{index\_add\_} into the accumulators. Type~Ib needs no patch at all.};
+
+  \draw[ttarrow dashed, draw=ttamber!85!black, line width=1.0pt] (11.0,-1.25) -- (11.0,-3.7);
+  \node[ttlabel, anchor=west, text=ttdeep, text width=3.2cm, font=\sffamily\scriptsize]
+    at (11.15,-2.4) {the match tensor is reused here, not recomputed};
+
+  \node[ttlabel, anchor=north west, text width=14.0cm, font=\sffamily\small] at (0,-6.25)
+    {Drawing the patch here rather than during evaluation keeps \emph{prediction} free of
+     randomness --- a $(B,P,C)$ random tensor on every forward pass cost roughly $5\times$ the
+     runtime --- and lets Type~Ia and Type~II draw independently, which matters for coalesced
+     and multi-label models where one clause can receive both in the same update.};
+\end{tikzpicture}

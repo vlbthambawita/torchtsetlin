@@ -1,0 +1,91 @@
+% Figure: the four layers of torchtsetlin and what each one owns.
+\begin{tikzpicture}[font=\sffamily\small, node distance=0pt]
+
+  \def\lw{14.6}          % layer width
+  \def\lx{0}             % layer left edge
+
+  % ---------------------------------------------------------------- layer 4 (top)
+  \begin{scope}[shift={(0,0)}]
+    \draw[ttlayer] (\lx,-1.75) rectangle (\lw,0.72);
+    \node[tttitle, anchor=north west, align=left] at (\lx+0.18,0.62)
+      {\textbf{4\ \ Workflow}\ \ \textcolor{ttgray}{\code{data/}\ \ \code{train/}\ \
+       \code{metrics.py}\ \ \code{interpret.py}\ \ \code{viz.py}}};
+    \node[ttnode, anchor=north west, text width=2.85cm] at (\lx+0.2,0.12)
+      {\textbf{data}\\[1pt]\scriptsize encoders, synthetic\\\scriptsize + torchvision sets};
+    \node[ttnode, anchor=north west, text width=2.85cm] at (\lx+3.15,0.12)
+      {\textbf{train}\\[1pt]\scriptsize Trainer, callbacks,\\\scriptsize History};
+    \node[ttnode, anchor=north west, text width=2.85cm] at (\lx+6.1,0.12)
+      {\textbf{metrics}\\[1pt]\scriptsize accuracy, calibration,\\\scriptsize trustworthiness};
+    \node[ttnode, anchor=north west, text width=2.85cm] at (\lx+9.05,0.12)
+      {\textbf{interpret}\\[1pt]\scriptsize rules, importance,\\\scriptsize explanations};
+    \node[ttnode, anchor=north west, text width=2.4cm] at (\lx+12.0,0.12)
+      {\textbf{viz}\\[1pt]\scriptsize clause patches,\\\scriptsize heat maps};
+  \end{scope}
+
+  % ---------------------------------------------------------------- layer 3
+  \begin{scope}[shift={(0,-2.55)}]
+    \draw[ttlayer] (\lx,-2.55) rectangle (\lw,0.72);
+    \node[tttitle, anchor=north west, align=left] at (\lx+0.18,0.62)
+      {\textbf{3\ \ Concrete models}\ \ \textcolor{ttgray}{\code{models/\{classifier,coalesced,regression,conv\}.py}}%
+       \ \ \textemdash\ supply an \emph{output layer} and a \emph{feedback policy}};
+    \node[ttnode dark, anchor=north west, text width=3.1cm, minimum height=1.3cm] at (\lx+0.2,0.1)
+      {TsetlinMachine\\[1pt]\scriptsize class-owned clauses,\\\scriptsize $\pm$ polarity, weights};
+    \node[ttnode dark, anchor=north west, text width=3.1cm, minimum height=1.3cm] at (\lx+3.5,0.1)
+      {CoalescedTM\\[1pt]\scriptsize shared pool,\\\scriptsize signed weight / output};
+    \node[ttnode dark, anchor=north west, text width=3.1cm, minimum height=1.3cm] at (\lx+6.8,0.1)
+      {RegressionTM\\[1pt]\scriptsize positive clauses,\\\scriptsize $v\in[0,T]$ to target};
+    \node[ttnode, anchor=north west, text width=3.9cm, minimum height=1.3cm, fill=ttamber!22, draw=ttamber]
+      at (\lx+10.35,0.1)
+      {\textbf{\_ConvMixin}\\[1pt]\scriptsize patch encode, OR over patches,\\
+       \scriptsize random matching patch per event};
+    \node[ttlabel, anchor=north west, text width=13.9cm] at (\lx+0.2,-1.60)
+      {\textcolor{ttorange}{$\Rightarrow$} mixing gives
+       \code{ConvTsetlinMachine}, \code{ConvCoalescedTsetlinMachine},
+       \code{ConvRegressionTsetlinMachine}, \code{Conv1dTsetlinMachine} --- one mix-in,
+       four convolutional models, no duplicated learning code.};
+  \end{scope}
+
+  % ---------------------------------------------------------------- layer 2
+  \begin{scope}[shift={(0,-6.05)}]
+    \draw[ttlayer] (\lx,-1.75) rectangle (\lw,0.72);
+    \node[tttitle, anchor=north west, align=left] at (\lx+0.18,0.62)
+      {\textbf{2\ \ Stateful core}\ \ \textcolor{ttgray}{\code{models/base.py :: TsetlinMachineBase(nn.Module)}}};
+    \node[ttnode, anchor=north west, text width=3.35cm] at (\lx+0.2,0.1)
+      {\textbf{state buffers}\\[1pt]\scriptsize \code{ta\_state} $(C,2F)$ int\\
+       \scriptsize \code{include}, \code{include\_count}};
+    \node[ttnode, anchor=north west, text width=3.35cm] at (\lx+3.75,0.1)
+      {\textbf{learning loop}\\[1pt]\scriptsize coerce, lazy init, chunk,\\
+       \scriptsize accumulate, commit};
+    \node[ttnode, anchor=north west, text width=3.35cm] at (\lx+7.3,0.1)
+      {\textbf{regularisation}\\[1pt]\scriptsize drop-clause,\\\scriptsize drop-literal masks};
+    \node[ttnode, anchor=north west, text width=3.35cm] at (\lx+10.85,0.1)
+      {\textbf{introspection}\\[1pt]\scriptsize clause expressions,\\\scriptsize state summary};
+  \end{scope}
+
+  % ---------------------------------------------------------------- layer 1 (bottom)
+  \begin{scope}[shift={(0,-8.30)}]
+    \draw[ttlayer] (\lx,-1.75) rectangle (\lw,0.72);
+    \node[tttitle, anchor=north west, align=left] at (\lx+0.18,0.62)
+      {\textbf{1\ \ Stateless tensor mathematics}\ \ \textcolor{ttgray}{\code{functional.py}, \code{utils.py}}%
+       \ \ \textemdash\ no state, no autograd, device-agnostic};
+    \node[ttnode plain, anchor=north west, text width=2.6cm] at (\lx+0.2,0.1)
+      {\code{to\_literals}\\\scriptsize $x \mapsto [x,\lnot x]$};
+    \node[ttnode plain, anchor=north west, text width=2.6cm] at (\lx+2.95,0.1)
+      {\code{clause\_outputs}\\\scriptsize one matmul};
+    \node[ttnode plain, anchor=north west, text width=2.6cm] at (\lx+5.7,0.1)
+      {\code{vote\_sums}\\\scriptsize $c\,W$, clipped};
+    \node[ttnode plain, anchor=north west, text width=2.85cm] at (\lx+8.45,0.1)
+      {\code{type\_i/ii\_counts}\\\scriptsize event counting};
+    \node[ttnode plain, anchor=north west, text width=2.85cm] at (\lx+11.45,0.1)
+      {\code{apply\_feedback}\\\scriptsize binomial transitions};
+  \end{scope}
+
+  % ---------------------------------------------------------------- dependency arrow
+  \draw[ttarrow, line width=1.1pt] (\lw+0.42,-10.0) -- (\lw+0.42,0.55);
+  \node[ttlabel, rotate=90, anchor=south, text=ttorange] at (\lw+0.28,-4.8) {depends on};
+
+  % PyTorch substrate
+  \node[ttnode slate, anchor=north west, text width=\lw cm, align=center] at (\lx,-10.5)
+    {\textbf{PyTorch} \textemdash\ tensors, buffers, devices, \code{state\_dict}, \code{DataLoader}, \code{torch.binomial}};
+  \draw[ttarrow, draw=ttslate] (\lw/2,-10.47) -- (\lw/2,-10.25);
+\end{tikzpicture}

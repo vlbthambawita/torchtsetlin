@@ -1,0 +1,37 @@
+% Figure: throughput vs batch size, training and inference, CPU vs GPU (MNIST-scale machine).
+\pgfplotstableread[col sep=comma]{data/batch-mnist.csv}\batchmnist
+\pgfplotstableread[col sep=comma]{data/batch-xor.csv}\batchxor
+
+\begin{tikzpicture}
+\begin{groupplot}[
+    ttaxis,
+    group style={group size=2 by 1, horizontal sep=1.45cm},
+    width=0.5\linewidth, height=5.6cm,
+    xmode=log, ymode=log,
+    log basis x=2,
+    xlabel={batch size},
+    xtick={1,4,16,64,256,1024,4096},
+    xticklabels={1,4,16,64,256,1k,4k},
+    legend pos=north west,
+  ]
+
+  % ---------------------------------------------------------------- training
+  \nextgroupplot[title={Training}, ylabel={examples / s}]
+    \addplot[ttgpu] table[x=batch, y=gpu_train] {\batchmnist};
+    \addlegendentry{GPU (RTX 3090)}
+    \addplot[ttcpu] table[x=batch, y=cpu_train] {\batchmnist};
+    \addlegendentry{CPU (16 threads)}
+    \addplot[ttthird, dashed, mark=none] table[x=batch, y=gpu_train] {\batchxor};
+    \addlegendentry{tiny machine, GPU}
+    \addplot[color=ttgray, dotted, line width=1.1pt, mark=none]
+      table[x=batch, y=cpu_train] {\batchxor};
+    \addlegendentry{tiny machine, CPU}
+
+  % ---------------------------------------------------------------- inference
+  \nextgroupplot[title={Inference}, ylabel={examples / s}]
+    \addplot[ttgpu] table[x=batch, y=gpu_infer] {\batchmnist};
+    \addlegendentry{GPU (RTX 3090)}
+    \addplot[ttcpu] table[x=batch, y=cpu_infer] {\batchmnist};
+    \addlegendentry{CPU (16 threads)}
+\end{groupplot}
+\end{tikzpicture}

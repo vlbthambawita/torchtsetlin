@@ -1,0 +1,95 @@
+\section{Limitations and future development}
+\label{sec:limitations}
+
+\subsection{Known limitations}
+
+\paragraph{Batched feedback is an approximation.}
+The default path trades fidelity for throughput, and the trade is real: at batch 200 on Noisy
+XOR the degradation is unambiguous (Section~\ref{sec:fidelity}). The exact algorithm is always
+one argument away, and the characterisation here is empirical --- there is no proof that the
+batched update converges to the same fixed point as the sequential one, and establishing the
+conditions under which it does is open work.
+
+\paragraph{Dense tensors, not bit-packed kernels.}
+Literals are floats in a matmul, not bits in a machine word. A hand-written kernel can pack 64
+literals per word and exploit clause sparsity through indexing~\ttcite{12}; \ttlibname does
+neither. The consequence is measurable and one-directional: on a \emph{small} machine on a
+CPU, the reference C implementations are faster, and \ttlibname's advantage only appears with
+model size and a GPU. The cached include mask also costs $2CF$ floats of memory that a packed
+representation would not need.
+
+\paragraph{The commit is dominated by one operation.}
+\code{torch.binomial} over the $(C,2F)$ state is 43\% of the CPU update and the single largest
+GPU kernel in the commit. It is a generic sampler being asked to do a very specific job; a
+fused kernel that samples and updates in one pass, or an approximation valid in the
+large-count regime, would move the whole library.
+
+\paragraph{Variants not implemented.}
+The Tsetlin machine literature has grown faster than any one package can follow. Absent from
+\ttlibname today: graph Tsetlin machines~\ttcite{14}, TM composites~\ttcite{20}, contracting
+machines with absorbing automata~\ttcite{24}, the sparse machine with active
+literals~\ttcite{25}, probabilistic and uncertainty-quantifying variants~\ttcite{26}, and
+autoencoders. Each of these is expressible in the current architecture --- most are an output
+layer and a feedback policy --- but none is written.
+
+\paragraph{No comparison against other implementations.}
+Section~\ref{sec:benchmarks} compares this library on a CPU against itself on a GPU. It does
+not establish how \ttlibname compares against \texttt{tmu} or the CUDA packages at matched
+configurations, on either speed or accuracy. That comparison is worth doing carefully, with
+matched Booleanization and matched hyper-parameters, and it has not been done here.
+
+\paragraph{Interpretability coverage is uneven.}
+Rule extraction, clause activity, and global importance work for every model. Local
+feature importance is weighted by literal values only for flat models; for convolutional
+models the per-example attribution is computed over clause weights and inclusion without the
+per-patch literal gating, which makes it coarser than its flat counterpart.
+
+\paragraph{Single-device, single-process.}
+There is no multi-GPU or distributed training path today.
+
+\paragraph{Early-stage API.}
+Version 0.1.x is classified alpha. The core --- \code{update}, \code{forward}, the buffer
+layout --- is stable in intent, but the surface may still move, and checkpoints are tied to
+the state layout rather than a versioned format.
+
+\subsection{Where it goes next}
+
+\paragraph{A fused feedback kernel.}
+The measurement points at exactly one target. A Triton or CUDA kernel that draws the binomial
+counts and applies the clamped update in a single pass over the state would cut the largest
+term in both the CPU and GPU profiles, and it fits the existing architecture as a drop-in
+replacement for one function in \code{functional.py}.
+
+\paragraph{Data-parallel training, almost for free.}
+This one falls out of the design. The feedback accumulator holds \emph{additive} event counts:
+combining the counts from two chunks is addition, and nothing about that changes if the chunks
+were computed on different devices. Data-parallel training over $n$ GPUs is therefore an
+all-reduce of four count tensors before a single commit --- mathematically identical to a
+single-device update at $n$ times the batch size, with no approximation introduced beyond the
+one batching already makes. The same property makes gradient-free federated training natural:
+what is exchanged is a count matrix, not a model.
+
+\paragraph{A bit-packed inference path.}
+Training benefits from dense float matmuls; inference does not need them. A packed
+representation for \code{predict} --- and an export path to the integer artefacts that the
+hardware literature~\ttcite{15,16,17} consumes --- would close the loop between this framework
+and deployment.
+
+\paragraph{More of the literature.}
+In rough order of how well each fits the current architecture: clause-size and
+sparsity-oriented variants (a feedback-policy change), TM composites (a wrapper over several
+trained machines), absorbing automata (a state-transition change in \code{apply\_feedback}),
+and graph machines (a new input structure, in the same place convolution lives).
+
+\paragraph{Validation against the reference implementations.}
+A test suite that checks \ttlibname's sequential path against the reference C implementation
+example by example, on fixed seeds, would turn ``faithful to the published algorithm'' from a
+claim into a measurement. The batched path could then be characterised as a controlled
+deviation from that baseline rather than from the literature's reported numbers.
+
+\begin{ttkey}
+The honest summary: \ttlibname wins on integration and on large-model GPU throughput, loses to
+hand-written kernels on small CPU workloads, approximates the classical algorithm by default,
+and implements a subset of a fast-moving literature. Every one of those is a stated, measured
+trade rather than a surprise waiting for a user.
+\end{ttkey}

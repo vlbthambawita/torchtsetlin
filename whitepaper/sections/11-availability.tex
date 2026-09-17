@@ -1,0 +1,97 @@
+\section{Availability}
+\label{sec:availability}
+
+\begin{center}
+\small\sffamily\sloppy
+\begin{tabularx}{\linewidth}{@{}L{3.1cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Version} & \ttversion\ (\ttdate)\\
+\ttmidrule
+\thead{Source} & \url{https://github.com/vlbthambawita/torchtsetlin}\\
+\thead{Package} & \url{https://pypi.org/project/torchtsetlin/} --- \code{pip install torchtsetlin}\\
+\thead{Documentation} & \url{https://vlbthambawita.github.io/torchtsetlin/}\\
+\thead{Licence} & MIT\\
+\ttmidrule
+\thead{Python} & 3.9, 3.10, 3.11, 3.12\\
+\thead{Required} & \code{torch >= 2.0}, \code{numpy >= 1.22} --- no compiler, no CUDA toolkit,
+  no C extension\\
+\thead{Optional extras} & \code{[viz]} matplotlib \textbar\ \code{[vision]} torchvision
+  \textbar\ \code{[sklearn]} scikit-learn \textbar\ \code{[docs]} MkDocs Material
+  \textbar\ \code{[dev]} the lot, plus pytest and ruff\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\subsection{Getting started}
+
+\begin{lstlisting}[style=ttshell]
+pip install torch          # pick the CPU or CUDA build from pytorch.org
+pip install torchtsetlin   # + optional extras: [viz] [vision] [sklearn] [all]
+\end{lstlisting}
+
+From source, with the development environment:
+
+\begin{lstlisting}[style=ttshell]
+git clone https://github.com/vlbthambawita/torchtsetlin && cd torchtsetlin
+pip install -e ".[dev]"
+pytest -q                  # the full suite
+ruff check src tests       # exactly what CI runs
+mkdocs serve               # the documentation site at localhost:8000
+\end{lstlisting}
+
+\subsection{Reproducing the measurements}
+
+Every number in Section~\ref{sec:benchmarks} comes from the driver in \code{benchmarks/}. It
+runs one suite at a time, merging its JSON after each, so a crash costs only the running
+suite, and then regenerates the figures, tables and the documentation page from those records.
+
+\begin{lstlisting}[style=ttshell]
+./benchmarks/run_benchmarks.sh                 # every suite, cpu + cuda:0 (~20-25 min)
+./benchmarks/run_benchmarks.sh --quick         # ~1 min smoke test of the pipeline
+./benchmarks/run_benchmarks.sh -s batch models # a subset
+./benchmarks/run_benchmarks.sh --plots-only    # re-render from results already on disk
+\end{lstlisting}
+
+The raw records land in \code{benchmarks/results/cpu\_vs\_gpu.json}. Replacing them with your
+own hardware's is the whole workflow --- the derived page is regenerated, not hand-edited.
+
+\subsection{Quality gates}
+
+Continuous integration runs \code{ruff} and the full test suite on Python 3.9, 3.11 and 3.12,
+then deploys the documentation on pushes to \code{main}. Releases are cut from a \code{v*}
+tag through PyPI Trusted Publishing; the release workflow re-runs the suite and smoke-imports
+the built wheel in a clean virtual environment before uploading --- a gate added after a
+\code{.gitignore} rule silently excluded a subpackage from the 0.1.0 wheel and made
+\code{import torchtsetlin} fail for everyone who installed it.
+
+\subsection{Documentation}
+
+The documentation site is MkDocs Material with \code{mkdocstrings} reading Google-style
+docstrings directly from the source, so the public API reference cannot drift from the code.
+It covers installation and a quick start; concept pages on the algorithm, Booleanization,
+batched versus sequential feedback, convolution and hyper-parameters; guides on training,
+evaluation, interpretability, visualisation, saving and extending; worked examples; and the
+generated CPU-versus-GPU benchmark page.
+
+\subsection{Citation}
+
+\begin{lstlisting}[style=ttshell,basicstyle=\ttfamily\scriptsize\color{ttink}]
+@software{torchtsetlin,
+  author = {Thambawita, Vajira},
+  title  = {torchtsetlin: GPU-enabled, PyTorch-native Tsetlin machines},
+  year   = {2026},
+  url    = {https://github.com/vlbthambawita/torchtsetlin}
+}
+\end{lstlisting}
+
+Please also cite the Tsetlin machine papers whose algorithms you rely on --- the reference
+list that follows is a reasonable starting point, and the concept pages in the documentation
+name the specific paper behind each option.
+
+\subsection{Contributing}
+
+Issues and pull requests are welcome at the repository. The most useful contributions, in
+order: a model variant from the literature implemented against the existing hooks
+(Section~\ref{sec:architecture}); a fused feedback kernel; validation against the reference
+implementations; and applications --- a worked notebook on a real dataset is worth more to the
+next user than another synthetic benchmark.

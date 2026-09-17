@@ -1,0 +1,52 @@
+% Figure: what batching costs in accuracy — Noisy XOR, 3 seeds per batch size.
+% A strip plot rather than bars: the y axis does not start at zero, and bar lengths on a
+% truncated axis would overstate the differences.
+\begin{tikzpicture}
+\begin{axis}[
+    ttaxis,
+    width=0.66\linewidth, height=5.6cm,
+    symbolic x coords={1, 10, 50, 200},
+    xtick=data,
+    xlabel={batch size \ (1 = the exact sequential algorithm)},
+    ylabel={test accuracy},
+    ymin=0.73, ymax=1.03,
+    ytick={0.75,0.80,0.85,0.90,0.95,1.00},
+    yticklabel style={/pgf/number format/fixed, /pgf/number format/zerofill,
+                      /pgf/number format/precision=2},
+    enlarge x limits=0.18,
+    legend style={at={(0.5,-0.32)}, anchor=north, legend columns=3},
+  ]
+
+  % seed-to-seed range
+  \draw[ttgray!45, line width=1.2pt] (axis cs:1,0.954)   -- (axis cs:1,0.993);
+  \draw[ttgray!45, line width=1.2pt] (axis cs:10,0.931)  -- (axis cs:10,0.993);
+  \draw[ttgray!45, line width=1.2pt] (axis cs:50,0.877)  -- (axis cs:50,0.993);
+  \draw[ttgray!45, line width=1.2pt] (axis cs:200,0.771) -- (axis cs:200,0.889);
+
+  \addplot[only marks, mark=o, mark size=2.6pt, draw=ttslate, line width=0.9pt]
+    coordinates {(1,0.954) (1,0.955) (1,0.993)
+                 (10,0.942) (10,0.993) (10,0.931)
+                 (50,0.993) (50,0.965) (50,0.877)
+                 (200,0.788) (200,0.771) (200,0.889)};
+  \addlegendentry{individual seeds}
+
+  \addplot[only marks, mark=diamond*, mark size=3.6pt, fill=ttorange, draw=ttdeep,
+           line width=0.7pt, point meta=explicit symbolic, nodes near coords,
+           nodes near coords style={font=\sffamily\scriptsize, color=ttdeep,
+                                    anchor=west, xshift=5pt}]
+    coordinates {(10,0.955) [0.955] (50,0.945) [0.945] (200,0.816) [0.816]};
+  \addlegendentry{mean of 3 seeds}
+
+  % batch 1 is labelled below-right so the label clears the reference line it defines
+  \addplot[only marks, mark=diamond*, mark size=3.6pt, fill=ttorange, draw=ttdeep,
+           line width=0.7pt, point meta=explicit symbolic, nodes near coords, forget plot,
+           nodes near coords style={font=\sffamily\scriptsize, color=ttdeep,
+                                    anchor=north west, xshift=3pt, yshift=-2pt}]
+    coordinates {(1,0.967) [0.967]};
+
+  \addplot[ttamber, dashed, line width=1.0pt, mark=none, forget plot]
+    coordinates {(1,0.967) (200,0.967)};
+  \addlegendimage{ttamber, dashed, line width=1.0pt, mark=none}
+  \addlegendentry{sequential mean}
+\end{axis}
+\end{tikzpicture}

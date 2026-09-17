@@ -1,0 +1,106 @@
+% ------------------------------------------------------------------ title page
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture, overlay]
+  % Orange band across the top of the page (text area starts 2.6cm below the page edge).
+  \fill[ttorange] (current page.north west) rectangle
+    ($(current page.north east)+(0,-10.4cm)$);
+  \fill[ttdeep] ($(current page.north west)+(0,-10.4cm)$) rectangle
+    ($(current page.north east)+(0,-10.68cm)$);
+
+  % A decorative automata grid: the learned state of a small machine, rendered in the band.
+  \begin{scope}[shift={($(current page.north east)+(-4.75cm,-1.35cm)$)}, scale=0.52,
+                every node/.style={inner sep=0pt}]
+    \foreach \r in {0,...,7}{
+      \foreach \c in {0,...,13}{
+        \pgfmathsetmacro{\v}{mod(\r*7+\c*5+int(\r*\c/2),9)}
+        \ifdim \v pt > 5.5pt
+          \fill[white, rounded corners=0.4pt] (\c,-\r) rectangle ++(0.8,0.8);
+        \else
+          \ifdim \v pt > 3.0pt
+            \fill[white, opacity=0.40, rounded corners=0.4pt] (\c,-\r) rectangle ++(0.8,0.8);
+          \else
+            \draw[white, opacity=0.28, line width=0.5pt, rounded corners=0.4pt]
+              (\c,-\r) rectangle ++(0.8,0.8);
+          \fi
+        \fi
+      }
+    }
+  \end{scope}
+\end{tikzpicture}
+
+\vspace*{0.2cm}
+{\sffamily\color{white}
+  {\fontsize{12}{14}\selectfont\bfseries WHITE PAPER}\par
+  \vspace{0.18cm}
+  {\fontsize{10}{12}\selectfont\color{ttsand} Version \ttversion\ \ \textbar\ \ \ttdate}\par
+  \vspace{1.35cm}
+  {\fontsize{40}{44}\selectfont\bfseries torchtsetlin\par}
+  \vspace{0.42cm}
+  {\fontsize{15.5}{20}\selectfont
+   A GPU-native, PyTorch-idiomatic framework\\ for Tsetlin machines\par}
+}
+
+\vspace{1.5cm}
+
+{\sffamily
+ {\large\bfseries\color{ttink} Vajira Thambawita}\par
+ \vspace{0.12em}
+ {\color{ttgray} Simula Metropolitan Center for Digital Engineering, Oslo, Norway}\par
+ {\color{ttgray} \texttt{vajira@simula.no}}\par
+}
+
+\vspace{0.85cm}
+
+\begin{tikzpicture}
+  \node[inner sep=0pt] (abs) {%
+    \begin{minipage}{0.925\linewidth}
+      \small
+      {\sffamily\bfseries\color{ttorange}Abstract.}\enspace
+      The Tsetlin machine is a propositional-logic learner: it builds classifiers out of
+      conjunctive clauses over Boolean literals, updated not by gradient descent but by
+      reward\slash penalty feedback to teams of Tsetlin automata. Its models are legible by
+      construction and its inference is bit-level cheap, which is why it has become
+      attractive for clinical decision support, edge inference and hardware accelerators.
+      Its software, however, has grown up outside the deep-learning ecosystem: the reference
+      implementations are C and CUDA kernels behind scikit-learn-shaped wrappers, each model
+      family a separate package, with no shared tensor abstraction, no common training loop
+      and no route into PyTorch tooling.
+      \par\smallskip
+      \ttlibname closes that gap. It expresses the whole Tsetlin machine family --- vanilla,
+      weighted, coalesced, regression and convolutional --- as ordinary
+      \code{torch.nn.Module} objects whose learnable state is a tensor of automaton counters.
+      A model therefore moves across devices with \code{.to(device)}, serialises with
+      \code{state\_dict()}, and learns from a mini-batch with a single \code{model.update(x,
+      y)} call that plays the role of \code{loss.backward(); optimizer.step()}. The central
+      technical contribution is a \emph{batched} formulation of Type~I\slash Type~II feedback
+      in which per-example stochastic automaton transitions are replaced by event counts
+      accumulated with two matrix products and realised as binomial draws --- one commit per
+      batch instead of one per example. On an RTX~3090 this reaches
+      $2.2\times10^{5}$~training examples\slash s and up to $273\times$ the throughput of the
+      same code on a 16-core CPU, while matching the sequential algorithm's accuracy at
+      moderate batch sizes. Around the models the package ships Booleanization encoders, a
+      Keras-style trainer with callbacks, metrics, closed-form global and local
+      interpretability, and visualisation --- everything a Tsetlin machine workflow needs, in
+      one PyTorch-shaped package.
+    \end{minipage}};
+  \begin{scope}[on background layer]
+    \draw[ttorange!35, line width=0.8pt, rounded corners=4pt, fill=ttsand]
+      ($(abs.north west)+(-1.1em,0.95em)$) rectangle ($(abs.south east)+(1.1em,-0.95em)$);
+  \end{scope}
+\end{tikzpicture}
+
+\vfill
+
+{\sffamily\scriptsize\color{ttgray}
+ \setlength{\parskip}{0.15em}
+ \textcolor{ttorange}{\rule[0.25em]{2.2em}{1.6pt}}\par
+ \textbf{Software:} \ttlibname \ttversion\ \ \textbar\ \ MIT licence \ \textbar\ \
+ \texttt{pip install torchtsetlin}\par
+ \textbf{Code:} \url{https://github.com/vlbthambawita/torchtsetlin} \ \ \textbar\ \
+ \textbf{Docs:} \url{https://vlbthambawita.github.io/torchtsetlin/}\par
+ \textbf{Measurements} in Section~\ref{sec:benchmarks} were produced by the benchmark driver
+ shipped with the repository (\texttt{benchmarks/run\_benchmarks.sh}) and can be reproduced on
+ other hardware with one command.\par
+}
+\end{titlepage}

@@ -1,0 +1,48 @@
+% Figure: where one update() call spends its time, CPU vs GPU.
+% A dot plot rather than bars: on a log axis a bar's length depends on the chosen origin,
+% which would be misleading here. The connecting line is the CPU-GPU gap.
+\begin{tikzpicture}
+\begin{axis}[
+    ttaxis,
+    width=0.74\linewidth, height=6.6cm,
+    xmode=log,
+    xmin=0.015, xmax=4000,
+    xtick={0.1,1,10,100,1000},
+    xticklabels={0.1,1,10,100,1000},
+    xlabel={milliseconds per \code{update()} call (log scale)},
+    symbolic y coords={{apply feedback}, {accumulator alloc}, {feedback counts},
+                       {refresh include}, {votes + select}, evaluate, encode},
+    ytick=data,
+    enlarge y limits=0.13,
+    ymajorgrids=false,
+    legend style={at={(0.5,1.14)}, anchor=north, legend columns=2},
+  ]
+
+  % CPU-to-GPU gap for each stage
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.035,encode)               -- (axis cs:0.078,encode);
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.207,evaluate)             -- (axis cs:5.183,evaluate);
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.474,{votes + select})     -- (axis cs:7.437,{votes + select});
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.266,{refresh include})    -- (axis cs:14.493,{refresh include});
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.660,{feedback counts})    -- (axis cs:14.229,{feedback counts});
+  \draw[ttgray!35, line width=1.1pt] (axis cs:0.113,{accumulator alloc})  -- (axis cs:15.490,{accumulator alloc});
+  \draw[ttgray!35, line width=1.1pt] (axis cs:1.166,{apply feedback})     -- (axis cs:575.332,{apply feedback});
+
+  \addplot[only marks, mark=square*, mark size=2.6pt, draw=ttslate, fill=ttslatel,
+           point meta=explicit symbolic, nodes near coords,
+           nodes near coords style={font=\sffamily\tiny, color=ttslate, anchor=west, xshift=3pt}]
+    coordinates {
+      (0.078,encode) [0.08] (5.183,evaluate) [5.18] (7.437,{votes + select}) [7.44]
+      (14.493,{refresh include}) [14.49] (14.229,{feedback counts}) [14.23]
+      (15.490,{accumulator alloc}) [15.49] (575.332,{apply feedback}) [575.3]};
+  \addlegendentry{CPU, 16 threads}
+
+  \addplot[only marks, mark=*, mark size=2.6pt, draw=ttdeep, fill=ttorange,
+           point meta=explicit symbolic, nodes near coords,
+           nodes near coords style={font=\sffamily\tiny, color=ttdeep, anchor=east, xshift=-3pt}]
+    coordinates {
+      (0.035,encode) [0.04] (0.207,evaluate) [0.21] (0.474,{votes + select}) [0.47]
+      (0.266,{refresh include}) [0.27] (0.660,{feedback counts}) [0.66]
+      (0.113,{accumulator alloc}) [0.11] (1.166,{apply feedback}) [1.17]};
+  \addlegendentry{GPU, RTX 3090}
+\end{axis}
+\end{tikzpicture}

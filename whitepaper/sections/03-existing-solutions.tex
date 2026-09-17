@@ -1,0 +1,101 @@
+\section{Existing solutions and what they leave open}
+\label{sec:existing}
+
+\subsection{The landscape}
+
+Tsetlin machine software has been developed almost entirely by the research groups that
+developed the algorithms, and it reflects that origin: each implementation is organised
+around a kernel that is fast and faithful to one paper, with a thin Python surface on top.
+
+\paragraph{Reference CPU implementations.}
+The canonical Python packages (\texttt{pyTsetlinMachine} and successors) implement the
+machine in C and expose it through a wrapper offering
+\code{fit}\slash\code{predict}\slash\code{transform}, one class per published variant
+(multi-class, convolutional, regression, weighted). They are the semantic ground truth for
+the algorithm and remain the reference any other implementation should be checked against.
+
+\paragraph{CUDA implementations.}
+\texttt{PyTsetlinMachineCUDA} and its relatives move the same algorithm into hand-written
+CUDA kernels, typically compiled at import time through PyCUDA. They demonstrated that the
+Tsetlin machine \emph{can} be run at scale on a GPU --- but as a separate package with a
+separate class hierarchy, so a project that needs both CPU and GPU maintains two code paths.
+
+\paragraph{Unified architectures.}
+More recent work (the Tsetlin Machine Unified project, \texttt{tmu}) factors the machine into
+reusable components --- clause banks, weight banks --- so that new variants can be assembled
+rather than rewritten, with CPU and optional CUDA backends behind one interface. This is the
+closest in spirit to \ttlibname: a shared substrate instead of a family of one-off programs.
+The substrate, however, is a custom C\slash CUDA layer rather than a tensor library, so the
+interoperability question below is unchanged.
+
+\paragraph{Specialised and third-party work.}
+Beyond these sit dedicated packages for particular variants (graph Tsetlin
+machines~\ttcite{14}, sparse and coalesced CUDA machines), community ports in Rust, Julia, Go
+and JavaScript, and a growing hardware literature --- FPGA and ASIC inference engines,
+asynchronous logic designs and in-memory computing
+architectures~\ttcite{15,16,17} --- which target deployment rather than research iteration.
+
+\subsection{The gap}
+
+None of this is a criticism of the implementations on their own terms; they are fast, they
+are correct, and several of them predate the workflows described here. The gap is structural,
+and it has four parts.
+
+\begin{enumerate}[leftmargin=1.4em, itemsep=0.3em, topsep=0.35em]
+  \item \textbf{No shared tensor abstraction.} The learned state lives in a private C or CUDA
+    buffer. It cannot be inspected, sliced, masked, moved or saved with the tools a PyTorch
+    user already has; every such operation needs an accessor written for it.
+  \item \textbf{Device transfer is a packaging decision, not a runtime one.} Which device a
+    model runs on is chosen by which package was imported, so CPU debugging and GPU training
+    are different code paths rather than \code{.to("cpu")} and \code{.to("cuda")}.
+  \item \textbf{The data path leaves the framework.} Booleanized batches are NumPy arrays on
+    the host. A pipeline that already has its data on the GPU --- the normal case when the
+    Tsetlin machine is being compared against, or combined with, a neural network --- pays a
+    round trip in both directions.
+  \item \textbf{Extension means writing a kernel.} Trying a modified feedback rule, an
+    alternative negative-sampling scheme or a new output layer requires C or CUDA, which puts
+    the experiment out of reach of most of the people who want to run it.
+\end{enumerate}
+
+\begin{table}[t]
+\centering
+\small\sffamily\sloppy
+\caption{Structural comparison of implementation approaches. \yes\ available,
+  \partialsup\ partial or variant-specific, \no\ not applicable to the design. The table
+  compares \emph{integration properties}, not accuracy or peak kernel speed; no head-to-head
+  benchmark against other packages was run for this paper (Section~\ref{sec:limitations}).}
+\label{tab:landscape}
+\begin{tabularx}{\linewidth}{@{}L{4.5cm}C{1.75cm}C{1.65cm}C{1.75cm}>{\centering\arraybackslash}X@{}}
+\ttoprule
+& \thead{Reference} & \thead{CUDA} & \thead{Unified} & \\
+\thead{Property} & \thead{C packages} & \thead{packages} & \thead{C\slash CUDA} & \thead{\ttlibname}\\
+\ttmidrule
+Learned state is a framework tensor      & \no  & \no  & \no  & \yes\\
+\code{.to(device)} moves the model       & \no  & \no  & \partialsup & \yes\\
+Same code path on CPU and GPU            & \no  & \no  & \partialsup & \yes\\
+\code{state\_dict()} checkpointing       & \no  & \no  & \no  & \yes\\
+Consumes \code{Dataset}\slash\code{DataLoader} & \no & \no & \no & \yes\\
+Accepts device-resident input            & \no  & \partialsup & \partialsup & \yes\\
+New variant without compiled code        & \no  & \no  & \partialsup & \yes\\
+Booleanization encoders included         & \partialsup & \partialsup & \yes & \yes\\
+Training loop with callbacks             & \no  & \no  & \no  & \yes\\
+Interpretability utilities               & \partialsup & \partialsup & \yes & \yes\\
+Plotting utilities                       & \no  & \no  & \partialsup & \yes\\
+Requires a C\slash CUDA toolchain        & \yes & \yes & \yes & \no\\
+Hand-tuned bit-packed kernels            & \yes & \yes & \yes & \no\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+Table~\ref{tab:landscape} summarises this. The last row is deliberate and cuts the other way:
+a hand-written kernel can pack literals into machine words and exploit clause sparsity in
+ways a generic tensor library cannot, so for a small machine on a CPU the reference
+implementations remain the faster choice. \ttlibname trades that per-operation efficiency for
+parallel width and for integration --- a trade that pays exactly when the machine is large
+and a GPU is present, and that is quantified in Section~\ref{sec:benchmarks}.
+
+\begin{ttkey}
+The algorithms are well served; the \emph{workflow} is not. What has been missing is a
+Tsetlin machine that behaves like every other model in a modern Python stack --- which means
+building it on a tensor library rather than beside one.
+\end{ttkey}

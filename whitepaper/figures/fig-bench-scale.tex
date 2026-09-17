@@ -1,0 +1,36 @@
+% Figure: how the GPU advantage grows with model size (clause budget and feature count).
+\pgfplotstableread[col sep=comma]{data/clauses.csv}\clausetbl
+\pgfplotstableread[col sep=comma]{data/features.csv}\featuretbl
+
+\begin{tikzpicture}
+\begin{groupplot}[
+    ttaxis,
+    group style={group size=2 by 1, horizontal sep=1.45cm},
+    width=0.5\linewidth, height=5.6cm,
+    xmode=log, log basis x=2,
+    ymin=0, ymax=320,
+    ylabel={GPU speedup over CPU ($\times$)},
+    legend pos=north west,
+  ]
+
+  \nextgroupplot[title={Clause budget}, xlabel={clauses per class},
+                 xtick={50,100,250,500,1000,2000,4000},
+                 xticklabels={50,100,250,500,1k,2k,4k}]
+    \addplot[ttgpu] table[x=clauses, y=train_speedup] {\clausetbl};
+    \addlegendentry{training}
+    \addplot[color=ttdeep, dashed, mark=triangle*, mark size=2.2pt, line width=1.1pt,
+             mark options={fill=ttamber, draw=ttdeep, solid}]
+      table[x=clauses, y=infer_speedup] {\clausetbl};
+    \addlegendentry{inference}
+
+  \nextgroupplot[title={Feature count}, xlabel={Boolean features},
+                 xtick={128,256,512,1024,2048,4096,8192},
+                 xticklabels={128,256,512,1k,2k,4k,8k}]
+    \addplot[ttgpu] table[x=features, y=train_speedup] {\featuretbl};
+    \addlegendentry{training}
+    \addplot[color=ttdeep, dashed, mark=triangle*, mark size=2.2pt, line width=1.1pt,
+             mark options={fill=ttamber, draw=ttdeep, solid}]
+      table[x=features, y=infer_speedup] {\featuretbl};
+    \addlegendentry{inference}
+\end{groupplot}
+\end{tikzpicture}

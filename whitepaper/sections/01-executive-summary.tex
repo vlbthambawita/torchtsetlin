@@ -1,0 +1,93 @@
+\section{Executive summary}
+\label{sec:summary}
+
+\begin{ttcallout}[How to read this document]
+Sections \ref{sec:summary}--\ref{sec:library} state the problem and what the library offers;
+a reader who only wants to know \emph{whether} to use \ttlibname can stop after
+Section~\ref{sec:library}. Sections \ref{sec:architecture}--\ref{sec:usage} are the
+engineering core: architecture, the batched learning algorithm, and the API as it is actually
+used. Section~\ref{sec:benchmarks} reports measured performance, and
+Sections~\ref{sec:applications}--\ref{sec:availability} cover applications, known limits and
+where to get the code.
+\end{ttcallout}
+
+\ttlibname is an open-source Python package that implements the Tsetlin machine family as
+first-class PyTorch modules. A Tsetlin machine learns \emph{propositional rules} --- clauses
+such as \code{IF x0 AND NOT x1 THEN class 1} --- using teams of Tsetlin automata driven by
+reward and penalty signals rather than gradients~\ttcite{1}. The resulting model is not
+merely explainable after the fact; the model \emph{is} the explanation, and evaluating it
+costs a conjunction over included literals plus a vote count.
+
+The problem \ttlibname addresses is not the algorithm, which is well established, but its
+software. Tsetlin machine implementations have historically been standalone C or CUDA kernels
+wrapped in scikit-learn-shaped Python classes. That design serves a benchmark script well and
+serves a research workflow badly: models do not move between devices the way the rest of a
+practitioner's stack does, they do not serialise like other models, they do not consume a
+\code{DataLoader}, and extending them means writing a kernel rather than a few lines of
+tensor code.
+
+\ttlibname takes the opposite starting point. The learnable state --- one integer counter per
+(clause, literal) pair --- is a \code{torch} buffer inside an \code{nn.Module}. Everything
+else follows from that decision:
+
+\begin{itemize}[leftmargin=1.25em, itemsep=0.25em, topsep=0.35em]
+  \item \textbf{One line to learn.} \code{model.update(x, y)} is the analogue of
+    \code{loss.backward(); optimizer.step()}. It returns the pre-update vote sums, so a
+    training loop gets batch metrics without a second forward pass.
+  \item \textbf{One line to move.} \code{model.to("cuda")} moves the automata; there is no
+    separate device build, no kernel recompilation and no host round-trip through NumPy.
+  \item \textbf{Everything else is PyTorch.} \code{state\_dict()}, \code{load\_state\_dict()},
+    \code{DataLoader}, \code{Dataset}, hooks, \code{torch.compile} and profiling all work
+    because there is nothing non-standard to work around.
+  \item \textbf{Batched feedback.} The learning update is reformulated so that a mini-batch
+    is consumed in a handful of tensor operations rather than one stochastic pass per
+    example. This is what makes GPU execution worthwhile (Section~\ref{sec:batched}).
+  \item \textbf{A complete workflow.} Booleanization encoders, a Keras-style
+    \code{Trainer} with callbacks, metrics, rule extraction, closed-form feature importance
+    and plotting ship in the same package.
+\end{itemize}
+
+\subsection*{At a glance}
+
+Table~\ref{tab:glance} is the whole package in one view.
+
+\begin{center}
+\small\sffamily\sloppy
+\captionof{table}{\ttlibname at a glance.}
+\label{tab:glance}
+\begin{tabularx}{\linewidth}{@{}L{2.45cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Models} & \clsname{TsetlinMachine} (multi-class, optional integer clause weights),
+  \clsname{CoalescedTsetlinMachine} (shared clause pool; multi-class or multi-label),
+  \clsname{RegressionTsetlinMachine}, and convolutional variants
+  \clsname{ConvTsetlinMachine}, \clsname{ConvCoalescedTsetlinMachine},
+  \clsname{ConvRegressionTsetlinMachine}, \clsname{Conv1dTsetlinMachine}\\
+\ttmidrule
+\thead{Learning} & vote margin $T$, specificity $s$, memory depth $N$, boosted true-positive
+  feedback, clause-size constraint, drop-clause\slash drop-literal, focused negative
+  sampling, batched or exact sequential feedback\\
+\ttmidrule
+\thead{Data} & thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer and
+  hypervector encoders; synthetic datasets; torchvision helpers\\
+\ttmidrule
+\thead{Training} & \clsname{Trainer} over tensors\slash\code{Dataset}\slash\code{DataLoader};
+  early stopping, checkpoints, CSV logging, hyper-parameter schedules, \clsname{History}\\
+\ttmidrule
+\thead{Interpretation} & rule extraction, clause activity and precision, closed-form global
+  and local feature importance, per-example explanations\\
+\ttmidrule
+\thead{Peak measured} & $2.20\times10^{5}$ training examples\slash s and
+  $1.05\times10^{6}$ inference examples\slash s (RTX~3090, 784 features, 500
+  clauses\slash class); up to $273\times$ a 16-core CPU on the same code\\
+\ttmidrule
+\thead{Footprint} & pure Python + PyTorch $\ge$ 2.0 and NumPy; no compiler, no CUDA
+  toolkit, no C extension; Python 3.9--3.12; MIT licence\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\begin{ttkey}
+A Tsetlin machine is a matrix of small integers updated by counting events. Once that is
+said in tensors instead of in C, the algorithm inherits the entire PyTorch ecosystem for
+free --- and a GPU turns a 114-second MNIST epoch into a 1.5-second one.
+\end{ttkey}

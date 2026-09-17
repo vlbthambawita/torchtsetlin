@@ -1,0 +1,332 @@
+\section{Technical design}
+\label{sec:design}
+
+This section states the algorithm as \ttlibname implements it. The notation throughout:
+$B$ examples per batch, $F$ Boolean features, $2F$ literals, $C$ clauses, $K$ outputs,
+$N$ automaton states per action, $s$ specificity, $T$ vote margin.
+
+\subsection{Representation}
+
+An example is a Boolean vector $x \in \{0,1\}^F$. Its \emph{literal vector} is
+$L(x) = [x, \lnot x] \in \{0,1\}^{2F}$. Every (clause, literal) pair owns a Tsetlin automaton
+whose state $\theta_{jk} \in \{0,\dots,2N-1\}$ decides membership:
+
+\[
+  \mathrm{include}_{jk} \;=\; \mathbb{1}\!\left[\theta_{jk} \ge N\right],
+  \qquad
+  c_j(x) \;=\; \bigwedge_{k \,:\, \mathrm{include}_{jk}} L_k(x).
+\]
+
+The whole learned state is therefore one integer matrix $\theta \in \mathbb{Z}^{C \times 2F}$
+--- in \ttlibname, the \code{int32} buffer \code{ta\_state}. Two derived, non-persistent
+buffers cache the include mask as floats and the per-clause literal count; anything that
+mutates $\theta$ refreshes them, including \code{load\_state\_dict}.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.95\linewidth}{!}{\input{figures/fig-automaton}}
+\caption{One Tsetlin automaton. The state line is split at $N$: below it the literal is
+  forgotten, at or above it the literal is included in the clause. Deep states are hard to
+  dislodge, states near the boundary flip easily --- this is the memory that makes the
+  machine robust to noisy examples.}
+\label{fig:automaton}
+\end{figure}
+
+\subsection{Inference is two matrix products}
+\label{sec:inference}
+
+A conjunction is awkward to vectorise directly, but its negation is a sum. A clause fails on
+an example exactly when it includes at least one literal that is False, so
+
+\[
+  \mathrm{violations} \;=\; (1 - L)\, \mathrm{include}^{\!\top} \in \mathbb{R}^{B\times C},
+  \qquad
+  c_j(x_b) \;=\; \mathbb{1}\!\left[\mathrm{violations}_{bj} = 0\right].
+\]
+
+One dense matrix product evaluates every clause on every example. The vote sums are a second
+product, $v = c\,W$, clipped to $[-T, T]$, where $W \in \mathbb{Z}^{C\times K}$ holds the
+signed clause weights. Prediction is $\hat y = \arg\max_k v_k$.
+
+\begin{ttcallout}[Empty clauses are mode-dependent --- and this is not a detail]
+A clause with no included literals has zero violations, so the formula above makes it match
+\emph{everything}. That is correct while learning: a fresh clause must fire in order to
+receive the Type~Ia feedback that gives it its first literal. It is wrong at prediction time,
+where an empty clause should vote for nothing. \ttlibname keys this off \code{self.training},
+exactly like \code{nn.Dropout}, so \code{model.eval()} is required before measuring accuracy
+--- forgetting it silently changes predictions rather than raising. The behaviour is pinned
+by tests.
+\end{ttcallout}
+
+\subsection{The feedback policy}
+
+For a labelled example the machine decides, per clause, whether to give Type~I feedback
+(make the clause recognise this example), Type~II feedback (make it stop matching), or
+nothing. The decision is probabilistic in the vote margin: the target class receives
+feedback with probability $(T - v_y)/2T$ and a sampled negative class with probability
+$(T + v_q)/2T$. Once a class already wins by $T$ votes its clauses stop being updated, which
+frees them to specialise elsewhere --- the resource-allocation mechanism at the heart of the
+algorithm~\ttcite{1}.
+
+Each model differs only in how votes are formed and who receives which feedback
+(Table~\ref{tab:policies}). Everything below that line is shared.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{Output layer and feedback policy per model. This table \emph{is} the difference
+  between the model classes; the learning machinery underneath is identical.}
+\label{tab:policies}
+\begin{tabularx}{\linewidth}{@{}L{3.5cm}L{4.15cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Model} & \thead{Vote sums} & \thead{Who receives what}\\
+\ttmidrule
+\clsname{TsetlinMachine} &
+  $v_k=\sum_{j\in\text{pos}(k)} w_jc_j-\sum_{j\in\text{neg}(k)} w_jc_j$ &
+  target class: Type~I to positive, Type~II to negative clauses; one random negative class:
+  the reverse\\
+\clsname{CoalescedTsetlinMachine} &
+  $v = c\,W$, $W\in\mathbb{Z}^{C\times K}$ &
+  per output, Type~I when the weight sign agrees with the target and Type~II when it does
+  not; weights move by $\pm1$, so a clause can change sides\\
+\clsname{RegressionTsetlinMachine} &
+  $v=\sum_j w_jc_j$ clipped to $[0,T]$, mapped to $[y_{\min},y_{\max}]$ &
+  Type~I with probability $(v^\star-v)/T$ when the prediction is too low, Type~II with
+  $(v-v^\star)/T$ when too high\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+Two refinements are available on the classifiers. \emph{Integer clause weights} (the weighted
+TM~\ttcite{3}) let one clause count for many, which is what makes large convolutional
+machines tractable: Type~Ia increments a clause's weight, Type~II decrements it.
+\emph{Focused negative sampling} draws the negative class in proportion to how strongly it
+currently votes rather than uniformly, so the machine corrects the classes it actually
+confuses first --- worth having when $K$ is large.
+
+\subsection{Batched feedback: the core reformulation}
+\label{sec:batched}
+
+The classical algorithm applies feedback one example at a time, re-evaluating the clauses in
+between. Each step draws random numbers for the whole $(C, 2F)$ state and writes it back. For
+a machine with 5\,000 clauses over 784 features that is a 7.8-million-element stochastic pass
+\emph{per training example} --- on a GPU, a sequence of small kernels with nothing to
+parallelise across.
+
+\ttlibname reformulates the update around a simple observation: \emph{every stochastic
+decision in Type~I feedback is an independent Bernoulli trial with a state-independent
+probability}. Memorisation happens with probability $p_{\text{mem}} = (s-1)/s$ (or $1$ with
+boosted true positives), forgetting with probability $1/s$. Whether a particular
+(clause, literal) automaton is offered such a trial depends only on which feedback events the
+batch produced --- not on the automaton's own state. So the trials can be \emph{counted}
+first and \emph{sampled} once.
+
+Let $S_{\mathrm{I}}, S_{\mathrm{II}} \in \{0,1\}^{B\times C}$ mark which (example, clause)
+pairs receive Type~I and Type~II feedback among the clauses that \emph{matched}, and
+$S_{\mathrm{I}}^{\text{nofire}}$ those that received Type~I without matching. Then, with
+$L \in \{0,1\}^{B\times 2F}$ the batch literal matrix:
+
+\begin{align}
+  n^{\text{true}} &= S_{\mathrm{I}}^{\!\top} L, &
+  n^{\text{false}} &= S_{\mathrm{I}}^{\!\top} (1 - L), \\
+  n^{\text{Ib}}_j &= \textstyle\sum_b S^{\text{nofire}}_{\mathrm{I}}[b,j], &
+  n^{\text{II}} &= S_{\mathrm{II}}^{\!\top} (1 - L).
+\end{align}
+
+Four count tensors, obtained from two matrix products and a column sum. The transition then
+follows in closed form:
+
+\begin{equation}
+  \Delta \;=\; \underbrace{\mathrm{Bin}\!\left(n^{\text{true}},\, p_{\text{mem}}\right)}_{\text{Type Ia memorise}}
+  \;-\; \underbrace{\mathrm{Bin}\!\left(n^{\text{false}} + n^{\text{Ib}},\, \tfrac{1}{s}\right)}_{\text{Type Ia forget } + \text{ Type Ib}}
+  \;+\; \underbrace{\min\!\left(n^{\text{II}},\, N - \theta\right)}_{\text{Type II, bounded at the boundary}},
+  \label{eq:delta}
+\end{equation}
+
+and $\theta \leftarrow \mathrm{clip}(\theta + \Delta,\, 0,\, 2N-1)$. The two forgetting
+sources merge because both are Bernoulli$(1/s)$ trials and a sum of independent Bernoulli
+trials with equal probability is binomial. Type~II is deterministic, and the $\min$ reproduces
+a property of the sequential algorithm exactly: an excluded False literal is pushed towards
+inclusion one step at a time, but once it crosses the boundary the clause no longer matches
+and receives no further Type~II events in that update.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-batched}}
+\caption{The reformulation. The sequential algorithm (A) performs one stochastic $(C,2F)$
+  pass per example. The batched algorithm (B) accumulates the same events as counts and
+  realises them in a single binomial draw per batch. Cost per update becomes almost
+  independent of $B$, which is exactly the property a GPU rewards.}
+\label{fig:batched}
+\end{figure}
+
+\paragraph{What is exact and what is not.}
+At $B = 1$ Equation~\eqref{eq:delta} reduces to the classical algorithm term by term. For
+$B > 1$ it is an approximation in precisely the sense mini-batch SGD approximates SGD: the
+examples within a batch do not see each other's updates. Two secondary effects follow ---
+an automaton can move by more than one step in a commit, and the Type~II bound is evaluated
+against the state at commit time rather than after each event. Section~\ref{sec:fidelity}
+measures what this costs. For work where fidelity matters more than throughput,
+\code{feedback\_mode="sequential"} (or \code{update(..., sequential=True)}) runs the exact
+per-example algorithm, still vectorised across clauses and literals.
+
+\begin{ttcallout}[A design decision that measurement reversed]
+An obvious refinement is to \emph{thin} the accumulated events --- to cap how many Type~Ia or
+Type~II events one clause may contribute per batch, on the grounds that the sequential
+algorithm would have re-evaluated in between and delivered fewer. This was implemented and
+measured; it made learning distinctly worse. Aggregating all events is therefore deliberate,
+not an oversight, and is documented as such in the repository so that the next person to have
+the idea finds the answer before spending a week on it.
+\end{ttcallout}
+
+\subsection{Memory as an explicit budget}
+
+Intermediates, not the model, dominate memory. \ttlibname never silently allocates a tensor
+proportional to $B$ without a bound: each model declares how many elements one example costs,
+
+\[
+  \text{flat: } 4\,(C + 2F),
+  \qquad
+  \text{convolutional: } 3PC + 2C\cdot 2F + P\cdot 2F ,
+\]
+
+where $P$ is the number of patches per image, and the base class splits the batch into chunks
+that keep the largest intermediate under \code{max\_chunk\_elements} (default $2^{27}$
+elements). Chunking never changes the result of a batched update --- accumulation is pure
+addition --- so it is purely a memory-for-nothing trade. Getting the per-example estimate
+wrong is not benign, however: an under-estimate produces many tiny chunks per batch and a
+4--20$\times$ slowdown, which is why the estimate is part of the subclass contract rather
+than a heuristic.
+
+\subsection{Convolutional machines}
+\label{sec:conv}
+
+A convolutional Tsetlin machine~\ttcite{2} lets a clause look for a pattern \emph{anywhere} in
+an image instead of memorising absolute positions. Each $k_h\times k_w$ window becomes a patch
+whose Boolean features are the $Z k_h k_w$ pixels followed --- when
+\code{position\_encoding=True} --- by thermometer-encoded window coordinates, $P_y-1$ bits
+$[y > k]$ and $P_x-1$ bits $[x > k]$. A clause is True for the image if it matches at least
+one patch, and a feedback event updates the clause from \emph{one uniformly random matching
+patch}.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-conv}}
+\caption{Convolutional evaluation. \code{unfold} produces the patch literals, one matmul
+  produces all (patch, clause) matches, and an OR over patches gives the clause output. The
+  random matching patch is drawn during \emph{feedback counting}, over selected events only.}
+\label{fig:conv}
+\end{figure}
+
+Implementation-wise this is \code{torch.nn.functional.unfold}, one matmul, and an
+\code{any} reduction. The subtlety is \emph{where} the random patch is drawn. Drawing it
+during evaluation is the obvious choice and it is wrong twice over: it costs a $(B,P,C)$
+random tensor and an \code{argmax} on \emph{every} forward pass, including pure prediction
+where the draw is discarded --- roughly $5\times$ the runtime on MNIST-sized inputs --- and it
+forces Type~Ia and Type~II to share one patch, which is incorrect for coalesced and
+multi-label models where a clause can receive both in the same update. \ttlibname therefore
+returns the per-patch match tensor as an opaque \emph{feedback context} from evaluation and
+draws inside the feedback counter, over the selected events only. Prediction is RNG-free, and
+a test pins that it stays so.
+
+The random draw itself is a small trick worth noting: for candidate mask
+$\mathrm{cand} \in \{0,1\}^{n\times P}$, \code{argmax(rand(n,P) * cand)} selects a uniformly
+random index among the ones, with no rejection loop and no gather over a variable-length list.
+
+\begin{ttcallout}[Position encoding is a modelling choice, not a default to leave alone]
+Position literals let a clause demand \emph{where} it matches. On genuinely
+translation-invariant tasks they hurt --- on the generated \code{make\_shapes} benchmark,
+accuracy oscillates between 0.5 and 0.9 with them enabled and reaches 1.000 on every seed
+with them disabled. On MNIST, where digits are centred and position is informative, they are
+worth about a point of accuracy. Check this flag before suspecting the feedback code.
+\end{ttcallout}
+
+\subsection{Booleanization}
+
+The literals are the vocabulary of every rule the machine can learn, so Booleanization is the
+most consequential modelling decision in a Tsetlin machine project --- and in practice it
+moves accuracy more than the model hyper-parameters do. \ttlibname treats encoders as
+first-class modules (Table~\ref{tab:encoders}): they are \code{nn.Module}s with a
+\code{fit}\slash\code{transform} protocol, they move to a device, they are saved in a
+\code{state\_dict}, and they compose.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{Booleanization encoders. $F$ input columns, $b$ bits per column.}
+\label{tab:encoders}
+\begin{tabularx}{\linewidth}{@{}L{4.4cm}L{2.15cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Encoder} & \thead{Output} & \thead{Use and why}\\
+\ttmidrule
+\clsname{Binarizer} & $F$ &
+  a fixed threshold per element, the original MNIST recipe (\code{pixel > 0.3})\\
+\clsname{ThermometerEncoder} & $F\!\cdot\!b$ &
+  ordinal bits $[v \ge t_1,\dots,v \ge t_b]$; two literals then express an interval
+  (\code{age>=30 AND NOT age>=50}). Thresholds by quantile, uniform width or unique value\\
+\clsname{OneHotEncoder} & $\sum_i n_i$ & one bit per category; rules read as \code{colour=red}\\
+\clsname{BitPlaneEncoder} & $F\!\cdot\!b$ & place-value bits of integers; compact codes\\
+\clsname{AdaptiveThresholdEncoder} & $F$ &
+  local Gaussian\slash mean thresholding, the standard recipe for MNIST-like images in the
+  convolutional TM literature\\
+\clsname{ColorThermometerEncoder} & $C\!\cdot\!b$ planes & per-channel thermometer for RGB\\
+\clsname{HypervectorEncoder} & $d$ &
+  sparse random hypervectors bundled with OR, optionally binding position by cyclic shift ---
+  a compact encoding for large vocabularies~\ttcite{13}\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+Encoders also carry the inverse mapping, which is what keeps rules readable. A thermometer
+encoder's \code{decode\_range} turns a clause's included bits back into an interval in the
+original units, and \code{aggregate\_literal\_importance} sums literal importances back over
+the bits of one original column.
+
+\begin{ttcallout}[A GPU bug worth documenting]
+Encoders keep their thresholds on the CPU, so handing one a CUDA tensor triggers a
+device-to-host copy. Issued with \code{non\_blocking=True} into pageable memory, such a copy
+returns \emph{before} the data lands, and the encoder thresholds stale memory --- about 40\%
+wrong bits, no error, just a quietly worse model. All coercion in \ttlibname routes through a
+helper that sets \code{non\_blocking} only for CUDA destinations. The regression test has to
+allocate on the device (\code{torch.rand(..., device=dev)}) rather than moving a host tensor
+across, or the race never occurs and the test passes vacuously.
+\end{ttcallout}
+
+\subsection{Interpretation}
+
+Three levels of explanation are available, all closed-form and all computed from the state
+rather than by probing the model.
+
+\paragraph{Rules.} \code{model.rules()} prints each non-empty clause as
+\code{IF <conjunction> THEN <class>}, with its weight where weights exist. Feature names flow
+through from the encoder, so the conjunction is in the user's vocabulary.
+
+\paragraph{Global importance.} Following~\ttcite{4}, the strength of literal $l$ for output
+$k$ is the weighted fraction of positive clauses of $k$ that include it,
+\[
+  g_k[l] \;=\; \frac{1}{m_k}\sum_{j \,:\, W_{jk} > 0} W_{jk}\,\mathrm{include}_{jl},
+  \qquad m_k = \left|\{\,j : W_{jk} > 0\,\}\right| .
+\]
+
+\paragraph{Local importance and explanations.} For one example, the same quantity restricted
+to the clauses that actually matched and to the literals that are True gives a per-example
+attribution; \code{interpret.explain} returns the matching clauses ranked by weight, which is
+an account of the prediction in the model's own terms rather than a surrogate.
+
+\subsection{Correctness}
+
+The library is tested with 44 tests, parametrised over a \code{device} fixture so that every
+device-marked test runs twice on a GPU machine. The tests that matter most are not the
+smoke tests but the semantic pins: brute-force reference implementations of clause evaluation
+and of convolutional patch semantics; the empty-clause train\slash eval asymmetry; the
+RNG-free prediction path for convolutional models; the encoder device-transfer race described
+above; and a packaging test asserting that the version agrees between
+\code{pyproject.toml} and \code{\_\_init\_\_.py} and that every subpackage ships in the wheel
+--- which exists because a \code{.gitignore} rule once silently excluded
+\code{torchtsetlin/data} from a release.
+
+\begin{ttkey}
+Clause evaluation is a matmul against the include mask; learning is event counting plus one
+binomial draw per commit. Those two identities are the whole library: everything else ---
+models, convolution, chunking, the trainer --- is organisation around them.
+\end{ttkey}

@@ -1,0 +1,62 @@
+% Figure: one Tsetlin automaton — the state line, the include boundary, and the transitions.
+\begin{tikzpicture}[font=\sffamily\small]
+
+  \def\cw{1.12}   % cell width
+
+  % ---------------------------------------------------------------- the state line
+  \foreach \i in {0,...,11}{
+    \pgfmathsetmacro{\x}{\i*\cw}
+    \ifnum\i<6
+      \node[draw=ttgray!50, fill=white, minimum width=\cw cm, minimum height=0.8cm,
+            inner sep=0pt, anchor=south west, font=\small] at (\x,0) {\i};
+    \else
+      \pgfmathtruncatemacro{\shade}{18+8*(\i-6)}
+      \node[draw=ttdeep!60, fill=ttorange!\shade,
+            minimum width=\cw cm, minimum height=0.8cm,
+            inner sep=0pt, anchor=south west, font=\small] at (\x,0) {\i};
+    \fi
+  }
+
+  % ---------------------------------------------------------------- boundary
+  \draw[ttdeep, line width=1.6pt] (6*\cw,-0.18) -- (6*\cw,1.28);
+  \node[tttitle, anchor=south, font=\sffamily\bfseries\small, text=ttdeep]
+    at (6*\cw,1.32) {include boundary $N$};
+
+  % ---------------------------------------------------------------- motion arrows
+  \draw[ttarrow, line width=1.1pt] (1.6*\cw,1.62) -- (3.4*\cw,1.62);
+  \node[ttlabel, anchor=south, text=ttorange, font=\sffamily\small]
+    at (2.5*\cw,1.64) {memorise $+1$};
+  \draw[ttarrow, line width=1.1pt, draw=ttslate] (10.4*\cw,1.62) -- (8.6*\cw,1.62);
+  \node[ttlabel, anchor=south, text=ttslate, font=\sffamily\small]
+    at (9.5*\cw,1.64) {forget $-1$};
+
+  % ---------------------------------------------------------------- init marker
+  \draw[ttarrow, draw=ttslate] (5.5*\cw,2.95) -- (5.5*\cw,0.88);
+  \node[ttlabel, anchor=south, text=ttslate, align=center, font=\sffamily\small]
+    at (5.5*\cw,2.98) {automata start at $N-1$ --- \emph{about to be memorised, currently forgotten}};
+
+  % ---------------------------------------------------------------- half labels
+  \node[ttlabel, anchor=north, text width=5.6cm, align=center, font=\sffamily\small] at (3*\cw,-0.28)
+    {\textbf{excluded}: the literal is \emph{forgotten}, states $0 \dots N-1$};
+  \node[ttlabel, anchor=north, text width=5.6cm, align=center, text=ttdeep, font=\sffamily\small] at (9*\cw,-0.28)
+    {\textbf{included}: the literal is \emph{memorised}, states $N \dots 2N-1$};
+
+  % ---------------------------------------------------------------- transitions
+  \begin{scope}[shift={(0,-2.55)}]
+    \node[ttnode, anchor=north west, text width=3.65cm] (ia) at (0,0)
+      {\textbf{Type Ia} \textemdash\ \emph{Recognize}\\[2pt]
+       \scriptsize the clause matched: True literals $+1$ with probability
+       $\frac{s-1}{s}$ (or $1$ when boosted), False literals $-1$ with probability $\frac{1}{s}$};
+    \node[ttnode, anchor=north west, text width=3.65cm] (ib) at (4.55,0)
+      {\textbf{Type Ib} \textemdash\ \emph{Erase}\\[2pt]
+       \scriptsize the clause did not match: every literal $-1$ with probability $\frac{1}{s}$};
+    \node[ttnode, anchor=north west, text width=3.65cm] (ii) at (9.1,0)
+      {\textbf{Type II} \textemdash\ \emph{Reject}\\[2pt]
+       \scriptsize the clause matched an example of another class: excluded False literals
+       $+1$, deterministically, never past $N$};
+  \end{scope}
+
+  \draw[ttarrow] (2.0,-1.55) -- (2.0,-2.5);
+  \draw[ttarrow] (6.55,-1.55) -- (6.55,-2.5);
+  \draw[ttarrow] (11.1,-1.55) -- (11.1,-2.5);
+\end{tikzpicture}

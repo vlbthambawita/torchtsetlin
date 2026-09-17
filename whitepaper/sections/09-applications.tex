@@ -1,0 +1,107 @@
+\section{Applications}
+\label{sec:applications}
+
+\subsection{What ships with the library}
+
+The repository includes eight runnable example scripts and five worked notebooks, chosen so
+that each one demonstrates a different part of the design rather than a different dataset.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{Worked applications shipped with \ttlibname. Timings are for the default arguments
+  on an RTX~3090.}
+\label{tab:examples}
+\begin{tabularx}{\linewidth}{@{}L{3.9cm}L{4.55cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Example} & \thead{Model} & \thead{What it shows}\\
+\ttmidrule
+\code{noisy\_xor.py} & \clsname{TsetlinMachine} &
+  the benchmark of the original paper; recovers the generating rule under 40\% label noise\\
+\code{tabular\_breast\_cancer.py} & \clsname{TsetlinMachine} &
+  thermometer encoding of clinical measurements, rules printed in the original units\\
+\code{regression\_sine.py} & \clsname{RegressionTsetlinMachine} &
+  a Tsetlin machine that emits a number\\
+\code{mnist\_flat.py} & \clsname{TsetlinMachine} &
+  784 pixels as flat features, checkpoints, classification report\\
+\code{shapes\_conv.py} & \clsname{ConvTsetlinMachine} &
+  1.000 test accuracy on every seed tried against 0.55--0.91 for a flat machine with the same
+  clause budget --- and what \code{position\_encoding} costs on a translation-invariant task\\
+\code{conv1d\_ramps.py} & \clsname{Conv1dTsetlinMachine} &
+  0.996 on noisy 1-D signals; the clauses print as the ramp they detect\\
+\code{conv\_regression\_blobs.py} & \clsname{ConvRegressionTsetlinMachine} &
+  reading a continuous quantity (a square's side length) off an image: MAE 0.20, $R^2$ 0.96\\
+\code{mnist\_conv.py} & \clsname{ConvTsetlinMachine}, \clsname{ConvCoalescedTsetlinMachine} &
+  0.979 with 200 clauses per class; 0.985 with \code{-{}-coalesced -{}-clauses 1000 -{}-T 500},
+  in less time\\
+\ttmidrule
+\multicolumn{3}{@{}l@{}}{\emph{notebooks}}\\
+Iris & \clsname{TsetlinMachine} & a rule set small enough to read in full\\
+MNIST, CIFAR-10 & convolutional & clause patches, colour Booleanization, GPU throughput\\
+Convolutional regression & \clsname{ConvRegressionTsetlinMachine} & working through the C-RTM segmentation literature~\ttcite{18}\\
+CTM-UNet & \clsname{TsetlinMachine} & a dense per-pixel Tsetlin segmentation head, after~\ttcite{19}\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+The two segmentation notebooks are worth singling out. They reproduce the structure of
+published Tsetlin-machine segmentation work --- convolutional regression~\ttcite{18} and a
+U-Net hybrid~\ttcite{19} --- and the second builds a dense per-pixel classification head on top
+of \clsname{TsetlinMachine}. Neither required new model code: they are compositions of what
+the library already provides, which is the clearest evidence that the abstraction is at the
+right level.
+
+\subsection{Where a Tsetlin machine earns its place}
+
+\paragraph{Clinical decision support.}
+This is the application domain the Tsetlin machine literature has pushed hardest, and for a
+reason: a clinician can audit a conjunction and a regulator can read it. Published work covers
+interpretable rule learning from medical text~\ttcite{22}, premature ventricular contraction
+identification in ECG~\ttcite{21}, organism prediction in peritoneal dialysis, bladder-cancer
+recurrence rule discovery and cervical-cancer classification with convolutional machines.
+What these share is a data regime --- a few thousand examples, features that are already
+measurements with meaning --- in which a thermometer-encoded Tsetlin machine is both
+competitive and legible, and a deep network is neither reliably better nor auditable.
+
+\ttlibname contributes three things here: the encoders that turn clinical measurements into
+literals with names attached, so a rule comes out as
+\code{IF worst perimeter>=105.9 AND NOT mean texture>=21.8}; per-example explanations that
+are the model rather than a surrogate; and the ability to run the model inside the same
+PyTorch pipeline as the deep baseline it must be compared against.
+
+\paragraph{Medical imaging.}
+Convolutional and coalesced machines extend the same argument to images, and segmentation
+work~\ttcite{18,19} shows the family reaching per-pixel tasks. This is the setting that
+motivated \ttlibname: in a cardiac-MRI research group the surrounding stack is PyTorch, the
+volumes are large, and an interpretable model that cannot consume a \code{DataLoader} or run
+on the GPU next to the U-Net baseline is not a practical option. Making a convolutional
+Tsetlin machine an \code{nn.Module} is what makes that comparison a one-file experiment rather
+than a project.
+
+\paragraph{Edge and hardware inference.}
+Inference is an \textsc{and} over included literals and a vote count, so a trained machine
+maps naturally onto digital logic. There is now a substantial literature on that
+mapping --- asynchronous logic for edge inference~\ttcite{15}, in-memory computing on Y-Flash
+cells~\ttcite{16}, and 65\,nm keyword-spotting accelerators~\ttcite{17}. \ttlibname is a
+\emph{training} framework, not a deployment target, but the learned state it exports is
+exactly the artefact those pipelines consume: an integer matrix and a set of weights, in a
+\code{state\_dict}, with a documented layout.
+
+\paragraph{Signals and time series.}
+\clsname{Conv1dTsetlinMachine} applies the same patch mechanism to sequences, where a clause
+becomes a motif detector that fires wherever the motif occurs. Combined with thermometer
+encoding of the signal amplitude, the learned clauses are legible as pictures of the waveform
+they detect --- which is how the shipped \code{conv1d\_ramps.py} example prints them.
+
+\paragraph{Tabular and scientific data.}
+The oldest and least glamorous case, and still the strongest: datasets with tens to hundreds
+of meaningful columns, where the question is often \emph{which combinations of measurements
+matter} rather than what the accuracy is. Global feature importance aggregated back over
+thermometer bits answers that question in closed form, with no permutation testing and no
+surrogate.
+
+\begin{ttkey}
+The applications that suit a Tsetlin machine are the ones where somebody has to read the
+model. \ttlibname's contribution to them is prosaic and decisive: the model now lives in the
+same framework as everything else the project already uses.
+\end{ttkey}

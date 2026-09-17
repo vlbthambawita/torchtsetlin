@@ -1,0 +1,69 @@
+% Figure: sequential per-example commits vs the batched event-counting formulation.
+\begin{tikzpicture}[font=\sffamily\small]
+
+% ===================================================================== A: sequential
+\node[anchor=north west, font=\sffamily\bfseries\small, text=ttslate] at (0,0.75)
+  {A\ \ Classical sequential algorithm \textemdash\ $B$ stochastic commits per mini-batch};
+
+\foreach \i/\lbl in {0/{$x_1$},1/{$x_2$},2/{$x_3$}}{
+  \pgfmathsetmacro{\x}{\i*4.45}
+  \node[ttnode slate, anchor=north west, text width=3.7cm, align=center] at (\x,0)
+    {\lbl\ \textemdash\ evaluate $\to$ select\\[2pt]
+     \textbf{draw} $(C,2F)$ randoms\\[1pt]
+     \textbf{write} the automata};
+}
+\node[anchor=north west, font=\sffamily, text=ttgray] at (13.5,-0.55) {$\cdots$};
+
+\draw[ttarrow, draw=ttslate] (4.05,-0.65) -- (4.5,-0.65);
+\draw[ttarrow, draw=ttslate] (8.5,-0.65) -- (8.95,-0.65);
+\draw[ttarrow, draw=ttslate] (12.95,-0.65) -- (13.4,-0.65);
+
+\node[ttlabel, anchor=north west, text width=14.3cm, font=\sffamily\small] at (0,-1.75)
+  {Each example sees the automata the previous example left behind. That serial dependency is
+   the \emph{point} of the algorithm --- and the reason a GPU sits idle: the work between two
+   state writes is far too small to fill it.};
+
+% ===================================================================== B: batched
+\node[anchor=north west, font=\sffamily\bfseries\small, text=ttdeep] at (0,-3.35)
+  {B\ \ Batched formulation \textemdash\ count the events, then commit \emph{once}};
+
+\node[ttnode, anchor=north west, text width=1.85cm, align=center] (xb) at (0,-4.05)
+  {$x_{1..B}$\\[1pt]\scriptsize $(B,F)$};
+\node[ttnode, anchor=north west, text width=2.25cm, align=center] (lit) at (2.45,-4.05)
+  {literals\\[1pt]\scriptsize $(B,2F)$};
+\node[ttnode, anchor=north west, text width=2.65cm, align=center] (cl) at (5.35,-4.05)
+  {clause outputs\\[1pt]\scriptsize $(B,C)$, one matmul};
+\node[ttnode, anchor=north west, text width=2.45cm, align=center] (vt) at (8.65,-4.05)
+  {vote sums\\[1pt]\scriptsize $(B,K)$, clipped};
+\node[ttnode, fill=ttamber!25, draw=ttamber, anchor=north west, text width=2.85cm, align=center]
+  (sl) at (11.75,-4.05) {feedback masks\\[1pt]\scriptsize $S_{\mathrm{I}}, S_{\mathrm{II}} \in \{0,1\}^{B\times C}$};
+
+\draw[ttarrow] (2.0,-4.6) -- (2.4,-4.6);
+\draw[ttarrow] (4.9,-4.6) -- (5.3,-4.6);
+\draw[ttarrow] (8.2,-4.6) -- (8.6,-4.6);
+\draw[ttarrow] (11.3,-4.6) -- (11.7,-4.6);
+
+% ---- counting
+\node[ttnode, anchor=north west, text width=13.9cm, align=center] (cnt) at (0.35,-5.95)
+  {\textbf{event counts} \textemdash\ two matrix products over the chunk\\[4pt]
+   $n^{\text{true}} = S_{\mathrm{I}}^{\!\top} L$ \qquad
+   $n^{\text{false}} = S_{\mathrm{I}}^{\!\top}(1-L)$ \qquad
+   $n^{\text{Ib}}_j = \textstyle\sum_b S^{\text{nofire}}_{\mathrm{I}}[b,j]$ \qquad
+   $n^{\text{II}} = S_{\mathrm{II}}^{\!\top}(1-L)$};
+\draw[ttarrow] (13.2,-5.25) .. controls (14.2,-5.4) and (14.2,-5.6) .. (13.2,-5.9);
+
+% ---- commit
+\node[ttnode dark, anchor=north west, text width=13.9cm, align=center] (com) at (0.35,-7.85)
+  {\textbf{one commit} \textemdash\ the counts become automaton transitions\\[5pt]
+   $\Delta \;=\; \mathrm{Bin}\!\left(n^{\text{true}},\, p_{\text{mem}}\right)
+    \;-\; \mathrm{Bin}\!\left(n^{\text{false}} + n^{\text{Ib}},\, \tfrac{1}{s}\right)
+    \;+\; \min\!\left(n^{\text{II}},\, N - \theta\right)$\\[5pt]
+   $\theta \;\leftarrow\; \mathrm{clip}\!\left(\theta + \Delta,\; 0,\; 2N-1\right)$};
+\draw[ttarrow, line width=1.1pt] (7.3,-7.25) -- (7.3,-7.8);
+
+\node[ttlabel, anchor=north west, text width=14.3cm, font=\sffamily\small] at (0,-10.35)
+  {Every stochastic decision of the sequential algorithm is an independent Bernoulli trial, so
+   the trials one automaton receives in a batch sum to a \emph{binomial} draw --- one
+   $(C,2F)$ random tensor per batch instead of one per example. At $B=1$ this reduces exactly
+   to the classical algorithm.};
+\end{tikzpicture}

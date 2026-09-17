@@ -1,0 +1,241 @@
+\section{Benchmarks}
+\label{sec:benchmarks}
+
+\subsection{Method}
+
+Every number in this section comes from one run of the benchmark driver shipped with the
+repository, \code{benchmarks/run\_benchmarks.sh}, on the machine in Table~\ref{tab:hardware}.
+Each point is the median of three timed blocks of steady-state calls after a warm-up, with the
+device synchronised once per block. The micro-benchmarks use synthetic Boolean data at 20\%
+density, resident on the device unless stated otherwise. The driver writes a JSON record per
+measurement and regenerates the figures and tables from it, so the whole section can be
+reproduced --- or replaced with another machine's numbers --- with one command.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{Measurement environment.}
+\label{tab:hardware}
+\begin{tabularx}{0.86\linewidth}{@{}L{3.2cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{CPU} & AMD Ryzen 9 3950X, 16 cores / 32 threads (PyTorch using 16 threads)\\
+\thead{GPU} & NVIDIA GeForce RTX 3090 (24\,GB)\\
+\thead{Software} & PyTorch 2.10.0+cu128 / CUDA 12.8, Python 3.10.11, \ttlibname 0.1.2\\
+\thead{Reference config} & 784 Boolean features, 500 clauses per class, 10 classes, unless
+  stated otherwise\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+\begin{ttcallout}[What this section does and does not measure]
+It measures \emph{this} library on two devices: the same Python code, the same algorithm, one
+run on a CPU and one on a GPU. It is not a comparison against other Tsetlin machine
+implementations --- no such comparison was run --- and it is not a state-of-the-art accuracy
+claim. Where accuracy appears it is there to show that the batched update learns what it
+should, not to compete with 400-epoch results from the literature.
+\end{ttcallout}
+
+\subsection{Throughput against batch size}
+
+One \code{update()} call touches every automaton in the machine, so its cost depends far more
+on the \emph{size of the machine} than on how many examples are in the batch. That is the
+whole point of the reformulation in Section~\ref{sec:batched}, and
+Figure~\ref{fig:bench-batch} is what it buys: on the GPU, training throughput rises from 435
+examples/s at batch 1 to 219{,}850 at batch 4096 --- a factor of 505 for feeding the same
+kernel more work.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-batch}
+\caption{Throughput against batch size for a 784-feature, 500-clause-per-class machine
+  (log--log). Training on the GPU scales almost linearly with batch size until the device
+  saturates. The dashed line is the counter-example: a 12-feature, 10-clause machine is less
+  work than a kernel launch, and only overtakes the CPU past batch 1024.}
+\label{fig:bench-batch}
+\end{figure}
+
+At batch 256 the same model trains at 88{,}908 examples/s on the GPU against 408 on the CPU
+--- $218\times$. Inference behaves differently: the CPU forward pass is already cheap, so the
+gap there tops out around $28\times$, reaching $1.05\times10^{6}$ examples/s on the GPU.
+
+The dashed series is the honest counterpoint. A Noisy-XOR-scale machine (12 features, 10
+clauses per class) is \emph{slower} on the GPU than on the CPU for every batch size below
+1024. Small machines belong on a CPU, and \ttlibname makes that a one-word change rather than
+a different package.
+
+\subsection{Throughput against model size}
+
+Both axes of model size cost the same thing --- an update is $O(C \cdot 2F)$ element-wise work
+--- so both throughput curves fall roughly as $1/x$. The interesting quantity is the
+\emph{ratio}, in Figure~\ref{fig:bench-scale}: the CPU falls off immediately while the GPU
+stays flat until the machine is large enough to fill it, so the advantage \emph{widens} with
+model size, from $51\times$ at 50 clauses per class to $273\times$ at 4000, and from
+$71\times$ at 128 features to $286\times$ at 8192.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-scale}
+\caption{The GPU advantage grows with the model. Big machines --- the ones the Tsetlin machine
+  literature actually uses for images --- are exactly the ones worth moving to a GPU.}
+\label{fig:bench-scale}
+\end{figure}
+
+This matters for a practical reason. The published configurations that reach competitive
+accuracy on images use thousands of clauses per class; on a CPU those are overnight runs, and
+the resulting iteration speed is what keeps people away. At 2000 clauses per class the GPU
+trains at 25{,}934 examples/s against 96 on the CPU.
+
+\subsection{The model zoo}
+
+Weighted and coalesced variants cost about what the plain machine costs --- they change the
+output layer and the feedback policy, not the per-clause work that dominates
+(Table~\ref{tab:zoo}). The convolutional models are the outlier at roughly $4\times$ the cost
+per example, which is arithmetic rather than overhead: a $10\times10$ window over a
+$28\times28$ image is 361 patches, and every patch is evaluated against every clause.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{All models, 784 features, batch 128. Throughput in examples/s.}
+\label{tab:zoo}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X R{1.5cm}R{1.6cm}R{1.3cm}R{1.6cm}R{1.7cm}R{1.3cm}@{}}
+\ttoprule
+& \multicolumn{3}{c}{\thead{Training}} & \multicolumn{3}{c}{\thead{Inference}}\\
+\thead{Model} & \thead{CPU} & \thead{GPU} & \thead{speedup} & \thead{CPU} & \thead{GPU} & \thead{speedup}\\
+\ttmidrule
+\clsname{TsetlinMachine}            & 268 & 49{,}638 & 185$\times$ & 30{,}719 & 526{,}882 & 17$\times$\\
+\clsname{TsetlinMachine} (weighted) & 268 & 49{,}475 & 185$\times$ & 32{,}227 & 491{,}498 & 15$\times$\\
+\clsname{CoalescedTsetlinMachine}   & 178 & 43{,}579 & 244$\times$ & 34{,}222 & 526{,}083 & 15$\times$\\
+\clsname{RegressionTsetlinMachine}  & 214 & 56{,}822 & 266$\times$ & 44{,}567 & 577{,}994 & 13$\times$\\
+\clsname{ConvTsetlinMachine}        & 137 & 13{,}059 &  95$\times$ &      140 &  17{,}942 & 128$\times$\\
+\clsname{ConvCoalescedTsetlinMachine} & 132 & 13{,}137 & 100$\times$ & 138 & 17{,}826 & 129$\times$\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+GPU peak memory is 262\,MB for the flat models and 298\,MB for the convolutional ones at this
+configuration --- small enough that clause budget, not memory, is the binding constraint on
+most cards.
+
+\subsection{Where an update actually goes}
+
+Figure~\ref{fig:bench-breakdown} breaks one \code{update()} call into stages. The result is
+unambiguous: \code{apply\_feedback} --- the stochastic increment and decrement of the whole
+$(C,2F)$ state --- is 92\% of the 623\,ms CPU call and 42\% of the 2.8\,ms GPU call. A
+standalone \code{torch.binomial} draw of the same shape costs 266.8\,ms on the CPU against
+0.22\,ms on the GPU, making it the single most expensive operation in the commit.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-breakdown}
+\caption{Stage timings for one update (5000 clauses, 784 features, batch 256). Note the log
+  scale: the CPU total is 623.4\,ms and the GPU total 2.8\,ms. Everything before the commit
+  --- encoding, clause evaluation, votes and the feedback-count matmuls --- is comparatively
+  free.}
+\label{fig:bench-breakdown}
+\end{figure}
+
+This is also the quantitative argument for batching. A batched update draws once per commit;
+a sequential one draws once per example. Whatever the batch size, the expensive part of the
+call happens exactly once.
+
+\subsection{CPU threads}
+
+More CPU threads buy surprisingly little in training --- $1.4\times$ from 1 to 32 threads
+(Figure~\ref{fig:bench-threads}). The batched update is a chain of large element-wise
+operations over the state, and the binomial draw that dominates it does not thread.
+Inference scales much better, $9.6\times$ over the same range, because the forward pass is
+one large matmul-shaped reduction. If a CPU run is too slow, the lever is the clause budget
+or the batch size, not \code{torch.set\_num\_threads}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-threads}
+\caption{CPU thread scaling (5000 clauses, 784 features, batch 256).}
+\label{fig:bench-threads}
+\end{figure}
+
+\subsection{Where the data lives}
+
+Keeping the Boolean dataset in host memory and copying each mini-batch across costs at most
+2\% of throughput on this machine --- the update is long enough to hide the transfer. Streaming
+a dataset that does not fit in VRAM is therefore free in practice. The copy that \emph{does}
+bite is the one in the other direction, into a CPU-resident encoder, which is the hazard
+described in Section~\ref{sec:design}.
+
+\subsection{End to end}
+
+Micro-benchmarks flatter whichever device wins the micro-benchmark, so Table~\ref{tab:e2e}
+reports whole training runs with \code{Trainer.fit} included --- data loading, epoch loop,
+validation and all.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{End-to-end MNIST runs. Accuracy matches across devices to within run-to-run noise,
+  as it should: only the wall clock moves.}
+\label{tab:e2e}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X L{1.5cm}R{1.9cm}R{1.5cm}R{2.0cm}R{1.7cm}@{}}
+\ttoprule
+\thead{Model} & \thead{Device} & \thead{train ex.} & \thead{epochs} & \thead{s / epoch} & \thead{test acc.}\\
+\ttmidrule
+\multirow{2}{*}{\clsname{TsetlinMachine} 500/class}
+  & CPU  & 60{,}000 & 3 & 114.35 & 0.9542\\
+  & GPU  & 60{,}000 & 3 & \textbf{1.52} & 0.9548\\
+\ttmidrule
+\multirow{2}{*}{\clsname{ConvTsetlinMachine} 200/class, $10\times10$}
+  & CPU  & 10{,}000 & 1 & 70.19 & 0.8270\\
+  & GPU  & 10{,}000 & 1 & \textbf{0.82} & 0.8240\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+A 114-second epoch becomes a 1.5-second one ($75\times$); the convolutional run goes from 70
+seconds to 0.8 ($86\times$). That is the difference between a hyper-parameter sweep you plan
+and one you simply run.
+
+On accuracy: the flat 500-clause machine reaches 95.8\% after five epochs, and the
+convolutional model 97.2\% after three epochs at batch 32 (200 clauses per class, $T=100$,
+$s=10$, weighted). The published figures for much larger budgets --- around 98\% for 2000
+clauses per class after 400 epochs, and around 99\% for convolutional machines with 8000
+clauses per class --- are what the same code should reach given the same budget and patience;
+they are not claimed here.
+
+\subsection{What batching costs in accuracy}
+\label{sec:fidelity}
+
+The batched update is an approximation, so the honest question is how much fidelity it gives
+up. Figure~\ref{fig:bench-fidelity} answers it on Noisy XOR --- the benchmark of the original
+paper, deliberately chosen because its generating rule is known, so a failure to learn is
+unmistakable. Twenty clauses, $T=15$, $s=3.9$, 100 states, 2000 training examples with 40\%
+label noise, three seeds per configuration, with the number of epochs raised as the batch grows
+so that every configuration sees the data a comparable number of times.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-fidelity}
+\caption{Noisy XOR accuracy against batch size (3 seeds). Batches up to about 50 land in the
+  same band as the exact sequential algorithm; 200 degrades clearly. Seed-to-seed spread is
+  wide on this task --- which is itself the reason to read the individual points rather than
+  only the means.}
+\label{fig:bench-fidelity}
+\end{figure}
+
+Batch sizes of roughly 8--64 keep the accuracy of the sequential algorithm while running one
+to two orders of magnitude faster on a GPU. At 200 the degradation is unambiguous. The
+practical recommendation the library documents follows directly: start at 16--64 for flat
+models and 8--32 for convolutional ones, and if accuracy lags, halve the batch or add epochs
+before touching $T$ and $s$.
+
+The cost of exactness is measurable too. At batch 32, \code{feedback\_mode="sequential"} runs
+7--28$\times$ slower than the batched update depending on model scale and device, because it
+performs 32 commits where the batched path performs one. That is the trade, stated in numbers:
+\emph{batching buys one to two orders of magnitude and costs accuracy only once the batch
+grows past a few tens of examples.}
+
+\begin{ttkey}
+Reformulating the update as event counting plus one binomial draw makes the cost of an update
+nearly independent of batch size --- which is what turns a $114$-second MNIST epoch into a
+$1.5$-second one, and what makes a clause budget of thousands a routine choice rather than an
+overnight one.
+\end{ttkey}

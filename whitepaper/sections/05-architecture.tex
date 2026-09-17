@@ -1,0 +1,123 @@
+\section{System architecture}
+\label{sec:architecture}
+
+\subsection{Four layers}
+
+\ttlibname is organised as four layers with a strict one-way dependency
+(Figure~\ref{fig:architecture}). Each layer is useful on its own: a researcher testing a new
+feedback rule works in layer~1, someone adding a model variant works in layer~3, and an
+applied user only ever sees layer~4.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-architecture}}
+\caption{The four layers. Dependencies point downwards only: the learning mathematics does
+  not know what a model is, and a model does not know what a trainer is.}
+\label{fig:architecture}
+\end{figure}
+
+\paragraph{Layer 1 --- \code{functional.py}.}
+Stateless tensor functions: literal expansion, clause evaluation, vote sums, feedback
+probabilities, negative-class sampling, Type~I and Type~II event counting, and the automaton
+transition itself. No state, no autograd, no device assumptions. All learning mathematics
+lives here, which means it can be unit-tested against a brute-force reference implementation
+and reused by code that does not use the model classes at all.
+
+\paragraph{Layer 2 --- \clsname{TsetlinMachineBase}.}
+An \code{nn.Module} that owns the automata and runs the generic learning loop: input
+coercion, lazy shape initialisation, chunking, dropout masks, feedback accumulation and the
+commit. It knows nothing about classes, labels or images.
+
+\paragraph{Layer 3 --- concrete models.}
+Each variant supplies only an \emph{output layer} (how clause outputs become votes) and a
+\emph{feedback policy} (which clauses receive which feedback for a labelled example).
+Convolution is orthogonal to both and enters as a mix-in, so
+\code{class ConvTsetlinMachine(\_ConvMixin, TsetlinMachine)} is the entire definition of the
+convolutional classifier's learning behaviour.
+
+\paragraph{Layer 4 --- workflow.}
+Data preparation, training, metrics, interpretation and plotting. These depend on the models
+through their public API only, so a user's own model subclass gets the whole workflow layer
+for free.
+
+\subsection{The learning state}
+
+The learnable state is a \textbf{buffer, not a parameter}, because a Tsetlin machine has no
+gradients:
+
+\begin{center}\small
+\begin{tabularx}{0.95\linewidth}{@{}L{3.4cm}L{3.5cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Buffer} & \thead{Shape / dtype} & \thead{Role}\\
+\ttmidrule
+\code{ta\_state} & $(C, 2F)$ \code{int32} & the automata; literal included iff state $\ge N$\\
+\code{include} & $(C, 2F)$ float & cached 0/1 mask, derived, non-persistent\\
+\code{include\_count} & $(C,)$ long & literals per clause, derived, non-persistent\\
+\code{weights} & $(C,)$ or $(C,K)$ \code{int32} & clause weights (weighted\slash coalesced models)\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+Only \code{ta\_state} and \code{weights} are persistent; the two caches are recomputed
+whenever the state changes, including after \code{load\_state\_dict}. Storing the derived
+mask costs $2CF$ floats and removes a comparison from the inner loop of every forward pass,
+which is the single hottest path in the library.
+
+Two consequences are worth calling out. First, \code{model.parameters()} is deliberately
+empty and warns when it returns nothing, because silently returning an empty iterator to
+someone who wrote \code{optim.SGD(model.parameters())} would be worse than an error. Second,
+\code{n\_features=None} enables lazy initialisation in the style of
+\code{torch.nn.LazyLinear}: the state is allocated on the first batch, and
+\code{\_load\_from\_state\_dict} reconstructs the shape from the checkpoint before loading so
+that a lazily built model can be restored without ever having seen data.
+
+\subsection{How an update flows}
+
+\code{update(x, y)} is the analogue of \code{loss.backward(); optimizer.step()}, and it
+returns the \emph{pre-update} vote sums so that a training loop can log batch accuracy
+without a second forward pass. Figure~\ref{fig:pipeline} shows the flow.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-pipeline}}
+\caption{The \code{update()} pipeline. The batch is split into chunks that respect a memory
+  budget; each chunk contributes \emph{event counts} to a shared accumulator; the automata
+  are written once, at the commit. Amber marks the hook a new model must implement.}
+\label{fig:pipeline}
+\end{figure}
+
+The separation between \emph{accumulate} and \emph{commit} is the structural core of the
+library. Accumulation is pure counting and can be done in any number of chunks, in any order,
+without changing the result. The commit is the only place the automata are written, the only
+place randomness enters the state, and the only place the derived caches are refreshed. That
+split is what makes the batched algorithm expressible, what bounds memory usage, and what
+makes the convolutional mix-in possible --- convolution changes what is counted and how, but
+not when or how it is committed.
+
+\subsection{Extension points}
+
+A new model is a subclass, not a fork. The required surface is three methods:
+
+\begin{center}\small
+\begin{tabularx}{0.95\linewidth}{@{}L{4.6cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Method} & \thead{Contract}\\
+\ttmidrule
+\code{\_votes(clause\_out)} & $(B,C)$ Boolean clause outputs $\to$ $(B,K)$ vote sums\\
+\code{\_select\_feedback(votes, y, clause\_out)} & $\to$ two $(B,C)$ Boolean masks: who gets Type~I, who gets Type~II\\
+\code{\_coerce\_targets(y, n, device)} & validate and convert the targets\\
+\ttmidrule
+\multicolumn{2}{@{}l@{}}{\emph{optional}}\\
+\code{\_accumulate\_weights} / \code{\_commit\_weights} & clause weights\\
+\code{\_encode} / \code{\_evaluate} / \code{\_feedback\_counts} & a different input structure (this is the convolutional mix-in)\\
+\code{\_chunk\_elements\_per\_example} & the memory model for that structure\\
+\code{rules()} & how the model prints itself\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\begin{ttkey}
+Learning mathematics is stateless and lives in one file; state and the loop live in one base
+class; variants supply an output layer and a feedback policy. The entire convolutional family
+is one mix-in over that structure --- roughly 360 lines, none of which re-implement learning.
+\end{ttkey}

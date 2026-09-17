@@ -1,0 +1,113 @@
+\section{The proposed library}
+\label{sec:library}
+
+\subsection{Design principles}
+
+\ttlibname is built on five commitments, in priority order. Where they conflict, the earlier
+one wins.
+
+\begin{enumerate}[leftmargin=1.4em, itemsep=0.35em, topsep=0.35em]
+  \item \textbf{Be a \code{torch.nn.Module}, not a wrapper around one.}
+    The automata state is a registered buffer. Every consequence of that --- device moves,
+    checkpoints, \code{repr}, hooks --- is inherited rather than implemented.
+  \item \textbf{Be faithful to the published algorithm, and be explicit where you are not.}
+    The exact per-example algorithm is always available
+    (\code{feedback\_mode="sequential"}). The default batched path is an approximation in the
+    same sense as mini-batch SGD, its fidelity is characterised empirically
+    (Section~\ref{sec:fidelity}), and the trade is documented rather than hidden.
+  \item \textbf{Keep the learning mathematics stateless and separate.}
+    All of it lives in one module, \code{functional.py}, as pure tensor functions. Models are
+    thin, stateful compositions of those functions, which is what makes a new variant a
+    subclass rather than a fork.
+  \item \textbf{Ship the whole workflow.}
+    Booleanization, training, evaluation, interpretation and visualisation are part of the
+    package, because in practice they are part of the job.
+  \item \textbf{Depend on as little as possible.}
+    PyTorch and NumPy are the only hard requirements. Matplotlib, torchvision and
+    scikit-learn are optional and import-guarded. There is no build step.
+\end{enumerate}
+
+\subsection{What the library provides}
+
+\paragraph{Models.}
+Seven concrete machines, all sharing one base class and one learning loop
+(Table~\ref{tab:models}). The flat and convolutional families are not parallel hierarchies:
+convolution is a mix-in that overrides input encoding, clause evaluation and feedback
+counting, and is combined with each flat model to produce its convolutional counterpart
+(Section~\ref{sec:conv}).
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{The model zoo. $F$ is the number of Boolean features, $C$ the total clause count,
+  $K$ the number of outputs. Every model stores its automata in one
+  $(C, 2F)$ integer buffer.}
+\label{tab:models}
+\begin{tabularx}{\linewidth}{@{}L{4.5cm}L{2.5cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Class} & \thead{Task} & \thead{Output layer and distinguishing feature}\\
+\ttmidrule
+\clsname{TsetlinMachine} & multi-class &
+  $C = K\cdot n$ clauses, half positive and half negative polarity per class; optional
+  integer clause weights (weighted TM~\ttcite{3})\\
+\clsname{CoalescedTsetlinMachine} & multi-class, multi-label &
+  one shared clause pool with a signed integer weight per (clause, output); clauses may
+  change sides during learning~\ttcite{5}\\
+\clsname{RegressionTsetlinMachine} & regression &
+  all clauses positive; vote sum in $[0,T]$ mapped linearly onto the target range~\ttcite{7}\\
+\clsname{ConvTsetlinMachine} & image classification &
+  clauses slide over $k_h\times k_w$ patches and fire if \emph{any} patch matches;
+  thermometer-encoded patch coordinates~\ttcite{2}\\
+\clsname{ConvCoalescedTsetlinMachine} & image, multi-label &
+  convolutional clauses over a shared pool\\
+\clsname{ConvRegressionTsetlinMachine} & image regression &
+  reads a continuous quantity off an image~\ttcite{7}\\
+\clsname{Conv1dTsetlinMachine} & sequences, signals &
+  $1\times k$ windows over $(B, Z, L)$ Boolean channels\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Learning options.}
+The switches that the literature has shown to matter are constructor arguments rather than
+forks: vote margin $T$ and specificity $s$; memory depth $N$; boosted true-positive feedback;
+integer clause weights; the clause-size constraint of~\ttcite{6}; drop-clause and
+drop-literal regularisation~\ttcite{8}; focused negative sampling; and the choice between
+batched and exact sequential feedback.
+
+\paragraph{Booleanization.}
+Seven encoders --- a plain binarizer, thermometer (quantile, uniform or unique-value
+thresholds), one-hot, bit plane, adaptive Gaussian\slash mean threshold, colour thermometer
+and sparse hypervector~\ttcite{13} --- all implemented as \code{nn.Module}s with the scikit-learn
+\code{fit}\slash\code{transform} protocol, composable with \clsname{Compose}, movable to a
+device and saved in a \code{state\_dict}. Encoders also carry their inverse knowledge:
+\code{ThermometerEncoder.decode\_range} turns included bits back into an interval in the
+original units, so a rule reads \code{IF age>=52.4 AND NOT age>=67.1} rather than
+\code{IF x37 AND NOT x41}.
+
+\paragraph{Training.}
+A \clsname{Trainer} with \code{fit}\slash\code{evaluate}\slash\code{predict} over tensors,
+\code{Dataset}s or \code{DataLoader}s; a \clsname{History} object; and callbacks for early
+stopping, checkpointing, CSV logging, hyper-parameter scheduling and automata-state logging.
+Nothing in the models requires the trainer --- a hand-written loop over \code{model.update}
+is a first-class way to use the library.
+
+\paragraph{Evaluation and interpretation.}
+Accuracy, confusion matrix, per-class precision\slash recall\slash F1, regression and
+multi-label metrics, expected calibration error and trustworthiness curves; rule extraction,
+clause activity and precision, closed-form global and local feature
+importance~\ttcite{4}, and per-example explanations listing the clauses that fired and how
+they voted.
+
+\paragraph{Visualisation.}
+Training curves, confusion matrices, automata-state heat maps, clause memory plots,
+convolutional clause patches rendered as pixel stencils, vote distributions and
+trustworthiness plots.
+
+\begin{ttcallout}[What \ttlibname is not]
+It is not a reimplementation of every Tsetlin machine variant in the literature --- graph
+machines, autoencoders, absorbing automata and TM composites are not implemented
+(Section~\ref{sec:limitations}). It is not a bit-packed kernel, and on a small machine on a
+CPU it will not beat one. It is the substrate on which those things can be built in tensor
+code instead of C.
+\end{ttcallout}

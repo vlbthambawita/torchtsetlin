@@ -1,0 +1,17 @@
+% Figure: CPU thread scaling — training barely benefits, inference does.
+\begin{tikzpicture}
+\begin{axis}[
+    ttaxis,
+    width=0.56\linewidth, height=5.0cm,
+    xmode=log, log basis x=2, ymode=log,
+    xlabel={\code{torch} threads}, ylabel={examples / s},
+    xtick={1,2,4,8,16,32}, xticklabels={1,2,4,8,16,32},
+    legend pos=north west,
+  ]
+  \pgfplotstableread[col sep=comma]{data/threads.csv}\threadtbl
+  \addplot[ttcpu] table[x=threads, y=infer] {\threadtbl};
+  \addlegendentry{inference ($9.6\times$ over the range)}
+  \addplot[ttgpu, mark=triangle*] table[x=threads, y=train] {\threadtbl};
+  \addlegendentry{training ($1.4\times$)}
+\end{axis}
+\end{tikzpicture}

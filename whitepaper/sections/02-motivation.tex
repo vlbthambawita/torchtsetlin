@@ -1,0 +1,75 @@
+\section{Motivation}
+\label{sec:motivation}
+
+\subsection{Why a logic learner at all}
+
+Deep networks answer; they rarely account for their answers. In clinical decision support,
+regulated industry and on-device inference, the account matters as much as the answer: a
+cardiologist wants to know which measurement moved the prediction, an auditor wants a
+decision rule they can read, and a microcontroller wants an inference path that is a handful
+of bit operations rather than a matrix cascade.
+
+The Tsetlin machine~\ttcite{1} occupies exactly that niche. It learns conjunctive clauses
+over Boolean literals; clauses vote for or against each class; the class with the largest
+vote sum wins (Figure~\ref{fig:tm-overview}). Three properties follow:
+
+\begin{itemize}[leftmargin=1.25em, itemsep=0.25em, topsep=0.35em]
+  \item \textbf{Legibility by construction.} A clause is a readable conjunction. There is no
+    surrogate model, no saliency heuristic, and no gap between what is explained and what is
+    executed. Global and local importance have closed-form expressions~\ttcite{4}.
+  \item \textbf{Bit-level economy.} Inputs are Booleans, the learned state is small integers,
+    and inference is an \textsc{and} over included literals plus a vote count --- which is
+    why a substantial hardware literature has grown around it, from FPGA and ASIC inference
+    engines to in-memory computing~\ttcite{15,16,17}.
+  \item \textbf{Competitive accuracy} on the tasks where those properties are worth paying
+    for: tabular and clinical data, keyword spotting, and small-image classification.
+\end{itemize}
+
+\begin{figure}[t]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-tm-overview}}
+\caption{A Tsetlin machine classifier at inference time. Features are expanded into literals
+  $[x,\lnot x]$; each clause is a conjunction of the literals its automata have decided to
+  \emph{include}; matching clauses cast signed votes; the argmax over clipped vote sums is
+  the prediction.}
+\label{fig:tm-overview}
+\end{figure}
+
+\subsection{Three obstacles in practice}
+
+The motivation for \ttlibname came from trying to use Tsetlin machines in a medical-imaging
+research group, where the surrounding stack is PyTorch and the data are large. Three
+obstacles showed up immediately, and none of them is about the algorithm.
+
+\paragraph{1.~The learning rule looks hostile to a GPU.}
+The classical algorithm is defined per example: evaluate the clauses, draw feedback,
+\emph{update the automata}, then move to the next example. The update is stochastic and
+touches every (clause, literal) counter, so a naive implementation performs one small,
+serial, random-number-heavy pass per training example. On a device with thousands of cores
+and a kernel-launch cost, that is the worst possible shape of work. A GPU implementation
+therefore requires reformulating the update, not merely porting it.
+
+\paragraph{2.~The tooling lives outside the ecosystem.}
+Existing implementations are compiled kernels behind thin wrappers
+(Section~\ref{sec:existing}). They are fast and faithful, but they sit beside a PyTorch
+pipeline rather than inside it. Moving a model to a GPU, checkpointing it mid-training,
+feeding it from a \code{DataLoader} that already augments on-device, or profiling it next to
+the CNN it is being compared against --- each requires bespoke glue, and the data usually
+makes a round trip through host memory and NumPy on the way.
+
+\paragraph{3.~Everything around the model is re-invented per project.}
+A Tsetlin machine consumes Booleans, so every project starts by writing a Booleanizer:
+thermometer thresholds for tabular columns, adaptive thresholding for images, bit planes for
+integers. Then a training loop, then early stopping, then a rule printer, then a clause
+visualiser. This is the unglamorous 80\% of a Tsetlin machine project, it is rewritten
+constantly, and small differences in it (which thresholds, which threshold strategy) move
+accuracy more than the model hyper-parameters do.
+
+\begin{ttcallout}[The design question]
+Can the Tsetlin machine be expressed so that it is \emph{ordinary} inside PyTorch --- same
+device semantics, same checkpoints, same data plumbing --- without giving up fidelity to the
+published algorithm? \ttlibname is the answer to that question: yes, if the learning update
+is reformulated from per-example state mutation into per-batch \emph{event counting}
+(Section~\ref{sec:batched}), and if the exact per-example path is kept available for when
+fidelity matters more than speed.
+\end{ttcallout}

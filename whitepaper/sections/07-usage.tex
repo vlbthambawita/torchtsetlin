@@ -1,0 +1,174 @@
+\section{Usage}
+\label{sec:usage}
+
+The API has two levels: a bare loop over \code{model.update} for people who want control, and
+a \clsname{Trainer} for people who want Keras. Both are shown below; every listing is
+runnable as written, and all of them have full counterparts in the repository's
+\code{examples/} directory.
+
+\subsection{Thirty seconds}
+
+\begin{lstlisting}[style=ttpython]
+import torchtsetlin as tt
+
+x_train, y_train = tt.data.make_noisy_xor(5000, noise=0.4)    # Boolean features, int labels
+x_test,  y_test  = tt.data.make_noisy_xor(2000, noise=0.0, seed=1)
+
+model = tt.TsetlinMachine(n_features=12, n_classes=2, n_clauses=20, T=15, s=3.9).to("cuda")
+
+# update() is the analogue of loss.backward(); optimizer.step()
+for epoch in range(50):
+    model.train()
+    for i in range(0, 5000, 10):
+        model.update(x_train[i:i+10].cuda(), y_train[i:i+10].cuda())
+
+model.eval()                                  # empty clauses now vote for nothing
+acc = (model(x_test.cuda()).argmax(1) == y_test.cuda()).float().mean()
+print(model.rules()[:2])
+# ['IF x0 AND NOT x1 THEN 1', 'IF x1 AND NOT x0 THEN 1']
+\end{lstlisting}
+
+The last line is the point of the exercise: the model has recovered the generating rule of
+the Noisy XOR benchmark from data with 40\% label noise, and printed it.
+
+\subsection{Tabular data, rules in the original units}
+
+Continuous columns become Boolean through a thermometer encoder. Passing the encoder's
+feature names to the model is what turns \code{x37} back into \code{worst perimeter>=105.9},
+and \code{max\_included\_literals} keeps the printed rules short enough to read.
+
+\begin{lstlisting}[style=ttpython]
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+import torch, torchtsetlin as tt
+
+tt.seed_everything(0)
+data = load_breast_cancer()
+x_tr, x_te, y_tr, y_te = train_test_split(data.data, data.target, test_size=0.3, random_state=0)
+x_tr, x_te = torch.tensor(x_tr).float(), torch.tensor(x_te).float()
+
+enc = tt.data.ThermometerEncoder(n_bits=8, strategy="quantile").fit(x_tr)
+xb_tr, xb_te = enc(x_tr), enc(x_te)
+
+model = tt.TsetlinMachine(xb_tr.shape[1], 2, n_clauses=100, T=20, s=4.0,
+                          max_included_literals=6)
+model.feature_names = enc.feature_names(list(data.feature_names))   # readable literals
+model.class_names   = list(data.target_names)
+
+trainer = tt.Trainer(model, batch_size=8, callbacks=[tt.EarlyStopping(patience=30)])
+trainer.fit((xb_tr, y_tr), epochs=200, val_data=(xb_te, y_te))
+print(trainer.test((xb_te, y_te)))                 # {'test_accuracy': 0.96...}
+
+for rule in model.rules(polarity=1)[:5]:           # clauses voting *for* a class
+    print(rule)
+
+# Which original columns carry the model, with the thermometer bits summed back together
+imp = tt.interpret.global_feature_importance(model, class_index=0)
+per_feature = tt.interpret.aggregate_literal_importance(
+    imp, [i // 8 for i in range(xb_tr.shape[1])])
+\end{lstlisting}
+
+\subsection{Convolutional MNIST on a GPU}
+
+The convolutional path differs in three places only: the encoder (adaptive thresholding
+rather than a fixed cut), the model class, and the patch geometry. Keeping the encoder on the
+compute device means the images never travel back to the host.
+
+\begin{lstlisting}[style=ttpython]
+import torch, torchtsetlin as tt
+dev = "cuda"
+
+enc = tt.data.AdaptiveThresholdEncoder(block_size=11, C=2, method="gaussian").to(dev)
+booleanize = lambda x: enc(x * 255.0)
+
+x_train, y_train = tt.data.load_mnist_boolean("./data", train=True,
+                                              encoder=booleanize, device=dev)
+x_test,  y_test  = tt.data.load_mnist_boolean("./data", train=False,
+                                              encoder=booleanize, device=dev)
+
+model = tt.ConvTsetlinMachine(
+    n_classes=10, n_clauses=200, T=100, s=10.0,
+    patch_size=10, stride=1, position_encoding=True, weighted=True,
+    input_shape=tuple(x_train.shape[1:]),           # (1, 28, 28)
+)
+
+trainer = tt.Trainer(model, device=dev, batch_size=32, callbacks=[
+    tt.EarlyStopping(monitor="val_accuracy", patience=5),
+    tt.ModelCheckpoint("mnist_conv.pt", monitor="val_accuracy"),
+    tt.CSVLogger("mnist_conv.csv"),
+    tt.StateSummaryLogger(),                        # mean literals/clause, empty clauses
+])
+trainer.fit((x_train, y_train), epochs=10, val_data=(x_test, y_test))
+
+votes = trainer.predict((x_test, y_test), return_votes=True)
+print(tt.metrics.classification_report(votes, y_test))
+
+tt.viz.plot_conv_clauses(model, range(16))          # what each clause looks for
+\end{lstlisting}
+
+\begin{ttcallout}[Hyper-parameter scheduling]
+Tsetlin hyper-parameters are ordinary Python attributes, so annealing one is a callback and
+not a framework feature:
+\code{tt.HyperparameterSchedule("s", lambda epoch: 10.0 - 5.0 * epoch / 30)}, or the same for
+\code{drop\_clause\_p}. \code{model.state\_summary()} reports mean included literals per
+clause and the number of empty clauses --- the two numbers that tell you whether $s$ is in the
+right range.
+\end{ttcallout}
+
+\subsection{Explaining a single prediction}
+
+\begin{lstlisting}[style=ttpython]
+expl = tt.interpret.explain(model, x_test[0], feature_names=model.feature_names)
+print(expl)                     # shape of the output; the numbers depend on the run
+# prediction: 1  votes: [-14.0, 17.0]
+#   [+3 -> output 1] clause 42: IF worst perimeter>=105.9 AND NOT mean texture>=21.8
+#   [+2 -> output 1] clause 77: IF worst concave points>=0.15
+#   ...
+
+torch.save(model.state_dict(), "model.pt")           # ordinary PyTorch checkpointing
+reloaded = tt.TsetlinMachine(None, 2, n_clauses=100, T=20, s=4.0)   # lazy: shape from ckpt
+reloaded.load_state_dict(torch.load("model.pt"))
+\end{lstlisting}
+
+The explanation is not a surrogate: those clauses are the model, and the listed votes add up
+to the reported vote sums.
+
+\subsection{Building a new variant}
+
+A new model supplies an output layer and a feedback policy; the base class provides
+everything else, including chunking, dropout, the batched commit and the whole workflow
+layer.
+
+\begin{lstlisting}[style=ttpython]
+class MyTsetlinMachine(tt.TsetlinMachineBase):
+    def __init__(self, n_features, n_clauses, T, **kw):
+        self.T = T
+        super().__init__(n_features, n_clauses, **kw)
+
+    def _votes(self, clause_out, clamp=True):        # (B, C) bool -> (B, n_outputs)
+        ...
+
+    def _coerce_targets(self, y, n, device):         # validate / convert targets
+        ...
+
+    def _select_feedback(self, votes, y, clause_out):  # -> (type_i, type_ii, aux) masks
+        ...
+\end{lstlisting}
+
+Or skip the class hierarchy entirely and compose the functional layer directly --- useful when
+prototyping a different feedback rule:
+
+\begin{lstlisting}[style=ttpython]
+from torchtsetlin import functional as F
+
+lit     = F.to_literals(x)                                  # (B, 2F)
+include = (state >= N).float()
+c       = F.clause_outputs(lit, include, empty_value=True)  # (B, C)
+v       = F.vote_sums(c, weights, T)
+n_true, n_false, n_ib = F.type_i_counts(lit, sel_fire_i, sel_nofire_i)
+n2      = F.type_ii_counts(lit, sel_fire_ii)
+F.apply_feedback(state, n_true, n_false, n_ib, n2, n_states=N, s=s)
+\end{lstlisting}
+
+It is plain tensor code, so \code{torch.compile}, a custom CUDA kernel or an alternative
+sampling scheme can be dropped in without touching anything else.

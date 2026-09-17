@@ -1,0 +1,84 @@
+% Figure: the update() pipeline, with the subclass hook points marked.
+\begin{tikzpicture}[font=\sffamily\small]
+
+  % ================================================================ row 1: entry
+  \node[ttnode dark, anchor=west, text width=2.6cm] (upd) at (0,0)
+    {\code{update(x, y)}\\[1pt]\scriptsize one learning step};
+  \node[ttnode plain, anchor=west, text width=2.45cm] (prep) at (3.5,0)
+    {\code{\_prepare}\\[1pt]\scriptsize coerce input, lazy init};
+  \node[ttnode plain, anchor=west, text width=2.75cm] (chunk) at (7.0,0)
+    {split the batch into \textbf{chunks}\\[1pt]\scriptsize memory budget};
+  \node[ttlabel, anchor=west, text width=3.5cm] at (10.8,0)
+    {\textcolor{ttorange}{$\rightarrow$} each chunk runs the row below and adds to the
+     accumulator};
+
+  \draw[ttarrow] (2.85,0) -- (3.45,0);
+  \draw[ttarrow] (6.35,0) -- (6.95,0);
+
+  % ================================================================ row 2: per chunk
+  \begin{scope}[shift={(0,-2.75)}]
+    \node[ttnode plain, anchor=west, text width=1.75cm] (enc) at (0.15,0)
+      {\code{\_encode}\\[1pt]\scriptsize $x \to$ literals};
+    \node[ttnode plain, anchor=west, text width=1.95cm] (ev) at (2.35,0)
+      {\code{\_evaluate}\\[1pt]\scriptsize clause outputs};
+    \node[ttnode plain, anchor=west, text width=1.55cm] (vo) at (4.75,0)
+      {\code{\_votes}\\[1pt]\scriptsize $(B,K)$};
+    \node[ttnode, fill=ttamber!25, draw=ttamber, anchor=west, text width=2.35cm] (sel) at (6.75,0)
+      {\code{\_select\_feedback}\\[1pt]\scriptsize Type I / II masks};
+    \node[ttnode plain, anchor=west, text width=2.35cm] (cnt) at (9.55,0)
+      {\code{\_feedback\_counts}\\[1pt]\scriptsize two matmuls};
+    \node[ttnode plain, anchor=west, text width=1.9cm] (aw) at (12.35,0)
+      {\code{\_accumulate}\\\code{\_weights}};
+
+    \draw[ttarrow] (2.0,0) -- (2.3,0);
+    \draw[ttarrow] (4.4,0) -- (4.7,0);
+    \draw[ttarrow] (6.4,0) -- (6.7,0);
+    \draw[ttarrow] (9.2,0) -- (9.5,0);
+    \draw[ttarrow] (12.0,0) -- (12.3,0);
+
+    \node[ttlabel, anchor=west, text=ttdeep] at (0.15,1.05)
+      {\textbf{\_accumulate\_chunk} \textemdash\ runs once per chunk; \emph{nothing is written to the automata yet}};
+    \begin{scope}[on background layer]
+      \draw[ttorange!35, dashed, line width=0.8pt, rounded corners=4pt]
+        (-0.2,-0.85) rectangle (14.45,0.8);
+    \end{scope}
+  \end{scope}
+
+  \draw[ttarrow] (8.0,-0.45) .. controls (8.0,-1.0) and (0.4,-1.1) .. (0.4,-2.3);
+
+  % ================================================================ row 3: accumulator
+  \node[ttnode, anchor=west, text width=13.8cm, align=center, fill=ttsand] (acc) at (0.15,-5.05)
+    {\textbf{FeedbackAccumulator} \textemdash\ running event counts for the whole update:\\[2pt]
+     \code{n\_true} $(C,2F)$ \quad \code{n\_false} $(C,2F)$ \quad \code{n\_ib} $(C)$ \quad
+     \code{n2} $(C,2F)$ \quad \code{extra} (weight deltas)};
+  \draw[ttarrow] (10.7,-3.65) -- (10.7,-4.6);
+  \draw[ttarrow] (13.3,-3.65) -- (13.3,-4.6);
+
+  % ================================================================ row 4: commit
+  \begin{scope}[shift={(0,-6.95)}]
+    \node[ttnode dark, anchor=west, text width=1.85cm] (com) at (0.15,0) {\code{\_commit}};
+    \node[ttnode, anchor=west, text width=2.95cm, align=center] (apf) at (2.5,0)
+      {\code{functional.}\\\code{apply\_feedback}\\[1pt]\scriptsize binomial draws, in place};
+    \node[ttnode plain, anchor=west, text width=2.35cm] (cw) at (6.4,0)
+      {\code{\_commit\_weights}};
+    \node[ttnode plain, anchor=west, text width=2.65cm] (ri) at (9.4,0)
+      {\code{\_refresh\_include}\\[1pt]\scriptsize rebuild cached masks};
+    \node[ttnode dark, anchor=west, text width=2.1cm] (ret) at (12.7,0)
+      {\scriptsize returns pre-update votes};
+    \draw[ttarrow] (2.15,0) -- (2.45,0);
+    \draw[ttarrow] (6.05,0) -- (6.35,0);
+    \draw[ttarrow] (9.05,0) -- (9.35,0);
+    \draw[ttarrow] (12.35,0) -- (12.65,0);
+  \end{scope}
+  \draw[ttarrow] (0.7,-5.55) -- (0.7,-6.55);
+
+  % ================================================================ legend
+  \node[ttnode, fill=ttamber!25, draw=ttamber, anchor=west, font=\scriptsize, inner sep=4pt]
+    (lg1) at (0.15,-8.75) {subclass hook};
+  \node[ttlabel, anchor=west, text width=11.6cm] at (2.5,-8.75)
+    {A new model implements \code{\_votes}, \code{\_select\_feedback} and
+     \code{\_coerce\_targets}; clause weights add
+     \code{\_accumulate\_weights}\slash\code{\_commit\_weights}; a different \emph{input
+     structure} overrides \code{\_encode}, \code{\_evaluate} and \code{\_feedback\_counts}.
+     The loop, the chunking, the dropout masks and the commit are inherited unchanged.};
+\end{tikzpicture}

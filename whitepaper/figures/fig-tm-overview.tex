@@ -1,0 +1,79 @@
+% Figure: what a Tsetlin machine model is — literals, clauses, polarised votes, argmax.
+\begin{tikzpicture}[font=\sffamily\small]
+
+  % ---------------------------------------------------------------- input bits
+  \node[tttitle, anchor=south west] at (-0.15,1.55) {Boolean input $x$};
+  \foreach \i/\v in {0/1,1/0,2/1,3/1}{
+    \pgfmathsetmacro{\yy}{1.15-\i*0.52}
+    \ifnum\v=1
+      \node[ttcell on] (x\i) at (0.25,\yy) {1};
+    \else
+      \node[ttcell off] (x\i) at (0.25,\yy) {0};
+    \fi
+    \node[ttlabel, anchor=east] at (-0.05,\yy) {$x_\i$};
+  }
+
+  % ---------------------------------------------------------------- literals
+  \node[tttitle, anchor=south west] at (1.55,1.55) {Literals $[x,\lnot x]$};
+  \foreach \i/\v in {0/1,1/0,2/1,3/1}{
+    \pgfmathsetmacro{\yy}{1.15-\i*0.52}
+    \ifnum\v=1 \node[ttcell on] (l\i) at (2.0,\yy) {1};
+    \else \node[ttcell off] (l\i) at (2.0,\yy) {0}; \fi
+  }
+  \foreach \i/\v in {0/0,1/1,2/0,3/0}{
+    \pgfmathsetmacro{\yy}{1.15-\i*0.52}
+    \ifnum\v=1 \node[ttcell on] (n\i) at (2.52,\yy) {1};
+    \else \node[ttcell off] (n\i) at (2.52,\yy) {0}; \fi
+  }
+  \node[ttlabel] at (2.0,-1.28) {$x_k$};
+  \node[ttlabel] at (2.56,-1.28) {$\lnot x_k$};
+
+  \draw[ttarrow] (0.62,-0.05) -- (1.72,-0.05);
+
+  % ---------------------------------------------------------------- clauses
+  \node[tttitle, anchor=south west] at (3.5,1.55) {Clauses (AND of included literals)};
+  \node[ttnode, anchor=west, text width=4.0cm] (c1) at (3.5,1.15)
+    {$C_1: x_0 \land \lnot x_1$};
+  \node[ttnode, anchor=west, text width=4.0cm] (c2) at (3.5,0.38)
+    {$C_2: x_2 \land x_3$};
+  \node[ttnode plain, anchor=west, text width=4.0cm] (c3) at (3.5,-0.42)
+    {$C_3: x_1 \land x_3$};
+  \node[ttnode, anchor=west, text width=4.0cm] (c4) at (3.5,-1.18)
+    {$C_4: \lnot x_0 \land x_2$};
+
+  \node[ttlabel, anchor=west, text=ttorange] at (7.62,1.15) {matches};
+  \node[ttlabel, anchor=west, text=ttorange] at (7.62,0.38) {matches};
+  \node[ttlabel, anchor=west, text=ttgray] at (7.62,-0.42) {no match};
+  \node[ttlabel, anchor=west, text=ttorange] at (7.62,-1.18) {matches};
+
+  \draw[ttarrow] (2.88,-0.05) -- (3.36,-0.05);
+
+  % ---------------------------------------------------------------- votes
+  \node[tttitle, anchor=south] at (10.55,1.55) {Polarised votes};
+  \node[anchor=west, font=\small, text=ttdeep] at (9.55,1.15) {$+1$};
+  \node[anchor=west, font=\small, text=ttdeep] at (9.55,0.38) {$+1$};
+  \node[anchor=west, font=\small, text=ttgray] at (9.55,-0.42) {$-1$};
+  \node[anchor=west, font=\small, text=ttdeep] at (9.55,-1.18) {$-1$};
+
+  \node[ttnode dark, anchor=west, text width=2.55cm] (v0) at (10.25,0.72)
+    {class 0: $v_0 = +2$};
+  \node[ttnode, anchor=west, text width=2.55cm] (v1) at (10.25,-0.75)
+    {class 1: $v_1 = -1$};
+
+  \draw[ttarrow] (9.95,1.15) .. controls (10.05,1.15) and (10.05,0.95) .. (10.21,0.9);
+  \draw[ttarrow] (9.95,0.38) .. controls (10.05,0.38) and (10.05,0.6) .. (10.21,0.62);
+  \draw[ttarrow, draw=ttgray] (9.95,-0.42) .. controls (10.05,-0.42) and (10.05,-0.6) .. (10.21,-0.62);
+  \draw[ttarrow] (9.95,-1.18) .. controls (10.05,-1.18) and (10.05,-0.95) .. (10.21,-0.9);
+
+  % ---------------------------------------------------------------- prediction
+  \node[ttnode dark, anchor=west] (pred) at (13.35,-0.02)
+    {$\hat y = \arg\max_k \mathrm{clip}(v_k,-T,T)$\\[1pt] $=\;$\textbf{class 0}};
+  \draw[ttarrow] (12.92,0.72) -- (13.2,0.15);
+  \draw[ttarrow] (12.92,-0.75) -- (13.2,-0.2);
+
+  % ---------------------------------------------------------------- footer note
+  \node[ttlabel, anchor=north west, text width=15.5cm, align=left] at (-0.15,-1.75)
+    {Every clause is a conjunction the reader can check by hand; the prediction is a signed
+     vote count over the clauses that matched. The model is its own explanation, and
+     inference is an \textsc{and} plus an addition.};
+\end{tikzpicture}
