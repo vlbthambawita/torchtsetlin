@@ -1,0 +1,52 @@
+\subsection{Verdict against the criteria fixed in advance}
+
+\S\ref{sec:setup} committed to three tests before any run, and E1 answers all three against
+the proposal.
+
+\begin{ttkey}
+\lead{1. Does depth beat width at a matched clause budget?} Not on CIFAR-10. The \mctm
+reaches \accMctm{}\% against \accSingleMatched{}\% for a single layer of the same total size
+and \accSingleRf{}\% for a single layer with the stack's $9\times9$ receptive field. It does
+not even reach the \accSingleLOne{}\% its own frozen layer~1 achieves alone: the second layer
+\emph{removes} accuracy that was already there.
+
+\lead{2. Does the spatial map earn its cost?} On CIFAR-10 the question barely arises --- both
+stacked variants sit far below the single-layer baselines. On \code{near}
+(\S\ref{sec:synthetic}) the answer is an emphatic yes, and it is the clearest positive result
+in this report.
+
+\lead{3. Does the greedy supervised objective buy anything?} No --- it is actively harmful.
+Replacing the trained layer~1 with \emph{random} clauses raises the stack from \accMctm{}\%
+to \accMctmRandom{}\%. Random three-literal clauses fire on \fireMctmRandom{}\% of positions
+against \fireMctm{}\% for trained ones, and that density difference alone outweighs
+everything the supervised objective learned.
+\end{ttkey}
+
+\subsection{What is actually broken}
+
+The two risks identified before the experiments both materialised, and they compound.
+
+\lead{Density collapse is the proximate cause.} Training layer~1 to classify rewards specific
+clauses, which fire rarely; E0 shows every gain in density costs layer-1 accuracy, and the
+most accurate setting fires on \densitySparsestFire{}\% of positions. Layer~2 then faces an
+input where positive literals are almost never satisfied and negations almost always are,
+while Type~I feedback rewards including whatever is $1$ in the drawn patch.
+Table~\ref{tab:comp} shows where that ends: \negMctm{}\% of the literals in an \mctm layer-2
+clause are negations. The second layer does not learn compositions of features. It learns
+that things are absent.
+
+\lead{Greedy saturation is the deeper cause.} E2 separates architecture from training. Given
+features that are actually good, the stack clears a ceiling a single layer provably cannot
+($\synXorFlatStackOracleSixFour{}\%$ against $75\%$, at a matched channel count). Given
+features produced by the greedy scheme, it does not ($\synXorMctmTask{}\%$). The architecture
+is not what fails.
+
+\begin{ttcallout}[What survives]
+Two things are worth keeping from the proposal. First, stacking convolutional Tsetlin layers
+is genuinely more expressive than one layer --- demonstrated, not argued, on a task whose
+one-layer ceiling is known. Second, \emph{keeping the spatial map} rather than globally
+OR-pooling it is what makes relational concepts reachable at all: on \code{near} the spatial
+stack reaches $\synNearMctmTask{}\%$ while the global-OR stack is pinned at chance whatever
+features it is given. The proposal's distinctive architectural choice is the right one. Its
+training scheme is not.
+\end{ttcallout}

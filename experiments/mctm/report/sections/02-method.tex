@@ -1,0 +1,51 @@
+\section{Implementation}
+\label{sec:method}
+
+The library already computes the full $(B, P, C)$ patch-match tensor inside
+\code{\_ConvMixin.\_evaluate} and discards its layout --- it returns
+\code{matches.any(dim=1)} and passes the rest on only as an opaque feedback context. The
+whole \mctm primitive is therefore a reshape, implemented in
+\code{experiments/mctm/mctm.py}:
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\ttoprule
+\thead{Function} & \thead{Role} \\
+\ttmidrule
+\code{conv\_clause\_maps} & Reshapes $(B, P, C) \to (B, C, P_y, P_x)$. Forces
+  \code{empty\_value=False} so a clause with no included literals never emits an all-ones
+  channel --- every clause is empty at initialisation, and a constant-$1$ channel is exactly
+  what a downstream conjunction latches onto. \\
+\code{or\_pool} & $k\times k$ OR pooling (max-pool on $0/1$ bits). Its role here is
+  \emph{density control}: a $2\times2$ OR lifts a $2\%$ firing rate to $\approx 8\%$. \\
+\code{randomize\_clauses} & The random layer-1 control: \code{n\_include} literals per
+  clause, each a random feature with a random sign, never both $x$ and $\neg x$ (which would
+  make the clause unsatisfiable). \\
+\code{MCTM} & The frozen stack plus head; \code{transform} streams, the driver materialises. \\
+\code{firing\_stats} & Per-channel firing rate, dead and saturated fractions. \\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+Because a frozen layer's output is constant across epochs, the driver materialises it once
+rather than recomputing per batch.
+
+\subsection{Deviations from the original pseudocode}
+
+The proposal document specifies a few details that do not survive contact with the
+algorithm; the implementation departs from it as follows.
+
+\begin{itemize}[leftmargin=1.2em]
+\item \lead{Type~Ib needs no patch.} The pseudocode draws \code{selected\_patch} from
+  \code{matching\_positions} before branching on feedback type, but a clause that matched
+  nowhere still receives Type~I feedback and has no matching patch to draw. Type~Ib is
+  patch-free.
+\item \lead{One patch draw per feedback \emph{event}.} A shared (coalesced) clause can
+  receive Type~Ia and Type~II in the same update, and each must draw its own patch. The
+  library already does this in \code{\_feedback\_counts}.
+\item \lead{Thermometer, not binary, position codes.} The pseudocode uses
+  \code{BINARY\_ENCODE(row)}. Base-2 codes are not monotone, so no conjunction can express
+  ``row in $[a,b]$'', and rows 7 and 8 look maximally different. Thermometer bits
+  $[y > k]$ make a region constraint two literals wide.
+\item \lead{Empty clauses are False in a feature layer}, always, regardless of training mode.
+\end{itemize}

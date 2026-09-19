@@ -1,0 +1,81 @@
+\section{E1: the arms}
+\label{sec:results}
+
+\begin{table}[h]
+\centering\small
+\caption{CIFAR-10 test accuracy by arm. Mean $\pm$ standard deviation of the best test
+accuracy over seeds. \code{clauses} is the total clause budget of the arm (both layers where
+there are two), \code{TA} the automaton count in millions, and \code{train} the summed
+per-epoch training time across all trainable stages on one RTX~3090.}
+\label{tab:arms}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,clauses,automata,acc_mean,acc_std,wall_min},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/clauses/.style={column name=\thead{clauses}, column type={r}},
+  columns/automata/.style={column name=\thead{TA (M)}, column type={r}},
+  columns/acc_mean/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/acc_std/.style={column name=\thead{$\pm$}, column type={r}},
+  columns/wall_min/.style={column name=\thead{train (min)}, column type={r}},
+]{data/arms.csv}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.6cm,
+  xlabel={epoch}, ylabel={test accuracy (\%)},
+  grid=major, grid style={ttline!40},
+  legend pos=south east, legend style={font=\sffamily\scriptsize, draw=ttline},
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttslate] table[col sep=comma, x=epoch, y=test_acc] {data/curve_single-l1.csv};
+\addplot[ttslatel] table[col sep=comma, x=epoch, y=test_acc] {data/curve_single-matched.csv};
+\addplot[ttmoss] table[col sep=comma, x=epoch, y=test_acc] {data/curve_single-rf.csv};
+\addplot[ttamber] table[col sep=comma, x=epoch, y=test_acc] {data/curve_flat-stack.csv};
+\addplot[ttorange] table[col sep=comma, x=epoch, y=test_acc] {data/curve_mctm.csv};
+\addplot[ttorange, dashed] table[col sep=comma, x=epoch, y=test_acc] {data/curve_mctm-random.csv};
+\legend{layer 1 alone, single matched, single 9x9, flat stack, MCTM, MCTM random L1}
+\end{axis}
+\end{tikzpicture}
+\caption{Test accuracy per epoch (seed 0). For the two-layer arms the $x$ axis counts
+layer-2 epochs; layer~1 is trained and frozen beforehand.}
+\label{fig:curves}
+\end{figure}
+
+\subsection{What the second layer actually learned}
+\label{sec:composition}
+
+The density argument predicts a specific degeneracy: over a sparse input, a positive literal
+(``channel $k$ fires here'') is rarely satisfied while its negation is almost always
+satisfied, and Type~I feedback rewards including literals that are $1$ in the drawn patch.
+A layer that has collapsed should therefore assert mostly \emph{absences}. Table~\ref{tab:comp}
+measures this directly: \code{neg} is the median number of negated literals per clause and
+\code{neg frac} the mean fraction of each clause's literals that are negations.
+
+\begin{table}[h]
+\centering\small
+\caption{Clause composition of each arm's final (classifying) layer. \code{size} is the
+median clause size, \code{pos}/\code{neg} the median count of plain and negated literals,
+\code{neg frac} the mean negation fraction, and \code{empty} the fraction of clauses with no
+included literals.}
+\label{tab:comp}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,size,pos,neg,neg_frac,empty},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/size/.style={column name=\thead{size}, column type={r}},
+  columns/pos/.style={column name=\thead{pos}, column type={r}},
+  columns/neg/.style={column name=\thead{neg}, column type={r}},
+  columns/neg_frac/.style={column name=\thead{neg frac}, column type={r}},
+  columns/empty/.style={column name=\thead{empty}, column type={r}},
+]{data/composition.csv}
+\end{table}
+
+\input{sections/05b-readout}

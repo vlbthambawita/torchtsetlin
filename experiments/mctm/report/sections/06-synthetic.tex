@@ -1,0 +1,86 @@
+\section{E2: tasks where the answer is known in advance}
+\label{sec:synthetic}
+
+A null result on CIFAR-10 is ambiguous. It could mean the architecture does not work, or it
+could mean CIFAR-10 classes are not concepts that reward a second layer --- in which case the
+experiment never had the power to show anything. The two tasks here remove that ambiguity by
+being simple enough to analyse on paper.
+
+\lead{Setup.} A $32\times32$ Boolean image containing a \textsc{square} and/or a
+\textsc{cross} on $16$ equally spaced slots around a circle, plus $1\%$ salt noise. Layer~1
+uses $4\times4$ patches, so \emph{no single patch can ever contain both shapes}.
+
+\lead{Task \code{xor}} --- label $=$ (square present) XOR (cross present). One layer computes
+$\mathrm{threshold}\big(\sum_j w_j \bigvee_p \mathrm{conj}_j(\text{patch}_p)\big)$. Its
+features are patch-local presence detectors, and ``cross absent everywhere'' is a conjunction
+\emph{over} patches that no single clause can form. The class score is therefore a linear
+threshold in $(z_A, z_B)$, and XOR is not linearly separable: $w_A > t$ and $w_B > t$ force
+$w_A + w_B > t$. Position literals do not rescue it --- the same argument runs through with
+$z_{A,\text{top}}, z_{A,\text{bot}}, \dots$ The one-layer ceiling is the best linear
+separator, $75\%$. Both stacked variants can express it, \emph{including} the flat stack,
+because negating a globally OR-pooled bit does mean ``absent everywhere''.
+
+\lead{Task \code{near}} --- both shapes always present; label $=$ are they close together.
+Because the slots lie on a ring, rotational symmetry gives every slot exactly the same number
+of near and far partners, so the marginal position of each shape is identical in both classes
+and only the \emph{joint} separation carries the label. One layer is out: its additive vote
+realises only $f(\mathrm{pos}_A) + g(\mathrm{pos}_B) > t$, and no $4\times4$ patch sees both
+shapes. The flat stack is out: it globally OR-pools before the second stage and keeps no
+position at all. The spatial \mctm can express it --- a layer-2 clause ``channel $A$ fires
+here \emph{and} channel $B$ fires here'' over a $5\times5$ window ($13$ input pixels, enough
+for the near separation and not the far one), OR-pooled over positions, is exactly
+``somewhere the two are close''.
+
+\begin{ttcallout}[Why the ring matters]
+Sampling positions freely and rejecting on distance does \emph{not} give equal marginals: it
+pulls near-pairs towards the centre. Fitting the best additive $f(\mathrm{pos}_A) +
+g(\mathrm{pos}_B)$ predictor --- precisely the function class one convolutional layer
+realises --- reaches $66.2\%$ on that version of the task, without any joint reasoning. On
+the ring construction the same predictor reaches $46.6\%$, i.e.\ chance, while the true joint
+condition is perfectly predictive. The check is \code{scripts/check\_leakage.py}.
+\end{ttcallout}
+
+\lead{The oracle layer 1.} Trained greedily on a task it cannot represent, layer~1 has little
+reason to learn clean detectors, so a null result for the stack would again be ambiguous ---
+architecture, or training? Each stacked arm is therefore run twice: once with the greedy
+layer~1 of the proposal, and once with an \emph{oracle} layer~1 whose two clauses are an exact
+square detector and an exact cross detector, written straight into the automata
+(\code{build\_oracle\_l1}). Measured recall is $1.000$ for the square and $0.936$ for the
+cross, with no false positives, so the oracle's features are correct by construction and
+whatever the stack then achieves is a property of the architecture alone.
+
+\begin{table}[h]
+\centering\small
+\caption{Task \code{xor}: mean best test accuracy over 3 seeds. The one-layer ceiling is
+$75\%$ by the argument above.}
+\label{tab:synxor}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,acc,sd,seeds},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+  columns/seeds/.style={column name=\thead{seeds}, column type={r}},
+]{data/syn_xor.csv}
+\end{table}
+
+\begin{table}[h]
+\centering\small
+\caption{Task \code{near}: mean best test accuracy over 3 seeds. One layer and the flat stack
+are both at chance by construction; only the spatial map can carry the joint condition.}
+\label{tab:synnear}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,acc,sd,seeds},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+  columns/seeds/.style={column name=\thead{seeds}, column type={r}},
+]{data/syn_near.csv}
+\end{table}
+
+\input{sections/06b-synreadout}

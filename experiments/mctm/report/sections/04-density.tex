@@ -1,0 +1,95 @@
+\section{E0: does layer 1 produce a usable representation?}
+\label{sec:density}
+
+Before comparing architectures it is worth asking whether the intermediate representation
+can support a second layer at all. A layer-2 clause is a conjunction over a patch of layer-1
+bits; if those bits fire with probability $p$, a conjunction of $j$ of them is satisfied with
+probability $\approx p^{\,j}$. The sweep trains layer~1 at several specificities and
+clause-size budgets on \densitySubset{} images for \densityEpochs{} epochs and measures the
+firing rate of the resulting maps.
+
+\begin{table}[h]
+\centering\small
+\caption{Layer-1 clause density against specificity. \code{fire} is the median per-channel
+firing rate at OR-pool $1$, $2$ and $4$; \code{dead} is the fraction of channels that never
+fire. Rows with a clause-size budget $b$ are diagnostics of the budget mechanism
+(\S\ref{sec:budgetbug}); the sequential row trains on a tenth of the data, so its accuracy is
+not comparable.}
+\label{tab:density}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,includes,fire1,fire2,fire4,dead2,l1_acc},
+  columns/label/.style={column name=\thead{layer-1 setting}, column type={l}},
+  columns/includes/.style={column name=\thead{includes}, column type={r}},
+  columns/fire1/.style={column name=\thead{fire (p1)}, column type={r}},
+  columns/fire2/.style={column name=\thead{fire (p2)}, column type={r}},
+  columns/fire4/.style={column name=\thead{fire (p4)}, column type={r}},
+  columns/dead2/.style={column name=\thead{dead}, column type={r}},
+  columns/l1_acc/.style={column name=\thead{L1 acc (\%)}, column type={r}},
+]{data/density.csv}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.2cm,
+  xlabel={clause-activation channel (sorted)}, ylabel={firing rate},
+  ymode=log, ymin=1e-6, ymax=1,
+  grid=major, grid style={ttline!40},
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttorange] table[col sep=comma, x=channel, y=rate] {data/firing_curve.csv};
+\addplot[ttslate, dashed, domain=0:\cOne] {0.05};
+\legend{\densityDensestLabel{} (densest setting), {usable band ($5\%$)}}
+\end{axis}
+\end{tikzpicture}
+\caption{Per-channel firing rate of the layer-1 clause maps after $2\times2$ OR-pooling, for
+the densest layer-1 setting found (\densityDensestLabel{}), sorted. Log scale. The dashed
+line marks the density a layer-2 conjunction would need to have a realistic chance of firing.}
+\label{fig:firing}
+\end{figure}
+
+\subsection{Result}
+
+The densest layer-1 setting the sweep can reach (\densityDensestLabel{}) gives a median
+per-channel firing rate of \densityDensestFireRaw{}\% raw, \densityDensestFire{}\% after
+$2\times2$ OR-pooling and \densityDensestFirePoolFour{}\% after $4\times4$, with a median
+clause size of \densityDensestIncludes{} literals. At the other end,
+\densitySparsestLabel{} yields \densitySparsestFire{}\% with
+\densitySparsestDead{}\% of channels dead.
+
+\begin{ttkey}
+Even in its densest configuration the intermediate representation is far sparser than a
+conjunction over it can exploit. A two-literal layer-2 clause drawing from channels that fire
+at \densityDensestFire{}\% matches roughly
+$(\densityDensestFire{}/100)^2$ of positions. OR-pooling is the only lever that moves this
+materially, which is why it is treated as load-bearing rather than optional.
+\end{ttkey}
+
+\subsection{An interaction worth reporting: the clause-size budget stops binding}
+\label{sec:budgetbug}
+
+\code{max\_included\_literals} is documented as a clause-size budget: a matching clause over
+budget receives no Type~Ia feedback, and its Type~I events act as Type~Ib until it shrinks
+back. It gates Type~Ia only. Type~II is ungated --- it pushes \emph{excluded} literals
+towards inclusion, one step per event, capped only by the distance to the include boundary:
+
+\begin{lstlisting}[language=Python]
+inc2 = torch.minimum(n2, room.to(n2.dtype), out=n2)   # functional.py
+\end{lstlisting}
+
+Under \code{feedback\_mode="batch"} a single commit aggregates the Type~II events of the
+whole mini-batch, and a convolutional model contributes one opportunity per patch --- $841$
+for $4\times4$ patches on a $32\times32$ image. Enough events accumulate in one commit to
+carry many literals across the boundary at once, so the budget never binds. Measured at
+budget $b=8$: median clause size \incBudgetBatchFifty{} at batch~50,
+\incBudgetBatchFive{} at batch~5, and \incBudgetSeq{} under sequential feedback.
+
+This is a fidelity cost of batched feedback beyond the one the library already documents, and
+it is specific to the convolutional models, where the patch dimension multiplies the event
+count. For the experiments below, specificity $s$ is therefore used as the density knob
+rather than the clause-size budget.

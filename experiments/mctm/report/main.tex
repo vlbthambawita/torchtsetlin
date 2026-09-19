@@ -1,0 +1,64 @@
+% =====================================================================================
+%  Multilayer Convolutional Tsetlin Machines on CIFAR-10
+%  Build:  make data && make
+% =====================================================================================
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[a4paper, top=26mm, bottom=24mm, left=24mm, right=24mm,
+            headheight=14pt, headsep=10mm, footskip=12mm]{geometry}
+\usepackage{ttwhitepaper}
+\usepackage[colorlinks=true, linkcolor=ttrust, citecolor=ttrust, urlcolor=ttrust,
+  pdftitle={Multilayer Convolutional Tsetlin Machines: an evaluation on CIFAR-10},
+  pdfauthor={Vajira Thambawita}]{hyperref}
+
+\input{macros}
+
+\newcommand{\mctm}{\textsc{mctm}\xspace}
+\newcommand{\ctm}{\textsc{ctm}\xspace}
+
+\begin{document}
+
+% ------------------------------------------------------------------ title
+\begin{titlepage}
+\vspace*{18mm}
+{\sffamily\bfseries\color{ttdeep}\Huge Multilayer Convolutional\\[2mm] Tsetlin Machines\par}
+\vspace{6mm}
+{\sffamily\LARGE\color{ttorange} An evaluation of greedy layer-wise clause stacking on CIFAR-10\par}
+\vspace{10mm}
+{\color{ttrule}\rule{\textwidth}{1.1pt}}
+\vspace{6mm}
+
+{\sffamily\large Vajira Thambawita\par}
+{\sffamily\color{ttgray} Simula Metropolitan Center for Digital Engineering\par}
+\vspace{3mm}
+{\sffamily\color{ttgray} Experiments run with \ttlibname\ \ttversionreport\par}
+\vspace{14mm}
+
+\begin{ttcallout}[Summary]
+\input{sections/abstract}
+\end{ttcallout}
+
+\vfill
+{\color{ttrule}\rule{\textwidth}{0.6pt}}
+{\sffamily\footnotesize\color{ttgray} All figures and every number in this report are generated
+from \code{experiments/mctm/results/*.json} by \code{report\_data.py}. Nothing is hand-typed.\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+{\sffamily\footnotesize
+ \setlength{\parskip}{0pt}
+ \renewcommand{\contentsname}{\textcolor{ttdeep}{Contents}}
+ \tableofcontents}
+\clearpage
+\pagenumbering{arabic}
+
+\input{sections/01-idea}
+\input{sections/02-method}
+\input{sections/03-setup}
+\input{sections/04-density}
+\input{sections/05-results}
+\input{sections/06-synthetic}
+\input{sections/07-discussion}
+\input{sections/08-repro}
+
+\end{document}

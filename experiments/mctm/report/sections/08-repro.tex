@@ -1,0 +1,35 @@
+\section{Reproducing this report}
+\label{sec:repro}
+
+Everything lives in \code{experiments/mctm/}. The report reads only
+\code{results/*.json}; re-running the experiments and rebuilding regenerates every figure,
+table and inline number.
+
+\begin{lstlisting}[language=bash]
+cd experiments/mctm
+
+# E0 -- layer-1 density diagnostic (writes results/density_sweep.json)
+python sweep_density.py --epochs 5 --subset 20000
+
+# E1 -- the arms, three seeds each (writes results/<arm>_seed<k>.json)
+./run_all.sh
+
+# report: JSON -> data/*.csv + macros.tex -> PDF
+cd report && make data && make
+\end{lstlisting}
+
+\lead{Files.} \code{mctm.py} is the implementation (\S\ref{sec:method}); \code{cifar.py}
+loads and caches the Booleanized dataset; \code{run.py} is the experiment driver, one arm per
+invocation; \code{sweep\_density.py} is E0; \code{report\_data.py} turns results into
+\code{report/data/*.csv} and \code{report/macros.tex}; \code{smoke.py} exercises every code
+path on synthetic data and is the fastest check that the machinery still works.
+
+\lead{Environment.} \ttlibname\ \ttversionreport, PyTorch with CUDA, one NVIDIA RTX~3090.
+Layer~1 is cached per \code{(seed, config)} under \code{.ckpt/} because four arms share it;
+reported training time is the sum of recorded per-epoch times across both stages, so it is
+unaffected by that cache.
+
+\lead{Upstreaming.} The only library-level change the \mctm needs is a public accessor for
+the spatial map that \code{\_ConvMixin.\_evaluate} already computes --- a single method
+alongside \code{evaluate\_clauses}. The prototype deliberately reaches into the private
+hooks instead, to keep an unproven idea off the public API surface.

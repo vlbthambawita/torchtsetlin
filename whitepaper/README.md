@@ -48,8 +48,8 @@ ttwhitepaper.sty      the theme — palette, headings, callouts, listing style,
                       table rules, shared TikZ/pgfplots styles
 sections/             one file per section, 00 (title page) to 12 (references)
 figures/              TikZ diagrams and pgfplots charts, \input by the sections
-data/                 benchmark CSVs the charts read (extracted from
-                      ../benchmarks/results/cpu_vs_gpu.json)
+data/                 benchmark CSVs the charts read, plus regen.py which rebuilds
+                      them from ../benchmarks/results/cpu_vs_gpu.json
 references.bib        BibTeX form of the reference list
 ```
 
@@ -76,16 +76,23 @@ Two details that are easy to trip over if you extend the theme:
 
 ### Updating the numbers
 
-The charts read the CSVs in `data/`, which were extracted from
-`../benchmarks/results/cpu_vs_gpu.json`. After re-running
+The charts read the CSVs in `data/`, which are generated from
+`../benchmarks/results/cpu_vs_gpu.json`. After re-running the benchmarks:
 
 ```bash
-../benchmarks/run_benchmarks.sh
+./benchmarks/run_benchmarks.sh        # from the repo root
+python whitepaper/data/regen.py       # rewrite data/*.csv from the new JSON
+cd whitepaper && make
 ```
 
-on different hardware, update the CSVs (and the hardware table in
-`sections/08-benchmarks.tex`) and rebuild. The figures pick up the new values with no other
-changes.
+The figures pick the new values up with no other changes. **The hand-written tables and the
+prose figures are not derived from the CSVs** — after a re-run, check these against
+`../benchmarks/results/tables.md` by hand:
+
+- the environment table, model zoo and end-to-end MNIST tables in `sections/08-benchmarks.tex`
+- the throughput/speedup numbers quoted in §8 prose, the "peak measured" row in §1, and the
+  peak speedup in the title-page abstract
+- the `8.6×` / `1.3×` annotations in `figures/fig-bench-threads.tex`
 
 ## Figures
 

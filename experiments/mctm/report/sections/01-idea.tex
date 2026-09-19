@@ -1,0 +1,85 @@
+\section{The idea}
+\label{sec:idea}
+
+A convolutional Tsetlin machine (\ctm) evaluates every clause on every patch of an image
+and then collapses the result immediately. For clause $j$ with included-literal set $I_j$,
+
+\begin{equation}
+  z_j \;=\; \bigvee_{p} \; \bigwedge_{k \in I_j} L_k\!\left(\text{patch}_p\right),
+  \qquad
+  v_c \;=\; \mathrm{clamp}\!\left( \sum_j W_{jc}\, z_j,\; -T,\; T \right).
+  \label{eq:ctm}
+\end{equation}
+
+The conjunction in Eq.~\ref{eq:ctm} lives \emph{inside a single patch}. Across patches there
+is only a disjunction, followed by a linear threshold over the $z_j$. The multilayer
+convolutional Tsetlin machine (\mctm) keeps the spatial map instead of collapsing it:
+
+\begin{equation}
+  X^{(l+1)}_j(r,c) \;=\; \bigwedge_{k \in I_j} L_k\!\left(\text{patch}_{r,c}\!\left(X^{(l)}\right)\right),
+  \qquad X^{(l)} \in \{0,1\}^{C_l \times H_l \times W_l},
+  \label{eq:mctm}
+\end{equation}
+
+so layer $l+1$ forms conjunctions \emph{over the activations of layer $l$ at different
+offsets}. Layers are trained greedily and frozen: Tsetlin automata carry no gradient, so
+there is no signal to propagate into a lower layer.
+
+\subsection{Why depth could help}
+
+The motivation is not the analogy to convolutional networks; it is a concrete
+representational gap, and it is worth stating precisely because the obvious version of the
+claim is false. Write $z_j = \bigvee_p \mathrm{conj}_j(\text{patch}_p)$ for the globally
+OR-pooled output of clause $j$. A single layer decides by a \emph{linear threshold over those
+bits}:
+
+\begin{equation}
+  \hat{y} \;=\; \Big[\; \textstyle\sum_j u_j\, z_j \;>\; t \;\Big].
+  \label{eq:onelayer}
+\end{equation}
+
+So a single layer is more capable than it first appears. ``Contains a square and no
+triangle'' \emph{is} reachable --- take $u_A = +1$, $u_B = -1$, $t = 0.5$ --- even though
+``no triangle anywhere'' is a conjunction over patches that no individual clause can form.
+The voting layer supplies the negation that the clause cannot. What a single layer cannot do
+is compute a function of the $z_j$ that is not linearly separable in them. The canonical case
+is exclusive or: $u_A > t$ and $u_B > t$ together force $u_A + u_B > t$, so
+$z_A \oplus z_B$ is out of reach, and adding position literals does not help because the same
+argument runs through with $z_{A,\text{top}}, z_{A,\text{bot}}, \dots$
+
+The second restriction is relational. Each $z_j$ has already discarded \emph{where} the
+clause matched, and with position literals Eq.~\ref{eq:onelayer} can only realise an additive
+$f(\mathrm{pos}_A) + g(\mathrm{pos}_B) > t$. A joint condition on two positions --- ``these
+two parts are close together'' --- is therefore unreachable however many clauses are added.
+
+A layer that reads the retained spatial map lifts both restrictions at once: it forms
+conjunctions over the bits \emph{and their negations} at chosen offsets, so
+$z_A \wedge \neg z_B$ becomes a single clause, and ``$A$ here and $B$ within this window''
+becomes a single clause too. \S\ref{sec:synthetic} tests exactly these two cases, on tasks
+whose one-layer ceiling is known in advance.
+
+\begin{ttkey}
+The claim under test is therefore narrow and falsifiable: at a \emph{matched total clause
+budget}, does a two-layer stack beat one layer --- and does it beat one layer whose patch is
+as large as the stack's effective receptive field?
+\end{ttkey}
+
+\subsection{Two ways it can fail}
+
+\lead{Greedy saturation.} If layer~1 is trained as a classifier and frozen, it keeps only
+what made \emph{it} accurate and discards exactly the residual information layer~2 would
+need. This is the classical failure of supervised greedy layer-wise training; the 2006-era
+schemes that worked used information-preserving unsupervised objectives instead. The stack's
+ceiling may simply be layer~1's ceiling.
+
+\lead{Density collapse.} A trained \ctm clause includes tens of literals and therefore
+matches a tiny fraction of patches. A conjunction of $j$ such bits is satisfied with
+probability $\approx p^{\,j}$. If $p$ is small, a layer-2 clause can only survive by
+including \emph{negated} literals, which are near-constant and carry almost no information,
+and Type~I feedback actively drives it there: on a sparse patch the literals valued $1$ are
+almost all negations, and Type~I rewards including literals that are $1$. The layer
+degenerates into ``nothing is here'' detectors.
+
+Density collapse is the reason layer-1 clause size is treated here as a \emph{controlled
+variable} (\code{max\_included\_literals}) rather than left at its default. Evaluating the
+default configuration alone would be testing a strawman.

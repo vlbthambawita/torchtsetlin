@@ -1,0 +1,31 @@
+\subsection{Readout}
+
+\lead{The stack is far worse than the layer it is built on.} The \mctm reaches
+\accMctm{}\%, against \accSingleLOne{}\% for its own frozen layer~1 used directly as a
+classifier. Adding a second layer does not fail to help; it removes more than half the
+accuracy that was already there. The single-layer baselines at matched budget --- widening
+to the same clause count (\accSingleMatched{}\%) or widening the patch to the stack's
+$9\times9$ receptive field (\accSingleRf{}\%) --- are both far ahead.
+
+\lead{Random first-layer clauses beat trained ones by a wide margin.} \code{mctm-random}
+reaches \accMctmRandom{}\%, a gain of over twenty points on the identical architecture with a
+\emph{trained} layer~1, and it is the only two-layer arm that is competitive with the
+single-layer baselines at all. The difference is density and nothing else: random
+three-literal clauses fire on \fireMctmRandom{}\% of positions, trained ones on
+\fireMctm{}\%. Table~\ref{tab:comp} shows the consequence downstream --- the trained-layer-1
+stack builds clauses that are \negMctm{}\% negations, the random-layer-1 stack
+\negMctmRandom{}\%.
+
+\lead{The ablations point the same way.} Removing position encoding from layer~2
+(\accMctmNopos{}\%) and removing the OR-pool (\accMctmNopool{}\%) both leave the stack at or
+near the $10\%$ chance floor, and the denser layer~1 of \code{mctm-dense}
+(\accMctmDense{}\%) does not rescue it either. A $4\times4$ pool (\accMctmPoolFour{}\%) buys
+density at the cost of a $15\times15$ receptive field, which is no longer comparable to the
+$9\times9$ baseline.
+
+\begin{ttcallout}[Read this with the scale in mind]
+These are small Tsetlin machines --- hundreds of clauses where the CIFAR-10 literature uses
+thousands --- so none of these absolute numbers is a CIFAR-10 result for Tsetlin machines.
+What the table supports is the \emph{ordering} between arms at a matched clause budget, and
+those gaps are an order of magnitude larger than the spread across seeds.
+\end{ttcallout}

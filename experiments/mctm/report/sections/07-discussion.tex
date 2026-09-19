@@ -1,0 +1,61 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\input{sections/07b-verdict}
+
+\subsection{What would have to change}
+
+The greedy supervised scheme in the proposal couples two things that want opposite settings.
+Layer~1 is trained to classify, which rewards \emph{specific} clauses --- many included
+literals, rare firing --- and layer~2 needs \emph{general} clauses whose activations are
+common enough to be conjoined. E0 (\S\ref{sec:density}) measures that coupling directly:
+across the sweep, every increase in layer-1 density costs layer-1 accuracy. A design that
+wants both cannot get them from one objective.
+
+Three directions follow, in increasing order of how much they change the proposal.
+
+\begin{itemize}[leftmargin=1.2em]
+\item \lead{Give layer 1 a different objective.} Nothing forces a feature layer to be trained
+  by classification. A reconstruction objective --- clauses that predict held-out features of
+  a patch from the rest, as in the Tsetlin machine autoencoder --- preserves information
+  rather than discarding whatever did not help the local classifier, and it has no reason to
+  drive clauses towards extreme specificity. This is the direct analogue of the unsupervised
+  greedy pre-training that made layer-wise deep learning work in the first place.
+\item \lead{Calibrate density explicitly.} Rather than hoping $s$ lands somewhere usable, fix
+  a target per-channel firing rate and adjust each clause towards it --- a Boolean analogue of
+  normalisation. The measurement in \S\ref{sec:density} is the diagnostic such a scheme would
+  optimise.
+\item \lead{Propagate credit instead of freezing.} The interesting question the proposal
+  defers (its \S23, Q9) is whether feedback can reach a lower layer at all. Clause inclusion
+  is a usable credit path: if a layer-2 clause receives Type~I feedback and includes the
+  literal ``channel $k$ active at offset $(dy,dx)$'', then layer-1 clause $k$ can receive
+  Type~I feedback at that position. That is a discrete, rule-based analogue of
+  backpropagation, it requires no gradients, and it removes the greedy-saturation problem by
+  construction. It is a bigger change than anything tested here, and it is the part of the
+  idea most worth pursuing.
+\end{itemize}
+
+\subsection{Limitations of this evaluation}
+
+\lead{Scale.} These are small Tsetlin machines by CIFAR-10 standards --- hundreds of clauses
+where the literature uses thousands --- chosen so that ten arms across three seeds fit in a
+few GPU-hours. Absolute accuracies are correspondingly modest and should not be read as
+CIFAR-10 results for Tsetlin machines. The comparison is between arms at a matched clause
+budget, and that is what the conclusions rest on.
+
+\lead{One stack depth, and a gap between the two datasets.} Only two-layer stacks were run.
+E2 shows CIFAR-10 was, in part, the wrong place to look: its classes are not obviously
+concepts that need a conjunction or a relation between separated parts, which is the only
+thing the second layer supplies. That makes the CIFAR-10 result a statement about the greedy
+training scheme on a natural-image task, not about the architecture --- E2 is what speaks to
+the architecture. Whether a relational advantage of the kind \code{near} isolates ever shows
+up on natural images is untested here, and is the obvious next question.
+
+\lead{The oracle is an upper bound, not a method.} \code{build\_oracle\_l1} writes the right
+features in by hand. It establishes that the architecture can use good features, and
+therefore that training is the binding constraint; it does not suggest how to obtain such
+features without knowing the answer. The three directions above are proposals, not results.
+
+\lead{Hyper-parameters.} $T$ was fixed at the clause count and not tuned per arm, and layer-2
+specificity was tied to layer-1's. A wider search could move the numbers; it is unlikely to
+close the gaps reported in \S\ref{sec:results}, which are large relative to seed spread.

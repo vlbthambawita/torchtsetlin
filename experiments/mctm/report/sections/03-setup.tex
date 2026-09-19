@@ -1,0 +1,50 @@
+\section{Experimental setup}
+\label{sec:setup}
+
+\lead{Data.} CIFAR-10, \nTrain{} training and \nTest{} test images, Booleanized with
+\clsname{ColorThermometerEncoder} at \nBits{} bits per colour channel, giving Boolean tensors
+of shape \inShape{}. CIFAR-10 is chosen over MNIST deliberately: a single-layer \ctm already
+saturates MNIST, leaving no headroom in which a depth effect could be observed.
+
+\lead{Architecture.} Layer~1 is a \clsname{ConvCoalescedTsetlinMachine} with \cOne{} shared
+clauses and $\pOne{}\times\pOne{}$ patches at stride~1. Coalesced (shared-clause) models are
+used throughout because a feature layer wants generic clauses, not clauses owned by one
+class. Its spatial maps are OR-pooled $\poolK{}\times\poolK{}$ and fed to layer~2, a second
+\clsname{ConvCoalescedTsetlinMachine} with \cTwo{} clauses and $\pTwo{}\times\pTwo{}$
+patches, which also acts as the classifier. The effective receptive field of the stack is
+$9\times9$ input pixels.
+
+\lead{Protocol.} \epochsRun{} epochs per trainable stage, batch size \batchSize{} with the
+library's default batched feedback, three seeds per arm. We report the best test accuracy
+reached over the run, its spread across seeds, and wall-clock time on one RTX~3090.
+
+\subsection{The arms}
+
+Each arm answers one question. The design fixes the falsification criteria in advance.
+
+\begin{center}\small
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\ttoprule
+\thead{Arm} & \thead{Question it answers} \\
+\ttmidrule
+\code{single-l1}      & What layer~1 alone achieves --- the greedy ceiling it is trained against. \\
+\code{single-matched} & The same \emph{total} clause budget in one layer. Does depth beat width? \\
+\code{single-rf}      & One layer with patch $=$ the stack's $9\times9$ effective receptive
+                        field. Is any gain just a bigger receptive field? \\
+\code{flat-stack}     & Layer-1 bits, globally OR-pooled, into a flat TM. Does keeping the
+                        \emph{spatial} map earn its cost over the trivial stack? \\
+\code{mctm}           & The proposal. \\
+\code{mctm-random}    & Random layer-1 clauses, same layer~2. Does the supervised local
+                        objective buy anything? \\
+\code{mctm-nopool}    & $\text{pool}=1$. Is OR-pooling load-bearing? \\
+\code{mctm-nopos}     & Layer-2 position encoding off. \\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\begin{ttkey}
+Declared before running: the \mctm is worth pursuing only if it beats \code{single-matched}
+\emph{and} \code{single-rf} \emph{and} \code{flat-stack} at matched clause budget. If
+\code{mctm-random} matches \code{mctm}, the greedy supervised objective contributes nothing.
+If \code{mctm} does not exceed \code{single-l1}, greedy saturation is confirmed.
+\end{ttkey}

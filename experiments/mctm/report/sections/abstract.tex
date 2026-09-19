@@ -1,0 +1,22 @@
+We implement the proposed multilayer convolutional Tsetlin machine --- convolutional layers
+that keep their spatial clause-activation maps instead of OR-pooling them, trained greedily
+and frozen --- and evaluate it on CIFAR-10 against single-layer baselines at a matched clause
+budget, with the acceptance criteria fixed before any run. On CIFAR-10 it fails all of them:
+the two-layer stack reaches \accMctm{}\% against \accSingleMatched{}\% for one layer of the
+same size, and falls below the \accSingleLOne{}\% its own frozen first layer achieves alone.
+Two measurements explain why. Clause maps are extremely sparse --- density and layer-1
+accuracy trade off directly, and the most accurate setting fires on
+\densitySparsestFire{}\% of positions --- so the second layer's clauses become \negMctm{}\%
+negated literals and assert only absences. And the greedy objective is counter-productive:
+\emph{random} first-layer clauses beat trained ones, \accMctmRandom{}\% against
+\accMctm{}\%. A second experiment, on two tasks whose per-arm ceilings are known
+analytically, separates the architecture from the training scheme and reaches a more
+favourable conclusion for the idea itself. Given a hand-built first layer at a matched
+channel count, the stack reaches \synXorFlatStackOracleSixFour{}\% on a task a single layer
+is provably capped at $75\%$ on; and on a relational task the variant that keeps the spatial
+map reaches \synNearMctmTask{}\% while the global-pooling stack is pinned at chance whatever
+features it is given. The proposal's distinctive architectural choice --- preserving the map
+--- is the right one, and is strictly more expressive than a single layer. Greedy supervised
+layer-wise training is what does not work. We also report a library-level interaction found
+on the way: under batched feedback the \code{max\_included\_literals} clause-size budget
+silently stops binding, because Type~II feedback is not gated by it.

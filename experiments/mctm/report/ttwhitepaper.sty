@@ -1,0 +1,283 @@
+% ttwhitepaper.sty — orange-themed white paper class helpers for torchtsetlin.
+% Provides the colour palette, page furniture, callout boxes, code listing style,
+% table rules and the shared TikZ styles used by every figure.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ttwhitepaper}[2026/09/17 torchtsetlin white paper theme]
+
+% ----------------------------------------------------------------------------- packages
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8]{inputenc}
+% Fonts: XCharter for the body, Fira Sans for headings and figures, Inconsolata for code.
+% Comment the four lines below out to fall back to Computer Modern on a minimal TeX Live.
+\RequirePackage{XCharter}
+\RequirePackage[scaled=0.92]{FiraSans}
+\RequirePackage[varqu,scaled=0.90]{zi4}
+\RequirePackage[charter,vvarbb,scaled=1.04]{newtxmath}
+\RequirePackage{microtype}
+\RequirePackage{upquote}
+\RequirePackage{xcolor}
+\RequirePackage{amsmath}   % newtxmath already supplies the AMS symbol fonts
+\RequirePackage{booktabs}
+\RequirePackage{colortbl}   % coloured table rules
+\RequirePackage{array}
+\RequirePackage{tabularx}
+\RequirePackage{multirow}
+\RequirePackage{graphicx}
+\RequirePackage{listings}
+\RequirePackage{enumitem}
+\RequirePackage{titlesec}
+\RequirePackage{fancyhdr}
+\RequirePackage[font=small,labelfont={bf},labelsep=period,skip=6pt]{caption}
+\RequirePackage{tikz}
+\RequirePackage{pgfplots}
+\RequirePackage{pgfplotstable}
+\RequirePackage{needspace}
+\RequirePackage{xspace}
+
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,shapes.geometric,%
+  shapes.misc,decorations.pathreplacing,decorations.pathmorphing,patterns,matrix,%
+  chains}
+\usepgfplotslibrary{groupplots}
+\pgfplotsset{compat=1.18}
+
+% ----------------------------------------------------------------------------- palette
+% Orange is the voice of the document; slate is its quiet counterpart (used for the
+% CPU series in every chart, so "orange = GPU / torchtsetlin" reads consistently).
+\definecolor{ttorange}{HTML}{E8590C}   % primary
+\definecolor{ttamber} {HTML}{F59F00}   % secondary / highlight
+\definecolor{ttdeep}  {HTML}{8C3503}   % headings, dark accents
+\definecolor{ttrust}  {HTML}{C2410C}   % mid tone
+\definecolor{ttsand}  {HTML}{FFF4E8}   % callout background
+\definecolor{ttcream} {HTML}{FFFAF4}   % table zebra / code background
+\definecolor{ttline}  {HTML}{F3B489}   % hairlines on orange
+\definecolor{ttink}   {HTML}{241B15}   % body text
+\definecolor{ttgray}  {HTML}{6F6259}   % secondary text
+\definecolor{ttslate} {HTML}{31506B}   % counterpoint (CPU series)
+\definecolor{ttslatel}{HTML}{8FA6BC}   % light counterpoint
+\definecolor{ttmoss}  {HTML}{3F7052}   % third series when needed
+
+\colorlet{ttrule}{ttorange!55}
+\colorlet{ttfaint}{ttorange!12}
+
+% ----------------------------------------------------------------------------- text
+\color{ttink}
+\renewcommand{\arraystretch}{1.18}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{0pt}
+\setlength{\emergencystretch}{2em}
+
+% ----------------------------------------------------------------------------- headings
+% \needspace keeps a section heading from being stranded at the foot of a page.
+\titleformat{\section}
+  {\needspace{4\baselineskip}\sffamily\bfseries\Large\color{ttdeep}}
+  {\thesection}{0.7em}{}
+  [{\vspace{0.18em}\color{ttrule}\titlerule[1.1pt]}]
+\titleformat{\subsection}
+  {\needspace{3\baselineskip}\sffamily\bfseries\large\color{ttrust}}{\thesubsection}{0.6em}{}
+\titleformat{\subsubsection}
+  {\sffamily\bfseries\normalsize\color{ttink}}{\thesubsubsection}{0.55em}{}
+\titlespacing*{\section}{0pt}{1.9em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.25em}{0.45em}
+\titlespacing*{\subsubsection}{0pt}{0.9em}{0.3em}
+
+% ----------------------------------------------------------------------------- floats
+% Let LaTeX mix floats with text more freely; the defaults produce float-only pages here.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.7}
+\renewcommand{\textfraction}{0.08}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{2}
+\setcounter{bottomnumber}{2}
+\setcounter{totalnumber}{3}
+
+% ----------------------------------------------------------------------------- toc
+% article.cls puts 1.0em above every section entry; 0.35em keeps a 12-section contents
+% on one page without crowding it.
+\makeatletter
+\renewcommand*\l@section[2]{%
+  \ifnum \c@tocdepth >\z@
+    \addpenalty\@secpenalty
+    \addvspace{0.35em \@plus\p@}%
+    \setlength\@tempdima{1.5em}%
+    \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      \leavevmode \bfseries
+      \advance\leftskip\@tempdima
+      \hskip -\leftskip
+      #1\nobreak\hfil
+      \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+    \endgroup
+  \fi}
+\makeatother
+
+% ----------------------------------------------------------------------------- page furniture
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[L]{\sffamily\scriptsize\color{ttgray}\ttlibname\ \textcolor{ttorange}{\textbar}\ \ttsubtitleshort}
+\fancyhead[R]{\sffamily\scriptsize\color{ttgray}\nouppercase{\leftmark}}
+\fancyfoot[C]{\sffamily\scriptsize\color{ttgray}\thepage}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+
+\fancypagestyle{ttplain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\sffamily\scriptsize\color{ttgray}\thepage}%
+  \renewcommand{\headrulewidth}{0pt}}
+
+% ----------------------------------------------------------------------------- shorthands
+\newcommand{\ttlibname}{\texttt{torchtsetlin}\xspace}
+\newcommand{\ttsubtitleshort}{A PyTorch-native Tsetlin machine framework}
+% \leavevmode matters: without it a leading \color whatsit lands in the vertical list
+% of a p-column and the whole cell drops one line below its row.
+\newcommand{\code}[1]{\leavevmode{\ttfamily\color{ttdeep}#1}}
+\newcommand{\clsname}[1]{\leavevmode{\ttfamily\color{ttdeep}#1}}
+\newcommand{\ttcite}[1]{\textsuperscript{\textcolor{ttorange}{[#1]}}}
+
+% Reference list support.
+\newcounter{ttrefcnt}
+\providecommand{\doi}[1]{\texttt{doi:#1}}
+
+% A small orange lead-in for the first words of a paragraph.
+\newcommand{\lead}[1]{{\sffamily\bfseries\color{ttorange}#1}\xspace}
+
+% ----------------------------------------------------------------------------- callouts
+\newsavebox{\ttcalloutbox}
+\newenvironment{ttcallout}[1][Note]{%
+  \par\needspace{3\baselineskip}\medskip\noindent
+  \begin{lrbox}{\ttcalloutbox}%
+  \begin{minipage}{\dimexpr\linewidth-3.2em\relax}%
+  \small
+  {\sffamily\bfseries\color{ttorange}#1}\par\vspace{0.25em}%
+  \ignorespaces}
+  {\end{minipage}\end{lrbox}%
+  \begin{tikzpicture}
+    \node[inner sep=0pt] (c) {\usebox{\ttcalloutbox}};
+    \begin{scope}[on background layer]
+      \fill[ttsand, rounded corners=3pt]
+        ($(c.north west)+(-1.3em,0.85em)$) rectangle ($(c.south east)+(1.3em,-0.85em)$);
+      \fill[ttorange]
+        ($(c.north west)+(-1.3em,0.85em)$) rectangle ($(c.south west)+(-1.0em,-0.85em)$);
+    \end{scope}
+  \end{tikzpicture}\par\medskip}
+
+% Key-takeaway strip used at the end of major sections.
+\newsavebox{\ttkeybox}
+\newenvironment{ttkey}{%
+  \par\needspace{3\baselineskip}\medskip\noindent
+  \begin{lrbox}{\ttkeybox}%
+  \begin{minipage}{\dimexpr\linewidth-3.4em\relax}%
+  \small\color{ttdeep}
+  {\sffamily\bfseries\color{ttdeep}In short.}\enspace\ignorespaces}
+  {\end{minipage}\end{lrbox}%
+  \begin{tikzpicture}
+    \node[inner sep=0pt] (c) {\usebox{\ttkeybox}};
+    \begin{scope}[on background layer]
+      \draw[ttorange!45, line width=0.7pt, rounded corners=3pt, fill=ttfaint]
+        ($(c.north west)+(-1.4em,0.8em)$) rectangle ($(c.south east)+(1.4em,-0.8em)$);
+    \end{scope}
+  \end{tikzpicture}\par\medskip}
+
+% ----------------------------------------------------------------------------- code
+\lstdefinestyle{ttpython}{
+  language=Python,
+  basicstyle=\ttfamily\footnotesize\color{ttink},
+  keywordstyle=\color{ttorange}\bfseries,
+  commentstyle=\color{ttgray},          % inconsolata has no italic: keep comments upright
+  stringstyle=\color{ttslate},
+  emphstyle=\color{ttdeep}\bfseries,
+  emph={torchtsetlin,tt,TsetlinMachine,CoalescedTsetlinMachine,ConvTsetlinMachine,
+        RegressionTsetlinMachine,Conv1dTsetlinMachine,ConvCoalescedTsetlinMachine,
+        ConvRegressionTsetlinMachine,Trainer,ThermometerEncoder,AdaptiveThresholdEncoder,
+        EarlyStopping,ModelCheckpoint,CSVLogger,HyperparameterSchedule},
+  showstringspaces=false,
+  columns=fullflexible,
+  keepspaces=true,
+  breaklines=true,
+  breakatwhitespace=true,
+  numbers=none,
+  xleftmargin=1.1em,
+  xrightmargin=0.4em,
+  framexleftmargin=1.1em,
+  frame=l,
+  rulecolor=\color{ttorange!60},
+  framerule=1.6pt,
+  backgroundcolor=\color{ttcream},
+  aboveskip=1.0em,
+  belowskip=0.8em,
+  captionpos=b,
+}
+\lstdefinestyle{ttshell}{
+  style=ttpython,
+  language=bash,
+  keywordstyle=\color{ttdeep}\bfseries,
+}
+\lstset{style=ttpython}
+
+% ----------------------------------------------------------------------------- tables
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+\newcommand{\thead}[1]{\leavevmode{\sffamily\bfseries\color{ttdeep}#1}}
+\newcommand{\ttoprule}{\arrayrulecolor{ttorange}\specialrule{1.1pt}{0pt}{0pt}\arrayrulecolor{black}}
+\newcommand{\ttmidrule}{\arrayrulecolor{ttorange!45}\specialrule{0.5pt}{2pt}{2pt}\arrayrulecolor{black}}
+\newcommand{\ttbotrule}{\arrayrulecolor{ttorange}\specialrule{1.1pt}{2pt}{0pt}\arrayrulecolor{black}}
+\newcommand{\yes}{\textcolor{ttorange}{$\bullet$}}
+\newcommand{\no}{\textcolor{ttgray!55}{$\circ$}}
+\newcommand{\partialsup}{\textcolor{ttamber}{$\circ\mkern-9mu\bullet$}}
+
+% ----------------------------------------------------------------------------- tikz styles
+\tikzset{
+  ttnode/.style={
+    draw=ttorange!55, fill=ttsand, rounded corners=2.5pt, line width=0.7pt,
+    inner sep=6pt, align=center, font=\sffamily\small, text=ttink},
+  ttnode dark/.style={
+    draw=ttdeep, fill=ttorange, rounded corners=2.5pt, line width=0.7pt,
+    inner sep=6pt, align=center, font=\sffamily\small\bfseries, text=white},
+  ttnode plain/.style={
+    draw=ttgray!45, fill=white, rounded corners=2.5pt, line width=0.7pt,
+    inner sep=6pt, align=center, font=\sffamily\small, text=ttink},
+  ttnode slate/.style={
+    draw=ttslate, fill=ttslate!12, rounded corners=2.5pt, line width=0.7pt,
+    inner sep=6pt, align=center, font=\sffamily\small, text=ttink},
+  ttlayer/.style={
+    draw=ttorange!40, fill=ttfaint, rounded corners=4pt, line width=0.7pt},
+  ttarrow/.style={-{Stealth[length=4pt,width=3.4pt]}, line width=0.8pt, draw=ttorange},
+  ttarrow dashed/.style={ttarrow, dashed, draw=ttgray},
+  ttlabel/.style={font=\sffamily\scriptsize, text=ttgray, inner sep=2pt},
+  tttitle/.style={font=\sffamily\bfseries\scriptsize, text=ttdeep},
+  ttcell/.style={draw=ttgray!45, line width=0.4pt, minimum size=4.6mm,
+    font=\scriptsize, inner sep=0pt, anchor=center},
+  ttcell on/.style={ttcell, fill=ttorange, text=white},
+  ttcell off/.style={ttcell, fill=white},
+  ttcell inc/.style={ttcell, fill=ttamber!55},
+}
+
+% Chart defaults: orange = GPU / this library, slate = CPU / baseline.
+\pgfplotsset{
+  ttaxis/.style={
+    width=\linewidth, height=5.4cm,
+    tick align=outside, tick pos=left,
+    axis line style={draw=ttgray!60, line width=0.6pt},
+    grid=major,
+    grid style={draw=ttgray!18, line width=0.4pt},
+    label style={font=\sffamily\small, color=ttink},
+    tick label style={font=\sffamily\scriptsize, color=ttgray},
+    title style={font=\sffamily\bfseries\small, color=ttdeep},
+    legend style={
+      font=\sffamily\scriptsize, draw=ttgray!35, fill=white,
+      rounded corners=2pt, inner sep=3pt, cells={anchor=west}},
+    legend cell align=left,
+  },
+  ttgpu/.style={color=ttorange, mark=*, mark size=1.7pt, line width=1.2pt,
+                mark options={fill=ttorange, draw=ttdeep, line width=0.4pt}},
+  ttcpu/.style={color=ttslate, mark=square*, mark size=1.5pt, line width=1.2pt,
+                mark options={fill=ttslatel, draw=ttslate, line width=0.4pt}},
+  ttthird/.style={color=ttamber, mark=triangle*, mark size=2pt, line width=1.2pt,
+                mark options={fill=ttamber, draw=ttdeep, line width=0.4pt}},
+  ttbar/.style={fill=ttorange, draw=ttdeep, line width=0.4pt},
+  ttbarcpu/.style={fill=ttslatel, draw=ttslate, line width=0.4pt},
+}
+
+\endinput

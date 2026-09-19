@@ -1,0 +1,43 @@
+\subsection{Readout}
+
+\lead{\code{xor} --- depth adds real expressivity.} A single layer is capped at $75\%$ by the
+argument above and measures $\synXorSingleTask{} \pm \synsdXorSingleTask{}\%$, with a large
+spread: Tsetlin training finds the optimal separator on some seeds and not others. Trained
+greedily neither stack escapes the ceiling ($\synXorFlatStackTask{}\%$,
+$\synXorMctmTask{}\%$). Given an oracle layer~1 both clear it decisively --- the flat stack
+reaches $\synXorFlatStackOracle{}\%$ with two channels and
+$\synXorFlatStackOracleSixFour{} \pm \synsdXorFlatStackOracleSixFour{}\%$ with sixty-four,
+and the \mctm $\synXorMctmOracle{}\%$ and $\synXorMctmOracleSixFour{}\%$. Because the
+sixty-four-channel oracle gives layer~2 exactly the channel count --- and therefore the
+literal-space size --- that it faces with a greedily trained layer~1, the gap cannot be read
+as ``fewer channels are easier''. A stack of convolutional Tsetlin layers really does express
+what one layer provably cannot; the greedy first layer is what stands between the
+architecture and that capability.
+
+\lead{\code{near} --- keeping the spatial map is the part of the idea that earns its keep.}
+The flat stack is at chance in \emph{every} configuration --- $\synNearFlatStackTask{}\%$
+greedy, $\synNearFlatStackOracle{}\%$ with the two-channel oracle,
+$\synNearFlatStackOracleSixFour{}\%$ with sixty-four. No quality of features rescues it,
+because global OR-pooling has already destroyed the position the task depends on. The single
+layer is likewise at chance ($\synNearSingleTask{}\%$). The spatial \mctm reaches
+$\synNearMctmTask{} \pm \synsdNearMctmTask{}\%$ with the ordinary greedily trained layer~1.
+This is the one place in the whole evaluation where the proposal's distinctive choice is
+decisively correct.
+
+\begin{ttkey}
+The two tasks answer the two questions separately. \code{xor}: stacking convolutional Tsetlin
+layers is strictly more expressive than one layer --- but only greedy training stands in the
+way of using it. \code{near}: of the two ways to stack, only the one that keeps the spatial
+map can represent a relational concept at all; the cheap global-OR stack is at chance no
+matter how good its features are.
+\end{ttkey}
+
+\lead{A sparsity result in the other direction.} The two-channel oracle \emph{fails} on
+\code{near} ($\synNearMctmOracle{}\%$) while the same oracle padded to sixty-four channels
+with random distractors succeeds ($\synNearMctmOracleSixFour{} \pm
+\synsdNearMctmOracleSixFour{}\%$). Each oracle channel fires at exactly one location per
+image, so a layer-2 clause must pin down one specific pair of offsets, and any given pair is
+vanishingly rare in training; the extra channels supply the redundancy that makes a
+co-occurrence learnable. Sparsity hurts the second layer from both directions --- too sparse
+and conjunctions never fire, too precise and there is nothing to generalise over. It is the
+same mechanism that \S\ref{sec:density} measures on CIFAR-10, seen from the opposite side.
