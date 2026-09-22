@@ -1,0 +1,43 @@
+\section{Method and protocol}
+
+\subsection{Protocol}
+CIFAR-10, official train/test. A fixed stratified \textbf{45\,000/5\,000} train/validation split
+(\code{split\_seed=1234}, hash \code{\SplitHash}) shared by every arm, Tsetlin and CNN alike.
+\textbf{Selection is on validation; the test set is evaluated once} per (arm, seed) at the selected
+epoch. This breaks comparability with the prior programme in \code{experiments/mctm}, which reported
+\code{best\_test\_acc}, i.e.\ test-set model selection; arms reused as baselines were re-run.
+
+\textbf{The seed band was measured, not assumed}: five seeds of a 2\,000-clause arm gave a standard
+deviation of 0.61 points, so \textbf{two three-seed means must differ by at least \SeedBand\ points
+to count as a difference}. Validation selection contributes only about 0.09 of that.
+
+\subsection{Why the literature's numbers needed re-deriving}
+Three configuration facts had to be settled before any arm could be scored, and each was worth more
+than an experiment:
+
+\begin{itemize}
+\item \textbf{``Clauses'' means \emph{per class}} --- confirmed in the source paper and independently
+      in the reference implementation. The literature's ``2\,000'' is 20\,000 total. Mis-reading this
+      under-prices every arm by a factor of ten, and it is unqualified in two of the four papers that
+      report CIFAR-10 numbers.
+\item \textbf{Load-bearing settings are undocumented.} A clause-size budget of 32 appears in all
+      twenty-two reference scripts of the state-of-the-art toolbox and in \emph{none} of its tables.
+      Without it the headline cell does not reproduce. This produced a standing rule: \emph{read the
+      reference code before declaring any reproduction a failure}.
+\item \textbf{No Tsetlin image paper uses a validation split.} Reported accuracy is the mean of the
+      last 25 or 100 epochs, or a peak. Our protocol therefore reports lower numbers for the same
+      configuration --- measured at $\leq$0.25 points, four times below the seed band.
+\end{itemize}
+
+\subsection{What was built}
+A harness in \code{experiments/convtm/code/}: data pipeline and Booleanization registry, a result
+schema that \emph{refuses} to write a record selected on test data, per-GPU job queues, and a
+diagnostics module recording per epoch the clause length, negation fraction, firing rate, per-clause
+match-count distribution, TA-state histogram and marginal selectivity by inclusion depth.
+
+Two design decisions paid for themselves repeatedly. Storing the \textbf{full per-epoch curve} in
+every record means the selection defect of \S\ref{sec:withheld} can be repaired from stored data with
+no re-runs. And making rules \textbf{unstateable rather than merely written down} --- a screening flag
+that enforces its own protocol, a validator that rejects test-selected records, a verdict generator
+that refuses to compare arms that are not budget-matched --- caught three errors that discipline
+alone would not have.

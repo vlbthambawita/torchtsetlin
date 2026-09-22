@@ -1,0 +1,33 @@
+\section{Proposed \code{torchtsetlin} changes --- not applied}
+\label{sec:library}
+
+The library was not modified. Eleven gaps were recorded, each with a minimal reproduction, an impact
+statement and a fix sketch. The ones that affected this work:
+
+\begin{itemize}
+\item \textbf{The documented claim that \code{max\_included\_literals} does not bind is too strong.}
+      It overshoots by about +2.5 literals at budget 8 and \emph{holds} at 16, 32 and 64 at batch 50.
+      Given \S\ref{sec:budget}, this is the most consequential documentation error found: the
+      repository's \code{CLAUDE.md} and its stored notes still state the strong form, and it steers
+      users away from a nine-point mechanism. \textbf{Recommended first change.}
+\item \textbf{The default chunk budget silently serialises large convolutional models} --- a batch of
+      50 runs as one or two chunks at large clause counts on a card with 23\,GB free, costing
+      1.2--1.5$\times$ throughput. Accuracy-neutral (verified), so it is a dial, not a bug, but the
+      default is wrong for this regime.
+\item \textbf{No public API reaches the patch-match tensor.} Three separate diagnostics and every
+      pooling or multi-layer candidate go through private hooks. Sketch: expose
+      \code{clause\_maps(x, include=None)}.
+\item \textbf{Memory scales with clauses $\times$ literals, not clauses}, through the feedback
+      accumulator, and nothing warns about it. A wide-feature arm exhausts a 24\,GB card at a clause
+      count a narrow one runs comfortably.
+\item \textbf{A convolutional \code{\_encode} override cannot wrap the parent's}, only replace it.
+\item \textbf{No dilation}, and one patch size per model --- the two cheapest receptive-field
+      mechanisms, one of which is a single unthreaded keyword argument.
+\item \textbf{Booleanization registry lacks Otsu, Canny, HOG and adaptive multilevel colour
+      thermometers} --- four of the seven encodings behind the field's best published result.
+\end{itemize}
+
+A further warning worth carrying into any future change: \textbf{do not offer \code{float16} as a
+memory option}. Clause-violation counts sum up to the literal count --- 11\,664 for one encoding used
+here --- and float16 represents integers exactly only to 2\,048, so it would silently miscount on
+exactly the models large enough to want it.

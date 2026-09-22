@@ -1,0 +1,89 @@
+\section{Findings}
+
+\subsection{The field's CIFAR-10 anchor is not a CIFAR-10 result}
+Progress in Tsetlin image classification is commonly measured against a convolutional Tsetlin machine
+result of \textbf{60.7\%}. Tracing it: it originates in an MSc thesis (University of Agder, 2020)
+which, in the words of the paper that cites it, ``utilized a \emph{modified} CIFAR-10 dataset''. It
+is cited at third hand; its clause budget, window, $T$, $s$ and epoch count are unknown. The 2019
+Convolutional Tsetlin Machine paper reports \textbf{no CIFAR-10 number at all}.
+
+The defensible bars are: best single model \textbf{75.4\%} (64\,000 clauses per class, 250 epochs);
+previous single-model state of the art \textbf{75.1\%}; a vanilla convolutional machine
+\textbf{69.3\%}; and \textbf{82.8\%} for a \emph{composite} of twenty-two specialists, which is an
+ensemble and is not comparable to a single model.
+
+This matters beyond bookkeeping: a programme aiming at 60.7\% and one aiming at 75.4\% are different
+programmes, and the gap to CNNs is 14.7 points smaller than the anchor implies.
+
+\subsection{Our harness reproduces the literature, and clears it}
+At 20\,000 clauses, 5$\times$5 colour thermometers, $T=3000$, $s=5.0$, budget 32, \textbf{50} epochs:
+\textbf{\PreflightVal\% validation, \PreflightTest\% test}, against the source table's
+\textbf{64.5\%} at \textbf{250} epochs. The reproduction target was cleared at one fifth of the
+training budget. This is the first time in this line of work that a published Tsetlin CIFAR-10 cell
+has been matched here.
+
+\subsection{The clause-size budget is worth nine points, not 0.06}
+\label{sec:budget}
+A clause-size budget caps how many literals a clause may include. Its authors measured it at
+\textbf{+0.06} points on CIFAR-2 and \textbf{+0.05} on MNIST-with-convolution, and presented it as an
+interpretability and hardware mechanism. It is set to 32 in every reference script of the
+state-of-the-art toolbox and appears in none of that paper's tables.
+
+On convolutional CIFAR-10 we measure it at \textbf{+\BudDelta\ points}
+(\BudCap\ $\pm$ \BudCapSd\ against \BudUnc\ $\pm$ \BudUncSd, three seeds each, seed intervals
+disjoint), at \textbf{4.8$\times$ fewer included literals per image} and \textbf{+1.7\% wall-clock}.
+For scale, the largest published single-model CIFAR-10 mechanism, Drop Clause, is worth +5.8.
+
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  columns/s/.style={column name=$s$},
+  columns/mode/.style={column name=feedback},
+  columns/unconstrained/.style={column name=unconstrained},
+  columns/capped/.style={column name=budget 32},
+  columns/delta/.style={column name=$\Delta$},
+  columns/unc_sd/.style={column name={sd}},
+  columns/cap_sd/.style={column name={sd}},
+  every head row/.style={before row=\toprule, after row=\midrule},
+  every last row/.style={after row=\bottomrule},
+]{data/budget.csv}
+
+Three things make this a finding about Tsetlin machines rather than about our implementation:
+
+\begin{itemize}
+\item \textbf{It survives the exact algorithm.} Under sequential feedback --- the per-example
+      algorithm, not our batched approximation --- the effect is \textbf{+\SeqDelta}. The two modes
+      differ by 0.71 points, inside the seed band, so batch aggregation is not producing it.
+\item \textbf{It is not the specificity parameter in disguise.} This was pre-registered as a rival
+      explanation by the team member whose result it threatened, because $s$ also shortens clauses
+      and this repository's own prior notes recommended using $s$ instead. Tested: $s{=}2$
+      unconstrained reaches \StwoUnc, against \BudCap\ for budget 32 --- a gap of 11.15 points
+      against a \SeedBand\ point band. The budget pays at every $s$ tested (+\StwoDelta\ at $s{=}2$,
+      +\BudDelta\ at $s{=}10$), and the best cell in the family is $s{=}2$ \emph{with} the budget,
+      at \StwoCap. The two dials are complementary.
+\item \textbf{It holds at scale.} At 20\,000 clauses, a different encoding and a different $s$, the
+      budget is still worth +6.43 points.
+\end{itemize}
+
+\subsection{Why: inclusion is a ratchet}
+The mechanism was derived from the feedback rules and then measured. Adding a literal is effectively
+deterministic; removing one is not. An included literal can only be evicted when the clause
+\emph{fails to fire}, at rate $1/s$; and the admission rule asks only whether a literal is
+\emph{frequent inside the clause's own match set}, never whether it is \emph{useful}. The result is a
+ratchet.
+
+Measured on an unconstrained clause over 30 epochs: clause length \textbf{86.7 $\to$ 170.6}
+(+97\%, i.e.\ 68.7\% of all includable literals) while the firing rate moves \textbf{$-$1.4\%} and
+validation accuracy \textbf{+1.1} points. Epochs 5--30 alone add \textbf{34.4 literals for +0.32
+points}, inside the seed band. \textbf{Clause length had not converged at 30 epochs; accuracy
+converged at epoch 4.} Per-literal selectivity is \textbf{4.6$\times$} higher under the budget.
+
+At 20\,000 clauses the ratchet is not merely wasteful but harmful: the unconstrained arm's validation
+accuracy \textbf{peaks at epoch 13 and declines by 2.30 points} by epoch 50 while its clauses grow to
+188 literals. The machine trains itself backwards for 37 epochs. Only validation-selected reporting
+sees this; a last-epoch or last-25-epoch statistic --- what every Tsetlin image paper in the
+bibliography uses --- records the degraded number and never sees the peak.
+
+One quantitative prediction of the theory was confirmed and one falsified. The predicted equilibrium
+firing rate $f^{*}=1/(1+s)$ holds to \textbf{11--13\%} across a sevenfold movement in the predicted
+quantity. But clause length was predicted to fall below 32 at $s{=}2$ and instead stayed at 160: the
+admission threshold is \emph{not} what governs clause length. What does govern it is open.

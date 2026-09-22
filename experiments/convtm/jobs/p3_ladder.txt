@@ -1,0 +1,18 @@
+# C-2 CAPACITY LADDER (DR-003). Thermometer arm only -- HOG caps at 20 000 total on this
+# hardware (AUDIT A23), so the HOG half is carried by cnn-boolean-on-HOG-bits plus a single
+# level comparison.
+#
+# Points are the paper's own reachable cells at the corrected per-class convention:
+#   20 000 total = 2 000/class   (published 64.5%)   <- this IS the pre-flight, do not re-run
+#   40 000 total = 4 000/class
+#   80 000 total = 8 000/class
+# 50 epochs, 1 seed (DR-003 Decision: adaptive seeding -- buy the 2nd seed only if the
+# 20k->80k gain lands within 2x the seed band of the +/-4 pp decision boundary).
+#
+# ZERO-COST CONTROL, do not skip: check from the per-epoch validation curve whether the 80 000
+# point is still improving at epoch 50. Without it the ladder is biased toward saturation and
+# therefore toward the dl-expert's position.
+#
+# [MEASURED: calib_perclass_gpu1] 4.80 + 8.97 = 13.77 GPU-h on the 3090.
+ctm-therm5:ctm-therm5-40k|--n-clauses 40000 --epochs 50 --eval-n 2000 --test-curve-last 25
+ctm-therm5:ctm-therm5-80k|--n-clauses 80000 --epochs 50 --eval-n 2000 --test-curve-last 25

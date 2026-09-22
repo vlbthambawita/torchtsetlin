@@ -1,0 +1,75 @@
+\section{The question this report answers}
+\label{sec:question}
+
+The previous report evaluated the multilayer convolutional Tsetlin machine --- convolutional
+layers that keep their spatial clause-activation maps instead of OR-pooling them away,
+trained greedily and frozen --- and split cleanly into a positive and a negative result.
+
+\begin{ttkey}
+\lead{The architecture was vindicated.} On a task whose one-layer ceiling is known
+analytically, a two-layer stack given a hand-built first layer cleared it
+($\synXorMctmOracleSixFour{}\%$ against $75\%$ at a matched channel count); on a relational
+task the variant that keeps the spatial map reached $\synNearMctmTask{}\%$ while the
+global-pooling stack was pinned at chance whatever features it was given.
+
+\lead{The training scheme was not.} On CIFAR-10 the stack reached \accMctm{}\% against
+\accSingleMatched{}\% for a single layer of the same total size, and fell below the
+\accSingleLOne{}\% its own frozen first layer achieved alone. \emph{Random} first-layer
+clauses beat trained ones, \accMctmRandom{}\% against \accMctm{}\%.
+\end{ttkey}
+
+The diagnosis was a coupling. Training layer~1 to classify rewards \emph{specific} clauses ---
+many included literals, rare firing --- while layer~2 needs \emph{general} ones whose
+activations are common enough to be conjoined. Layer~1 fires on a fraction of a percent of
+patch positions, and layer~2, facing an input where positive literals are almost never
+satisfied and negations almost always are, becomes \negMctm{}\% negated literals and learns
+that things are absent.
+
+That report's \S7.3 named three ways out, in increasing order of how much they change the proposal.
+This report implements all three and measures them.
+
+\begin{itemize}[leftmargin=1.2em]
+\item[\ideaA] \lead{Give layer 1 a different objective.} Nothing forces a feature layer to be
+  trained by classification. A reconstruction objective --- clauses that predict held-out
+  features of a patch from the rest --- preserves information rather than discarding whatever
+  did not help the local classifier, and has no reason to drive clauses towards extreme
+  specificity.
+\item[\ideaB] \lead{Calibrate density explicitly.} Rather than hoping the specificity
+  parameter lands somewhere usable, fix a target per-channel firing rate and adjust each
+  clause towards it --- a Boolean analogue of normalisation.
+\item[\ideaC] \lead{Propagate credit instead of freezing.} Clause inclusion is a usable credit
+  path: if a layer-2 clause receives Type~I feedback and includes the literal ``channel $k$
+  active at offset $(dy,dx)$'', then layer-1 clause $k$ can receive Type~I feedback at that
+  position. A discrete, rule-based analogue of backpropagation that requires no gradients.
+\end{itemize}
+
+\subsection{What this report adds}
+
+Each idea is implemented, measured on CIFAR-10 against the same baselines at the same clause
+budget, and measured again on the two constructed tasks of the first report, where the
+per-arm ceiling is known in advance and the oracle says how much headroom a better training
+scheme actually has.
+
+Four things were not obvious before doing it, and they are the substance of what follows.
+
+The unsupervised objective does exactly what it was predicted to do to the \emph{statistics}
+of the representation, and on CIFAR-10 that is worth six points and no more. The density
+controller reaches any target rate asked of it, and produces a monotone dose-response curve
+that turns the first report's density argument into a measurement. Credit propagation, written
+out honestly, turns out to have no forgetting term, then no bandwidth, and finally a drift
+problem that is more interesting than either.
+
+And the fourth is the one that matters. Run over an \emph{untrained} first layer --- random
+clauses, never shown a label --- the same density controller takes CIFAR-10 to
+\randBestAcc\,$\pm$\,\randBestSd{}\%, past the \accSingleMatched{}\% of a single layer at the
+same clause budget and the \accSingleRf{}\% of a single layer given the stack's receptive
+field. That is the first configuration in either report for which the second layer is worth
+what it costs. On the constructed relational task, where a single layer is at chance
+(\synNearSingleTask{}\%) by construction, repairing the first layer's density by either route
+solves the task outright: \synNearAutoAuto{}\% with the autoencoder layer and
+\synNearCalibTask{}\% with the controller, against \synNearMctmTask{}\% for greedy training
+and \synNearMctmOracleSixFour{}\% for the \emph{hand-built oracle} of the first report, whose
+two exact shape detectors turn out to be too sparse to conjoin.
+
+So the first report's diagnosis was right and its repairs work. What does not survive is the
+part of the proposal nobody was questioning: that layer~1 should be trained.

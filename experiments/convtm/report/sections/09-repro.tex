@@ -1,0 +1,26 @@
+\section{Reproducibility}
+
+Everything is under \code{experiments/convtm/}. \NResults\ result records across \NArms\ distinct
+arms; \NDecisions\ decision records in \code{DECISIONS.md}, append-only, each citing the measurements
+it rests on; the round's deliberation in \code{rounds/ROUND-1/}; the audit trail in \code{AUDIT.md}.
+
+Every record carries its command line, seed, git revision, environment, split hash, hyperparameters,
+capacity, full per-epoch curve and diagnostics, and refuses to be written if it was selected on test
+data. Predictions are stored per arm so paired significance tests need no re-runs.
+
+Two verification results are worth stating. \textbf{The harness reproduces bit-exactly across a
+five-file change}: a re-run under new labels returned 37.50/37.93/39.50 and 47.80/48.07 --- identical
+to the digit --- which is what licenses treating the diagnostics added mid-programme as
+non-perturbing. And \textbf{cross-device runs agree within the seed band}, so \code{device + seed},
+not \code{seed}, is the reproducibility key.
+
+\code{git diff -- src/} is empty. The library was never modified.
+
+\vspace{4mm}
+\begin{ttcallout}[Status]
+This programme was halted part-way through its reproduction phase. It did not design or test a new
+approach to convolution in Tsetlin machines. What it establishes is a corrected set of reference
+numbers, a reproduced published cell, one mechanism whose published value understates its effect on
+CIFAR-10 by two orders of magnitude, an account of why, and an instrumented harness in which the
+remaining questions are a few tens of GPU-hours apart rather than open-ended.
+\end{ttcallout}

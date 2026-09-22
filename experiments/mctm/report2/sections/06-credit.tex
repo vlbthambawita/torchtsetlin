@@ -1,0 +1,189 @@
+\section{E5: credit propagation}
+\label{sec:credit}
+
+\lead{The prediction.} Freezing is what makes the scheme greedy, and clause inclusion is a
+credit path that does not need gradients. If layer-2 feedback can reach layer~1, the
+saturation problem goes away by construction --- layer~1 is no longer optimising a proxy, it
+is optimising the thing layer~2 wants.
+
+This is the idea that changes the proposal most, and it is the one that did not survive first
+contact with an implementation. Writing the rule out honestly produced a sequence of failures,
+each of which had to be fixed before the next became visible: no forgetting term, then a
+forgetting term that erases layer~1, then an event ratio nothing in the loop chooses, then no
+events at all, and finally --- once there are events --- drift. The ladder
+(Table~\ref{tab:credit}) is more informative than any single arm, and it is the substance of
+this section.
+
+\begin{table}[h]
+\centering\small
+\caption{The credit ladder. \code{rate} is the fraction of credit events actually applied,
+\code{warm} the number of frozen-layer-1 epochs before the credit path is switched on,
+\code{Ia}/\code{Ib} the feedback events actually delivered to layer~1 over the whole run, and
+\code{size}/\code{fire} layer~1's median clause size and firing rate at the end. \code{best}
+is the best test accuracy over epochs, as everywhere else in this report; \code{final} is the
+accuracy at the last epoch, and the two differ here because several of these arms do not
+converge --- they collapse, and the best epoch is an early one.}
+\label{tab:credit}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,rate,warmup,ev_i,ev_ib,l1_size,l1_fire,acc,final},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/rate/.style={column name=\thead{rate}, column type={r}},
+  columns/warmup/.style={column name=\thead{warm}, column type={r}},
+  columns/ev_i/.style={column name=\thead{Ia}, column type={r}},
+  columns/ev_ib/.style={column name=\thead{Ib}, column type={r}},
+  columns/l1_size/.style={column name=\thead{size}, column type={r}},
+  columns/l1_fire/.style={column name=\thead{fire (\%)}, column type={r}},
+  columns/acc/.style={column name=\thead{best (\%)}, column type={r}},
+  columns/final/.style={column name=\thead{final (\%)}, column type={r}},
+]{data/credit_rungs.csv}
+\end{table}
+
+\subsection{Rung 1: the rule as written has no forgetting term}
+
+Taken literally --- ``a layer-2 clause that receives Type~I feedback credits Type~I feedback to
+layer-1 clause $k$'' --- and applied to the case that has a position to point at, the rule
+propagates Type~Ia and Type~II. Both of those \emph{add} literals. Type~Ia memorizes the
+literals true in the drawn patch, and with \code{boost\_true\_positive} it does so with
+probability~1, so a single event includes every literal true in that patch at once. Type~II
+pushes false literals towards inclusion. Nothing in the rule ever removes one.
+
+Layer~1 saturates inside the first epoch: clauses reach \lOneSizeMctmCreditIa\ literals,
+\lOneDeadMctmCreditIa{}\% of channels go permanently dead and the median channel stops firing
+altogether. The credit path then extinguishes itself, which is the part worth keeping. It
+delivers \eventsMctmCreditIa\ Type~Ia events in total, all of them by epoch
+\lastEventMctmCreditIa, and not one afterwards for the remaining \epochsRun-epoch run: a
+layer-2 clause can only propagate through a positive channel literal, and there are almost no
+positive channel activations left to include. The arm reaches \accMctmCreditIa{}\%, which is
+what a mostly-dead layer~1 is worth.
+
+\subsection{Rung 2: Type Ib has to be blamed, not sampled --- and it erases layer 1}
+
+Type~I covers Ib as well as Ia, and Ib is the only term that removes literals. It also needs
+no position, which makes it easy to propagate. The obvious implementation --- pick a random
+included positive channel literal of the non-matching layer-2 clause and give layer-1 clause
+$k$ a Type~Ib event --- is wrong, and instructively so: it blames layer-1 clauses that did
+exactly what was asked of them. The correct rule asks which literal actually blocked the
+match: take the clause at the patch it came closest to matching, and blame an included
+positive channel literal that was \emph{false} there. That is the rule used here, and the
+implementation is checked against it directly (\code{test\_ideas.py}).
+
+It does not save layer~1; it destroys it the other way. Layer-2 clauses fail to match far more
+often than they match, so blamed Type~Ib events outnumber Type~Ia by roughly three orders of
+magnitude (\eventsIbMctmCreditIb\ against \eventsMctmCreditIb\ over the run), and layer~1 is
+forgotten down to \lOneSizeMctmCreditIb\ literals per clause --- \lOneDeadMctmCreditIb{}\% of
+channels dead, which is to say the representation is gone. The arm's best epoch is its first,
+at \accMctmCreditIb{}\%, and it finishes at \finMctmCreditIb{}\%: exactly chance, because every
+image now maps to the same all-zero feature map.
+
+\subsection{Rung 3: balancing the two directions, and what that exposes}
+
+Capping the Type~Ib budget at the Type~Ia rate actually delivered makes the equilibrium clause
+size finite by construction, and the arm reaches \accMctmCreditBal{}\%. Layer~1 ends at
+\lOneSizeMctmCreditBal\ literals and \lOneFireMctmCreditBal{}\% firing --- back where rung~1
+was.
+
+\begin{ttkey}
+\lead{The credit path severs the loop that keeps a Tsetlin clause the right size.} In an
+ordinary machine, a clause's ratio of Type~Ia to Type~Ib events \emph{is} its own match rate:
+grow too specific, stop matching, receive Type~Ib, shrink. It is self-stabilising, and it is
+why a trained layer settles at 77--85 literals rather than at 0 or 496. Credit propagation
+replaces that ratio with \emph{layer 2's} match rate, which carries no information about
+whether layer-1 clause $k$ is the right size. The three rungs are the three things that can
+then happen: flood (rung~1, saturate at
+\lOneSizeMctmCreditIa), drought (rung~2, erased to \lOneSizeMctmCreditIb), and an arbitrary
+externally-chosen ratio (rung~3). There is no stable interior, because the quantity that
+used to choose it is no longer in the loop.
+\end{ttkey}
+
+The second thing rung~3 exposes is bandwidth. The credit path's throughput is the rate at
+which a layer-2 clause matches \emph{because of} a positive channel literal, and
+Table~\ref{tab:credit} says what that is: \eventsMctmCreditBal\ Type~Ia events across
+\epochsRun\ epochs and \nTrain\ images, against the $\nTrain{} \times \cOne$ per epoch a layer
+trained directly receives. Layer~1 is not being trained through layer~2; it is being nudged a
+few hundred times.
+
+\subsection{Rung 4: warm start, and the bandwidth result at its sharpest}
+
+Both problems have a candidate fix. An untrained layer~2 has no included positive channel
+literals, so there is nothing to propagate through until it has some: a warm start --- ten
+epochs of ordinary frozen training, then the credit path --- is the natural analogue of how
+layer-wise pretraining is actually used. And the stabilising loop the credit path severed can
+be replaced from outside, by running \ideaB's controller inside the training loop, which holds
+layer~1 at a chosen firing rate no matter what the credit events do to it.
+
+\begin{ttkey}
+Warm-starting from the \emph{greedy} layer~1 delivers \eventsMctmCreditWarm\ credit events.
+Not few --- none, across twenty epochs and \nTrain\ images. A layer firing on
+\fireGreedyPre{}\% of positions never lets a layer-2 clause match on a positive channel
+literal, so the rule has nothing to fire on and the arm is the frozen stack exactly
+(\accMctmCreditWarm{}\% against \accMctm{}\%). Sweeping the credit step size on top of that
+would be sweeping a multiplier on zero.
+\end{ttkey}
+
+Adding the controller is what gives the path traffic, and then the mechanism can finally be
+judged on its own terms.
+
+\begin{ttkey}
+\code{mctm-credit-cal} holds layer~1 at \lOneFireMctmCreditCal{}\% firing and
+\lOneSizeMctmCreditCal\ literals --- statistically the same layer that
+\S\ref{sec:density}'s rate-only calibration produces and freezes
+(\calibFireMctmCalibRTwoZero{}\%, \calibSizeMctmCalibRTwoZero\ literals), which reaches
+\accMctmCalibRTwoZero{}\%. The credit path then delivers \eventsMctmCreditCal\ Type~Ia events,
+and the arm reaches \accMctmCreditCal{}\%, finishing at \finMctmCreditCal{}\%. Turning the step
+size up to $1.0$ gives \accMctmCreditCalPOne{}\% and down to $0.01$ gives
+\accMctmCreditCalPZeroZeroOne{}\%.
+\end{ttkey}
+
+Layer~2 therefore \emph{ends} over the same representation as the frozen arm it should be
+compared with, and the stack is nearly eight points worse. What it did not have is a
+representation that stayed still while it learned: from epoch \creditWarmEpochs\ onwards every
+layer-2 clause is a conjunction over channels whose meaning is being rewritten underneath it,
+and the less that rewriting is allowed to happen, the better the stack does.
+Figure~\ref{fig:credit} shows it over time --- the arms are identical through the warm start
+and separate at the moment layer~1 starts to move.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.0cm,
+  xlabel={epoch}, ylabel={test accuracy (\%)},
+  grid=major, grid style={ttline!40},
+  legend style={font=\sffamily\scriptsize, draw=ttline, at={(0.5,-0.26)}, anchor=north,
+                legend columns=4, column sep=1.1em},
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttslate] table[col sep=comma, x=epoch, y=test_acc] {data/credit_trace_mctm-credit-warm.csv};
+\addplot[ttmoss] table[col sep=comma, x=epoch, y=test_acc] {data/credit_trace_mctm-credit-cal-p001.csv};
+\addplot[ttamber] table[col sep=comma, x=epoch, y=test_acc] {data/credit_trace_mctm-credit-cal.csv};
+\addplot[ttorange] table[col sep=comma, x=epoch, y=test_acc] {data/credit_trace_mctm-credit-cal-p1.csv};
+\legend{no controller, step 0.01, step 0.1, step 1.0}
+\end{axis}
+\end{tikzpicture}
+\caption{The warm-start arms. All four are ordinary frozen training for the first
+\creditWarmEpochs\ epochs. The ``no controller'' arm never changes afterwards either, because
+the credit path delivers no events at all over a layer~1 that fires on \fireGreedyPre{}\% of
+positions.}
+\label{fig:credit}
+\end{figure}
+
+\subsection{What the ladder actually shows}
+
+Most of the rungs are implementation failures, and they are worth recording precisely because
+the proposal's one-sentence statement of the rule hides every one of them: there is no
+forgetting term in it, no account of which literal to blame, and no quantity that sets the
+ratio between the two. An implementer meets all three before getting to the interesting
+question.
+
+The last two rungs are not implementation failures. \emph{No bandwidth} is a statement about
+the setting --- the credit path can only carry traffic when layer-2 clauses match because of
+positive channel literals, and a layer~1 firing on \fireGreedyPre{}\% of positions never lets
+that happen. \emph{Drift} is a statement about the mechanism, and it is the one that does not
+go away by fixing something: a frozen layer is what makes ``channel $k$'' mean something
+stable enough for a layer-2 clause to be a rule about it, and credit propagation gives exactly
+that up. \S\ref{sec:synthetic} runs the same code on a task where layer~2 clauses are small
+and match often, and finds the same collapse.

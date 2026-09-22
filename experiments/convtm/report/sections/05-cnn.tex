@@ -1,0 +1,44 @@
+\section{The CNN side, as far as it got}
+
+Eleven CNN baselines completed before the halt, all under the same split, the same
+validation-only selection and the same single test evaluation as the Tsetlin arms.
+
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  columns/arm/.style={column name=arm},
+  columns/test/.style={column name=test \%},
+  columns/sd/.style={column name=sd},
+  columns/n/.style={column name=seeds},
+  every head row/.style={before row=\toprule, after row=\midrule},
+  every last row/.style={after row=\bottomrule},
+]{data/cnn.csv}
+
+The like-for-like comparison is against an \emph{unaugmented} CNN, because the Tsetlin arms use no
+augmentation: \textbf{\CNNSmallNoaug\%} for a simple convolutional network against \textbf{65.44\%}
+for the best Tsetlin arm measured here --- a gap of roughly \textbf{24 points}. Augmentation alone is
+worth 3.6 points to that network (\CNNSmall\ against \CNNSmallNoaug) and 8.0 to ResNet-20
+(\CNNResnetTwoZero\ against \CNNResnetTwoZeroNoaug), which is larger than most effects this programme is
+hunting and is the reason the unaugmented column is the honest one.
+
+\subsection{The decomposition that did not run}
+The report's intended spine was a decomposition of that 24-point gap into \emph{Booleanization loss},
+\emph{binary-computation loss} and \emph{Tsetlin-mechanism loss}, via two controls: a CNN trained on
+the same Boolean tensor the Tsetlin machine sees, and a binarised CNN. \textbf{Neither ran.} They were
+queued behind the arms above when work stopped.
+
+What the literature already establishes is that the binary term is small: the best fully binary
+network (1-bit weights \emph{and} activations) reaches 93.75\% on CIFAR-10 against 94.8\% for its own
+full-precision baseline, and binarising weights alone has been reported to \emph{improve} accuracy.
+\textbf{So the gap is not explained by binary arithmetic}, and on the team's pre-registered estimate
+--- recorded before the runs, and untested --- roughly two thirds of it is architectural: one layer,
+no hierarchy, and a max/OR over patch positions rather than a learned pooled representation.
+
+\subsection{One comparison that needs no further runs}
+From capacity records already measured: the flagship Tsetlin arm holds \textbf{26.2 million automata
+= 104.6\,MB of state}, which is \textbf{2.3$\times$ more storage than ResNet-18's 11.2 million
+fp32 parameters}, and evaluates \textbf{436 million included literals per image}, between a simple
+CNN's 165 million and ResNet-18's 555 million multiply-accumulates --- at \PreflightTest\% against
+ResNet-18's expected mid-nineties.
+
+The framing that Tsetlin machines are small and cheap does not survive contact with their own capacity
+records. Their advantages on this benchmark are interpretability and integer arithmetic, not size.

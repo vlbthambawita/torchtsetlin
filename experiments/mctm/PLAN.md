@@ -119,3 +119,74 @@ channels so layer 2 faces the same channel count as the greedy case. That separa
   `flat-stack`, all at matched clause budget.
 * If `mctm-random` matches `mctm`, the greedy supervised objective contributes nothing.
 * If `mctm` <= `single-l1`, greedy saturation (risk 1) is confirmed.
+
+---
+
+# Follow-up: the three repairs proposed in §7.3 of the report
+
+The first evaluation concluded that the architecture is sound and greedy supervised layer-wise
+training is not, and its §7.3 named three ways out. `ideas.py` implements all three; `run_ideas.py`
+(CIFAR-10) and `synthetic_ideas.py` (the two constructed tasks) run them.
+
+## The ideas, and what each is supposed to fix
+
+| | idea | fixes | implementation |
+|---|---|---|---|
+| **A** | a different objective for layer 1 | clauses too specific, information discarded | `pretrain_autoencoder_l1` — predict a patch's centre pixels from its surrounding ring, no labels; embed the flat clauses into the conv layer's literal space |
+| **B** | explicit density calibration | firing rate left to chance via `s` | `calibrate_density` — a two-sided greedy walk towards a target per-patch firing rate (and, optionally, a clause-size cap) |
+| **C** | credit propagation instead of freezing | greedy saturation | `CreditStack` — layer-2 Type Ia/Ib/II events resolve through an included positive channel literal to a layer-1 clause and position |
+
+## Criteria, fixed before the runs
+
+An idea is a repair only if it beats, at a matched clause budget:
+
+1. the greedy stack (`mctm`, 15.4%) — necessary, not sufficient;
+2. the **random-layer-1 control** (`mctm-random`, 37.6%) — a trained feature layer that does not
+   beat an untrained one is not earning its objective;
+3. a single layer at the same total budget (`single-matched`, 35.4%).
+
+For **C** there is a tighter, controlled test: credit training must beat the frozen stack *with the
+same layer-1 initialisation*.
+
+## Design decisions the results turned on
+
+* **B adds only pixel literals.** The cheapest way to hit any firing rate is a position literal
+  (`y > 27` fires on 1/29 of patch rows whatever the image contains). Left free, the controller takes
+  it every time and produces channels carrying no information.
+* **B needs both targets.** A 55-literal clause and a 3-literal one can sit at the same firing rate
+  and are not interchangeable. Under a size cap the removal rule must optimise the *joint* objective:
+  dropping the most load-bearing literal sends the rate to ~1, the least to ~0.
+* **C's rule as written has no forgetting term.** Type Ia and Type II both only add literals. Type Ib
+  is the only one that removes them, needs no position, and must be blamed on the literal that
+  actually blocked the match — crediting a random included literal erases layer 1 within an epoch.
+* **C needs a warm start.** An untrained layer 2 has no included positive channel literals, so there
+  is nothing to propagate through until it has some.
+* **`test_ideas.py` asserts the index chain.** The credit path crosses two patch geometries and a
+  pooling stage; nothing downstream looks wrong if one step is off by a row.
+
+## What was run
+
+* **E3** `mctm-auto`, plus `flat-auto` / `flat-random` readouts.
+* **E4** `mctm-calib-r{005,01,02,05,10,20}` (firing-rate targets 0.5–20% over the *trained*
+  layer 1), then `mctm-size-k{24,12,6,3}` (a size target at the best rate) with
+  `mctm-calib-r20-tight` as the control that separates "cut further" from "cut shorter", then
+  `mctm-rc-r{05,10,40,60}` + `mctm-random-calib` — the same sweep over an **untrained** layer 1,
+  which is the configuration that clears every criterion — and `mctm-auto-calib`.
+* **E5** `mctm-credit-{ia,ib,bal}` (the three rungs of the credit rule), `mctm-credit-warm`
+  (warm start from the greedy layer 1 — which delivers *zero* credit events, so the step size
+  is only worth sweeping with the controller running), and
+  `mctm-credit-cal{-p1,,-p001}` / `mctm-auto-credit`.
+* **E6** all three ideas on `xor` and `near`, where the per-arm ceiling is known analytically and the
+  oracle row says how much headroom a better training scheme has.
+
+## The result, in one line
+
+The density diagnosis was right. A label-free controller that walks each clause towards a
+target firing rate takes the stack from 15.4% to 41.8% on CIFAR-10 — past both single-layer
+baselines at the same clause budget — **when it is run over a layer 1 that was never trained**.
+Over the trained layer the same controller reaches 24.5%, or 35.8% with a clause-size target.
+The autoencoder objective is the winner on the two constructed tasks (99.9% and 87.9%, both
+past the hand-built oracle). Credit propagation does not work, for reasons `ideas.py` documents
+rung by rung.
+
+Results: `report2/`.

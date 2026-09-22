@@ -1,0 +1,113 @@
+\subsection{\texorpdfstring{\code{near}}{near}: the repairs work, completely}
+\label{sec:near}
+
+\begin{ttkey}
+On the task that isolates what the second layer is \emph{for}, repairing the first layer's
+density solves it outright. The autoencoder layer (\ideaA) reaches
+\synNearAutoAuto\,$\pm$\,\synsdNearAutoAuto{}\% and the density controller applied to the
+greedy layer (\ideaB) reaches \synNearCalibTask\,$\pm$\,\synsdNearCalibTask{}\%, against
+\synNearMctmTask{}\% for greedy training, \synNearMctmOracleSixFour{}\% for the first report's
+hand-built oracle, and \synNearSingleTask{}\% --- chance --- for a single layer and for the
+global-OR stack, both of which are at chance \emph{by construction}.
+\end{ttkey}
+
+Three things follow, and the firing-rate column in Table~\ref{tab:synnear} carries all of them.
+
+\lead{The first report's diagnosis was right, and this is the measurement that shows it.} A
+greedy layer~1 on this task is nearly dead --- \syndeadNearMctmTask{}\% of its channels never
+fire and the median channel fires on \synfireNearMctmTask{}\% of positions --- because it is
+being trained to classify a task one layer cannot classify at all. It still reaches
+\synNearMctmTask{}\%, on whatever few channels survive. Move that same layer to
+\synfireNearCalibTask{}\% with the controller, changing nothing else and training nothing, and
+the stack gains more than ten points.
+
+\lead{The oracle failed for the reason the diagnosis predicts.} The first report built exact
+square and cross detectors by hand, and the stack given them did \emph{worse} than the stack
+given greedily trained clauses --- which looked like a paradox. It is a density result: an
+exact $4\times4$ shape detector fires on a handful of positions in the whole image, and a
+layer-2 clause has to find two of them in the same window. Perfect features that never fire
+are not usable features. An autoencoder layer is not exact and fires on
+\synfireNearAutoAuto{}\% of positions, and it is the one that solves the task.
+
+\lead{Density is necessary and still not sufficient.} Random clauses sit at
+\synfireNearRandomRandom{}\% --- comfortably dense --- and reach \synNearRandomRandom{}\%, well
+short of the autoencoder's \synNearAutoAuto{}\%. So the ordering on this task is not simply by
+firing rate. What the autoencoder adds on top of density is features that are \emph{about} the
+shapes, which is exactly what its objective asks for and exactly what a classifier trained on
+an unlearnable task cannot discover.
+
+\subsection{\texorpdfstring{\code{xor}}{xor}: the same winner, and a limit on the controller}
+\label{sec:xor}
+
+\code{xor} has a different shape: one layer is capped at $75\%$ rather than at chance, and both
+stacked variants can express the label, so the question is only whether training finds it.
+
+\ideaA\ finds it. The autoencoder stack reaches \synXorAutoAuto\,$\pm$\,\synsdXorAutoAuto{}\%
+--- clear of the one-layer ceiling, and clear of the \synXorMctmOracleSixFour{}\% the
+hand-built oracle reaches --- against \synXorMctmTask{}\% for greedy training. Its layer-2
+clauses are \synltwoXorAutoAuto\ literals long, of which \synltwoposXorAutoAuto\ are positive:
+a composition, not a negation soup, exactly as on \code{near}. Random clauses are second at
+\synXorRandomRandom{}\%, also above the oracle --- the same ordering CIFAR-10 gives, and for
+the same reason: they are short and they fire.
+
+\ideaB\ does not, and the reason is a real limit on the controller rather than on the idea.
+\begin{ttkey}
+On \code{xor} the calibrated greedy layer ends up firing on \synfireXorCalibTask{}\% of
+positions --- it was asked for $5\%$. These images are almost entirely empty, so a clause of
+negated literals matches nearly every patch and a single added pixel literal drops its rate to
+almost nothing: there is no single-literal step that lands in the band, and the greedy walk
+ends up outside it in one direction or the other. The controller's step size is fine on dense
+thermometer-encoded CIFAR-10 patches and too coarse on sparse binary images.
+\end{ttkey}
+
+The arm still improves on greedy training (\synXorCalibTask{}\% against \synXorMctmTask{}\%),
+and combining it with the autoencoder layer \emph{costs} accuracy
+(\synXorAutoCalibAuto{}\% against \synXorAutoAuto{}\%) --- the controller pulls a layer that
+was already in a good place out of it. A per-clause step that can adjust more than one literal
+at a time, or a band defined in log-odds rather than in rate, would be the obvious fix and is
+not tested here.
+
+\subsection{What the second layer becomes}
+\label{sec:l2learned}
+
+The proposal's claim about layer~2 was that it would learn a \emph{composition}: a short
+conjunction over named channels at named offsets. The first report measured the opposite ---
+a thousand-literal clause that is \negMctm{}\% negations and asserts only absences --- and
+attributed it to the sparsity of its input. Tables~\ref{tab:synnear} and \ref{tab:synxor}
+close that argument, and they do it on both tasks.
+
+\begin{ttkey}
+With a repaired layer~1, layer~2 stops being a negation soup and becomes the rule the proposal
+described. Over greedy features a layer-2 clause carries \synltwoNearMctmTask\ literals; over
+autoencoder features it carries \synltwoNearAutoAuto, of which \synltwoposNearAutoAuto\ are
+positive; over calibrated greedy features, \synltwoNearCalibTask\ literals with
+\synltwoposNearCalibTask\ positive --- which is to say ``channel $a$ fires here \textsc{and}
+channel $b$ fires there'', in as many symbols as it takes to write it down. On \code{xor} the
+same thing happens --- \synltwoXorMctmTask\ literals over the greedy layer against
+\synltwoXorAutoAuto\ over the autoencoder one. Every arm with a short layer-2 clause is an arm
+that works, and on \code{near} every arm whose layer-2 clause runs to four figures sits below
+\synNearMctmTask{}\%.
+\end{ttkey}
+
+A \synltwoNearCalibTask-literal clause is also an interpretable one, which is the property
+Tsetlin machines are supposed to be chosen for and the property the first report found the
+stack had lost. It is recovered here for free, as a side effect of fixing the input's density.
+
+\subsection{Credit propagation fails here too, and in the same way}
+
+\code{near} is where \S\ref{sec:credit} predicted the credit path might have bandwidth: the
+layer-2 clauses are small and they match. It does not help.
+
+From a random layer~1 both credit arms end at chance (\synNearCreditIaRandom{}\% and
+\synNearCreditRandom{}\%) with \syndeadNearCreditIaRandom{}\% of layer-1 channels dead ---
+the same saturation-then-extinction as on CIFAR-10, at a tenth the scale. Warm-started from
+the greedy layer~1 it reaches \synNearCreditWarmTask{}\% against \synNearMctmTask{}\% for the
+frozen stack it started from, and damping the step size to $0.1$ changes that to
+\synNearCreditWarmPOneTask{}\%: the credit path is not moving the result in either direction.
+The one credit arm that does better, \synNearCreditCalTask{}\%, is the one with \ideaB's
+controller running inside it --- and it is still below the \synNearCalibTask{}\% that same
+controller reaches with layer~1 simply frozen.
+
+Across two very different tasks, then, the credit path either does nothing or does harm, and
+what looks like it helping is the controller underneath it. That is worth knowing: the failure
+is a property of the feedback rule, not of the setting it was tried in.

@@ -1,0 +1,87 @@
+# ============================================================================================
+# BLOCK 2 of jobs/p3_budget_predictions.txt, PULLED FORWARD and completed.
+# Written by research-engineer 2026-09-21, after D-TA / D-FIRE / D-ORDER landed in
+# code/diagnostics.py. Run AHEAD of blocks 1, 3 and 4 (orchestrator instruction): it is the
+# only block that can overturn the programme's own headline (THEORY.md 5.5.8, DR-004 Dec. 2).
+#
+# RUN AS:  python code/queue_runner.py --gpu 1 --jobs jobs/p3_block2_s_sweep.txt \
+#                                      --seeds 0 1 2 --wait 172800 --poll 5
+#
+#   --gpu 1 (RTX 3080) is NOT optional: ctm-small-T80-unc and ctm-small-T80-b32, the arms this
+#   block is read against, were both measured on the 3080 and DR-001 makes `device + seed` the
+#   reproducibility key. Do NOT pass --epochs; every job carries its own (30), matching them.
+#
+# ------------------------------------------------------------------------------------------
+# WHY THIS FILE EXISTS INSTEAD OF RUNNING BLOCK 2 OF THE THEORIST'S FILE DIRECTLY
+#
+# Two of the six cells below are NOT in the theorist's Block 2. Block 2 is a 3 x 2 factorial in
+# {s = 2, 10, 20} x {budget none, 32} and it buys only four cells, because "the s = 10 column
+# already exists". That was true when the file was written and it is no longer sufficient:
+# the s = 10 column exists **without D-FIRE**, and D-FIRE is the diagnostic the block's central
+# prediction is stated over. THEORY.md C5.2 predicts that the unconstrained equilibrium firing
+# rate is pinned at `1/(1+s)` -- 0.333 / 0.091 / 0.048 across s = 2 / 10 / 20 -- and the
+# theorist's own note says the existing global firing rate "mixes the two polarities and cannot
+# test it". A 3-point curve with a hole in the middle point cannot be read against a 7x
+# movement in the prediction.
+#
+# The two extra cells therefore re-run the EXISTING pair under new labels:
+#     ctm-small-T80-s10-unc  <- must reproduce ctm-small-T80-unc  (37.50 / 37.93 / 39.50)
+#     ctm-small-T80-s10-b32  <- must reproduce ctm-small-T80-b32  (47.80 / 48.07 / 47.44)
+# `--s 10.0` is a no-op (it is the arm default), the seeds and the card are the same, and the
+# new diagnostics are measured RNG-neutral, so these must come back **bit-identical**. That
+# makes them two things at once and neither is wasted:
+#   1. the missing s = 10 column of the factorial, with D-TA / D-FIRE / D-ORDER;
+#   2. the phase's REPRODUCIBILITY CHECK (my standing check 3 / PLAN 7.4) across a harness
+#      change -- a re-run from a recorded argv + seed, on the recorded device, after
+#      code/diagnostics.py, code/arms.py, code/run_arm.py, code/record.py and code/data.py all
+#      changed. If they do not match, the diagnostics are NOT RNG-neutral on CUDA and every
+#      arm run after 2026-09-21 is suspect. That is worth 0.62 GPU-h on its own.
+#
+# PRICE: 6 jobs x 3 seeds x 0.104 h = 1.87 GPU-h, against the theorist's 1.25 h for four cells.
+# [MEASURED: ctm-small-T80-{unc,b32}_seed{0,1,2} wall_s = 361-372 s on the 3080]. The new
+# diagnostics add ~2-4% to an epoch (D-TA is a bincount; D-FIRE is an index_add on a forward
+# pass that already happens; D-ORDER is 4 masked passes over 256 images and 2 000 clauses), so
+# call it 0.107 h/job and 1.93 GPU-h. The overrun is 0.68 h and it buys the repro check.
+#
+# ORDER: seed-outer (the queue runner's own loop), so the complete six-cell factorial lands at
+# seed 0 in ~40 minutes. Within a seed the reproducibility check runs FIRST -- it gates trust
+# in the other five cells and it costs 6 minutes -- then the decisive cell.
+#
+# ------------------------------------------------------------------------------------------
+# WHAT THIS BLOCK CAN OVERTURN, stated before it runs
+#
+# `s = 10` at therm-4 / 4x4 is OUR OWN choice [FACT: code/arms.py, ctm-small config_status
+# ="own"]; the Toolbox uses s = 5.0 for every colour-thermometer specialist [FACT:
+# arXiv:2406.00704 Table III]. This repository's own stored memory says "use `s` instead" of a
+# clause-size budget -- written before any of these measurements and never tested.
+#
+# DECISION RULE, pre-registered: if `ctm-small-T80-s2-unc` lands **within 1.00 pp** (the
+# measured 3-seed band, [MEASURED: results/calibration_seednoise.json]) of `ctm-small-T80-b32`
+# (47.77), then DR-004's claim must be rewritten from "the clause-size budget is worth 9
+# points" to "clause length is worth 9 points and the budget is one of two dials that buy it".
+# If it lands below 44.77 the budget is not substitutable by `s` at this scale.
+#
+# READ EVERY CELL WITH THE DIAGNOSTICS, NOT ONLY WITH ACCURACY:
+#   diagnostics.clause_len.mean        -> beta = L_unc / L_b32, the bloat ratio (B1)
+#   diagnostics.firing_rate_eligible   -> D-FIRE, against 1/(1+s) (C5.2). The field carries
+#                                         `predicted_1_over_1_plus_s` and `ratio_to_prediction`
+#                                         so the comparison is in the record, not in a script.
+#   diagnostics.ta_state               -> D-TA: frac_at_boundary / frac_deep (C5.3)
+#   diagnostics.order                  -> D-ORDER: p_image_ratio_32_over_all, >= 1, equal to 1
+#                                         iff the literals past rank 32 are redundant (5.5.3).
+#                                         Read frac_tied_at_k with it: near 1 means the prefix
+#                                         is an arbitrary subset of a saturated core.
+# ============================================================================================
+
+# -- the reproducibility check AND the s = 10 column of the factorial ------------------------
+ctm-small:ctm-small-T80-s10-unc|--epochs 30 --s 10.0 --max-included-literals -1
+
+# -- the decisive cell: can `s` alone buy the nine points? ----------------------------------
+ctm-small:ctm-small-T80-s2-unc|--epochs 30 --s 2.0 --max-included-literals -1
+ctm-small:ctm-small-T80-s2-b32|--epochs 30 --s 2.0 --max-included-literals 32
+
+ctm-small:ctm-small-T80-s10-b32|--epochs 30 --s 10.0 --max-included-literals 32
+
+# -- the high-s end: B1 predicts L_unc > 170.4 and Delta > +9.46 ----------------------------
+ctm-small:ctm-small-T80-s20-unc|--epochs 30 --s 20.0 --max-included-literals -1
+ctm-small:ctm-small-T80-s20-b32|--epochs 30 --s 20.0 --max-included-literals 32

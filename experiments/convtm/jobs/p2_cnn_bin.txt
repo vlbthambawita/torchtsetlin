@@ -1,0 +1,19 @@
+# P2 wave 1b -- BINARY COMPUTATION. Block D of the decomposition spine; split out of
+# jobs/p2_cnn.txt only so the queue releases the GPU lock between the two.
+#
+#   python code/cnn/queue_cnn.py --gpu 1 --jobs jobs/p2_cnn_bin.txt --seeds 0 1 2
+#
+# These are the fairest "same computational substrate" reference a Tsetlin machine has, and
+# they BOUND what binary computation can reach on this task. Under-training them would bias
+# the decomposition in exactly the direction that flatters the TM, so the epoch counts stand
+# (200; the BNN paper itself trains 500 [FACT: arXiv:1602.02830 S2]).
+#
+#   cnn-ctmshape-binary  the CTM's architecture + 1-bit filters and activations + Boolean
+#                        input, trained by SGD -- the tightest upper bound that exists on
+#                        what a single-layer convolutional Tsetlin machine can reach, because
+#                        it is the same computation with a known-good optimiser attached.
+#   cnn-binary           BNN (binary weights AND activations), float input, no augmentation.
+#   cnn-binary-boolean   BNN on the Boolean tensor -- binary computation AND Boolean input.
+cnn-ctmshape-binary|
+cnn-binary|
+cnn-binary-boolean|

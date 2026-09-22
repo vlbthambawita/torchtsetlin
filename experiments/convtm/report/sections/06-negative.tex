@@ -1,0 +1,61 @@
+\section{What did not work, and what we got wrong}
+
+\subsection{Predictions that failed}
+Both specialists pre-registered falsifiable predictions on the round's two hardest questions, and
+\textbf{both predictions failed by their authors' own stated criteria}.
+
+\begin{itemize}
+\item \textbf{``Capacity saturates below 70\% by 8--16k clauses.''} Falsified by the published table
+      the author then read for themselves: the curve gains +2.6 points per doubling at exactly the
+      point saturation was predicted. Withdrawn.
+\item \textbf{``A counting pool is worth 5--12 points.''} The supporting information-theoretic
+      argument was recomputed from measured quantiles and found to be wrong by a factor of 5.7 --- the
+      original figure was a ceiling under a uniform distribution quoted as an estimate. Revised to
+      +0--1.5 points, at or below the seed band, and withdrawn as a standalone candidate.
+\item \textbf{``The clause-size effect is an artefact of batched feedback.''} Falsified: the effect
+      survives sequential feedback almost unchanged. The author's diagnosis of their own failure is
+      worth recording --- the direction was right and the magnitude wrong by a factor of about 20.
+\item \textbf{``Clause length is governed by the admission threshold $1/(1+s)$.''} Falsified: a
+      tenfold change in $s$ moves clause length by 7.7\%. The companion prediction sharing the same
+      constant, the equilibrium firing rate, was confirmed to within 11--13\%.
+\end{itemize}
+
+\subsection{Two corrections to the falsification method itself}
+Both came from the members they convicted.
+
+\textbf{A falsifier stated over a quantity the intervention itself changes is not a falsifier.} Both
+of the first round's pre-registrations were stated over a clause-match distribution that is the
+equilibrium of a model trained \emph{under the very pooling rule the candidate replaces}.
+
+\textbf{A pre-registration must name at least one rival explanation and the measurement that
+separates it}, not only the falsifier of the preferred one. The prediction that the clause-size effect
+was a batching artefact was correctly aimed by the first rule and still mis-aimed, because it named
+only the mechanism its author had thought of and never registered the cheaper rival --- an untuned
+specificity parameter --- which was the explanation that actually had to be excluded.
+
+\subsection{Errors in the conduct of the work}
+Recorded because a report that lists only what went right is not evidence of anything.
+
+\begin{itemize}
+\item \textbf{The team's own rulebook was wrong and cost a day.} It stated, on the strength of an
+      earlier measurement at budget 8, that clause-size control ``does not bind''. It binds at every
+      budget a published recipe uses. Three agents were steered away from what turned out to be the
+      largest measured effect in the programme.
+\item \textbf{A signal sat unread in the data.} The diagnostic showing 156-literal clauses was in
+      every record from the first run and printed on every epoch line; it was logged as a curiosity.
+      The engineer's own summary: \emph{being right in a JSON nobody acts on is the same as being
+      wrong}. An escalation threshold was added.
+\item \textbf{Three file edits silently did nothing} --- a string replacement that no-ops on a missed
+      target while reporting success. Two were still broken when discovered. A success message that is
+      not evidence of success recurred three times in different guises (that one, a queue log that
+      cannot distinguish ``working'' from ``all jobs crashed'', and a fail-soft handler that would
+      have written an invalid record after hours of training).
+\item \textbf{A hyperparameter was inert in the baseline.} $T$ exceeded the achievable class sum, so
+      the margin never annealed. Correcting it \emph{increased} the headline effect by 2 points.
+\item \textbf{The orchestrator misdiagnosed a running queue as a crash} and had to retract it before
+      it entered the audit log; and separately caused GPU contention that inflated one arm's timings
+      by authorising a job against a stale idle check.
+\item \textbf{A HOG encoder was wrong in every parameter that mattered} and was caught only when the
+      correct specification arrived. It was recoverable because it had been registered as an explicit
+      ambiguity, so the harness was already refusing to score it.
+\end{itemize}

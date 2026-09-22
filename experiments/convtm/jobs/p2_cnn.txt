@@ -1,0 +1,63 @@
+# P2 wave 1 -- the encoding ceiling + the decomposition spine.  Driver: code/cnn/queue_cnn.py
+#
+#   python code/cnn/queue_cnn.py --gpu 1 --jobs jobs/p2_cnn.txt --seeds 0 1 2 --wait 86400
+#
+# Ordered CHEAPEST-FIRST. The seed loop is OUTER (queue_cnn, like queue_runner), so the whole
+# spine lands at seed 0 before any second seed starts: if the queue is cut short we still have
+# a complete decomposition at one seed rather than three seeds of half of it.
+#
+# All arms here are no-augmentation, because the TM arms have none (CHARTER: like-for-like).
+# Augmented reference nets are jobs/p2_cnn_ref.txt.
+#
+# ---- block A: the encoding ceiling -- ARCHITECTURE-MATCHED flat readers ------------------
+# DR-003 Decision 2 promoted `cnn-boolean` on HOG bits from a side check to the PRIMARY HOG
+# evidence, because HOG holds 11 664 literals/clause and OOMs a 24 GB card at 40 000 clauses,
+# so the TM cannot produce the HOG capacity curve C-2 asked for. HOG is FLAT (one 32x32
+# window, 5 832 bits, code/hog.py), so its reader must be an MLP -- and the thermometers and
+# the raw floats therefore get the SAME MLP, or the comparison confounds "what the encoding
+# carries" with "what the reader exploits". The linear probes bound the same quantity from
+# below and cost under a minute each.
+cnn-hog-linear|
+cnn-therm8-linear|
+cnn-float-linear|
+cnn-float-mlp|
+cnn-adaptive-mlp|
+cnn-hog-mlp|
+cnn-therm4-mlp|
+cnn-therm8-mlp|
+# HOG bits read on a BINARY substrate: the closest differentiable thing to a TM over HOG.
+cnn-hog-mlp-binary|
+#
+# ---- block B: budget-matched, and matched to the TM's own input --------------------------
+# width 45 = 577 765 params, the smallest cnn_small reaching the flagship TM's MEASURED
+# 556 514 included literals [MEASURED: results/ctm-therm5-preflight_seed0.json capacity].
+# cnn-matched-boolean is the single fairest CNN/TM comparison the programme can make:
+# same budget, same input, same protocol, different learning algorithm.
+cnn-matched|
+cnn-matched-therm4|
+cnn-matched-boolean|
+#
+# ---- block B2: the ARCHITECTURE term -- the CTM's own shape, trained by SGD ---------------
+# One conv layer at the CTM's patch size, a global pool over the 841 patch positions, a
+# linear vote. `pool=max` over binary indicators IS the CTM's OR over patches. These arms
+# were only ever run as a 10 000-image / 15-epoch SCREEN (screen/cnn-ctmshape-*.json,
+# 38.86 vs 51.02), which is not a level anyone can put next to a 45 000-image TM.
+#
+# This is the term the decomposition cannot do without: it separates *architecture* from
+# *learning algorithm*, and nothing else in the programme does. `cnn-ctmshape-binary` --
+# CTM architecture + 1-bit filters and activations + Boolean input, trained by SGD -- is the
+# tightest upper bound there is on what a single-layer convolutional Tsetlin machine can
+# reach, because it is the same computation with the only known-good optimiser attached.
+cnn-ctmshape-max|
+cnn-ctmshape-sum|
+#
+# ---- block C: the decomposition spine ----------------------------------------------------
+# cnn-small-noaug   -> float, unaugmented, full capacity        (the TM's like-for-like CNN)
+# cnn-boolean*      -> the SAME net on the TM's Boolean tensor  (cost of Booleanization)
+# therm8 is the flagship TM's encoding; therm4 is what ctm-small and the screens use.
+cnn-small-noaug|
+cnn-boolean|
+cnn-boolean-therm8|
+# Block D (binary computation) lives in jobs/p2_cnn_bin.txt -- SAME priority, separate file.
+# At ~2 h/seed per arm it would otherwise have made this file hold the GPU lock for 8 h at a
+# stretch, and the programme's TM waves have to be able to interleave on the 3080.

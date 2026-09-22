@@ -1,0 +1,75 @@
+\section{Experimental setup}
+\label{sec:setup}
+
+\lead{Fixed across every arm.} CIFAR-10, Booleanized with a per-channel thermometer encoder at
+\nBits\ bits per channel (\nTrain\ train / \nTest\ test images). Layer~1: $\pOne\times\pOne$
+patches, stride 1, \cOne\ shared clauses (\code{ConvCoalescedTsetlinMachine}, so clauses are
+shared \emph{features} rather than class-owned). A $\poolK\times\poolK$ OR pool between the
+layers. Layer~2: $\pTwo\times\pTwo$ patches over the pooled maps, \cTwo\ clauses. Total clause
+budget $\cOne+\cTwo$, \epochsRun\ epochs, batch size \batchSize, three seeds per arm, best test
+accuracy reported as mean $\pm$ standard deviation. One NVIDIA RTX~3090 / RTX~3080.
+
+\lead{Baselines are carried over, not re-run.} The five E1 arms in Table~\ref{tab:arms} come
+from the first report's \code{results/*.json} unchanged. They were produced by the same driver
+at the same budget, and they are what the three repairs have to beat. The layer-1 checkpoints
+are reused from the same cache, so ``greedy layer~1'' means literally the same automata.
+
+\subsection{What would count as success, fixed before the runs}
+\label{sec:criteria}
+
+The first report's mistake would be easy to repeat: to declare a repair successful because it
+improves on the broken thing it replaces. \accMctm{}\% is a low bar. Three criteria were
+fixed before any arm was run.
+
+\begin{ttkey}
+\lead{1. Beat the greedy stack.} Necessary, not sufficient: a repair that does not clear
+\accMctm{}\% has not repaired anything.
+
+\lead{2. Beat the random-layer-1 control.} The strongest result of the first report is that
+\emph{random} three-literal clauses reach \accMctmRandom{}\%. A trained feature layer that does
+not beat an untrained one is not earning its objective, whatever that objective is.
+
+\lead{3. Beat a single layer at the same clause budget.} Two of them: \accSingleMatched{}\%
+for one layer of the same total size and \accSingleRf{}\% for one layer with the stack's
+$9\times9$ effective receptive field. This is the criterion that decides whether depth is worth
+having at all on this task, and it is the one the first report set.
+\end{ttkey}
+
+For \ideaC\ there is a fourth, tighter test available, because it does not change what layer~1
+is initialised to --- only whether it keeps learning. \emph{Credit training must beat the
+frozen stack with the same layer-1 initialisation.} That is a controlled comparison of the
+mechanism alone, and it is the one \S\ref{sec:credit} leans on.
+
+All four are CIFAR-10 criteria. On the constructed tasks of \S\ref{sec:synthetic} the standard
+is set by the task rather than by a baseline: each has a per-arm ceiling that can be worked
+out on paper, and the first report's hand-built oracle row says how much headroom a better
+training scheme has. A repair either closes that headroom or it does not.
+
+\subsection{The arms}
+
+\begin{table}[h]
+\centering\small
+\caption{CIFAR-10 test accuracy by arm, mean $\pm$ standard deviation of the best test accuracy
+over seeds. \code{clauses} is the total clause budget (both layers where there are two),
+\code{TA} the automaton count in millions, \code{seeds} how many seeds the row averages, and \code{train} the summed
+per-epoch training time across all trainable stages. The first six rows are the E1 baselines of the first report; the
+\code{B:} rows name the layer-1 firing-rate target in percent (\S\ref{sec:density}).}
+\label{tab:arms}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  every row no 5/.style={after row=\ttmidrule},
+  columns={label,clauses,automata,n_seeds,acc_mean,acc_std,wall_min},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/clauses/.style={column name=\thead{clauses}, column type={r}},
+  columns/automata/.style={column name=\thead{TA (M)}, column type={r}},
+  columns/n_seeds/.style={column name=\thead{seeds}, column type={r}},
+  columns/acc_mean/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/acc_std/.style={column name=\thead{$\pm$}, column type={r}},
+  columns/wall_min/.style={column name=\thead{train (min)}, column type={r}},
+]{data/arms.csv}
+\end{table}
+
+Table~\ref{tab:arms} is the whole report in one place; the sections that follow take one idea
+each and say what its rows mean.

@@ -1,0 +1,32 @@
+# P2 wave 2 -- the augmented reference nets, and the rest of the binary family.
+#
+#   python code/cnn/queue_cnn.py --gpu 1 --jobs jobs/p2_cnn_ref.txt --seeds 0 1 2
+#
+# These are the "what a CNN does on CIFAR-10" numbers. They are NOT the like-for-like TM
+# comparison -- that is jobs/p2_cnn.txt -- and the report must never put an augmented CNN
+# beside an unaugmented TM without saying so. Ordered cheapest-first.
+#
+# ---- augmentation ablation at fixed architecture ----------------------------------------
+# Each aug/noaug pair isolates data augmentation, which is the mechanism with the largest
+# known CNN/TM asymmetry: a CNN's crop+flip is nearly free, and on the TM side augmentation
+# is MEASURED to flip sign with clause budget (DR-001 Decision 6).
+cnn-resnet20|
+cnn-resnet20-noaug|
+cnn-small|
+cnn-boolean-aug|
+cnn-resnet56|
+cnn-vgg-noaug|
+cnn-vgg|
+cnn-resnet18-noaug|
+cnn-resnet18|
+# Booleanization cost at HIGH capacity: does a bigger net recover what the encoding threw
+# away, or is the loss in the data?
+cnn-boolean-resnet18|
+# Receptive field at FIXED depth (PLAN S9.2.4): the CTM shape with a 10x10 patch instead of
+# 4x4. A TM cannot grow its receptive field by stacking, so widening the patch is the only
+# lever it has; this prices that lever on a substrate we can train exactly.
+cnn-ctmshape-deep|
+#
+# The rest of the binary family (binaryconnect / xnor / binary-aug) moved to
+# jobs/p2_cnn_opt.txt: at 3 seeds they alone priced at 23 GPU-h, 36% of the whole of P2, for
+# variants that refine rather than establish the decomposition. They run at 1 seed, last.

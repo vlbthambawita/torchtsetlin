@@ -1,0 +1,27 @@
+A previous report found the multilayer convolutional Tsetlin machine's \emph{architecture}
+sound and its greedy supervised layer-wise \emph{training} not, to the point where random
+first-layer clauses beat trained ones on CIFAR-10, and diagnosed the cause as density: a layer
+trained to classify fires on \fireGreedyPre{}\% of patch positions, and a second layer over
+bits that sparse can only learn negations. Its \S7.3 named three repairs. This report
+implements and measures all three, at the same architecture, budget and seeds, with the
+acceptance criteria fixed before any run.
+
+\lead{The diagnosis was right and the repair is decisive.} A two-sided controller that walks
+each clause towards a target firing rate --- no labels, no training, seconds of work --- lifts
+the stack from \accMctm{}\% to \accMctmCalibRTwoZero{}\% over the trained first layer, and to
+\sizeBestAcc{}\% once it is also told to cut each clause to \sizeBestTarget\ of its
+\densityGreedySize\ literals. Run over an \emph{untrained} first layer it reaches
+\randBestAcc{}\%, against \accSingleMatched{}\% and \accSingleRf{}\% for the two single-layer
+baselines at the same clause budget --- the first configuration in either report for which the
+second layer is worth what it costs.
+
+\lead{An unsupervised objective wins where the architecture matters.} A patch autoencoder
+(\ideaA) reaches \synNearAutoAuto{}\% on a relational task where one layer is at chance by
+construction and \synXorAutoAuto{}\% where one layer is capped at $75\%$, both past the first
+report's \emph{hand-built oracle}, whose exact detectors turn out to be too sparse to conjoin.
+Over a repaired first layer a layer-2 clause shrinks from \synltwoNearMctmTask\ literals to
+\synltwoNearCalibTask{} --- the composition the proposal predicted, and an interpretable one.
+\lead{Credit propagation (\ideaC) does not survive implementation:} no forgetting term, then a
+forgetting term that erases the layer, then no bandwidth, and finally drift. What both reports
+now say is that the architecture and the density diagnosis were right, and the part to discard
+is supervised layer-wise training itself.

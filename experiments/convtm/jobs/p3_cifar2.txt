@@ -1,0 +1,53 @@
+# ============================================================================================
+# THE CIFAR-2 DISCRIMINATOR (THEORY.md 5.5.6, proposed by tm-theorist, ranked by them ABOVE
+# blocks 3+4 of jobs/p3_budget_predictions.txt). Written by research-engineer 2026-09-21.
+#
+# RUN AS:  python code/queue_runner.py --gpu 1 --jobs jobs/p3_cifar2.txt --seeds 0 1 2 \
+#                                      --wait 172800 --poll 5
+#   --gpu 1: the CIFAR-10 pair it is read against was measured on the 3080 (DR-001).
+#   Do NOT pass --epochs; both jobs carry 30, matching ctm-small-T80-{unc,b32}.
+#
+# THE QUESTION. We measure a clause-size budget at +9.46 pp on CIFAR-10 where CSC-TM measured
+# it at +0.06 on CIFAR-2 [FACT: arXiv:2301.08190 Table 3]. Two explanations fit both numbers
+# and they make opposite predictions for the report:
+#   BLOAT    -- the gain is the accuracy cost of the literals the cap removes, so it tracks
+#               beta = L_unc / L_b32. Theirs is 1.77 (60.4 / 34.1), ours 5.30 (170.4 / 32.1).
+#   HEADROOM -- their unconstrained CIFAR-2 baseline was already at 94.18% on two classes;
+#               ours is at 38.31% on ten. The available gain differs by an order of magnitude
+#               before any mechanism is invoked.
+# Running OUR budget pair on a CIFAR-2 built from OUR pipeline separates them, because it moves
+# the task while holding the encoding, the window, `s`, the clause count, the split, the
+# protocol and the implementation fixed.
+#
+# PRE-REGISTERED READING [FACT: THEORY.md 5.5.6]:
+#   bloat account right    -> L_unc stays near 150-170 and Delta >= +4 pp
+#   headroom account right -> L_unc stays near 150-170 and Delta <= +1 pp
+#   FALSIFIER for the bloat law: beta >= 4 and Delta <= +1 pp.
+# The clause-length diagnostic is not optional here: it is what makes the two readings
+# distinguishable, since both predict the same L_unc and differ only in Delta.
+#
+# WHAT IS AND IS NOT HELD FIXED, so nothing is over-read (ARMS.md A9):
+#  * HELD: the 45000/5000 split (split_hash 8a08ca15..., stratified on the ORIGINAL ten
+#    labels, NOT re-stratified on two), the therm-4 encoding, the 4x4 window, s = 10, batch 50,
+#    2 000 TOTAL clauses, 30 epochs, position encoding, unweighted class-owned clauses.
+#  * CHANGED: the labels, n_classes 10 -> 2, and therefore `T`. With two classes the same
+#    2 000 clauses give 1 000 per class and an achievable class sum of 500 rather than 100, so
+#    holding T = 80 would have changed the one hyperparameter DR-002/DR-003 proved is
+#    load-bearing. T is set by the same RULE instead (T_ratio 0.8 of the achievable sum -> 400).
+#  * ASSUMED: the vehicle/animal merge. CSC-TM does not state its CIFAR-2 merge, its
+#    Booleanization or its window [FACT: arXiv:2301.08190 Table 3 + fn. 6]. Our ABSOLUTE
+#    CIFAR-2 accuracy is therefore NOT comparable to their 94.18%; only our own Delta is.
+#
+# PRICE, and it is NOT the theorist's 0.62 GPU-h. Their figure scales ctm-small's measured
+# 0.104 h/seed by nothing at all, but the multi-class feedback rule gives Type I/II to the
+# target class's clauses plus ONE sampled contrast class's clauses [FACT:
+# src/torchtsetlin/models/classifier.py:25-30], i.e. 2/n_classes of the pool per example. At
+# n_classes = 2 that is the WHOLE pool instead of a fifth of it, and `_feedback_counts` gathers
+# one (2F,) literal row per selected (example, clause) event [FACT: models/conv.py:167-176], so
+# the feedback half of an epoch grows ~5x. [HYPOTHESIS] 0.15-0.25 h/seed, i.e. 0.9-1.5 GPU-h
+# for the pair at 3 seeds. Measured from seed 0's wall_s and reported; if it lands above
+# 1.5 GPU-h, drop to 2 seeds and say so.
+# ============================================================================================
+
+ctm-small-cifar2-unc|--epochs 30
+ctm-small-cifar2-b32|--epochs 30

@@ -1,0 +1,279 @@
+\section{E4: explicit density calibration}
+\label{sec:density}
+
+\lead{The prediction.} The first report measured a direct trade-off: every increase in
+layer-1 density costs layer-1 accuracy, and the specificity parameter $s$ is a blunt way to
+choose a point on it. If density is what layer~2 needs, then setting it directly --- rather
+than hoping $s$ lands somewhere usable --- should be strictly better, and there should be a
+target rate at which the stack works.
+
+\lead{The controller does its job.} Table~\ref{tab:calib} shows it reaching every target it is
+given, from the greedy layer's own \code{0.14\%} up by two orders of magnitude, by removing
+literals from clauses that fire too rarely and adding them to clauses that fire too often. It
+costs seconds, it leaves no channel dead, and it is the same layer~1 in every row --- the same
+cached automata from E1, adjusted.
+
+\begin{table}[h]
+\centering\small
+\caption{The target sweep. \code{target} is the requested per-patch firing rate, in percent;
+\code{raw} and \code{pooled} are the median rates achieved before and after the
+$\poolK\times\poolK$ OR pool; \code{size} is the median clause size the controller left behind
+(the uncalibrated greedy layer has \densityGreedySize{}); \code{in band} the fraction of
+channels landing inside the tolerance; \code{rounds} the number of single-literal adjustments
+needed. Accuracy is the full two-layer stack, three seeds.}
+\label{tab:calib}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={target,fire_raw,fire_pooled,size,in_band,rounds,acc,sd},
+  columns/target/.style={column name=\thead{target (\%)}, column type={r}},
+  columns/fire_raw/.style={column name=\thead{raw (\%)}, column type={r}},
+  columns/fire_pooled/.style={column name=\thead{pooled (\%)}, column type={r}},
+  columns/size/.style={column name=\thead{size}, column type={r}},
+  columns/in_band/.style={column name=\thead{in band}, column type={r}},
+  columns/rounds/.style={column name=\thead{rounds}, column type={r}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+]{data/calib_sweep.csv}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.2cm,
+  xlabel={target layer-1 firing rate (\%, log scale)}, ylabel={test accuracy (\%)},
+  xmode=log, log basis x=10,
+  grid=major, grid style={ttline!40},
+  legend style={font=\sffamily\scriptsize, draw=ttline, at={(0.5,-0.24)}, anchor=north,
+                legend columns=3, column sep=1.2em},
+  ymin=12, ymax=41,
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttorange, mark=*, mark size=2pt, error bars/.cd, y dir=both, y explicit]
+  table[col sep=comma, x=target, y=acc, y error=sd] {data/calib_sweep.csv};
+\addplot[ttslate, dashed, domain=0.3:30, samples=2] {\accMctmRandom};
+\addplot[ttmoss, dotted, domain=0.3:30, samples=2] {\accMctm};
+\legend{calibrated greedy layer 1, random layer 1 (uncalibrated), greedy layer 1 (uncalibrated)}
+\end{axis}
+\end{tikzpicture}
+\caption{Stack accuracy against the layer-1 firing rate the controller was asked for. Density
+buys a large, monotone improvement and levels off well short of the random-clause control.}
+\label{fig:calib}
+\end{figure}
+
+\subsection{Density is a real effect, and it is not the whole effect}
+
+\begin{ttkey}
+Raising the target rate raises stack accuracy monotonically, from
+\accMctmCalibRZeroZeroFive{}\% at a $0.5\%$ target to \accMctmCalibRTwoZero{}\% at $20\%$ ---
+a gain of nearly ten points over the uncalibrated greedy stack's \accMctm{}\%, from a
+post-hoc adjustment that costs seconds and trains nothing. Criterion~1 is met comfortably.
+
+Criterion~2 is not, and the way it fails is the result. At the $20\%$ target the calibrated
+layer fires on \calibFireMctmCalibRTwoZero{}\% of pooled positions --- \emph{more} than the
+\fireRandomPre{}\% of the random-clause control --- and still reaches only
+\accMctmCalibRTwoZero{}\% against \accMctmRandom{}\%. At matched density, and then past it,
+the gap does not close.
+\end{ttkey}
+
+So density was a real cause and not the only one. The residual is clause \emph{size}, and the
+sweep makes it visible without needing a separate experiment: the controller reaches
+\calibFireMctmCalibRTwoZero{}\% by cutting the greedy clause from \densityGreedySize\ literals to
+\calibSizeMctmCalibRTwoZero, while a random clause reaches a comparable rate with three. Both fire about equally often; one is a
+\calibSizeMctmCalibRTwoZero-term description of a specific patch that happens to be common,
+the other a three-term description of a general property. They have the same density and very different generality, and layer~2
+can only build on the second.
+
+Calibrating the random layer the other way confirms it from the other side. Taking it from
+\fireRandomPre{}\% to the same $20\%$ target --- which for three-literal clauses means
+\emph{removing} literals, not adding them --- moves it from \accMctmRandom{}\% to
+\accMctmRandomCalib{}\%.
+
+Two corollaries follow, both of which matter more than the headline number.
+
+\lead{Density is necessary and weakly sufficient.} Every arm at a low firing rate is bad; not
+every arm at a high firing rate is good. A controller that fixes only the rate leaves the
+representation's other degeneracy --- long, brittle conjunctions --- untouched. A second
+target, on clause size, is the obvious extension, and \S\ref{sec:sizetarget} runs it.
+
+\lead{The controller is a general tool, not a patch.} Because it writes automata states one
+step from the include boundary, it composes with continued training. \S\ref{sec:credit} uses
+it that way, as a stabiliser inside a training loop rather than a one-off prune, and it is
+what keeps layer~1 alive there at all.
+
+\subsection{Testing the residual: a second target, on clause size}
+\label{sec:sizetarget}
+
+If size is the residual, the controller should be asked for it. Walking a clause towards a
+size is the same loop with a different stop condition, so the only real question is
+\emph{which} literal to remove: under a size cap, dropping the most load-bearing literal
+leaves the most permissive ones behind and sends the firing rate towards~1, dropping the least
+load-bearing leaves the most selective and sends it towards~0. Neither is the clause being
+asked for. Removing the literal that leaves the rate closest to target is, and the
+post-removal rate is available in closed form --- removing literal $k$ lets through exactly
+the patches it alone was blocking --- so the greedy step is exact.
+
+\begin{table}[h]
+\centering\small
+\caption{The size sweep, all at the $20\%$ firing-rate target that won Table~\ref{tab:calib}.
+\code{target} is the requested maximum clause size and \code{size} what the controller
+achieved; \code{raw} and \code{pooled} are the resulting firing rates in percent, \code{in
+band} the fraction of channels still inside the rate tolerance. The uncalibrated greedy layer
+has \densityGreedySize\ literals; the random control has three.}
+\label{tab:size}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={target,size,fire_raw,fire_pooled,dead,in_band,acc,sd},
+  columns/target/.style={column name=\thead{target}, column type={r}},
+  columns/size/.style={column name=\thead{size}, column type={r}},
+  columns/fire_raw/.style={column name=\thead{raw}, column type={r}},
+  columns/fire_pooled/.style={column name=\thead{pooled}, column type={r}},
+  columns/dead/.style={column name=\thead{dead}, column type={r}},
+  columns/in_band/.style={column name=\thead{in band}, column type={r}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+]{data/size_sweep.csv}
+\end{table}
+
+\begin{ttkey}
+Cutting the clauses harder is worth more than the firing rate alone. Accuracy rises as the cap
+falls --- \accMctmSizeKTwoFour{}\% at 24 literals, \accMctmSizeKOneTwo{}\% at 12,
+\accMctmSizeKSix{}\% at 6 --- against \accMctmCalibRTwoZero{}\% for the same rate target with
+no cap, and then turns over: at 3 literals the clause can no longer hold the requested rate
+(only \inbandMctmSizeKThree\ of channels stay inside the band, against 1.00 everywhere above
+it) and accuracy falls back to \accMctmSizeKThree{}\%. The optimum is interior, at
+\sizeBestTarget\ literals and \sizeBestAcc\,$\pm$\,\sizeBestSd{}\%, and it is the first arm with a
+\emph{trained} first layer, in either report, to beat the \accSingleMatched{}\% a single layer
+reaches at the same total clause budget. It does not reach the \accSingleRf{}\% of a single
+layer given the stack's $9\times9$ receptive field.
+\end{ttkey}
+
+\lead{The rate target does not determine the size, and the size is what matters.} The
+size-capped rows are both shorter \emph{and} denser than the rate-only row, so the two are
+worth disentangling. The control row does it. \code{mctm-calib-r20-tight} asks for the same
+$20\%$ rate with the tolerance band narrowed from $2\times$ to $1.2\times$, so the walk cannot
+stop at the band edge and has to keep cutting until it lands on the target. It ends at
+\calibSizeMctmCalibRTwoZeroTight\ literals and \accMctmCalibRTwoZeroTight{}\%, so roughly half
+of the size-capped arms' advantage is indeed just ``cut further''. The other half is not: a
+\calibSizeMctmCalibRTwoZeroTight-literal clause and a \calibSizeMctmSizeKSix-literal one both
+satisfy the rate band, and the short one is worth \sizeBestAcc{}\% against the long one's
+\accMctmCalibRTwoZeroTight{}\%.
+
+A firing-rate target therefore leaves a range of clause sizes feasible, and the short end of
+that range is where the accuracy is. Asking for the rate alone stops as soon as the rate is
+met, which at \calibSizeMctmCalibRTwoZeroTight\ literals it already is; asking for a size as
+well is what pushes the walk past that point. The practical conclusion is blunt: delete all
+but a handful of literals from every clause of a greedily trained Tsetlin feature layer,
+choosing what to keep by firing rate.
+
+\lead{What it does not do is beat an untrained layer.} \accMctmRandom{}\% still stands, from
+three random literals per clause and no training at all. The best repaired layer here gets
+within a few points of it after \epochsRun\ epochs of supervised layer-1 training followed by
+surgery that removes nine tenths of what that training produced. It is hard to read that as
+anything other than a statement about the value of the training.
+
+\subsection{The same controller on an untrained layer 1}
+\label{sec:randcalib}
+
+Every arm so far starts from a layer~1 that was trained to classify, because that is what the
+proposal specifies. \S\ref{sec:sizetarget} ends by observing that the most effective thing to
+do to such a layer is to delete most of it. The obvious next question is what happens if it is
+never trained in the first place --- the controller needs no labels, and the random-clause
+control of the first report is already the strongest first layer in either report.
+
+\begin{table}[h]
+\centering\small
+\caption{The firing-rate sweep run over a \emph{random} layer~1 instead of a trained one.
+Columns as in Table~\ref{tab:calib}: \code{target} is the requested per-patch rate in percent,
+\code{size} the median clause size the controller settles on, \code{raw} and \code{pooled} the
+achieved rates. The uncalibrated random layer has three literals per clause and fires on
+\fireRandomPre{}\% of pooled positions.}
+\label{tab:randcalib}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={target,size,fire_raw,fire_pooled,in_band,acc,sd},
+  columns/target/.style={column name=\thead{target (\%)}, column type={r}},
+  columns/size/.style={column name=\thead{size}, column type={r}},
+  columns/fire_raw/.style={column name=\thead{raw (\%)}, column type={r}},
+  columns/fire_pooled/.style={column name=\thead{pooled (\%)}, column type={r}},
+  columns/in_band/.style={column name=\thead{in band}, column type={r}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+]{data/rand_sweep.csv}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.4cm,
+  xlabel={target layer-1 firing rate (\%, log scale)}, ylabel={test accuracy (\%)},
+  xmode=log, log basis x=10, ymin=12, ymax=45,
+  grid=major, grid style={ttline!40},
+  legend style={font=\sffamily\scriptsize, draw=ttline, at={(0.5,-0.26)}, anchor=north,
+                legend columns=3, column sep=1.0em},
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttorange, mark=*, mark size=2pt, error bars/.cd, y dir=both, y explicit]
+  table[col sep=comma, x=target, y=acc, y error=sd] {data/rand_sweep.csv};
+\addplot[ttslate, mark=square*, mark size=2pt, error bars/.cd, y dir=both, y explicit]
+  table[col sep=comma, x=target, y=acc, y error=sd] {data/calib_sweep.csv};
+\addplot[ttmoss, dashed, domain=0.3:70, samples=2] {\accSingleRf};
+\legend{random layer 1, greedy layer 1, best single layer}
+\end{axis}
+\end{tikzpicture}
+\caption{The same controller, the same targets, over a randomly initialised first layer and
+over a greedily trained one. Neither curve is flat, which is the density effect; the gap
+between them is what \epochsRun\ epochs of supervised layer-1 training cost. The dashed line
+is the strongest single-layer baseline, \accSingleRf{}\%; the \emph{un}calibrated random layer
+sits within a fifth of a point of it, at \accMctmRandom{}\%, and is left off for legibility.}
+\label{fig:randcalib}
+\end{figure}
+
+\begin{ttkey}
+This is the configuration that works. The curve has an interior optimum --- accuracy climbs
+from \accMctmRcRZeroFive{}\% at a $5\%$ target to \randBestAcc{}\% at \randBestTarget{}\% and
+falls back to \accMctmRcRSixZero{}\% at $60\%$, where the clauses are so general they carry
+almost nothing --- and at its peak the stack reaches
+\randBestAcc\,$\pm$\,\randBestSd{}\%, against \accSingleMatched{}\% for a single layer at the
+same clause budget and \accSingleRf{}\% for a single layer given the stack's receptive field.
+It clears all three criteria of \S\ref{sec:criteria}, and it is the first time in either
+report that the two-layer stack has been worth its clause budget on CIFAR-10.
+
+Layer~1 is \emph{never trained}. It is random clauses, adjusted by a label-free controller that
+does nothing but count how often each one fires.
+\end{ttkey}
+
+The layer-2 clauses tell the same story as \S\ref{sec:l2learned} does on \code{near}: over
+this first layer a layer-2 clause carries \sizeMctmRandomCalib\ literals with
+\posMctmRandomCalib\ positive and \negMctmRandomCalib{}\% negations, against \sizeMctm\
+literals with \posMctm\ positive and \negMctm{}\% negations over the greedy layer. It is still
+not a short rule, but it is an order of magnitude closer to one. The size-target arms of
+\S\ref{sec:sizetarget} go further still --- \negMctmSizeKThree{}\% negations at a three-literal
+first layer --- so on CIFAR-10 too, the arms whose second layer stops asserting absences are
+the arms that work.
+
+Read alongside \S\ref{sec:sizetarget}, the two sweeps say the same thing from opposite
+directions. Cutting a trained layer down to \sizeBestTarget\ literals recovers most of the gap;
+starting from clauses that are already that short and never training them at all closes it.
+Whatever \epochsRun\ epochs of supervised layer-1 training contribute on this task, it is
+negative, and the controller is what makes an untrained layer usable rather than merely
+better than a trained one.
+
+\subsection{And when combined with \ideaA}
+
+There is almost nothing for the controller to do. The autoencoder layer already fires at
+\fireAutoPre{}\% with \sizeAutoPre-literal clauses; asked for the same $20\%$ target, the
+controller moves it to \calibFireMctmAutoCalib{}\% and leaves the clause size at
+\calibSizeMctmAutoCalib, and the arm gives \accMctmAutoCalib{}\% against \accMctmAuto{}\%
+uncalibrated. That is the cleanest statement of what \ideaA\ buys on CIFAR-10: an unsupervised
+objective puts the layer where the controller would have put it anyway, without being told to,
+and the two do not compound because they are doing the same job.

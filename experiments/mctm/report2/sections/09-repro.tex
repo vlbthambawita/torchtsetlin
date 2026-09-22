@@ -1,0 +1,65 @@
+\section{Reproducing this report}
+\label{sec:repro}
+
+Everything lives in \code{experiments/mctm/}. The report reads only \code{results/*.json};
+re-running the experiments and rebuilding regenerates every figure, table and inline number.
+
+\begin{lstlisting}[language=bash]
+cd experiments/mctm
+
+# E3-E5 -- the three repairs on CIFAR-10. SEEDS defaults to "0 1 2"; the seeds column of
+# Table 2 records how many each row actually averages. Waves are independent except e and f,
+# which use the firing-rate target chosen from the wave-b sweep (TARGET=0.20).
+GPU=0 WAVE=a ./run_ideas_all.sh     # A: autoencoder layer 1, and the flat readouts
+GPU=1 WAVE=b ./run_ideas_all.sh     # B: the firing-rate target sweep
+GPU=0 WAVE=c ./run_ideas_all.sh     # C: the three rungs of the credit rule
+GPU=1 WAVE=d ./run_ideas_all.sh     # C: warm start, swept over the credit step size
+GPU=0 WAVE=e ./run_ideas_all.sh     # B: the clause-size target, at the best firing rate
+GPU=1 WAVE=g ./run_ideas_all.sh     # B: the same controller over an UNTRAINED layer 1
+GPU=0 WAVE=f ./run_ideas_all.sh     # the combinations and the size/rate control
+
+# E6 -- the same three ideas on the tasks whose per-arm ceiling is known analytically
+./run_syn.sh 0 near                 # one task per GPU; each writes its own JSON
+./run_syn.sh 1 xor
+
+# report: JSON -> data/*.csv + macros.tex -> PDF
+cd report2 && make data && make
+\end{lstlisting}
+
+\lead{Files.} \code{ideas.py} is the implementation of all three repairs (\S\ref{sec:method});
+\code{run\_ideas.py} is the CIFAR-10 driver, one arm per invocation;
+\code{run\_ideas\_all.sh} is the wave runner (\code{queue\_runner.py} is the same thing for
+long unattended runs --- it reads its job list once, so the list can be edited while a queue is
+in flight, which a bash script cannot survive, and it takes a per-GPU lock so two queues cannot
+OOM each other; \code{run\_seq.sh} is the lock-free version, for a second stream on a card with
+room for it); \code{synthetic\_ideas.py} is E6;
+\code{test\_ideas.py} asserts the invariants of all three mechanisms, the credit path's index
+arithmetic in particular;
+\code{report\_data\_ideas.py} turns results into \code{report2/data/*.csv} and
+\code{report2/macros.tex}. The first report's \code{mctm.py}, \code{cifar.py},
+\code{run.py} and \code{synthetic.py} are unchanged and still provide the architecture, the
+data and the baselines.
+
+\lead{Checks.} \code{report2/check.sh} runs after every build and fails on undefined macros,
+undefined references, \emph{duplicate} \code{\textbackslash newcommand}s (where the first
+definition silently wins), missing data files, and LaTeX errors. \code{audit\_macros.py} lists
+generated macros the text uses that the data has not filled in --- the report is not finished
+while any of them read \code{n/a} --- and \code{check\_spacing.py} catches
+\code{\textbackslash accFoo bar}, whose space TeX swallows. Every one of these was added
+because it caught something.
+
+\lead{Shared state.} Layer-1 checkpoints are reused from the first report's \code{.ckpt/}
+cache under the same key, so ``greedy layer~1'' in this report is literally the same automata
+that E1 trained --- the calibration sweep is six adjustments of one object, not six trainings.
+Autoencoder layers are cached the same way, per \code{(seed, s, epochs, patches)}.
+
+\lead{Environment.} \ttlibname\ \ttversionreport, PyTorch with CUDA, one NVIDIA RTX~3090 and
+one RTX~3080. Reported training time is the sum of recorded per-epoch times across all
+trainable stages, so it is unaffected by the caches.
+
+\lead{Upstreaming.} Nothing here needs a library change beyond the one the first report
+already identified --- a public accessor for the spatial map that
+\code{\_ConvMixin.\_evaluate} already computes. The density controller
+(\S\ref{sec:method-calib}) is the one piece that would be worth promoting on its own: it is
+model-agnostic, it works on any Tsetlin machine with an \code{include} mask, and
+\S\ref{sec:density} is the first measurement of what it buys.

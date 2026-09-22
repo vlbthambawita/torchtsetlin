@@ -1,0 +1,248 @@
+{
+ "arm": "cnn-ctmshape-max",
+ "family": "control",
+ "paper": null,
+ "seed": 0,
+ "argv": [
+  "code/cnn/train.py",
+  "--arm",
+  "cnn-ctmshape-max",
+  "--seed",
+  "0",
+  "--screen",
+  "--device",
+  "cuda:1",
+  "--notes",
+  "CNN-side proxy for a TM-side question -- read with the confound. On a CNN, mean-pooling also changes the OPTIMISATION, because max-pooling routes gradient to one patch position only, whereas a Tsetlin machine has no gradient at all. This evidence therefore supports the INFORMATION half of the counting-pool argument (OR delivers C bits to the vote; a count delivers up to C*log2(P+1)) and NOT the optimisation half. The report must say so wherever this pair is cited. Second, load-bearing caveat: diagnostics.match_count here is measured on a BatchNorm+activation substrate whose firing density is nothing like a trained TM clause's, so the transfer of this result to a CTM is an open question -- settle it against the TM-side diagnostics.match_count, not against this. Screen protocol per PLAN S8 P5; not a result."
+ ],
+ "git_sha": "fbc530680f798ecfc7398f46bedfd6f0b035ca9f",
+ "env": {
+  "torch": "2.10.0+cu128",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "host": "mimir",
+  "python": "3.10.11",
+  "cuda_visible_devices": null,
+  "torchtsetlin": "0.1.3"
+ },
+ "started": "2026-09-20T12:02:40",
+ "wall_s": 61.74850010871887,
+ "data": {
+  "dataset": "cifar10",
+  "booleanization": "therm4",
+  "n_train": 10000,
+  "n_val": 5000,
+  "n_test": 10000,
+  "augment": null,
+  "split_hash": "8a08ca1533b36c692861b471c316ab3053917403",
+  "subset": 10000
+ },
+ "hp": {
+  "arch": "ctm_shaped",
+  "booleanization": "therm4",
+  "bool_scale": "pm1",
+  "in_ch": 12,
+  "n_classes": 10,
+  "epochs": 15,
+  "batch_size": 64,
+  "optimizer": "sgd",
+  "lr": 0.05,
+  "momentum": 0.9,
+  "nesterov": true,
+  "weight_decay": 0.0001,
+  "schedule": "cosine",
+  "warmup_epochs": 0,
+  "lr_min": 0.0,
+  "augment": false,
+  "loss": "ce",
+  "label_smoothing": 0.0,
+  "amp": true,
+  "grad_clip": 0.0,
+  "eval_batch_size": 64,
+  "arch_kw": {
+   "n_filters": 2000,
+   "patch": 4,
+   "stride": 1,
+   "pool": "max"
+  },
+  "n_clauses": null
+ },
+ "capacity": {
+  "n_parameters": 408010,
+  "n_trainable": 408010,
+  "macs_per_image": 322964000,
+  "binary_weights": 0,
+  "float_weights": 408010,
+  "state_bytes": 1632040,
+  "n_automata": 0,
+  "n_clauses_total": 0,
+  "literals_evaluated_per_image": 322964000
+ },
+ "curve": [
+  {
+   "epoch": 1,
+   "train_acc": 0.1814,
+   "val_acc": 0.26339998841285706,
+   "epoch_s": 4.788943290710449,
+   "lr": 0.04945543044221712,
+   "train_loss": 23.127692364883423
+  },
+  {
+   "epoch": 2,
+   "train_acc": 0.2796,
+   "val_acc": 0.30379998683929443,
+   "epoch_s": 3.9499824047088623,
+   "lr": 0.04784204262761134,
+   "train_loss": 1.9234038070678712
+  },
+  {
+   "epoch": 3,
+   "train_acc": 0.3079,
+   "val_acc": 0.3246000111103058,
+   "epoch_s": 3.934399127960205,
+   "lr": 0.04523034794189758,
+   "train_loss": 1.8426666519165038
+  },
+  {
+   "epoch": 4,
+   "train_acc": 0.3312,
+   "val_acc": 0.32019999623298645,
+   "epoch_s": 3.7457289695739746,
+   "lr": 0.041734489975143056,
+   "train_loss": 1.7886971626281738
+  },
+  {
+   "epoch": 5,
+   "train_acc": 0.3471,
+   "val_acc": 0.3540000021457672,
+   "epoch_s": 3.600520372390747,
+   "lr": 0.037507254495482624,
+   "train_loss": 1.748103496170044
+  },
+  {
+   "epoch": 6,
+   "train_acc": 0.3622,
+   "val_acc": 0.36980000138282776,
+   "epoch_s": 3.8423519134521484,
+   "lr": 0.032733391977903814,
+   "train_loss": 1.7096787086486815
+  },
+  {
+   "epoch": 7,
+   "train_acc": 0.374,
+   "val_acc": 0.33660000562667847,
+   "epoch_s": 4.854285001754761,
+   "lr": 0.027621543121958726,
+   "train_loss": 1.6783101570129395
+  },
+  {
+   "epoch": 8,
+   "train_acc": 0.3828,
+   "val_acc": 0.3646000027656555,
+   "epoch_s": 3.4933598041534424,
+   "lr": 0.022395120252024472,
+   "train_loss": 1.6523655345916748
+  },
+  {
+   "epoch": 9,
+   "train_acc": 0.3959,
+   "val_acc": 0.3625999987125397,
+   "epoch_s": 3.5027477741241455,
+   "lr": 0.01728254312667657,
+   "train_loss": 1.6262691181182862
+  },
+  {
+   "epoch": 10,
+   "train_acc": 0.3997,
+   "val_acc": 0.37779998779296875,
+   "epoch_s": 3.505434036254883,
+   "lr": 0.01250725589915968,
+   "train_loss": 1.6070493869781495
+  },
+  {
+   "epoch": 11,
+   "train_acc": 0.4071,
+   "val_acc": 0.3797999918460846,
+   "epoch_s": 3.5030434131622314,
+   "lr": 0.008277961535686704,
+   "train_loss": 1.581522505760193
+  },
+  {
+   "epoch": 12,
+   "train_acc": 0.4216,
+   "val_acc": 0.38580000400543213,
+   "epoch_s": 3.500110626220703,
+   "lr": 0.0047795004943473884,
+   "train_loss": 1.564380358505249
+  },
+  {
+   "epoch": 13,
+   "train_acc": 0.4225,
+   "val_acc": 0.3889999985694885,
+   "epoch_s": 3.5030288696289062,
+   "lr": 0.0021647723101268918,
+   "train_loss": 1.5494421703338623
+  },
+  {
+   "epoch": 14,
+   "train_acc": 0.4234,
+   "val_acc": 0.39480000734329224,
+   "epoch_s": 3.459886074066162,
+   "lr": 0.000548053151533523,
+   "train_loss": 1.5419434185028076
+  },
+  {
+   "epoch": 15,
+   "train_acc": 0.4337,
+   "val_acc": 0.39340001344680786,
+   "epoch_s": 3.4608778953552246,
+   "lr": 1.4036770579206605e-09,
+   "train_loss": 1.5309691684722901
+  }
+ ],
+ "selected_epoch": 14,
+ "val_acc": 0.39480000734329224,
+ "test_acc": 0.3885999917984009,
+ "test_acc_per_class": [
+  0.4699999988079071,
+  0.4729999899864197,
+  0.1469999998807907,
+  0.1860000044107437,
+  0.3499999940395355,
+  0.38600000739097595,
+  0.5490000247955322,
+  0.4230000078678131,
+  0.4580000042915344,
+  0.4440000057220459
+ ],
+ "test_predictions_sha": "df6fab6211e968b3c81b81068b6a7fa9f6e805ce",
+ "diagnostics": {
+  "epochs_done": 15,
+  "steps_done": 2355,
+  "train_s": 49.79,
+  "weight_abs_median": 0.049349818378686905,
+  "dead_filter_frac": 0.0,
+  "has_binary_layers": false,
+  "amp": true,
+  "throughput_img_s": 180967.7,
+  "throughput_batch": 64,
+  "params": 408010,
+  "macs_per_image": 322964000,
+  "val_acc_final_epoch": 0.39340001344680786,
+  "match_count": {
+   "definition": "count of patch positions with post-BN post-activation value > 0",
+   "split": "validation",
+   "n_patches": 841,
+   "fire_frac": 0.0095609,
+   "median_given_firing": 40.0,
+   "mean_given_firing": 86.55834701754019,
+   "p95_given_firing": 328.0,
+   "frac_ge5_given_firing": 0.8830340239935571,
+   "frac_eq1_given_firing": 0.03834367057494587,
+   "median_all_pairs": 0.0
+  },
+  "selected_epoch_of": 15,
+  "throughput_contended": true
+ },
+ "notes": "CNN-side proxy for a TM-side question -- read with the confound. On a CNN, mean-pooling also changes the OPTIMISATION, because max-pooling routes gradient to one patch position only, whereas a Tsetlin machine has no gradient at all. This evidence therefore supports the INFORMATION half of the counting-pool argument (OR delivers C bits to the vote; a count delivers up to C*log2(P+1)) and NOT the optimisation half. The report must say so wherever this pair is cited. Second, load-bearing caveat: diagnostics.match_count here is measured on a BatchNorm+activation substrate whose firing density is nothing like a trained TM clause's, so the transfer of this result to a CTM is an open question -- settle it against the TM-side diagnostics.match_count, not against this. Screen protocol per PLAN S8 P5; not a result. TIMING CAVEAT: this screen shared GPU 1 (RTX 3080) with a concurrent `run_arm.py --arm ctm-small --seed 0` (PID 1804730) for part of its run. Accuracy, selection and diagnostics.match_count are unaffected by contention; diagnostics.throughput_img_s is NOT and must not be used. Per-epoch times matched an uncontended run of the same configuration to within noise (3.5 / 2.7 s per epoch), so the accuracy numbers stand as measured.",
+ "test_predictions_path": "screen/preds/cnn-ctmshape-max_seed0.npy"
+}

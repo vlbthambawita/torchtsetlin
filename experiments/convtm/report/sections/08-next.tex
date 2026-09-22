@@ -1,0 +1,33 @@
+\section{What would settle the open questions}
+
+In cost order, on the two GPUs used here.
+
+\begin{enumerate}
+\item \textbf{Re-score every record under a smoothed selection rule.} No GPU time. Repairs the defect
+      of \S\ref{sec:withheld} from stored curves and tightens every comparison in the programme.
+      Must be done before anything else is concluded.
+\item \textbf{Finish the accuracy decomposition} --- the Booleanized-input CNN and the binarised CNN,
+      roughly 18 GPU-hours. These are the two controls that turn ``Tsetlin machines trail CNNs by 24
+      points'' into a statement about \emph{which} component is responsible, and neither exists in the
+      literature.
+\item \textbf{Settle the capacity ladder}: a second seed and a longer-epoch run at 80\,000 clauses,
+      roughly 15 GPU-hours. This decides whether a published table reproduces.
+\item \textbf{The bloat-versus-headroom discriminator}, 0.6 GPU-hours: run the clause-budget pair on
+      CIFAR-2 built from this pipeline. It separates ``the effect tracks how bloated the baseline is''
+      from ``the effect tracks how much headroom the task has'', which is the difference between a
+      general claim and a CIFAR-10 one.
+\item \textbf{The optimum budget and what governs clause length}, roughly 5 GPU-hours. The budget
+      sweep was prepared and not run; and the falsification of the admission-threshold account leaves
+      the governing quantity unidentified, which is the most interesting open theoretical question the
+      programme produced.
+\item \textbf{The diversity-versus-ensembling control}, 3 GPU-hours. Twenty-two small specialists beat
+      one large model by 4.1 points at 0.69$\times$ the automata; whether that is \emph{encoding
+      diversity} or merely \emph{ensembling} has never been tested, and it is the cheapest route to a
+      contribution this programme identified.
+\end{enumerate}
+
+Only after (1)--(3) would candidate generation for a new mechanism be well-founded. The team's own
+pre-registered reading --- untested --- is that the gap is predominantly architectural rather than a
+property of the learning rule, which would direct candidate generation at hierarchy, pooling that
+preserves count information, and receptive-field growth, and away from modifications of the feedback
+rule.

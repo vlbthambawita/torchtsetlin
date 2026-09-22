@@ -1,0 +1,176 @@
+# ============================================================================================
+# P3 item 3 (DR-003 funding order): the clause-size-budget prediction sweep.
+# Written by tm-theorist 2026-09-21. Registered predictions: THEORY.md 5.4.4 (P1, P2, P4) and
+# THEORY.md 5.5.6 (B1, B3) / 5.5.8. P3 is already settled -- falsified, DR-004 Decision 2.
+#
+# RUN AS:  python code/queue_runner.py --gpu 1 --jobs jobs/p3_budget_predictions.txt --seeds 0 1 2
+#
+#   --gpu 1 (RTX 3080) is NOT optional. Every arm this sweep is compared against --
+#   ctm-small-T80-unc and ctm-small-T80-b32 -- was measured on the 3080, and DR-001 makes
+#   `device + seed` the reproducibility key, not `seed`.
+#   Do NOT pass --epochs: every job carries its own, matching the existing arms exactly.
+#
+# SCALE: every job is `ctm-small` (2 000 total clauses, T = 80 against a capacity of 100,
+# unweighted, class-owned, batch 50, position_encoding on, 30 epochs). This is deliberately the
+# cheap scale -- it must not compete with the capacity ladder or the budget control for budget.
+#
+# PRICE LIST, per seed, measured not extrapolated:
+#   [MEASURED: ctm-small-T80-{unc,b32}_seed{0,1,2} wall_s = 362-372 s on the 3080, diagnostics on]
+#     patch 4 / therm4  (F = 248, P = 841)   ->  0.104 GPU-h
+#   scaled by F*P at fixed clause count, the scaling the calibration confirms to ~2%
+#   [MEASURED: calibration_throughput.json: therm8/therm4 at 10x10 = 114.8/58.8 = 1.95x for an
+#    F ratio of 1.96x]:
+#     patch 3 / therm4  (F = 166, P = 900)   ->  0.075 GPU-h   (x0.72)
+#     patch 4 / therm8  (F = 440, P = 841)   ->  0.184 GPU-h   (x1.77)
+#
+# TOTAL: 17 jobs x 3 seeds = 51 runs = 5.83 GPU-h.  Cap was 6.00.
+#
+# ORDERING RULE: the cheapest *complete* answer to a registered prediction comes first. Blocks
+# 1 and 2 are each self-contained; blocks 3 and 4 are one experiment and must not be split.
+# Cumulative: block 1 -> 1.25 h | +block 2 -> 2.50 h | +blocks 3+4 -> 5.83 h.
+# IF THE ENVELOPE IS CUT, KEEP BLOCK 2. It is the only block that can overturn the programme's
+# own headline claim (THEORY.md 5.5.8), and it is the cheapest block that can.
+#
+# EXISTING ARMS THIS SWEEP COMPLETES -- do not re-run, they are already 3 seeds each:
+#   ctm-small-T80-unc  38.31 +- 1.05, L = 147.5 +- 15.2, fire 0.0718   (budget none, s = 10)
+#   ctm-small-T80-b32  47.77 +- 0.32, L =  32.15 +- 0.08, fire 0.1452  (budget 32,   s = 10)
+# Seed band for a 3-seed mean is 1.00 pp [MEASURED: results/calibration_seednoise.json].
+#
+# EVERY BLOCK MUST BE READ WITH THE CLAUSE-LENGTH AND FIRING-RATE DIAGNOSTICS, NOT ONLY ACCURACY.
+# `diagnostics.clause_len.mean` and `diagnostics.firing_rate.mean` are already logged per epoch;
+# the bloat ratio beta = L_unconstrained / L_budgeted is the axis of every prediction below.
+# ============================================================================================
+
+
+# --------------------------------------------------------------------------------------------
+# BLOCK 1 -- P1: where is the optimum budget, and is the curve flat beneath it?   1.25 GPU-h
+#
+# PREDICTION (THEORY.md 5.4.4 P1, registered 2026-09-20, unchanged):
+#   acc(32) > acc(64) > acc(none), and acc(16) within the 1.00 pp seed band of acc(32).
+# FALSIFIED BY: acc(64) > acc(32) beyond the band -- the optimum is above 32 and the Toolbox's
+#   own budget of 32 is not optimal here; OR acc(16) more than 1.00 pp below acc(32) -- the
+#   optimum is sharply peaked rather than a plateau, which would mean discriminativeness binds
+#   and the "any cap will do" reading of 5.5.4 is wrong.
+# SECOND READING, free: acc(128) tells us whether the effect is a cap effect or a *tight* cap
+#   effect. 128 is close to the unconstrained equilibrium of 147.5, so if acc(128) is already
+#   most of the way to acc(32), the mechanism is the closed length->forgetting loop itself
+#   (5.5.4) and not the particular value; if acc(128) ~ acc(none), it is the tightness.
+# 4 jobs x 3 seeds x 0.104 h = 1.248 GPU-h
+# --------------------------------------------------------------------------------------------
+ctm-small:ctm-small-T80-b8|--epochs 30 --max-included-literals 8
+ctm-small:ctm-small-T80-b16|--epochs 30 --max-included-literals 16
+ctm-small:ctm-small-T80-b64|--epochs 30 --max-included-literals 64
+ctm-small:ctm-small-T80-b128|--epochs 30 --max-included-literals 128
+
+
+# --------------------------------------------------------------------------------------------
+# BLOCK 2 -- P2 (firing-rate mediation), B1 (the bloat law in s), and the open risk against our
+#            own headline (THEORY.md 5.5.8).                                      1.25 GPU-h
+#
+# A 3 x 2 factorial in {s = 2, 10, 20} x {budget none, 32}; the s = 10 column already exists, so
+# only four cells are bought. `s` is the *other* dial that shortens clauses, and the admission
+# threshold of THEORY.md 5.5.2 C5.1 is pi > 1/(1+s): 0.333 at s = 2, 0.091 at s = 10, 0.048 at
+# s = 20.
+#
+# PREDICTION B1 (THEORY.md 5.5.6): L_unconstrained rises with s, therefore so does the budget
+#   effect. Quantitatively: L_unc(s=2) < 32 so beta ~ 1 and Delta(s=2) vanishes into the seed
+#   band; L_unc(s=20) > 147.5 and Delta(s=20) > +9.46.
+# FALSIFIED BY: Delta(s=2) >= +3 pp while L_unc(s=2) <= 40; or Delta(s=20) < Delta(s=10) while
+#   L_unc(s=20) > L_unc(s=10). Either kills the bloat law, which is the report's explanation of
+#   why we measure +9.46 where CSC-TM measured +0.06.
+#
+# PREDICTION P2 (THEORY.md 5.4.4): accuracy against *achieved* firing rate collapses the budget
+#   family {8,16,32,64,128,none} at s=10 (block 1) and the s family {2,10,20} unconstrained onto
+#   ONE curve.
+# FALSIFIED BY: at matched achieved firing rate the two families differ by more than the seed
+#   band -- which would mean the cap does something beyond density control, i.e. *which*
+#   literals are kept matters independently of how many.
+#
+# THE RISK THIS BLOCK IS REALLY FOR (THEORY.md 5.5.8): s = 10 at therm-4 is OUR OWN choice
+#   (arms.py, config_status="own"); the Toolbox uses s = 5.0 for every colour-thermometer
+#   specialist. If `ctm-small-s2-unc` lands within 1.00 pp of `ctm-small-T80-b32` (47.77), then
+#   `s` alone buys the nine points, the budget is not a mechanism but a symptom of an untuned
+#   `s`, and DR-004's novelty claim must be rewritten before the report is drafted. My
+#   [HYPOTHESIS] is that it does not, because `s` is a low-pass filter on literal frequency
+#   while the cap is a top-b selection, so the s-shortened clause should be shorter AND less
+#   accurate at the same length -- but this is the measurement, not the argument.
+# 4 jobs x 3 seeds x 0.104 h = 1.248 GPU-h
+# --------------------------------------------------------------------------------------------
+ctm-small:ctm-small-T80-s2-unc|--epochs 30 --s 2.0 --max-included-literals -1
+ctm-small:ctm-small-T80-s2-b32|--epochs 30 --s 2.0 --max-included-literals 32
+ctm-small:ctm-small-T80-s20-unc|--epochs 30 --s 20.0 --max-included-literals -1
+ctm-small:ctm-small-T80-s20-b32|--epochs 30 --s 20.0 --max-included-literals 32
+
+
+# --------------------------------------------------------------------------------------------
+# BLOCKS 3 + 4 -- P4: is the optimum budget b* absolute, or proportional to encoding width?
+#                    And B3: does the unconstrained equilibrium track n_features?  3.33 GPU-h
+#
+# ONE EXPERIMENT IN TWO BLOCKS. Do not run one without the other: a single encoding cannot
+# distinguish an absolute b* from a proportional one.
+#
+# Three encodings spanning n_features by 2.65x at a fixed clause count, fixed s = 10, fixed
+# T = 80 (the vote capacity does not change with the window or the bit depth, so the margin
+# stays reachable in every cell):
+#     block 3: patch 3, therm4  -> F = 166 (12*9 + 2*29),  P = 900
+#     existing: patch 4, therm4 -> F = 248 (12*16 + 2*28), P = 841   <- blocks 1-2, free
+#     block 4: patch 4, therm8  -> F = 440 (24*16 + 2*28), P = 841
+#
+# PREDICTION P4 (THEORY.md 5.4.4, registered 2026-09-20): b* is roughly ABSOLUTE -- it varies by
+#   less than 2x while n_features varies 2.65x. The proportional framing predicts b* = 0.13 * F,
+#   i.e. 22 / 32 / 58 across the three encodings; the coverage framing predicts ~32 in all three.
+#   The budget grids below are chosen to separate exactly those two: {8,16,32,64} brackets 22 vs
+#   32, and {32,64,128} brackets 32 vs 58.
+# FALSIFIED BY: b* tracking n_features proportionally. That result would also say the Toolbox
+#   left accuracy on the table by using a single budget of 32 across all seven of its encodings
+#   [FACT: all 22 reference scripts] -- a claim about the literature, so it needs this control.
+#
+# PREDICTION B3 (THEORY.md 5.5.6): L_unconstrained is set by s and by the encoding's bit
+#   correlations, not by the encoding's width, so it is NOT proportional to F across
+#   {166, 248, 440}.
+# FALSIFIED BY: L_unconstrained proportional to n_features across the three.
+# FREE PRIOR DATA POINT, already against proportionality: [MEASURED: ctm-therm5-preflight_seed0]
+#   at F = 654 with s = 5.0 and budget 32 the ACHIEVED mean clause length is 27.8 -- the cap does
+#   not even bind at the mean, where a proportional b* would be ~85.
+#
+# The unconstrained cell in each block is not optional: it is the only way to measure beta, and
+# beta is the axis of the whole 5.5.6 argument.
+# --------------------------------------------------------------------------------------------
+
+# Block 3 -- narrow encoding, F = 166.  5 jobs x 3 seeds x 0.075 h = 1.125 GPU-h
+ctm-small:ctm-small-p3t4-unc|--epochs 30 --patch 3 --max-included-literals -1
+ctm-small:ctm-small-p3t4-b8|--epochs 30 --patch 3 --max-included-literals 8
+ctm-small:ctm-small-p3t4-b16|--epochs 30 --patch 3 --max-included-literals 16
+ctm-small:ctm-small-p3t4-b32|--epochs 30 --patch 3 --max-included-literals 32
+ctm-small:ctm-small-p3t4-b64|--epochs 30 --patch 3 --max-included-literals 64
+
+# Block 4 -- wide encoding, F = 440.   4 jobs x 3 seeds x 0.184 h = 2.208 GPU-h
+ctm-small:ctm-small-p4t8-unc|--epochs 30 --bool therm8 --max-included-literals -1
+ctm-small:ctm-small-p4t8-b32|--epochs 30 --bool therm8 --max-included-literals 32
+ctm-small:ctm-small-p4t8-b64|--epochs 30 --bool therm8 --max-included-literals 64
+ctm-small:ctm-small-p4t8-b128|--epochs 30 --bool therm8 --max-included-literals 128
+
+
+# ============================================================================================
+# NOT IN THIS FILE, AND WHY -- proposed to the research-engineer and to the orchestrator rather
+# than queued, because each needs code I do not own (DR-001 Decision 6).
+#
+# 1. `ctm-small-cifar2-{unc,b32}` -- the SAME budget pair on a two-class CIFAR (the standard
+#    vehicle/animal merge), same encoding, same s, same clause count.  0.62 GPU-h, 3 seeds.
+#    This is the ONLY experiment that separates the two live explanations of why we measure
+#    +9.46 pp where CSC-TM measured +0.06: baseline BLOAT (their unconstrained clauses ran to
+#    60.4 literals, ours to 147.5) versus task HEADROOM (their CIFAR-2 baseline was already at
+#    94.18% on two classes; ours is at 38.31% on ten). THEORY.md 5.5.6 states the falsifier.
+#    It needs ~10 lines of label remapping in code/data.py. I rank it ABOVE blocks 3+4.
+#
+# 2. `pool-density` -- an explicit per-clause firing-rate controller, P2's third family. Needed
+#    to make P2's "collapse onto one curve" a three-family test rather than a two-family one.
+#    Needs a harness subclass of _feedback_counts (LG-005 private-API caveat), ~2 engineer-days.
+#
+# 3. The three free diagnostics of THEORY.md 5.5.9 -- D-TA (TA-state histogram over included
+#    literals), D-FIRE (firing rate conditioned on the clause's Type-I-eligible class) and
+#    D-ORDER (marginal selectivity by inclusion depth). D-TA and D-FIRE are each a few lines in
+#    code/diagnostics.py and cost ~0 runtime. If they land BEFORE this sweep runs, the sweep
+#    tests the mechanism directly instead of only its accuracy consequence; if they land after,
+#    every arm here has to be re-run to get them. That is the only reason to delay this queue.
+# ============================================================================================

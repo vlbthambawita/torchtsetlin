@@ -1,0 +1,31 @@
+# P2 wave 3 -- the sample-efficiency curve.  1 000 / 5 000 / 10 000 training images.
+#
+#   python code/cnn/queue_cnn.py --gpu 1 --jobs jobs/p2_cnn_curve.txt --seeds 0 1 2
+#
+# `data.subset_indices` is NESTED and stratified, so the 1 000 set is a subset of the 5 000
+# set: a point on this curve differs from the next only by added data, never by which data.
+# Validation (5 000) and test (10 000) are never subsetted.
+#
+# **The top point of the curve is 45 000, not 50 000.** The protocol holds 5 000 images out
+# for validation and the TM arms train on the same 45 000, so the full-data point is the arm's
+# own record in jobs/p2_cnn.txt / p2_cnn_ref.txt. Reporting a 50 000-image CNN against a
+# 45 000-image TM would be exactly the kind of unlike comparison this file exists to avoid.
+#
+# Four arms span the four things the curve has to separate:
+#   cnn-matched-boolean   budget-matched AND input-matched   -- the TM's direct counterpart
+#   cnn-small-noaug       float, unaugmented, full capacity  -- the cost of Booleanization
+#   cnn-boolean-therm8    Boolean, unaugmented               -- ...at every data budget
+#   cnn-resnet18          augmented, high capacity           -- the top of the CNN envelope
+# Ordered cheapest-first (cost is ~linear in the subset size).
+cnn-matched-boolean|--subset 1000
+cnn-small-noaug|--subset 1000
+cnn-boolean-therm8|--subset 1000
+cnn-matched-boolean|--subset 5000
+cnn-small-noaug|--subset 5000
+cnn-boolean-therm8|--subset 5000
+cnn-matched-boolean|--subset 10000
+cnn-small-noaug|--subset 10000
+cnn-boolean-therm8|--subset 10000
+cnn-resnet18|--subset 1000
+cnn-resnet18|--subset 5000
+cnn-resnet18|--subset 10000

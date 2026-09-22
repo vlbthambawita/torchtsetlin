@@ -1,0 +1,30 @@
+\section{Scope, and where this stopped}
+
+\subsection{What was asked}
+Find the best way to handle convolution in Tsetlin machines; establish a CNN baseline on CIFAR-10
+from the literature; re-implement the existing Tsetlin approaches and measure them under one harness;
+identify their limitations by measurement; design and test a new approach; and report. Two standing
+constraints governed the work: \textbf{the \code{torchtsetlin} library was not to be modified} until
+explicitly released, and \textbf{no method was to be chosen without experimental results}.
+
+\subsection{Where it stopped}
+The programme completed its setup phase (P0), its literature phase (P1), and entered its reproduction
+phase (P3) with CNN baselines (P2) running concurrently. It was halted during P3. Consequently:
+
+\begin{itemize}
+\item \textbf{No new approach was designed or tested.} Phases P4 (limitation analysis), P5 (candidate
+      generation) and P6 (evaluation) did not run. Nothing in this report claims a novel mechanism.
+\item \textbf{The reproduction phase is partial.} Four Tsetlin arms and eleven CNN baselines carry
+      test numbers; the planned twelve-arm comparison did not complete.
+\item \textbf{The accuracy decomposition is incomplete.} Its two load-bearing controls --- a CNN on
+      the same Booleanized input, and a binarised CNN --- were queued but had not run when work
+      stopped.
+\end{itemize}
+
+\subsection{What the constraints bought}
+Both held. \code{git diff -- src/} is empty: not one line of the library was changed, and the eleven
+gaps found in it are recorded as reproductions with fix sketches rather than patches
+(\S\ref{sec:library}). Every method decision in \code{DECISIONS.md} cites a measured result; where one
+had to be taken before its measurement existed, it was marked provisional and the measurement was
+scheduled before anything depended on it. Two decisions were subsequently overturned by their own
+falsifiers, which is the mechanism working rather than failing.

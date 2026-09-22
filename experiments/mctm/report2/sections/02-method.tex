@@ -1,0 +1,114 @@
+\section{Implementation}
+\label{sec:method}
+
+All three repairs live in \code{ideas.py} and are built from the documented update pipeline
+(\code{\_encode $\to$ \_evaluate $\to$ \_votes $\to$ \_select\_feedback $\to$
+\_feedback\_counts $\to$ \_commit}) and \code{functional.apply\_feedback}. No library file is
+modified. The architecture is exactly the one evaluated in the first report --- layer~1
+$\pOne\times\pOne$ patches with \cOne\ shared clauses, $\poolK\times\poolK$ OR pool, layer~2
+$\pTwo\times\pTwo$ patches with \cTwo\ clauses --- so every number here is directly comparable
+to its E1 counterpart.
+
+\subsection{\ideaA\ --- a patch autoencoder for layer 1}
+\label{sec:method-auto}
+
+Each patch is split into a \emph{target} --- its centre pixels, across all bit planes --- and
+a \emph{context}, the surrounding ring. A flat coalesced Tsetlin machine with one output per
+target bit is trained multi-label to predict the target from the context, and its clauses are
+then written into the convolutional layer. No label is used anywhere.
+
+Two choices are worth stating. The split is \emph{spatial} rather than a random subset of
+bits, because thermometer planes of the same pixel are nested ($v>t_1$ implies $v>t_0$):
+holding out one plane of a pixel while showing another leaks the answer, and the clause learns
+the encoder instead of the image. And the trained clauses are embedded into a layer whose
+literal space is the \emph{full} patch plus position bits, identical to a greedily trained
+layer~1; the held-out pixels and the position bits simply stay excluded. The two layer-1
+variants are therefore the same model with the same capacity, differing only in objective.
+
+\subsection{\ideaB\ --- a two-sided density controller}
+\label{sec:method-calib}
+
+A clause fires on a patch iff none of its included literals is false there, so its firing rate
+is monotone in its literal set: removing a literal can only raise it, adding one can only lower
+it. The target rate is therefore reachable by a greedy walk in \emph{both} directions, which is
+what ``adjust each clause towards it'' asks for. Per round, for the clauses below the band,
+\[
+  \mathrm{gain}[j,k] \;=\; \#\{\text{patches where clause $j$ has exactly one violated literal,
+  and it is $k$}\}
+\]
+names the literal whose removal buys the most; it is the matmul $(\text{violations}=1)^{\!\top}
+(1-\text{literals})$ masked to included literals, the same shape of computation as the Type~Ia
+count in \code{functional}. Where no single removal helps, the most-often-violated literal goes
+instead, so a round always makes progress. For clauses above the band, including literal $k$
+drops the rate by the fraction of currently-matching patches in which $k$ is false, so the
+literal landing closest to the target without undershooting is added.
+
+The same loop takes a second target. A clause's firing rate and its \emph{size} are different
+properties --- a long conjunction that is rare-but-common and a short general one can sit at
+the same rate --- so the controller accepts a size cap alongside the rate, and
+\S\ref{sec:sizetarget} uses it to test which of the two the second layer actually needs.
+Under a cap the removal rule changes: dropping the most load-bearing literal leaves the most
+permissive ones and sends the rate towards~1, dropping the least leaves the most selective and
+sends it towards~0, so the literal that leaves the rate closest to target goes instead. That
+choice is exact rather than heuristic, because removing literal $k$ lets through precisely the
+patches it alone was blocking.
+
+Two details decide whether this is a controller or a gimmick. \lead{Added literals are
+restricted to patch pixels.} The cheapest way to hit any firing rate is a position literal:
+\code{y > 27} fires on exactly $1/29$ of patch rows whatever the image contains. Left free, the
+controller takes it every time and produces channels that carry no information at all.
+\lead{A clause that has once been inside the band is frozen}, so the two rules cannot chase
+each other. Adjustments are written as ``included'' / ``excluded, one step below the
+boundary'' --- exactly where a fresh automaton sits --- so calibration stays inside the
+automata state and survives continued training, which is what lets it be interleaved with
+\ideaC.
+
+\subsection{\ideaC\ --- credit propagation}
+\label{sec:method-credit}
+
+If layer-2 clause $j$ matched patch $(p_y,p_x)$ and includes the positive literal ``channel $k$
+fires at offset $(dy,dx)$'', the reason it matched is that layer-1 clause $k$ fired somewhere
+inside the pooled cell $(p_y{+}dy,\,p_x{+}dx)$. Whatever feedback layer~2 decided clause $j$
+deserves is therefore also a verdict on layer-1 clause $k$ at that position. The rule maps each
+of the three Tsetlin feedback types down through the same inclusion link:
+
+\begin{table}[h]
+\centering\small
+\caption{The credit rule. Each layer-2 event resolves to a single layer-1 position by three
+draws: a matching layer-2 patch, one included positive channel literal of that clause, and one
+layer-1 position inside the pooled cell that literal names at which the channel actually fired.}
+\label{tab:creditrule}
+\begin{tabular}{@{}lll@{}}
+\ttoprule
+\thead{layer-2 event} & \thead{layer-1 clause $k$ receives} & \thead{why} \\
+\ttmidrule
+Type Ia (matched)             & Type Ia at that position & reinforce the pattern that fired \\
+Type Ib (should have matched) & Type Ib                  & a channel it needs did not fire \\
+Type II (matched, wrong class)& Type II at that position & make it stop firing there \\
+\ttbotrule
+\end{tabular}
+\end{table}
+
+Four choices, each of which the experiments turned out to depend on.
+
+\lead{One credited literal per event.} A layer-2 clause can include hundreds of literals;
+crediting all of them would make a single event a bulk update of layer~1. One included
+positive literal is drawn uniformly, exactly as the convolutional machine draws one matching
+patch per event.
+
+\lead{Type Ib is blamed, not sampled.} A Type Ib event says the layer-2 clause \emph{should}
+have matched and did not, so the credit question is which literal blocked it. The clause is
+taken at the patch it came closest to matching (fewest violated literals) and the blame falls
+on an included positive channel literal that was \emph{false} there. Crediting a random
+included literal instead --- including ones that were satisfied --- blames layer-1 clauses
+that did their job, and erases layer~1 within an epoch (\S\ref{sec:credit}).
+
+\lead{One event per (example, layer-1 clause).} In the classical algorithm an example gives a
+clause at most one feedback event. Without this, \cTwo\ layer-2 clauses credit \cOne\ layer-1
+clauses on every image and layer~1 sees orders of magnitude more events than it was designed
+for.
+
+\lead{A step size.} Layer-2 clauses are conjunctions over \emph{named} channels. When layer-1
+clause $k$ changes, every layer-2 clause that includes channel $k$ silently becomes a different
+rule. The fraction of credit events actually applied is the only knob that trades layer-1
+progress against that drift, so it is swept rather than assumed.

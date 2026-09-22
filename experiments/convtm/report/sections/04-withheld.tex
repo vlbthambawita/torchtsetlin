@@ -1,0 +1,55 @@
+\section{Withheld: the capacity ladder}
+\label{sec:withheld}
+
+The decisive experiment of the reproduction phase asked whether accuracy keeps rising with clause
+count. The literature says it does: the same encoding gains \textbf{+\LadderRisePub} points from
+20\,000 to 80\,000 total clauses and is still climbing at its largest measured cell. We measure it
+flat.
+
+\pgfplotstabletypeset[
+  col sep=comma,
+  columns/clauses/.style={column name=total clauses, int detect, 1000 sep={\,}},
+  columns/test/.style={column name=our test, fixed, precision=2},
+  columns/val/.style={column name=our val, fixed, precision=2},
+  columns/plateau/.style={column name=plateau val, fixed, precision=2},
+  columns/published/.style={column name=published (250 ep), fixed, precision=1},
+  columns/selected_epoch/.style={column name=sel.\ epoch, int detect},
+  every head row/.style={before row=\toprule, after row=\midrule},
+  every last row/.style={after row=\bottomrule},
+]{data/ladder.csv}
+
+The 20\,000 point reproduces well. The curve then fails to rise: \textbf{+\LadderRise\ points on the
+plateau where the literature reports +\LadderRisePub}.
+
+\textbf{This is reported as withheld, not as a result.} Two explanations are live and one seed cannot
+separate them:
+\begin{enumerate}
+\item the published capacity rise does not reproduce; or
+\item \textbf{50 epochs is too few at the top end}. The source ran 250. Our epoch correction was
+      digitised from a figure at \emph{one} clause count and may not transfer to a model four times
+      larger. The convergence check is ambiguous: the 80\,000 arm's last ten validation epochs read
+      63.0, 63.4, 63.0, 64.9, 63.9, 62.8, 64.9, 64.8, 63.3, 63.3 --- neither converged nor clearly
+      climbing.
+\end{enumerate}
+
+If (1) survives a second seed and a longer epoch budget it is a consequential negative result about a
+published table, and it would need stating very carefully. If (2) holds, the ladder simply needed more
+compute. The programme was halted before either could be run.
+
+\subsection{A defect in our own method, found by the team}
+While reading the ladder, the selection rule itself failed inspection. \code{selected\_epoch =
+argmax(val\_acc)} over 50 epochs is a \textbf{biased estimator on a noisy curve}. Measured across the
+three ladder arms: plateau standard deviation \textbf{0.80--0.94} points; binomial floor on 5\,000
+validation images at $p\approx0.65$ is \textbf{0.67} points; and \code{argmax} inflates the reported
+validation figure by \textbf{+1.62, +1.65, +1.67} points --- a consistency across three independent
+arms that is the signature of a pure order-statistic effect.
+
+The consequence is that a decision rule with a \SeedBand\ point threshold was being fed an estimator
+carrying about 1.65 points of selection noise, and the test accuracy at the winning epoch is an
+essentially uncorrelated draw from the plateau rather than the best model. The 80\,000 arm's selected
+epoch 16 is a noise spike; epochs 44--48 sit at the same level.
+
+This is not leakage --- selection remained validation-only throughout --- but it is a precision
+defect, and it is the reason the ladder verdict is withheld rather than merely under-seeded. The
+repair costs \textbf{no GPU time}: every record stores its full per-epoch curve, so every existing arm
+can be re-scored under a smoothed selection rule without a single re-run.

@@ -1,0 +1,153 @@
+\subsection{Verdict against the criteria fixed in advance}
+\label{sec:verdict}
+
+\S\ref{sec:criteria} committed to three CIFAR-10 criteria before any run, and to a
+task-defined standard on the constructed tasks.
+
+\begin{ttkey}
+\lead{1. Beat the greedy stack} (\accMctm{}\%). Cleared by all three repairs.
+
+\lead{2. Beat the random-layer-1 control} (\accMctmRandom{}\%). Cleared by one:
+\ideaB's controller run over that same random layer, \randBestAcc\,$\pm$\,\randBestSd{}\%.
+Over the \emph{trained} layer the best that the same controller manages is \sizeBestAcc{}\%,
+short of it.
+
+\lead{3. Beat a single layer at the same clause budget} (\accSingleMatched{}\%, or
+\accSingleRf{}\% with the stack's receptive field). Cleared by the same arm, and only by it.
+Every other two-layer configuration in either report sits below \accSingleRf{}\%.
+
+\lead{And on the tasks built to answer the question,} \ideaA\ closes the headroom entirely:
+\synNearAutoAuto{}\% on \code{near}, where a single layer is at chance by construction, and
+\synXorAutoAuto{}\% on \code{xor}, where it is capped at $75\%$ --- both past the first
+report's hand-built oracle.
+
+\lead{\ideaC\ fails everywhere,} and for the same reason in each place: the credit rule
+saturates or erases layer~1 within an epoch on CIFAR-10 and on \code{near} alike.
+\end{ttkey}
+
+\subsection{What made the difference}
+
+Across all \nArms\ arms the thing that predicts accuracy is not which of the three ideas was
+applied but what the first layer's clauses ended up \emph{looking like}: short, and firing
+often enough to be conjoined. Every arm that got there did well and every arm that did not did
+badly, whether it got there by an unsupervised objective, by a post-hoc controller, or by not
+being trained at all.
+
+That reading also explains the two results that looked paradoxical. The first report's
+hand-built oracle lost to greedily trained clauses on \code{near} because an exact
+$4\times4$ detector fires almost nowhere --- perfect features that never fire are not usable
+features. And \emph{random} clauses beat trained ones on CIFAR-10 because three random literals
+are short and fire often, which is the whole specification.
+
+\subsection{What the second layer is worth, and where}
+
+With a repaired first layer the two-layer stack is finally worth its clause budget on CIFAR-10
+--- \randBestAcc{}\% against \accSingleRf{}\% for the best single layer --- and on
+\code{near} it is the difference between chance and \synNearAutoAuto{}\%. The size of the
+advantage tracks how much the task needs what the second layer supplies, which is a conjunction
+between spatially separated parts: a few points on natural images whose classes do not
+obviously require one, and everything on a task constructed so that nothing else can express
+the label.
+
+\S\ref{sec:l2learned} is the corroborating measurement, and it is the one to keep. Over a
+repaired first layer a layer-2 clause on \code{near} carries \synltwoNearCalibTask\ literals
+--- ``channel $a$ fires here \textsc{and} channel $b$ fires there'' --- where over the greedy
+layer it carried \synltwoNearMctmTask. On CIFAR-10 the same repair takes it from \sizeMctm\ to
+\sizeMctmRandomCalib. A Tsetlin machine whose second layer is a thousand-literal negation soup
+has lost the property it was chosen for, and fixing the first layer's density gets it back.
+
+\subsection{What a feature layer has to satisfy}
+
+Across both reports, a frozen feature layer under a spatial second layer has to satisfy three
+conditions at once. Each repair fixes one, and \ideaC\ breaks one.
+
+\begin{table}[h]
+\centering\small
+\caption{What a layer-2 clause needs from layer~1, and what supplies it.}
+\label{tab:conditions}
+\begin{tabular}{@{}p{0.24\textwidth}p{0.43\textwidth}p{0.26\textwidth}@{}}
+\ttoprule
+\thead{condition} & \thead{why} & \thead{supplied by} \\
+\ttmidrule
+\lead{Dense enough to conjoin}
+  & A conjunction of $j$ bits each firing with probability $p$ is satisfied with probability
+    ${\sim}p^{j}$; below a fraction of a percent, layer~2 can only include negations. It is
+    why the hand-built oracle lost to greedy clauses on \code{near}.
+  & \ideaB\ directly; \ideaA\ as a side effect. \\[2pt]
+\lead{Short, and about the right things}
+  & Density alone is not enough: random clauses are dense and reach
+    \synNearRandomRandom{}\% on \code{near} against \synNearAutoAuto{}\% for autoencoder
+    clauses at a similar rate. On CIFAR-10 cutting each greedy clause to \sizeBestTarget\
+    literals is worth more than any rate target alone.
+  & \ideaB's size target; \ideaA, whose clauses come out short unasked; and a random
+    initialisation, which is short by construction. \\[2pt]
+\lead{Stable enough to be named}
+  & Layer-2 clauses are conjunctions over \emph{channel indices}. If layer-1 clause $k$
+    changes, every clause including channel $k$ becomes a rule nobody trained.
+  & Freezing --- which is exactly what \ideaC\ gives up. \\
+\ttbotrule
+\end{tabular}
+\end{table}
+
+Greedy supervised training violates the first two, which is what both reports have been
+measuring. A random layer satisfies the last two for free --- three literals long, and never
+changing --- and the controller supplies the first without needing a label. That combination
+is the best arm in either report, and it contains no supervised feature learning at all.
+
+\subsection{What to do next}
+
+\lead{Do not train the feature layer. Calibrate it.} The strongest CIFAR-10 configuration in
+either report has no supervised feature learning in it: random clauses, adjusted by a
+label-free controller to a target firing rate, \randBestAcc{}\% against \accSingleRf{}\% for
+the best single layer. It is also the cheapest --- there is no layer-1 training to pay for.
+Whether that survives deeper stacks, larger clause budgets and other datasets is the obvious
+thing to check, and it is cheap to check.
+
+\lead{If a layer \emph{is} trained, cut it down afterwards.} \S\ref{sec:sizetarget} takes a
+greedily trained layer and deletes all but \sizeBestTarget\ of each clause's
+\densityGreedySize\ literals, choosing what to keep by firing rate. That is worth
+\accMctm{}\%\,$\to$\,\sizeBestAcc{}\% for seconds of work, and it needs no labels either.
+
+\lead{Report the density of any feature layer, always.} One number, one forward pass, and it
+explains the oracle paradox of the first report, the dose-response curves of
+\S\ref{sec:density}, and the difference between a layer-2 clause with
+\posMctmRandomCalib\ positive literals and one with \posMctm.
+
+\lead{Credit propagation needs a different rule, not a tuned one.} \S\ref{sec:credit} argues
+that the failure is structural --- the ratio of Type~Ia to Type~Ib events is what holds a
+Tsetlin clause at a workable size, and the credit path replaces a clause's own match rate with
+a layer above's. Any rule that keeps that substitution inherits the same instability. The
+promising direction is to restore the missing quantity: gate credit on the layer-1 clause's
+\emph{own} statistics, which \ideaB's controller already measures.
+
+\lead{And the question both reports now sharpen.} The second layer's advantage is a few points
+on CIFAR-10 and the whole task on \code{near}, and the difference between them is not scale
+but whether the label depends on a relation between spatially separated parts. Object
+counting, relative position, containment and same-different are where a spatial second layer
+should pay, and none of them is tested here.
+
+\subsection{Limitations}
+
+\lead{Scale.} These are small machines by CIFAR-10 standards --- hundreds of clauses where the
+literature uses thousands --- chosen so that twenty-odd arms across three seeds fit in a few
+GPU-hours. The comparisons are between arms at a matched budget and that is what the
+conclusions rest on; the absolute accuracies are not CIFAR-10 results for Tsetlin machines.
+
+\lead{Two constructed tasks.} \code{near} and \code{xor} were designed to have known ceilings,
+not to be representative. The claim they support is a conditional one --- when a task needs a
+conjunction between separated parts, repairing layer-1 density makes the stack able to find it
+--- and not that such tasks are common.
+
+\lead{One autoencoder objective, one split.} \ideaA\ is tested with centre-from-surround
+reconstruction at one specificity. A masked-bit or contrastive objective might behave
+differently, and \S\ref{sec:readout} shows the global-OR readout cannot measure the
+information claim directly once the layer is dense.
+
+\lead{The credit rule is one rule.} Table~\ref{tab:creditrule} is a reading of a one-sentence
+proposal, and \S\ref{sec:credit} records the three places a different reading was tried and
+rejected for a stated reason. Crediting several literals per event, propagating through
+negated literals, or accumulating credit across batches are untested variants.
+
+\lead{Hyper-parameters.} $T$ is the clause count in every layer and was not tuned per arm;
+layer-2 specificity is tied to layer-1's. A wider search could move the CIFAR-10 numbers; it
+is unlikely to close a twelve-point gap to an untrained baseline.

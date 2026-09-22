@@ -1,0 +1,10 @@
+# The faithful 2019 configuration: 8000 clauses PER CLASS = 80000 total, 10x10 patches.
+# [MEASURED: calib_large_gpu0] 632 s/epoch on the RTX 3090, 6.7 GB allocated / 8.4 GB reserved.
+# 60 epochs = 10.5 GPU-hours per seed, 31.6 GPU-hours for three. RTX 3090 ONLY, and only after
+# DR-001 has explicitly bought it -- this is a quarter to a third of the whole P3 envelope.
+#
+# --eval-n 2000 --m2-n 500: at 78 img/s inference the DEFAULT per-epoch probes (5000 train +
+# 5000 val + 2000 M2) add ~150 s to a 632 s epoch, i.e. +23%, turning a 10.5 h seed into 13 h.
+# [MEASURED: smoke_vanilla80k] The diagnostics are distributional and lose nothing at the
+# smaller sample. Apply the same to any arm above ~16000 clauses.
+ctm-vanilla|--eval-n 2000 --m2-n 500

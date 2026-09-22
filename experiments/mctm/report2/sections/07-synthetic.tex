@@ -1,0 +1,83 @@
+\section{E6: the tasks whose ceilings are known}
+\label{sec:synthetic}
+
+CIFAR-10 cannot separate ``this repair does not work'' from ``this task does not reward a
+second layer''. The first report built two tasks where it can, and their value here is that
+the \emph{oracle} row says how much headroom a better training scheme actually has.
+
+\lead{\code{xor}} --- a $32\times32$ Boolean image contains a square and/or a cross; the label
+is (square present) XOR (cross present). One layer computes a linear threshold over globally
+OR-pooled clause bits, and XOR is not linearly separable in those bits, so it is capped at
+$75\%$. Both stacked variants can express it.
+
+\lead{\code{near}} --- both shapes are always present, on a ring of 16 equally spaced slots,
+and the label is whether they are close. Rotational symmetry makes each shape's marginal
+position identical across classes, so only the \emph{joint} separation carries the label. One
+layer and the global-OR stack are at chance by construction; only the spatial stack can
+express it.
+
+Layer 1 uses $\pOne\times\pOne$ patches, so no single patch ever contains both shapes.
+
+\newcommand{\syntable}[3]{%
+\begin{table}[h]
+\centering\small
+\caption{#2}
+\label{#3}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,fire,dead,l2size,l2pos,acc,sd},
+  columns/label/.style={column name=\thead{arm}, column type={l}},
+  columns/fire/.style={column name=\thead{L1 fire}, column type={r}},
+  columns/dead/.style={column name=\thead{L1 dead}, column type={r}},
+  columns/l2size/.style={column name=\thead{L2 size}, column type={r}},
+  columns/l2pos/.style={column name=\thead{L2 pos}, column type={r}},
+  columns/acc/.style={column name=\thead{test acc (\%)}, column type={r}},
+  columns/sd/.style={column name=\thead{$\pm$}, column type={r}},
+]{#1}
+\end{table}}
+
+\syntable{data/syn_near.csv}{\code{near}: one layer and the global-OR stack are at chance by
+construction. \code{L1 fire} is the median per-channel firing rate of the pooled map in
+percent and \code{L1 dead} the percentage of channels that never fire; \code{L2 size} and
+\code{L2 pos} are the median total and \emph{positive} literal counts of a layer-2 clause ---
+what the second layer actually learned.}{tab:synnear}
+
+\syntable{data/syn_xor.csv}{\code{xor}: one layer is capped at $75\%$ by a linear-separability
+argument; both stacked variants can express the label. Columns as in
+Table~\ref{tab:synnear}.}{tab:synxor}
+
+\begin{figure}[h]
+\centering
+% Read the table once so the bar labels and the bar heights come from the same file; the
+% inline `yticklabels from table={<file>}{...}` form does not inherit `col sep=comma`.
+\pgfplotstableread[col sep=comma, header=true]{data/syn_near.csv}\synneartable
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.70\textwidth, height=7.4cm,
+  xbar, xmin=45, xmax=104,
+  xlabel={\code{near} test accuracy (\%)},
+  y dir=reverse, ytick=data, enlarge y limits=0.06,
+  yticklabels from table={\synneartable}{label},
+  y tick label style={font=\sffamily\scriptsize, align=right},
+  bar width=7pt,
+  nodes near coords, nodes near coords align={horizontal},
+  every node near coord/.append style={font=\sffamily\scriptsize, color=ttgray,
+    /pgf/number format/fixed, /pgf/number format/precision=1},
+  grid=major, grid style={ttline!40},
+  label style={font=\sffamily\small},
+  tick label style={font=\sffamily\footnotesize},
+  ytick style={draw=none},
+]
+\addplot[fill=ttorange!75, draw=ttdeep] table[x=acc, y expr=\coordindex] {\synneartable};
+\draw[ttslate, dashed, thick] (axis cs:50,-1) -- (axis cs:50,20);
+\end{axis}
+\end{tikzpicture}
+\caption{\code{near}, where a single layer and the global-OR stack are at chance (dashed) by
+construction and only the spatial stack can express the label. The oracle row is the first
+report's hand-built square/cross detectors.}
+\label{fig:near}
+\end{figure}
+
+\input{sections/07b-synreadout}

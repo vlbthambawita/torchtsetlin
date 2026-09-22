@@ -1,0 +1,97 @@
+\section{E3: a different objective for layer 1}
+\label{sec:objective}
+
+\lead{The prediction.} Classification rewards clauses that are specific, and specific clauses
+fire rarely. Reconstruction has no such pressure --- a clause earns its keep by predicting
+\emph{any} part of the input --- so an autoencoder-trained layer~1 should be denser, have
+fewer dead channels, and preserve information a classifier discards. If the first report's
+diagnosis was right, that should be enough to unblock layer~2.
+
+\lead{The objective learns.} Predicting the \aeTarget\ centre bits of a patch from its
+\aeContext\ surrounding ones, over \aePatches{}k patches and \aeEpochs\ epochs, reaches
+\aeRecon{}\% per-bit reconstruction accuracy against a \aeBaseline{}\% majority-class
+baseline. It is a real task and the clauses solve it.
+
+\subsection{Result: the statistics change exactly as predicted}
+
+\begin{table}[h]
+\centering\small
+\caption{Layer-1 statistics by objective, measured on 5000 training images.
+\code{fire} is the median per-channel firing rate of the $\poolK\times\poolK$ OR-pooled map ---
+what layer~2 actually sees --- \code{dead} the fraction of channels that never fire,
+\code{size} the median clause size, and \code{neg frac} the mean fraction of each clause's
+literals that are negations.}
+\label{tab:l1stats}
+\pgfplotstabletypeset[
+  col sep=comma, string type,
+  every head row/.style={before row=\ttoprule, after row=\ttmidrule},
+  every last row/.style={after row=\ttbotrule},
+  columns={label,fire,dead,size,neg_frac},
+  columns/label/.style={column name=\thead{layer-1 objective}, column type={l}},
+  columns/fire/.style={column name=\thead{fire (\%)}, column type={r}},
+  columns/dead/.style={column name=\thead{dead (\%)}, column type={r}},
+  columns/size/.style={column name=\thead{size}, column type={r}},
+  columns/neg_frac/.style={column name=\thead{neg frac}, column type={r}},
+]{data/l1_stats.csv}
+\end{table}
+
+The mechanism works. Every statistic the first report named as the problem moves in the right
+direction, and by a large factor rather than a marginal one.
+
+\subsection{And on CIFAR-10 the stack still falls short}
+
+\begin{ttkey}
+On CIFAR-10 the autoencoder stack reaches \accMctmAuto{}\,$\pm$\,\stdMctmAuto{}\% against
+\accMctm{}\% for the greedy stack --- a real gain, and criterion~1 is met. It is not close to
+criterion~2: \emph{random} three-literal clauses still reach \accMctmRandom{}\%, and
+criterion~3, the single layer at the same budget, is at \accSingleMatched{}\%. A better
+objective for layer~1 moves the stack a third of the way from the greedy result to the random
+control, and stops.
+
+Hold that verdict until \S\ref{sec:synthetic}. The same layer-1 objective, on the tasks that
+actually require what the second layer supplies, is the strongest result in this report; and
+\S\ref{sec:randcalib} finds that what \ideaA\ is doing to the first layer's statistics can be
+done to an \emph{untrained} layer directly, at which point CIFAR-10 works too.
+\end{ttkey}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=0.92\textwidth, height=6.4cm,
+  xlabel={epoch}, ylabel={test accuracy (\%)},
+  grid=major, grid style={ttline!40},
+  legend pos=south east, legend columns=2,
+  legend style={font=\sffamily\scriptsize, draw=ttline},
+  label style={font=\sffamily\small}, tick label style={font=\sffamily\footnotesize},
+  every axis plot/.append style={very thick},
+]
+\addplot[ttslate] table[col sep=comma, x=epoch, y=test_acc] {data/curve_single-matched.csv};
+\addplot[ttorange, dashed] table[col sep=comma, x=epoch, y=test_acc] {data/curve_mctm-random.csv};
+\addplot[ttmoss] table[col sep=comma, x=epoch, y=test_acc] {data/curve_mctm-auto.csv};
+\addplot[ttamber] table[col sep=comma, x=epoch, y=test_acc] {data/curve_mctm.csv};
+\legend{single matched, MCTM random L1, MCTM autoencoder L1, MCTM greedy L1}
+\end{axis}
+\end{tikzpicture}
+\caption{Test accuracy per epoch (seed 0). The $x$ axis counts layer-2 epochs; layer~1 is
+trained and frozen beforehand in every arm shown.}
+\label{fig:curves-auto}
+\end{figure}
+
+\subsection{What the readout says, and what it cannot say}
+\label{sec:readout}
+
+The claim \ideaA\ rests on is about \emph{information}: an unsupervised layer~1 should keep
+what a classifier throws away. The first report measured that with the \code{flat-stack}
+readout --- globally OR-pool the layer-1 bits, train a flat machine on them --- and the same
+readout run on the autoencoder layer gives \accFlatAuto{}\% against \accFlatStack{}\% for the
+greedy layer and \accFlatRandom{}\% for random clauses.
+
+That ordering is the reverse of the one \ideaA\ predicts, and the reason is in
+Table~\ref{tab:l1stats} rather than in the features. A channel firing on $p$ of the 841 patch
+positions is globally on with probability $\approx 1-(1-p)^{841}$; at $p$ of a few per cent
+that is indistinguishable from~1. A layer dense enough to be useful to a \emph{spatial} second
+layer is simultaneously saturated for a global-OR readout, so the readout measures density,
+not information, once density is above a fraction of a percent. It is a valid comparison among
+sparse layers --- which is how the first report used it --- and not a valid one here. The
+honest measurement of \ideaA\ is the \mctm\ row, and it says the objective helped a little.
