@@ -18,7 +18,7 @@ Conventions
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
 
 import torch
 from torch import Tensor
@@ -35,6 +35,8 @@ __all__ = [
     "apply_feedback",
     "predict_proba_from_votes",
     "confidence_from_votes",
+    "boolean_pool",
+    "thermometer_cast",
 ]
 
 
@@ -282,3 +284,64 @@ def confidence_from_votes(votes: Tensor, T: float) -> Tensor:
     ``(v_max + T) / (2T)``. Returns shape ``(B,)``."""
     v = votes.to(torch.float32).clamp(-float(T), float(T))
     return (v.max(dim=-1).values + float(T)) / (2.0 * float(T))
+
+
+# --------------------------------------------------------------------------------------
+# TM-native context primitives (dense / stacked models)
+# --------------------------------------------------------------------------------------
+def boolean_pool(x: Tensor, factor: int = 2, mode: str = "or") -> Tensor:
+    """Pool Boolean planes ``(B, Z, H, W)`` by an integer ``factor``.
+
+    ``mode="or"`` keeps a bit that is set anywhere in the window (the Boolean analogue of
+    max-pooling, and what *CTM-UNet* uses between blocks); ``mode="and"`` keeps only bits set
+    everywhere in it. Both stay Boolean, so the result can be fed straight back into another
+    Tsetlin machine — no float parameter and no gradient anywhere, unlike a strided
+    convolution.
+
+    Args:
+        x: ``(B, Z, H, W)`` Boolean-like tensor.
+        factor: pooling window and stride.
+        mode: ``"or"`` or ``"and"``.
+
+    Returns:
+        ``(B, Z, H // factor, W // factor)`` bool.
+    """
+    if x.dim() != 4:
+        raise ValueError("boolean_pool expects (B, Z, H, W)")
+    k = int(factor)
+    if k < 1:
+        raise ValueError("factor must be >= 1")
+    if k == 1:
+        return x.to(torch.bool)
+    f = x.to(torch.float32)
+    if mode == "or":
+        return torch.nn.functional.max_pool2d(f, k) > 0.5
+    if mode == "and":
+        return torch.nn.functional.max_pool2d(-f, k).neg() > 0.5
+    raise ValueError("mode must be 'or' or 'and'")
+
+
+def thermometer_cast(votes: Tensor, levels: Sequence[float]) -> Tensor:
+    """Turn vote sums into Boolean planes without losing their ordering.
+
+    A Tsetlin machine can only read Boolean features, so passing one machine's votes to
+    another needs a Booleanization that preserves *how strong* the vote was. A thermometer
+    does: the planes of ``v`` are ``[v >= l]`` for each level ``l``, so a larger vote sets a
+    superset of the bits a smaller one does, and a clause can refer to "at least this
+    confident" with one literal.
+
+    Args:
+        votes: ``(B, K, H, W)`` vote map (or ``(B, K)`` vote sums).
+        levels: ascending thresholds, e.g. ``(-40, -20, -8, 0, 8, 20, 40)``.
+
+    Returns:
+        ``(B, K * len(levels), H, W)`` bool for a vote map, ``(B, K * len(levels))`` for
+        vote sums. Channel order is class-major: all levels of class 0, then class 1, ...
+    """
+    lv = torch.as_tensor(list(levels), dtype=votes.dtype, device=votes.device)
+    if votes.dim() == 4:
+        planes = votes.unsqueeze(2) >= lv.view(1, 1, -1, 1, 1)
+        return planes.reshape(votes.shape[0], -1, votes.shape[2], votes.shape[3])
+    if votes.dim() == 2:
+        return (votes.unsqueeze(2) >= lv.view(1, 1, -1)).reshape(votes.shape[0], -1)
+    raise ValueError("thermometer_cast expects (B, K, H, W) or (B, K)")

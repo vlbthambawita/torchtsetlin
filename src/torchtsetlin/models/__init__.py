@@ -10,6 +10,10 @@ from .conv import (
     ConvTsetlinMachine,
 )
 from .regression import RegressionTsetlinMachine
+from .segmentation import (
+    CoalescedSegmentationTsetlinMachine,
+    SegmentationTsetlinMachine,
+)
 
 __all__ = [
     "TsetlinMachineBase",
@@ -21,4 +25,6 @@ __all__ = [
     "ConvCoalescedTsetlinMachine",
     "ConvRegressionTsetlinMachine",
     "Conv1dTsetlinMachine",
+    "SegmentationTsetlinMachine",
+    "CoalescedSegmentationTsetlinMachine",
 ]

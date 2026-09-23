@@ -44,13 +44,13 @@ trainer.evaluate((x_test, y_test))          # {'accuracy': 0.99}
 
 | | |
 |---|---|
-| **Models** | `TsetlinMachine` (multi-class, optional integer clause weights), `CoalescedTsetlinMachine` (shared clauses; multi-class or multi-label), `RegressionTsetlinMachine`, `ConvTsetlinMachine` / `Conv1dTsetlinMachine` and convolutional coalesced / regression variants |
+| **Models** | `TsetlinMachine` (multi-class, optional integer clause weights), `CoalescedTsetlinMachine` (shared clauses; multi-class or multi-label), `RegressionTsetlinMachine`, `ConvTsetlinMachine` / `Conv1dTsetlinMachine` and convolutional coalesced / regression variants, `SegmentationTsetlinMachine` / `CoalescedSegmentationTsetlinMachine` for dense per-pixel prediction |
 | **Learning** | vote margin `T`, specificity `s`, memory depth, boosted true-positive feedback, clause-size constraint, drop-clause / drop-literal, focused negative sampling, **batched** (GPU-friendly) or **exact sequential** feedback |
-| **Data** | thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer and hypervector encoders; synthetic datasets; torchvision helpers |
+| **Data** | thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer, hypervector and multi-scale pyramid encoders; synthetic datasets (including segmentation scenes); torchvision helpers for classification and segmentation |
 | **Training** | `Trainer` for tensors / `Dataset` / `DataLoader`, callbacks (early stopping, checkpoints, CSV logs, hyper-parameter schedules), `History` |
-| **Evaluation** | accuracy, confusion matrix, precision/recall/F1, regression and multi-label metrics, calibration, trustworthiness curves |
-| **Interpretation** | rule extraction, clause activity/precision, closed-form global & local feature importance, per-example explanations |
-| **Visualisation** | memory plots, automata heat-maps, convolutional clause patches, confusion matrices, vote distributions |
+| **Evaluation** | accuracy, confusion matrix, precision/recall/F1, regression and multi-label metrics, IoU / Dice / pixel accuracy / boundary-F1 for segmentation, calibration, trustworthiness curves |
+| **Interpretation** | rule extraction, clause activity/precision, closed-form global & local feature importance, per-example and **per-pixel** explanations |
+| **Visualisation** | memory plots, automata heat-maps, convolutional clause patches, segmentation overlays and vote maps, confusion matrices, vote distributions |
 
 ## Installation
 
@@ -83,9 +83,10 @@ details and references.
   harness lives in [`benchmarks/`](benchmarks).
 * Runnable scripts in [`examples/`](examples) (see its
   [README](examples/README.md)): Noisy XOR, tabular data with thermometer encoding,
-  regression, MNIST flat and convolutional, and four convolutional walkthroughs covering 2-D
+  regression, MNIST flat and convolutional, four convolutional walkthroughs covering 2-D
   clauses (`shapes_conv.py`), 1-D signals (`conv1d_ramps.py`), convolutional regression
-  (`conv_regression_blobs.py`) and shared clause pools (`mnist_conv.py --coalesced`).
+  (`conv_regression_blobs.py`) and shared clause pools (`mnist_conv.py --coalesced`), and
+  semantic segmentation on generated street scenes (`segmentation_scenes.py`).
 * Worked notebooks in [`examples/notebooks/`](examples/notebooks): Iris (rules you can read),
   MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images),
   plus two that work through the Tsetlin-machine segmentation literature — the Convolutional

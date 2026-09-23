@@ -48,7 +48,7 @@ DENSITY = 0.2
 SEED = 0
 
 SUITES = ["batch", "small", "clauses", "features", "models", "feedback", "threads",
-          "transfer", "phases", "mnist"]
+          "transfer", "phases", "segmentation", "mnist"]
 
 
 # ---------------------------------------------------------------------------- utilities
@@ -633,6 +633,60 @@ def suite_phases(device: torch.device) -> List[Record]:
     return out
 
 
+def suite_segmentation(device: torch.device) -> List[Record]:
+    """Dense per-pixel models: cost per pixel, and the fidelity/throughput knob.
+
+    A segmentation machine evaluates one patch per *pixel*, so its natural throughput unit is
+    pixels per second, not images per second — that is what goes into ``extra``. The second
+    half of the suite sweeps ``patches_per_commit``, which trades faithfulness to the
+    classical feedback algorithm against the number of commits per batch.
+    """
+    out = []
+    configs = [
+        ("dense 3x3 32px", dict(size=32, patch=3, clauses=100, ppc=128)),
+        ("dense 5x5 32px", dict(size=32, patch=5, clauses=100, ppc=128)),
+        ("dense 3x3 64px", dict(size=64, patch=3, clauses=100, ppc=128)),
+        ("dense 3x3 32px + position", dict(size=32, patch=3, clauses=100, ppc=128, pos=8)),
+        ("dense 3x3 32px 400 clauses", dict(size=32, patch=3, clauses=400, ppc=128)),
+    ]
+    commits = [(f"dense 3x3 32px ppc={p}", dict(size=32, patch=3, clauses=100, ppc=p))
+               for p in (32, 512, None)]
+    all_cfg = configs + commits
+    bs = 8
+    PROG.plan(len(all_cfg))
+    for label, cfg in all_cfg:
+        PROG.item(label)
+        size, patch, clauses = cfg["size"], cfg["patch"], cfg["clauses"]
+        n_examples = 64
+        tt.seed_everything(SEED)
+        x = make_bool(n_examples, (4, size, size), device)
+        g = torch.Generator().manual_seed(SEED + 3)
+        y = torch.randint(0, 4, (n_examples, size, size), generator=g).to(device)
+        model = tt.SegmentationTsetlinMachine(
+            4, clauses, T=60.0, s=10.0, patch_size=patch,
+            position_encoding=cfg.get("pos", False), patches_per_commit=cfg["ppc"],
+            input_shape=(4, size, size), weighted=True,
+        ).to(device)
+        batches = batch_views(x, y, bs, max(1, n_examples // bs))
+        for phase in ("train", "infer"):
+            sec, reps, iters, peak = measure(model, batches, device, phase)
+            px_per_s = bs * size * size / sec
+            out.append(
+                record(
+                    "segmentation", phase, device, model, label, bs, sec, reps, iters, peak,
+                    n_clauses_per_class=clauses, n_classes=4,
+                    extra={"pixels_per_s": px_per_s, "image_px": size * size,
+                           "patch": patch, "patches_per_commit": cfg["ppc"]},
+                )
+            )
+            print(f"    {phase:5s} {px_per_s:12,.0f} px/s  "
+                  f"({sec * 1e3:8.2f} ms/batch of {bs} images, {iters} iters)", flush=True)
+        del model, x, y, batches
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+    return out
+
+
 SUITE_FN: Dict[str, Callable[[torch.device], List[Record]]] = {
     "batch": suite_batch,
     "small": suite_small,
@@ -643,6 +697,7 @@ SUITE_FN: Dict[str, Callable[[torch.device], List[Record]]] = {
     "threads": suite_threads,
     "transfer": suite_transfer,
     "phases": suite_phases,
+    "segmentation": suite_segmentation,
     "mnist": suite_mnist,
 }
 

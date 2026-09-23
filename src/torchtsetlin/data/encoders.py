@@ -26,6 +26,7 @@ __all__ = [
     "AdaptiveThresholdEncoder",
     "ColorThermometerEncoder",
     "HypervectorEncoder",
+    "PyramidEncoder",
     "Compose",
     "Flatten",
     "thermometer_thresholds",
@@ -379,6 +380,70 @@ class HypervectorEncoder(BooleanEncoder):
 
     def output_size(self, n_inputs: int) -> int:
         return self.dim
+
+
+class PyramidEncoder(BooleanEncoder):
+    """Stack each pixel's neighbourhood at several resolutions into extra Boolean planes.
+
+    A ``k x k`` patch is all a dense Tsetlin machine sees of a pixel, and some classes simply
+    are not decidable from it — a patch of building interior and a patch of road look alike
+    once illumination varies; telling them apart needs to know where the horizon is. This is
+    the gap an encoder-decoder closes in a CNN, and it can be closed *natively* here: OR-pool
+    the Boolean planes to build a pyramid, take the same ``k x k`` patch at each level, and
+    resample every level back to full resolution. A clause then reads a pixel's immediate
+    neighbourhood **and** the coarse structure around it, with no float parameter and no
+    gradient anywhere.
+
+    Feed the result to a model with ``patch_size=1``: the neighbourhood is already in the
+    planes, and asking for a second one on top multiplies the feature count for nothing.
+
+    Args:
+        scales: downsampling factors, ascending. ``1`` is the full-resolution level.
+        patch: neighbourhood side length taken at each level.
+        mode: pooling mode for the pyramid (see :func:`torchtsetlin.functional.boolean_pool`).
+
+    Shape:
+        - input: ``(B, Z, H, W)`` Boolean.
+        - output: ``(B, Z * patch * patch * len(scales), H, W)`` Boolean.
+
+    Example:
+        >>> enc = PyramidEncoder(scales=(1, 2, 4), patch=3)
+        >>> planes = enc(x)                      # (B, Z*9*3, H, W)
+        >>> model = SegmentationTsetlinMachine(4, 300, T=60, patch_size=1)
+    """
+
+    def __init__(self, scales: Sequence[int] = (1, 2, 4), patch: int = 3, mode: str = "or") -> None:
+        super().__init__()
+        self.scales = tuple(int(s) for s in scales)
+        self.patch = int(patch)
+        self.mode = str(mode)
+        if min(self.scales) < 1 or self.patch < 1:
+            raise ValueError("scales and patch must be >= 1")
+
+    def forward(self, x) -> Tensor:
+        from ..functional import boolean_pool
+
+        xb = x if isinstance(x, Tensor) else torch.as_tensor(np.asarray(x))
+        if xb.dim() == 3:
+            xb = xb.unsqueeze(1)
+        if xb.dim() != 4:
+            raise ValueError("PyramidEncoder expects (B, Z, H, W)")
+        H, W = xb.shape[2], xb.shape[3]
+        pad = self.patch // 2
+        parts = []
+        for sc in self.scales:
+            xs = xb if sc == 1 else boolean_pool(xb, sc, self.mode)
+            f = xs.to(torch.float32)
+            u = TF.unfold(TF.pad(f, (pad, pad, pad, pad)), kernel_size=self.patch)
+            u = u.transpose(1, 2).reshape(xs.shape[0], xs.shape[2], xs.shape[3], -1)
+            u = u.permute(0, 3, 1, 2)  # (B, Z*k*k, h, w)
+            if u.shape[-2:] != (H, W):
+                u = TF.interpolate(u, size=(H, W), mode="nearest")
+            parts.append(u)
+        return torch.cat(parts, dim=1) > 0.5
+
+    def output_size(self, n_inputs: int) -> int:
+        return n_inputs * self.patch * self.patch * len(self.scales)
 
 
 class Flatten(BooleanEncoder):

@@ -17,7 +17,7 @@ REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 PYTHON=${PYTHON:-python}
 export PYTHONUNBUFFERED=1   # stdout is a pipe into tee; without this progress appears in bursts
 
-ALL_SUITES=(batch small clauses features models feedback threads transfer phases mnist)
+ALL_SUITES=(batch small clauses features models feedback threads transfer phases segmentation mnist)
 QUICK_SUITES=(small phases)
 
 # ------------------------------------------------------------------------------- defaults

@@ -12,12 +12,14 @@ Quick start::
 
 from . import data, functional, interpret, metrics, viz
 from .models import (
+    CoalescedSegmentationTsetlinMachine,
     CoalescedTsetlinMachine,
     Conv1dTsetlinMachine,
     ConvCoalescedTsetlinMachine,
     ConvRegressionTsetlinMachine,
     ConvTsetlinMachine,
     RegressionTsetlinMachine,
+    SegmentationTsetlinMachine,
     TsetlinMachine,
     TsetlinMachineBase,
 )
@@ -37,7 +39,7 @@ from .train import (
 )
 from .utils import seed_everything
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 __all__ = [
     "__version__",
     # sub-packages
@@ -55,6 +57,8 @@ __all__ = [
     "ConvCoalescedTsetlinMachine",
     "ConvRegressionTsetlinMachine",
     "Conv1dTsetlinMachine",
+    "SegmentationTsetlinMachine",
+    "CoalescedSegmentationTsetlinMachine",
     # training
     "Trainer",
     "evaluate",

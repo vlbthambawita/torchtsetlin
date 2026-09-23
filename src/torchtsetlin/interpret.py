@@ -27,6 +27,8 @@ __all__ = [
     "explain",
     "Explanation",
     "MatchedClause",
+    "explain_pixel",
+    "PixelExplanation",
 ]
 
 
@@ -196,3 +198,88 @@ def explain(model: TsetlinMachineBase, x, feature_names: Optional[Sequence[str]]
     idx.sort(key=lambda j: -abs(float(W[j])))
     matched = [MatchedClause(j, k, float(W[j]), model.clause_expression(j, feature_names)) for j in idx[:max_clauses]]
     return Explanation(pred, votes.tolist(), matched)
+
+
+@dataclass
+class PixelExplanation(Explanation):
+    """Why the model gave one *pixel* the label it did."""
+
+    row: int = 0
+    col: int = 0
+    target: Optional[int] = None
+
+    def __str__(self) -> str:
+        head = f"pixel ({self.row}, {self.col}) -> {self.prediction}"
+        if self.target is not None and self.target != self.prediction:
+            head += f"  (true: {self.target})"
+        return head + "\n" + super().__str__()
+
+
+@torch.no_grad()
+def explain_pixel(
+    model: TsetlinMachineBase,
+    x: Tensor,
+    row: int,
+    col: int,
+    target: Optional[int] = None,
+    output: Optional[int] = None,
+    max_clauses: int = 20,
+    absolute_names: bool = True,
+) -> PixelExplanation:
+    """List the clauses that decided one pixel's label, as statements about named pixels.
+
+    This is the thing a convolutional network cannot do. Each matching clause decodes into a
+    conjunction over *absolute image coordinates* — ``p[1,14,7] AND NOT p[0,13,8]`` reads
+    "plane 1 of pixel (14, 7) is set and plane 0 of pixel (13, 8) is not" — so a prediction
+    can be audited pixel by pixel rather than attributed by a saliency heuristic.
+
+    Args:
+        model: a :class:`~torchtsetlin.models.SegmentationTsetlinMachine` or
+            :class:`~torchtsetlin.models.CoalescedSegmentationTsetlinMachine`.
+        x: one image ``(Z, H, W)`` (or a batch of one).
+        row: output-grid row of the pixel to explain.
+        col: output-grid column.
+        target: optional true label, shown in the summary when it differs from the prediction.
+        output: restrict to clauses voting on this class (default: the predicted one).
+        max_clauses: keep the strongest ``max_clauses`` matches.
+        absolute_names: name literals by absolute pixel coordinates (via
+            ``model.pixel_feature_names``) rather than by patch offset.
+
+    Returns:
+        A :class:`PixelExplanation`; ``str()`` renders it as a readable rule list.
+
+    Example:
+        >>> print(tt.interpret.explain_pixel(model, x[0], row=14, col=7))
+    """
+    if not hasattr(model, "vote_map"):
+        raise TypeError("explain_pixel needs a dense segmentation model; use explain() otherwise")
+    xb = as_bool_tensor(x, device=model.ta_state.device)
+    if xb.dim() == 3:
+        xb = xb.unsqueeze(0)
+    if xb.shape[0] != 1:
+        raise ValueError("explain_pixel takes a single image")
+    Py, Px = model.output_shape()
+    r, c = int(row), int(col)
+    if not (0 <= r < Py and 0 <= c < Px):
+        raise IndexError(f"pixel ({r}, {c}) is outside the {Py}x{Px} output grid")
+    idx = r * Px + c
+
+    votes = model.vote_map(xb)[0, :, r, c]  # (K,)
+    pred = int(votes.argmax())
+    k = pred if output is None else int(output)
+    fires = model.evaluate_clauses(xb)[idx]  # (C,) clause outputs at this pixel
+    W = _clause_weight_matrix(model)[:, k]
+    names = model.pixel_feature_names(r, c) if absolute_names else None
+    sel = torch.nonzero(fires & (W != 0), as_tuple=False).flatten().tolist()
+    sel.sort(key=lambda j: -abs(float(W[j])))
+    matched = [
+        MatchedClause(j, k, float(W[j]), model.clause_expression(j, names)) for j in sel[:max_clauses]
+    ]
+    return PixelExplanation(
+        prediction=pred,
+        votes=votes.tolist(),
+        matched=matched,
+        row=r,
+        col=c,
+        target=None if target is None else int(target),
+    )

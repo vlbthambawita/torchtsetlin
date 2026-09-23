@@ -329,8 +329,17 @@ class TsetlinMachineBase(nn.Module):
     def _accumulate_chunk(self, xb: Tensor, y_t: Tensor, acc: FeedbackAccumulator) -> Tensor:
         """Evaluate a chunk, decide feedback per (example, clause) and accumulate counts.
         Returns the (pre-update) vote sums of the chunk."""
+        return self._accumulate_literals(self._encode(xb), y_t, acc)
+
+    def _accumulate_literals(
+        self, literals: Tensor, y_t: Tensor, acc: FeedbackAccumulator
+    ) -> Tensor:
+        """Same as :meth:`_accumulate_chunk` for already-encoded literals.
+
+        Split out so that models which encode once and then learn from the result in several
+        commits (see :mod:`torchtsetlin.models.segmentation`) do not have to re-encode.
+        """
         clause_active = self._clause_active
-        literals = self._encode(xb)
         clause_out, ctx = self._evaluate(literals, empty_value=True)
         if clause_active is not None:
             clause_out = clause_out & clause_active.unsqueeze(0)

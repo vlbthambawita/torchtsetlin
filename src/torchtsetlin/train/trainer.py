@@ -12,6 +12,7 @@ from torch.utils.data import DataLoader, Dataset
 
 from .. import metrics as M
 from ..models import CoalescedTsetlinMachine, RegressionTsetlinMachine, TsetlinMachineBase
+from ..models.segmentation import _DenseMixin
 from ..utils import _to_device, as_bool_tensor
 from .callbacks import Callback, ProgressLogger
 from .history import History
@@ -96,11 +97,21 @@ class Trainer:
 
     @property
     def task(self) -> str:
+        if isinstance(self.model, _DenseMixin):
+            return "segmentation"
         if isinstance(self.model, RegressionTsetlinMachine):
             return "regression"
         if isinstance(self.model, CoalescedTsetlinMachine) and self.model.multi_label:
             return "multilabel"
         return "classification"
+
+    @property
+    def _seg_multi_label(self) -> bool:
+        return self.task == "segmentation" and bool(getattr(self.model, "multi_label", False))
+
+    def _seg_targets(self, y: Tensor, n: int) -> Tensor:
+        """Targets on the model's output grid: ``(B, P)`` labels or ``(B, P, K)`` masks."""
+        return self.model._coerce_targets(y, n, self.device)
 
     def _batches(self, data: DataLike, batch_size: int, shuffle: bool) -> Iterable:
         if isinstance(data, DataLoader):
@@ -112,7 +123,7 @@ class Trainer:
             x = as_bool_tensor(x, device=self.device)
             if self.task == "regression":
                 y = torch.as_tensor(y, dtype=torch.float32, device=self.device) if not isinstance(y, Tensor) else y.to(self.device, torch.float32)
-            elif self.task == "multilabel":
+            elif self.task == "multilabel" or self._seg_multi_label:
                 y = as_bool_tensor(y, device=self.device)
             else:
                 y = torch.as_tensor(y, dtype=torch.long, device=self.device) if not isinstance(y, Tensor) else y.to(self.device, torch.long)
@@ -170,7 +181,21 @@ class Trainer:
                 self._call("on_batch_begin", b, logs)
                 votes = self.model.update(x, y)
                 total += votes.shape[0]
-                if self.task == "classification":
+                if self.task == "segmentation":
+                    tgt = self._seg_targets(y, x.shape[0])
+                    if self._seg_multi_label:
+                        flat = tgt.reshape(-1, tgt.shape[-1])
+                        correct += float(((votes > 0) == flat.bool()).float().mean(dim=1).sum())
+                    else:
+                        flat = tgt.reshape(-1)
+                        ignore = getattr(self.model, "ignore_index", None)
+                        keep = flat != ignore if ignore is not None else None
+                        pred = votes.argmax(dim=1)
+                        if keep is not None:
+                            pred, flat = pred[keep], flat[keep]
+                            total -= int((~keep).sum())
+                        correct += float((pred == flat).sum())
+                elif self.task == "classification":
                     correct += float((votes.argmax(dim=1) == y.view(-1)).sum())
                 elif self.task == "multilabel":
                     correct += float(((votes > 0) == y.bool()).float().mean(dim=1).sum())
@@ -200,6 +225,12 @@ class Trainer:
         """Predictions (or vote sums with ``return_votes=True``) for a dataset / tensors."""
         self.model.eval()
         bs = int(batch_size or self.eval_batch_size)
+        if self.task == "segmentation" and not return_votes:
+            outs = []
+            for batch in self._predict_batches(data, bs):
+                outs.append(self.model.predict(batch))
+            self.model.train()
+            return torch.cat(outs, dim=0)
         if isinstance(data, Tensor) or (isinstance(data, (tuple, list)) and len(data) == 2 and not isinstance(data[0], (Dataset, DataLoader))):
             x = data[0] if isinstance(data, (tuple, list)) else data
             x = as_bool_tensor(x, device=self.device)
@@ -227,6 +258,10 @@ class Trainer:
         """Compute metrics over ``data`` (model in ``eval()`` mode)."""
         self.model.eval()
         bs = int(batch_size or self.eval_batch_size)
+        if self.task == "segmentation":
+            out = self._evaluate_segmentation(data, bs)
+            self.model.train()
+            return {prefix + k: v for k, v in out.items()}
         votes_l, y_l = [], []
         for x, y in self._batches(data, bs, shuffle=False):
             x, y = self._move(x, y)
@@ -250,6 +285,75 @@ class Trainer:
             out[name] = float(fn(arg, y))
         self.model.train()
         return {prefix + k: v for k, v in out.items()}
+
+    def _predict_batches(self, data: DataLike, bs: int) -> Iterable[Tensor]:
+        """Yield input batches only (targets dropped), for prediction."""
+        if isinstance(data, Tensor):
+            x = as_bool_tensor(data, device=self.device)
+            for i in range(0, x.shape[0], bs):
+                yield x[i : i + bs]
+            return
+        if isinstance(data, (tuple, list)) and len(data) == 2 and not isinstance(data[0], (Dataset, DataLoader)):
+            x = as_bool_tensor(data[0], device=self.device)
+            for i in range(0, x.shape[0], bs):
+                yield x[i : i + bs]
+            return
+        for batch in self._batches(data, bs, shuffle=False):
+            x = batch[0] if isinstance(batch, (tuple, list)) else batch
+            yield self._move(x, None)[0]
+
+    @torch.no_grad()
+    def _evaluate_segmentation(self, data: DataLike, bs: int) -> Dict[str, float]:
+        """Metrics for dense prediction, accumulated over batches.
+
+        A ``(B, K, H, W)`` vote map is far too large to keep for a whole test set, so the
+        confusion matrix is summed batch by batch and the metrics derived from it at the end.
+        """
+        K = int(getattr(self.model, "n_outputs", getattr(self.model, "n_classes", 0)))
+        ignore = getattr(self.model, "ignore_index", None)
+        names = getattr(self.model, "class_names", None)
+        if self._seg_multi_label:
+            tp = fp = fn = correct = total = 0.0
+            for x, y in self._batches(data, bs, shuffle=False):
+                x, y = self._move(x, y)
+                pred = self.model.predict(x).permute(0, 2, 3, 1).reshape(-1, K)
+                tgt = self._seg_targets(y, x.shape[0]).reshape(-1, K).bool()
+                tp += float((pred & tgt).sum())
+                fp += float((pred & ~tgt).sum())
+                fn += float((~pred & tgt).sum())
+                correct += float((pred == tgt).sum())
+                total += float(pred.numel())
+            precision = tp / max(tp + fp, 1.0)
+            recall = tp / max(tp + fn, 1.0)
+            return {
+                "hamming_accuracy": correct / max(total, 1.0),
+                "micro_f1": 2 * precision * recall / max(precision + recall, 1e-12),
+            }
+        cm = torch.zeros(K, K, dtype=torch.long, device=self.device)
+        extra_pred, extra_y = [], []
+        for x, y in self._batches(data, bs, shuffle=False):
+            x, y = self._move(x, y)
+            pred = self.model.predict(x).reshape(-1)
+            tgt = self._seg_targets(y, x.shape[0]).reshape(-1)
+            cm += M.segmentation_confusion_matrix(pred, tgt, n_classes=K, ignore_index=ignore)
+            if self.extra_metrics:
+                extra_pred.append(pred)
+                extra_y.append(tgt)
+        ious = M.iou_from_confusion(cm)
+        dices = M.dice_from_confusion(cm)
+        total = float(cm.sum())
+        out: Dict[str, float] = {
+            "pixel_accuracy": float(cm.diag().sum() / total) if total else float("nan"),
+            "mean_iou": float(torch.nanmean(ious)),
+            "mean_dice": float(torch.nanmean(dices)),
+        }
+        labels = list(names) if names else [str(k) for k in range(K)]
+        out.update({f"iou_{n}": float(v) for n, v in zip(labels, ious)})
+        if self.extra_metrics:
+            pred_all, y_all = torch.cat(extra_pred), torch.cat(extra_y)
+            for name, fn_ in self.extra_metrics.items():
+                out[name] = float(fn_(pred_all, y_all))
+        return out
 
     def test(self, data: DataLike, batch_size: Optional[int] = None) -> Dict[str, float]:
         """Alias of :meth:`evaluate` with a ``test_`` prefix."""

@@ -9,6 +9,7 @@ from torch import Tensor
 from torch.nn import functional as TF
 
 from .. import functional as F
+from ..utils import chunk_indices
 from .base import FeedbackAccumulator
 from .classifier import TsetlinMachine
 from .coalesced import CoalescedTsetlinMachine
@@ -174,6 +175,37 @@ class _ConvMixin:
                 acc.n_false.index_add_(0, j_idx, 1.0 - rows)
             else:
                 acc.n2.index_add_(0, j_idx, 1.0 - rows)
+
+    # ---- dense introspection ------------------------------------------------------
+    @torch.no_grad()
+    def patch_clause_outputs(self, x, empty_value: Optional[bool] = None) -> Tensor:
+        """Per-patch clause matches ``(B, Py, Px, C)`` — the tensor *before* the disjunction.
+
+        :meth:`_evaluate` reduces this to ``(B, C)`` with ``matches.any(dim=1)``, which is
+        what makes a convolutional Tsetlin machine translation tolerant and what stops it
+        being able to localise anything. This accessor hands back the unreduced tensor, so a
+        clause's matches can be plotted as a map, or fed to a second stage the way *CTM-UNet*
+        stacks blocks. For actually *learning* a dense output, use
+        :class:`~torchtsetlin.models.SegmentationTsetlinMachine` instead — it keeps the patch
+        axis through the feedback path as well.
+
+        Args:
+            x: Boolean input batch ``(B, Z, H, W)``.
+            empty_value: value of a clause with no included literals; defaults to
+                ``self.training`` (``False`` when predicting).
+
+        Returns:
+            ``(B, Py, Px, C)`` bool.
+        """
+        if empty_value is None:
+            empty_value = self.training  # type: ignore[attr-defined]
+        xb = self._prepare(x)  # type: ignore[attr-defined]
+        Py, Px = self._grid(xb.shape[2], xb.shape[3])
+        outs = []
+        for sl in chunk_indices(xb.shape[0], self._chunk_size(xb)):  # type: ignore[attr-defined]
+            _, matches = self._evaluate(self._encode(xb[sl]), empty_value)  # (b, P, C)
+            outs.append(matches)
+        return torch.cat(outs, dim=0).view(xb.shape[0], Py, Px, -1)
 
     # ---- interpretation -----------------------------------------------------------
     def default_feature_names(self) -> List[str]:  # type: ignore[override]

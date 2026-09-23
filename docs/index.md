@@ -36,13 +36,13 @@ print(model.rules()[:3])                        # ['IF x0 AND NOT x1 THEN 1', ..
 
 | Area | Highlights |
 |---|---|
-| Models | `TsetlinMachine`, `CoalescedTsetlinMachine`, `RegressionTsetlinMachine`, `ConvTsetlinMachine` (2D), `Conv1dTsetlinMachine`, convolutional coalesced and regression variants |
+| Models | `TsetlinMachine`, `CoalescedTsetlinMachine`, `RegressionTsetlinMachine`, `ConvTsetlinMachine` (2D), `Conv1dTsetlinMachine`, convolutional coalesced and regression variants, `SegmentationTsetlinMachine` and `CoalescedSegmentationTsetlinMachine` (dense per-pixel) |
 | Learning options | vote margin `T`, specificity `s`, memory depth, boosted true-positive feedback, clause weights, clause size constraint, drop-clause / drop-literal, focused negative sampling, batched or exact sequential feedback |
-| Data | `ThermometerEncoder`, `OneHotEncoder`, `BitPlaneEncoder`, `AdaptiveThresholdEncoder`, `ColorThermometerEncoder`, `HypervectorEncoder`, synthetic datasets, torchvision helpers |
+| Data | `ThermometerEncoder`, `OneHotEncoder`, `BitPlaneEncoder`, `AdaptiveThresholdEncoder`, `ColorThermometerEncoder`, `HypervectorEncoder`, `PyramidEncoder`, synthetic datasets (classification and segmentation), torchvision helpers |
 | Training | `Trainer` (tensors, `Dataset` or `DataLoader`), callbacks (early stopping, checkpoints, CSV logs, schedules), `History` |
-| Evaluation | accuracy, confusion matrix, precision/recall/F1, regression metrics, multi-label metrics, calibration, trustworthiness curves |
-| Interpretation | rules, clause activity and precision, closed-form global/local feature importance, per-example explanations |
-| Visualisation | memory plots, automata heat-maps, convolutional clause patches, confusion matrices, vote distributions |
+| Evaluation | accuracy, confusion matrix, precision/recall/F1, regression metrics, multi-label metrics, IoU / Dice / pixel accuracy / boundary-F1, calibration, trustworthiness curves |
+| Interpretation | rules, clause activity and precision, closed-form global/local feature importance, per-example and per-pixel explanations |
+| Visualisation | memory plots, automata heat-maps, convolutional clause patches, segmentation overlays and vote maps, confusion matrices, vote distributions |
 
 ## Where to go next
 

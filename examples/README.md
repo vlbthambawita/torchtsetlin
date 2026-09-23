@@ -29,6 +29,21 @@ matches, so one clause covers every position. These four cover the whole convolu
 Timings are for the default arguments on an RTX 3090; the three generated-data scripts are
 comfortable on a CPU as well (`--device cpu`).
 
+## Dense prediction
+
+A convolutional machine ORs its clause outputs over patch positions, which tells you *that* a
+pattern occurred but not *where* — fatal for a per-pixel output. A segmentation machine keeps
+the patch axis: every pixel is one example, classified from its neighbourhood.
+
+| script | model | data | result | runtime |
+|---|---|---|---|---|
+| [`segmentation_scenes.py`](segmentation_scenes.py) | `SegmentationTsetlinMachine` | `make_scenes` (32×32 CamVid-like, generated) | 0.991 pixel accuracy, 0.946 mIoU with position literals; 0.959 mIoU adding a multi-scale pyramid | 15 s |
+
+Worth running with `--all`, which prints the context ablation **and** a row-prior baseline
+that sees no image content at all and still reaches 0.876 pixel accuracy — the reason to read
+mIoU rather than pixel accuracy on any dataset with a stable layout. `--explain ROW COL` shows
+the clauses that decided one pixel, decoded into statements about named pixels.
+
 ### The flags that matter
 
 * `--patch` / `--stride` — the window and how far it moves. A 28×28 image with 10×10 windows

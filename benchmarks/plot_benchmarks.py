@@ -620,6 +620,46 @@ def fig_mnist(recs, theme, env):
     return fig
 
 
+def fig_segmentation(recs, theme, env):
+    """Dense per-pixel throughput: pixels per second, training and inference."""
+    rows = sel(recs, suite="segmentation", phase="train")
+    if not rows:
+        return None
+    order = [r["model"] for r in rows if r["device"] == "cpu"] or [r["model"] for r in rows]
+    seen, labels = set(), []
+    for m in order:
+        if m not in seen:
+            seen.add(m)
+            labels.append(m)
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, 3.6), sharey=True)
+    for ax, phase, title in zip(axes, ("train", "infer"), ("training", "inference")):
+        groups = []
+        for dev in devices_of(sel(recs, suite="segmentation", phase=phase)):
+            vals = []
+            for m in labels:
+                hit = [r for r in sel(recs, suite="segmentation", phase=phase, model=m)
+                       if r["device"] == dev]
+                vals.append(hit[0]["extra"].get("pixels_per_s", 0.0) if hit else 0.0)
+            ref = [r for r in sel(recs, suite="segmentation", phase=phase) if r["device"] == dev][0]
+            groups.append((device_label(ref), color_for(theme, dev), vals))
+        _grouped_barh(ax, labels, groups, theme)
+        ax.set_xscale("log")
+        ax.set_xlabel(f"pixels per second — {title} (log scale)")
+        ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{v:g}"))
+        for spine in ("top", "right", "left"):
+            ax.spines[spine].set_visible(False)
+        ax.grid(True, axis="x")
+        ax.grid(False, axis="y")
+        ax.tick_params(length=0)
+        hi = max((max(g[2]) for g in groups), default=1.0)
+        ax.set_xlim(right=hi * 4)
+    axes[0].legend(loc="upper left", bbox_to_anchor=(0.0, -0.22), ncol=2, labelcolor=theme["ink2"])
+    fig.suptitle("Dense segmentation — pixels per second", x=0.012, ha="left", fontsize=13,
+                 color=theme["ink"], weight="medium")
+    fig.tight_layout(rect=(0, 0, 1, 0.9))
+    return fig
+
+
 FIGURES = {
     "throughput-vs-batch": fig_batch,
     "gpu-speedup": fig_speedup,
@@ -629,6 +669,7 @@ FIGURES = {
     "cpu-threads": fig_threads,
     "feedback-mode": fig_feedback,
     "mnist-epoch": fig_mnist,
+    "segmentation-throughput": fig_segmentation,
 }
 
 
@@ -755,6 +796,27 @@ def table_mnist(recs) -> str:
                      "examples/s", "test accuracy", "GPU peak memory"], rows)
 
 
+def table_segmentation(recs) -> str:
+    rows = []
+    seen = set()
+    for r in sel(recs, suite="segmentation", phase="train"):
+        if r["model"] in seen:
+            continue
+        seen.add(r["model"])
+        row = [r["model"], f"{r['extra'].get('patches_per_commit') or 'all'}"]
+        for phase in ("train", "infer"):
+            cpu = [q for q in sel(recs, suite="segmentation", phase=phase, model=r["model"])
+                   if q["device"] == "cpu"]
+            gpu = [q for q in sel(recs, suite="segmentation", phase=phase, model=r["model"])
+                   if q["device"] != "cpu"]
+            c = cpu[0]["extra"].get("pixels_per_s") if cpu else None
+            g = gpu[0]["extra"].get("pixels_per_s") if gpu else None
+            row += [num(c), num(g), f"{g / c:,.0f}\u00d7" if c and g else "\u2014"]
+        rows.append(row)
+    return md_table(["configuration", "patches/commit", "CPU train px/s", "GPU train px/s",
+                     "train speedup", "CPU infer px/s", "GPU infer px/s", "infer speedup"], rows)
+
+
 TABLES = [
     ("batch", "Batch size — MNIST scale (784 features, 500 clauses/class)",
      lambda r: speed_rows(r, "batch", "batch_size", "batch")),
@@ -770,6 +832,8 @@ TABLES = [
     ("feedback", "Batched vs sequential feedback", table_feedback),
     ("transfer", "Host- vs device-resident data (training, 784 features, 500 clauses/class)",
      table_transfer),
+    ("segmentation", "Dense segmentation (4 planes, 4 classes, batch 8 images)",
+     table_segmentation),
     ("mnist", "End-to-end MNIST", table_mnist),
 ]
 
@@ -1045,6 +1109,36 @@ def prose_mnist(recs, env) -> str:
               "[Benchmarks](benchmarks.md) for what longer runs reach.")
 
 
+def prose_segmentation(recs, env) -> str:
+    rows = sel(recs, suite="segmentation", phase="train")
+    if not rows:
+        return ""
+    base = [r for r in rows if r["model"] == "dense 3x3 32px"]
+    inf = sel(recs, suite="segmentation", phase="infer", model="dense 3x3 32px")
+    ppc_none = [r for r in rows if r["model"] == "dense 3x3 32px ppc=None"]
+    bits = []
+    if base and inf:
+        b, i = base[0], inf[0]
+        bits.append(
+            f"A 3\u00d73 dense model on 32\u00d732 inputs runs at "
+            f"{b['extra']['pixels_per_s']:,.0f} px/s training and "
+            f"{i['extra']['pixels_per_s']:,.0f} px/s predicting on {device_label(b)} \u2014 "
+            f"prediction is roughly {i['extra']['pixels_per_s'] / b['extra']['pixels_per_s']:,.0f}\u00d7 "
+            "cheaper, because it never draws feedback or touches the automata."
+        )
+    if base and ppc_none:
+        bits.append(
+            f"`patches_per_commit` is the price of fidelity: committing once per batch reaches "
+            f"{ppc_none[0]['extra']['pixels_per_s']:,.0f} px/s against "
+            f"{base[0]['extra']['pixels_per_s']:,.0f} at the default 128, a "
+            f"{ppc_none[0]['extra']['pixels_per_s'] / base[0]['extra']['pixels_per_s']:,.1f}\u00d7 "
+            "speedup that costs real accuracy (see the segmentation guide's ablation)."
+        )
+    return ("Dense prediction evaluates one patch per **pixel**, so throughput is quoted in "
+            "pixels per second rather than examples per second \u2014 one 32\u00d732 image is "
+            "1 024 examples.\n\n" + "\n".join(f"- {b}" for b in bits))
+
+
 # (figure, heading, prose, [table slugs])
 PAGE_SECTIONS = [
     ("throughput-vs-batch", "Throughput vs batch size", prose_batch, ["batch", "small"]),
@@ -1056,6 +1150,7 @@ PAGE_SECTIONS = [
     ("cpu-threads", "CPU thread scaling", prose_threads, ["threads"]),
     ("feedback-mode", "Batched vs sequential feedback", prose_feedback, ["feedback"]),
     (None, "Where the data lives", prose_transfer, ["transfer"]),
+    ("segmentation-throughput", "Dense segmentation", prose_segmentation, ["segmentation"]),
     ("mnist-epoch", "End to end: MNIST", prose_mnist, ["mnist"]),
 ]
 

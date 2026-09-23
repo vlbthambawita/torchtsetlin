@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+import math
+from typing import Callable, Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -19,6 +20,12 @@ __all__ = [
     "make_parity",
     "make_2d_noisy_xor",
     "make_shapes",
+    "make_segmentation_shapes",
+    "make_scenes",
+    "balanced_class_probabilities",
+    "SCENE_CLASSES",
+    "load_segmentation_boolean",
+    "load_voc_segmentation_boolean",
     "load_mnist_boolean",
     "load_torchvision_boolean",
     "to_boolean_tensors",
@@ -181,6 +188,167 @@ def make_shapes(n: int, size: int = 8, seed: Optional[int] = 0, device=None) -> 
 
 
 # --------------------------------------------------------------------------------------
+# Dense prediction (semantic segmentation)
+# --------------------------------------------------------------------------------------
+SCENE_CLASSES = ("sky", "building", "tree", "road")
+
+
+def make_segmentation_shapes(
+    n: int, size: int = 16, seed: Optional[int] = 0, device=None
+) -> Tuple[Tensor, Tensor]:
+    """Toy dense-prediction task: label every pixel ``background`` / ``disc`` / ``ring``.
+
+    Two solid discs and two rings of radius 2-3 are stamped into a ``size x size`` Boolean
+    image. Disc interiors and ring interiors look identical on their own, so the classes are
+    only separable from a pixel's *neighbourhood* — which is exactly what a dense Tsetlin
+    machine gets to see, and what a per-pixel lookup cannot solve.
+
+    Returns ``(n, 1, size, size)`` Boolean images and ``(n, size, size)`` long label maps
+    with classes ``0 = background, 1 = disc, 2 = ring``.
+    """
+    g = torch.Generator().manual_seed(seed) if seed is not None else None
+    x = torch.zeros(n, 1, size, size, dtype=torch.bool)
+    y = torch.zeros(n, size, size, dtype=torch.long)
+    yy, xx = torch.meshgrid(torch.arange(size), torch.arange(size), indexing="ij")
+    for i in range(n):
+        for cls in (1, 2):
+            for _ in range(2):
+                r = int(torch.randint(2, 4, (1,), generator=g))
+                cy = int(torch.randint(r + 1, size - r - 1, (1,), generator=g))
+                cx = int(torch.randint(r + 1, size - r - 1, (1,), generator=g))
+                d2 = (yy - cy) ** 2 + (xx - cx) ** 2
+                solid = d2 <= r * r
+                shape = solid if cls == 1 else (solid & (d2 > (r - 1) ** 2))
+                x[i, 0] |= shape
+                y[i][solid] = cls
+    dev = torch.device(device) if device else None
+    return (x.to(dev), y.to(dev)) if dev else (x, y)
+
+
+def make_scenes(
+    n: int,
+    size: Union[int, Tuple[int, int]] = 32,
+    seed: Optional[int] = 0,
+    device: Optional[Union[str, torch.device]] = None,
+) -> Tuple[Tensor, Tensor]:
+    """Synthetic CamVid-like street scenes for semantic segmentation.
+
+    Generates the properties that make CamVid hard rather than the photographs themselves
+    (which are not redistributable): a wavy **horizon**, a large contiguous **sky**,
+    **buildings** standing on the horizon, **trees**, and a **road**, with per-class texture
+    (window grids, foliage noise, lane markings) and a global illumination jitter so that the
+    classes are not separable by colour alone. Class frequencies are heavily imbalanced, as
+    in CamVid.
+
+    Args:
+        n: number of scenes.
+        size: ``H`` or ``(H, W)``.
+        seed: RNG seed (``None`` = unseeded).
+        device: device for the returned tensors.
+
+    Returns:
+        ``(rgb, labels)`` with ``rgb`` float ``(n, 3, H, W)`` in ``[0, 1]`` and ``labels``
+        long ``(n, H, W)`` indexing :data:`SCENE_CLASSES`
+        (``0 = sky, 1 = building, 2 = tree, 3 = road``).
+
+    Booleanize the images before handing them to a model, for example with
+    :class:`~torchtsetlin.data.ColorThermometerEncoder`, which keeps the ordering between
+    intensity levels that a plain threshold would throw away.
+    """
+    SKY, BUILDING, TREE, ROAD = 0, 1, 2, 3
+    H, W = (size, size) if isinstance(size, int) else (int(size[0]), int(size[1]))
+    if H < 12 or W < 12:
+        raise ValueError("scenes need to be at least 12x12")
+    g = torch.Generator().manual_seed(seed) if seed is not None else None
+    rgb = torch.zeros(n, 3, H, W)
+    lab = torch.full((n, H, W), ROAD, dtype=torch.long)
+    xs = torch.arange(W).float()
+    rows = torch.arange(H).unsqueeze(1)
+    base = {
+        SKY: (120, 160, 215),
+        BUILDING: (150, 145, 135),
+        TREE: (70, 120, 65),
+        ROAD: (95, 95, 100),
+    }
+    two_pi = 2 * math.pi
+
+    def rint(lo: int, hi: int) -> int:
+        return int(torch.randint(lo, max(lo + 1, hi), (1,), generator=g))
+
+    for i in range(n):
+        h0 = rint(H // 3, H // 2)
+        amp = float(torch.rand(1, generator=g)) * 2.0
+        phase = float(torch.rand(1, generator=g)) * two_pi
+        horizon = (h0 + amp * torch.sin(xs / W * two_pi + phase)).round().long().clamp(2, H - 4)
+        lab[i] = torch.where(rows < horizon.unsqueeze(0), SKY, ROAD)
+
+        for cls, count, wlo, whi, hlo, hhi in (
+            (BUILDING, rint(1, 4), 3, 9, 4, 12),
+            (TREE, rint(0, 3), 3, 6, 4, 9),
+        ):
+            for _ in range(count):
+                bw = rint(wlo, whi)
+                bx = rint(0, max(1, W - bw))
+                bh = rint(hlo, hhi)
+                top = max(0, int(horizon[bx : bx + bw].min()) - bh)
+                lab[i, top : int(horizon[bx : bx + bw].max()), bx : bx + bw] = cls
+
+        for c, col in base.items():
+            m = lab[i] == c
+            for ch in range(3):
+                rgb[i, ch][m] = col[ch]
+        win = (torch.arange(H).view(-1, 1) % 3 == 0) & (torch.arange(W).view(1, -1) % 3 == 0)
+        rgb[i][:, (lab[i] == BUILDING) & win] -= 45  # windows
+        foliage = lab[i] == TREE
+        if bool(foliage.any()):
+            rgb[i][:, foliage] += torch.randn(3, int(foliage.sum()), generator=g) * 28
+        lane = (
+            (lab[i] == ROAD)
+            & (torch.arange(W).view(1, -1) % 7 < 2)
+            & (torch.arange(H).view(-1, 1) > H * 0.75)
+        )
+        rgb[i][:, lane] += 40  # lane markings
+        rgb[i] += torch.randn(3, H, W, generator=g) * 10
+        rgb[i] += float(torch.randn(1, generator=g)) * 18  # illumination
+    rgb = rgb.clamp(0, 255) / 255.0
+    dev = torch.device(device) if device else None
+    return (rgb.to(dev), lab.to(dev)) if dev else (rgb, lab)
+
+
+def balanced_class_probabilities(
+    labels: Tensor,
+    n_classes: Optional[int] = None,
+    ignore_index: Optional[int] = None,
+    floor: float = 0.0,
+) -> Tensor:
+    """Per-class feedback probabilities that equalise how often each class is learned from.
+
+    Dense targets are dominated by whichever class covers the most pixels, and a Tsetlin
+    machine has no loss to reweight — the only lever is *which pixels produce feedback*.
+    This returns ``p_k = min_j freq_j / freq_k`` (so the rarest class keeps probability 1),
+    ready to pass as ``class_feedback_p`` to
+    :class:`~torchtsetlin.models.SegmentationTsetlinMachine`.
+
+    Args:
+        labels: any tensor of integer labels (a label map or a flat vector).
+        n_classes: number of classes (inferred from the maximum label if omitted).
+        ignore_index: label to exclude from the frequency count.
+        floor: lower bound on the returned probabilities; raising it (e.g. ``0.05``) keeps a
+            very frequent class from being starved of feedback altogether.
+    """
+    y = labels.reshape(-1).long()
+    if ignore_index is not None:
+        y = y[y != int(ignore_index)]
+    K = int(n_classes) if n_classes is not None else (int(y.max()) + 1 if y.numel() else 1)
+    counts = torch.bincount(y, minlength=K).to(torch.float64)[:K]
+    present = counts[counts > 0]
+    if present.numel() == 0:
+        return torch.ones(K, dtype=torch.float32, device=labels.device)
+    p = torch.where(counts > 0, present.min() / counts.clamp_min(1), torch.ones_like(counts))
+    return p.clamp(min=float(floor), max=1.0).to(torch.float32).to(labels.device)
+
+
+# --------------------------------------------------------------------------------------
 # torchvision wrappers
 # --------------------------------------------------------------------------------------
 def load_torchvision_boolean(
@@ -239,3 +407,100 @@ def load_mnist_boolean(
     if flatten:
         x = x.reshape(x.shape[0], -1)
     return x, y
+
+
+def load_segmentation_boolean(
+    dataset: Dataset,
+    encoder: Optional[Callable] = None,
+    size: Optional[Union[int, Tuple[int, int]]] = None,
+    n_bits: int = 4,
+    device: Optional[Union[str, torch.device]] = None,
+    max_samples: Optional[int] = None,
+    ignore_index: int = 255,
+    remap: Optional[dict] = None,
+) -> Tuple[Tensor, Tensor]:
+    """Load a torchvision *segmentation* dataset into memory as Boolean planes + label maps.
+
+    Segmentation datasets yield ``(image, mask)`` PIL pairs rather than the packed tensors
+    :func:`load_torchvision_boolean` expects, and the mask must be resized with **nearest**
+    interpolation — bilinear would invent class indices that do not exist. This handles both.
+
+    Args:
+        dataset: an instantiated torchvision segmentation dataset, e.g.
+            ``VOCSegmentation(root, image_set="train", download=True)`` or
+            ``Cityscapes(root, split="train", target_type="semantic")``.
+        encoder: maps a float image batch ``(N, 3, H, W)`` in ``[0, 1]`` to Boolean planes.
+            Defaults to a :class:`~torchtsetlin.data.ColorThermometerEncoder` with ``n_bits``
+            levels per channel, which keeps the ordering between intensities.
+        size: ``H`` or ``(H, W)`` to resize to. Dense Tsetlin machines evaluate one patch per
+            pixel, so full-resolution frames are expensive — 64-128 px is a sane starting
+            point. ``None`` keeps the native size (all images must then already match).
+        n_bits: thermometer levels per channel for the default encoder.
+        device: device for the returned tensors.
+        max_samples: stop after this many images.
+        ignore_index: mask value to keep as the void class. Pass the same value as the
+            model's ``ignore_index``.
+        remap: optional ``{original_label: new_label}`` mapping applied to the masks, for
+            collapsing a dataset's classes into a coarser set.
+
+    Returns:
+        ``(x_bool, labels)`` with ``x_bool`` ``(N, Z, H, W)`` and ``labels`` ``(N, H, W)``.
+    """
+    try:
+        from torchvision.transforms import functional as VF
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("torchvision is required for load_segmentation_boolean") from e
+
+    hw = None if size is None else ((size, size) if isinstance(size, int) else tuple(size))
+    n = len(dataset) if max_samples is None else min(len(dataset), int(max_samples))
+    imgs, masks = [], []
+    for i in range(n):
+        img, mask = dataset[i][0], dataset[i][1]
+        if hw is not None:
+            img = VF.resize(img, list(hw))
+            mask = VF.resize(mask, list(hw), interpolation=VF.InterpolationMode.NEAREST)
+        img_t = img if isinstance(img, Tensor) else VF.pil_to_tensor(img)
+        mask_t = mask if isinstance(mask, Tensor) else VF.pil_to_tensor(mask)
+        imgs.append(img_t.float() / 255.0)
+        masks.append(mask_t.squeeze(0).long())
+    x = torch.stack(imgs)
+    y = torch.stack(masks)
+    if remap:
+        out = torch.full_like(y, int(ignore_index))
+        for src, dst in remap.items():
+            out[y == int(src)] = int(dst)
+        y = out
+    if device is not None:
+        x, y = x.to(device), y.to(device)
+    if encoder is None:
+        from .encoders import ColorThermometerEncoder
+
+        encoder = ColorThermometerEncoder(n_bits=n_bits, value_range=(0.0, 1.0))
+        if device is not None:
+            encoder = encoder.to(device)
+    return encoder(x), y
+
+
+def load_voc_segmentation_boolean(
+    root: str = "./data",
+    image_set: str = "train",
+    size: Union[int, Tuple[int, int]] = 96,
+    n_bits: int = 4,
+    device=None,
+    download: bool = True,
+    max_samples: Optional[int] = None,
+    **kwargs,
+) -> Tuple[Tensor, Tensor]:
+    """Pascal VOC 2012 segmentation as Boolean planes + label maps (21 classes + void).
+
+    Void pixels keep the value ``255``, so pass ``ignore_index=255`` to the model. Requires
+    ``torchvision``.
+    """
+    try:
+        from torchvision.datasets import VOCSegmentation
+    except ImportError as e:  # pragma: no cover
+        raise ImportError("torchvision is required for load_voc_segmentation_boolean") from e
+    ds = VOCSegmentation(root=root, image_set=image_set, download=download, **kwargs)
+    return load_segmentation_boolean(
+        ds, size=size, n_bits=n_bits, device=device, max_samples=max_samples, ignore_index=255
+    )

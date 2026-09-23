@@ -22,6 +22,9 @@ __all__ = [
     "plot_votes",
     "plot_trustworthiness",
     "plot_clause_weights",
+    "plot_segmentation",
+    "plot_vote_map",
+    "segmentation_palette",
 ]
 
 
@@ -225,4 +228,113 @@ def plot_clause_weights(model, ax=None):
         ax.bar(range(len(w)), w)
         ax.set_xlabel("clause")
         ax.set_ylabel("weight")
+    return ax
+
+
+# --------------------------------------------------------------------------------------
+# Dense prediction
+# --------------------------------------------------------------------------------------
+def segmentation_palette(n_classes: int, ignore_index: Optional[int] = None) -> np.ndarray:
+    """``(n, 3)`` float RGB palette for label maps, indexable by class id.
+
+    Uses matplotlib's qualitative ``tab10``/``tab20`` so neighbouring classes stay
+    distinguishable, and paints ``ignore_index`` mid-grey. Index it with a label map:
+    ``palette[labels]`` gives an ``(H, W, 3)`` image.
+    """
+    plt = _plt()
+    n = int(n_classes)
+    size = max(n, (int(ignore_index) + 1) if ignore_index is not None else 0)
+    cmap = plt.get_cmap("tab10" if n <= 10 else "tab20")
+    pal = np.zeros((size, 3), dtype=float)
+    for k in range(min(n, size)):
+        pal[k] = cmap(k % cmap.N)[:3]
+    if ignore_index is not None and 0 <= int(ignore_index) < size:
+        pal[int(ignore_index)] = (0.5, 0.5, 0.5)
+    return pal
+
+
+def plot_segmentation(
+    image=None,
+    target=None,
+    pred=None,
+    palette=None,
+    class_names: Optional[Sequence[str]] = None,
+    n_classes: Optional[int] = None,
+    ignore_index: Optional[int] = None,
+    titles: Optional[Sequence[str]] = None,
+    figsize_per: float = 3.0,
+):
+    """Row of panels for one example: input image, ground truth, prediction and the error map.
+
+    Any of ``image`` / ``target`` / ``pred`` may be omitted. ``image`` may be a ``(3, H, W)``
+    or ``(H, W)`` array (floats in ``[0, 1]`` or ints in ``[0, 255]``); ``target`` and
+    ``pred`` are ``(H, W)`` label maps. When both are given a fourth panel marks the
+    mispredicted pixels, which is usually where the interesting failures are.
+
+    Returns the figure.
+    """
+    plt = _plt()
+    panels = []
+    if image is not None:
+        img = _np(image)
+        if img.ndim == 3 and img.shape[0] in (1, 3):
+            img = img.transpose(1, 2, 0)
+        if img.ndim == 3 and img.shape[2] == 1:
+            img = img[:, :, 0]
+        if img.dtype.kind == "f" and img.max() > 1.5:
+            img = img / 255.0
+        panels.append(("image", img, None))
+    maps = [m for m in (target, pred) if m is not None]
+    if maps:
+        K = int(n_classes) if n_classes is not None else int(max(_np(m).max() for m in maps)) + 1
+        pal = np.asarray(palette) if palette is not None else segmentation_palette(K, ignore_index)
+        if target is not None:
+            panels.append(("ground truth", pal[np.clip(_np(target), 0, len(pal) - 1)], None))
+        if pred is not None:
+            panels.append(("prediction", pal[np.clip(_np(pred), 0, len(pal) - 1)], None))
+    if target is not None and pred is not None:
+        t, q = _np(target), _np(pred)
+        err = (t != q)
+        if ignore_index is not None:
+            err = err & (t != int(ignore_index))
+        panels.append((f"errors ({err.mean():.1%})", err.astype(float), "Reds"))
+
+    names = list(titles) if titles is not None else [p[0] for p in panels]
+    fig, axes = plt.subplots(1, len(panels), figsize=(figsize_per * len(panels), figsize_per * 1.1), squeeze=False)
+    for ax, (_, data, cmap), name in zip(axes[0], panels, names):
+        ax.imshow(data, cmap=cmap, interpolation="nearest", vmin=0 if cmap else None, vmax=1 if cmap else None)
+        ax.set_title(name, fontsize=9)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    if class_names is not None and maps:
+        import matplotlib.patches as mpatches
+
+        pal = np.asarray(palette) if palette is not None else segmentation_palette(len(class_names), ignore_index)
+        handles = [mpatches.Patch(color=pal[k], label=n) for k, n in enumerate(class_names)]
+        fig.legend(handles=handles, loc="lower center", ncol=min(len(handles), 6), frameon=False, fontsize=8)
+        fig.tight_layout(rect=(0, 0.08, 1, 1))
+    else:
+        fig.tight_layout()
+    return fig
+
+
+def plot_vote_map(votes, class_index: int = 0, class_name: Optional[str] = None, ax=None, cmap="RdBu_r"):
+    """Heat map of one class's per-pixel vote sums ``(K, H, W)`` or ``(B, K, H, W)``.
+
+    Vote sums are the model's *confidence surface*: a class boundary sits where the winning
+    margin collapses, so this shows where a label map is decided and where it is a coin flip.
+    """
+    plt = _plt()
+    v = _np(votes)
+    if v.ndim == 4:
+        v = v[0]
+    m = v[int(class_index)]
+    if ax is None:
+        _, ax = plt.subplots(figsize=(4, 3.5))
+    lim = float(np.abs(m).max()) or 1.0
+    im = ax.imshow(m, cmap=cmap, vmin=-lim, vmax=lim, interpolation="nearest")
+    ax.set_title(f"votes for {class_name or class_index}", fontsize=9)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.figure.colorbar(im, ax=ax, fraction=0.046)
     return ax
