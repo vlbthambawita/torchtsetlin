@@ -218,7 +218,9 @@ def apply_feedback(
             clauses is deterministic (probability 1) instead of ``(s-1)/s``.
         max_included_literals: clause size budget ``b``. A matching clause that includes more
             than ``b`` literals gets no Type Ia feedback; all its Type I events act as Type Ib
-            (forgetting) until it shrinks back (Abeyrathna et al., 2023).
+            (forgetting) until it shrinks back (Abeyrathna et al., 2023). The budget is also a
+            hard limit on growth: no clause ends a call with more than ``b`` literals unless it
+            started with more, however many events were aggregated into the call.
         include_count: ``(C,)`` included literals per clause (needed for the constraint).
         literal_active: optional ``(2F,)`` 0/1 mask; inactive literals receive no feedback
             (literal dropout).
@@ -261,8 +263,47 @@ def apply_feedback(
     delta = inc.sub_(dec).add_(inc2)
     if literal_active is not None:
         delta.mul_(literal_active.to(delta.dtype).unsqueeze(0))
+    if max_included_literals is None:
+        state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
+        return state
+
+    was_included = state >= N
     state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
+    _cap_new_inclusions(state, was_included, N, int(max_included_literals), generator)
     return state
+
+
+def _cap_new_inclusions(
+    state: Tensor,
+    was_included: Tensor,
+    N: int,
+    budget: int,
+    generator: Optional[torch.Generator] = None,
+) -> None:
+    """Hard clause-size budget: undo newly crossed include boundaries beyond ``budget``.
+
+    One commit aggregates many Type Ia / Type II events, so a clause that was under budget at
+    the start of the commit can cross it many times over. Per clause, at most
+    ``budget - (literals that were included and still are)`` of the newly included literals
+    are kept (a uniformly random subset); the rest are put back just below the boundary.
+    Forgetting is untouched, so a clause that is already oversized can only shrink.
+    """
+    included = state >= N
+    newly = included & ~was_included
+    allowed = (budget - (included & was_included).sum(dim=1)).clamp_(min=0)
+    over = newly.sum(dim=1) > allowed
+    if not bool(over.any()):
+        return
+    rows = over.nonzero().squeeze(1)
+    cand = newly[rows]
+    # Rank the candidates of each row in a random order; non-candidates sort last.
+    keys = torch.rand(cand.shape, device=state.device, generator=generator)
+    keys.masked_fill_(~cand, 2.0)
+    rank = keys.argsort(dim=1).argsort(dim=1)
+    revert = cand & (rank >= allowed[rows].unsqueeze(1))
+    sub = state[rows]
+    sub.masked_fill_(revert, N - 1)
+    state[rows] = sub
 
 
 # --------------------------------------------------------------------------------------

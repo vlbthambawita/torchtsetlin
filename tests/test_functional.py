@@ -104,6 +104,37 @@ def test_apply_feedback_literal_active_and_clause_size():
     assert state.tolist() == [[2 * N - 2] * 4]
 
 
+def test_apply_feedback_budget_is_a_hard_limit(device):
+    """Regression (issue #1): aggregated events must not carry a clause past the budget."""
+    N, b = 4, 3
+    state = torch.full((5, 10), N - 1, dtype=torch.int32, device=device)
+    state[1, :2] = N  # 2 included -> room for 1 more
+    state[2, :5] = 2 * N - 1  # already oversized: must not grow, may shrink
+    before = (state >= N).sum(1)
+    n2 = torch.full((5, 10), 50.0, device=device)  # every excluded literal gets pushed in
+    F.apply_feedback(
+        state, torch.zeros(5, 10, device=device), torch.zeros(5, 10, device=device),
+        torch.zeros(5, device=device), n2, n_states=N, s=1e9, max_included_literals=b,
+        include_count=before.clone(),
+    )
+    after = (state >= N).sum(1)
+    assert after.tolist() == [3, 3, 5, 3, 3]
+    assert int(state[1, :2].min()) >= N  # pre-existing literals are kept
+    # reverted literals sit just below the boundary, not reset further back
+    assert int(state[0][state[0] < N].min()) == N - 1
+    # the kept subset is random, not always the lowest-indexed literals
+    picks = set()
+    for _ in range(20):
+        st = torch.full((1, 10), N - 1, dtype=torch.int32, device=device)
+        F.apply_feedback(
+            st, torch.zeros(1, 10, device=device), torch.zeros(1, 10, device=device),
+            torch.zeros(1, device=device), torch.full((1, 10), 5.0, device=device),
+            n_states=N, s=1e9, max_included_literals=b,
+        )
+        picks.add(tuple((st[0] >= N).nonzero().squeeze(1).tolist()))
+    assert len(picks) > 1
+
+
 def test_confidence_and_proba():
     votes = torch.tensor([[10.0, -10.0], [0.0, 0.0]])
     conf = F.confidence_from_votes(votes, 10)

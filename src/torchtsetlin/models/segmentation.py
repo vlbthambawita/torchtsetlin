@@ -478,6 +478,9 @@ class SegmentationTsetlinMachine(_DenseMixin, TsetlinMachine):
         )
         n_features = self.dense_features(self.input_shape) if self.input_shape else None
         super().__init__(n_features, n_classes, n_clauses, T, s, **kwargs)
+        # A (non-persistent) buffer so ``.to(device)`` moves it with the automata; a plain
+        # tensor attribute stayed on the construction device and crashed GPU training.
+        self.register_buffer("class_feedback_p", None, persistent=False)
         self.set_class_feedback_p(class_feedback_p)
 
     def set_class_feedback_p(self, p: Optional[Tensor]) -> None:
@@ -507,7 +510,8 @@ class SegmentationTsetlinMachine(_DenseMixin, TsetlinMachine):
         if valid is not None:
             y_flat = torch.where(valid, y_flat, torch.zeros_like(y_flat))
         if self.class_feedback_p is not None:
-            keep = torch.rand(y_flat.shape[0], device=y_flat.device) < self.class_feedback_p[y_flat]
+            p = self.class_feedback_p.to(y_flat.device)
+            keep = torch.rand(y_flat.shape[0], device=y_flat.device) < p[y_flat]
             valid = keep if valid is None else (valid & keep)
         type_i, type_ii, aux = super()._select_feedback(votes, y_flat, clause_out)
         if valid is not None:

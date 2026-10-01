@@ -51,7 +51,8 @@ class TsetlinMachineBase(nn.Module):
             instead of ``(s-1)/s`` (the default in the reference implementations).
         max_included_literals: optional cap on the number of included literals per clause
             (clause size constraint). Oversized clauses only receive forgetting feedback
-            until they shrink back.
+            until they shrink back, and no update can grow a clause past the cap, including
+            under ``feedback_mode="batch"``.
         drop_clause_p: probability of dropping a clause during learning (a Tsetlin machine
             analogue of dropout). The mask is resampled on every :meth:`update` call, or once
             per epoch if ``drop_granularity="epoch"`` (call :meth:`resample_dropout`).

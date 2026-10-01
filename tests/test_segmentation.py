@@ -189,6 +189,34 @@ def test_class_feedback_p_zero_silences_a_class(device):
         m.set_class_feedback_p(torch.ones(2))
 
 
+def test_class_feedback_p_moves_with_the_model(device):
+    """Regression (issue #1): `class_feedback_p` set before `.to(device)` must follow the model."""
+    m = tt.SegmentationTsetlinMachine(
+        3, 20, T=10, s=3.0, patch_size=3, input_shape=(1, 12, 12),
+        class_feedback_p=torch.tensor([1.0, 0.5, 0.5]),
+    ).to(device)
+    assert m.class_feedback_p.device.type == device.type
+    assert "class_feedback_p" not in m.state_dict()  # non-persistent: old checkpoints still load
+    x = torch.randint(0, 2, (4, 1, 12, 12), device=device).bool()
+    m.update(x, torch.randint(0, 3, (4, 12, 12), device=device))
+    m.to("cpu")
+    assert m.class_feedback_p.device.type == "cpu"
+    m.update(x.cpu(), torch.randint(0, 3, (4, 12, 12)))
+
+
+def test_segmentation_respects_max_included_literals(device):
+    """Regression (issue #1): the clause-size budget must hold under batched dense feedback."""
+    m = tt.SegmentationTsetlinMachine(
+        3, 60, T=20, s=10.0, patch_size=3, input_shape=(3, 16, 16), max_included_literals=6
+    ).to(device)
+    x = torch.rand(20, 3, 16, 16, device=device) > 0.5
+    y = torch.randint(0, 3, (20, 16, 16), device=device)
+    for _ in range(2):
+        for i in range(0, 20, 4):
+            m.update(x[i:i + 4], y[i:i + 4])
+            assert int(m.include_count.max()) <= 6
+
+
 def test_patches_per_commit_changes_commit_count(device):
     """One commit per `patches_per_commit` pixels, so the automata move more often."""
     calls = {"n": 0}

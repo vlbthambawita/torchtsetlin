@@ -82,7 +82,8 @@ clauses.
   too high, with probability proportional to the error.
 * **Convolutional TM** — see [Convolution](convolution.md).
 * **Clause size constraint** (`max_included_literals`): clauses above the budget receive
-  only forgetting feedback until they shrink (Abeyrathna et al., 2023).
+  only forgetting feedback until they shrink (Abeyrathna et al., 2023). The budget is a hard
+  limit: a batched commit never grows a clause past it, however many events it aggregates.
 * **Drop clause / drop literal** (`drop_clause_p`, `drop_literal_p`): randomly excluded
   clauses neither vote nor learn for one batch or epoch (Sharma et al., 2023).
 * **Focused negative sampling**: choose the negative class proportionally to its current
