@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0 (2026-10-01)
+
+**The clause-size budget is now a hard limit.** This is a behaviour change: models trained with
+`max_included_literals` will learn differently from 0.2.0.
+
+- **`max_included_literals` caps clause growth in every feedback mode** (issue #1). Before, the
+  budget was only checked at the start of a commit. One batched commit aggregates many Type Ia
+  and Type II events, and Type II was never gated, so a clause under budget could end the
+  commit far over it: 41% of rules exceeded a budget of 6, and segmentation models averaged
+  about 200 literals against a budget of 32. Now, after each commit, a clause that would exceed
+  the budget keeps only a random subset of its newly included literals and the rest return to
+  just below the include boundary. Oversized clauses still get forgetting-only feedback and can
+  only shrink. Results measured with a budget under 0.2.0 are not directly comparable.
+- **Fixed: `SegmentationTsetlinMachine` crashed on GPU when `class_feedback_p` was set before
+  `.to(device)`** (issue #1). It is now a non-persistent buffer, so it moves with the model;
+  checkpoints are unchanged and 0.2.0 checkpoints still load.
+
 ## 0.2.0 (2026-09-23)
 
 **Semantic segmentation.** Dense, per-pixel prediction is now a supported task rather than
