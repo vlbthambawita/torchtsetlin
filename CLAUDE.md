@@ -37,8 +37,8 @@ Four layers, from the bottom up:
    device-agnostic. All learning math lives here.
 2. **`models/base.py::TsetlinMachineBase`** — an `nn.Module` holding the automata and running the generic
    learning loop (input coercion, lazy init, chunking, dropout masks, feedback accumulation, commit).
-3. **`models/{classifier,coalesced,regression,conv}.py`** — concrete variants that only supply an *output
-   layer* and a *feedback policy* via hooks.
+3. **`models/{classifier,coalesced,regression,conv,segmentation}.py`** — concrete variants that only supply
+   an *output layer* and a *feedback policy* via hooks.
 4. **`train/`, `metrics.py`, `interpret.py`, `viz.py`, `data/`** — Keras-style `Trainer` + callbacks,
    metrics, rule/importance extraction, matplotlib plots, and Booleanization encoders/datasets.
 
@@ -71,6 +71,13 @@ structure overrides `_encode`, `_evaluate`, `_feedback_counts` and `_chunk_eleme
 exactly what `models/conv.py::_ConvMixin` does, and it is mixed into each flat model to produce the `Conv*`
 variants (`class ConvTsetlinMachine(_ConvMixin, TsetlinMachine)`). See `docs/guides/extending.md`.
 
+`models/segmentation.py::_DenseMixin` is the other input-structure mixin: it *drops* the convolutional
+OR over patches and folds the patch axis into the batch axis (`B' = B * P`, one patch per pixel), so each
+pixel is an ordinary flat example and the whole flat pipeline applies unchanged. Because `P` is large,
+`patches_per_commit` bounds how many patches share one commit (same fidelity issue as a big batch).
+Config tensors such as `class_feedback_p` are registered as **non-persistent buffers** so `.to(device)`
+moves them without changing the checkpoint format — follow that pattern for any new tensor attribute.
+
 `FeedbackAccumulator` carries the per-update event counts (`n_true`, `n_false`, `n_ib`, `n2`, plus `extra`
 for weight deltas). `functional.apply_feedback` **uses those count tensors as scratch space** (in-place) —
 do not reuse them after the call.
@@ -85,6 +92,10 @@ do not reuse them after the call.
   Noisy XOR, 200 degrades noticeably (see `docs/benchmarks.md`). `"sequential"` (or `update(..., sequential=True)`)
   is the exact per-example algorithm. Aggregating *all* events is deliberate: thinning Type II/Ia events per
   clause was tried and made learning much worse.
+- **`max_included_literals` (clause budget) is a hard cap** since 0.3.0: oversized matching clauses get
+  their Type Ia turned into Type Ib, *and* `functional.apply_feedback` reverts newly included literals
+  beyond the budget (`_cap_new_inclusions`), because a batched commit could otherwise overshoot it.
+  Results measured before 2026-10-01 used the old soft cap and are not directly comparable.
 - **The convolutional random patch is drawn in `_feedback_counts`, not `_evaluate`.** `_evaluate`
   returns the whole `(B, P, C)` match tensor as its feedback context and nothing else; drawing
   there instead costs a `(B, P, C)` `rand` + `argmax` on *every* forward pass (~5x slower
@@ -127,6 +138,16 @@ without it Python block-buffers the pipe and a suite looks frozen for minutes. `
 reports `[k/n] <config> (elapsed, eta)` per measured configuration through the module-level
 `PROG` (`Progress`), which `main()` resets per (suite, device); a new suite should call
 `PROG.plan(n)` once and `PROG.item(label)` per configuration.
+
+## Research experiments
+
+`experiments/{convtm,generation,mctm}/` are research programmes built *on top of* the library — not part
+of the package, not covered by `pytest`/`ruff` in CI. Each has a `PLAN.md` (and `convtm` a one-page
+`CHARTER.md`, read first) whose hard rule C1 is that **`src/torchtsetlin/**` is read-only while working
+in an experiment** unless the user explicitly confirms otherwise; library defects found there go into
+that programme's `LIBRARY_GAPS.md` instead of being fixed. Reported numbers must come from the
+programme's `results/*.json` records, never hand-typed. The `.claude/agents/` personas (`tm-theorist`,
+`dl-expert`, `research-engineer`, `notetaker`) belong to the `convtm` team.
 
 ## Docs
 
