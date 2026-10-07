@@ -8,6 +8,8 @@ then:
 pip install torchtsetlin
 ```
 
+The package is published on PyPI at <https://pypi.org/project/torchtsetlin/>.
+
 Optional extras:
 
 ```bash

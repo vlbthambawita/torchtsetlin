@@ -3,6 +3,8 @@
 **GPU-enabled, PyTorch-native Tsetlin machines** — models, data preparation, training,
 evaluation, interpretation and visualisation in one package.
 
+[![PyPI](https://img.shields.io/pypi/v/torchtsetlin)](https://pypi.org/project/torchtsetlin/)
+[![Python](https://img.shields.io/pypi/pyversions/torchtsetlin)](https://pypi.org/project/torchtsetlin/)
 [![CI](https://github.com/vlbthambawita/torchtsetlin/actions/workflows/ci.yml/badge.svg)](https://github.com/vlbthambawita/torchtsetlin/actions)
 [![docs](https://img.shields.io/badge/docs-mkdocs--material-blue)](https://vlbthambawita.github.io/torchtsetlin/)
 [![license](https://img.shields.io/badge/license-MIT-green)](LICENSE)
@@ -54,12 +56,48 @@ trainer.evaluate((x_test, y_test))          # {'accuracy': 0.99}
 
 ## Installation
 
-```bash
-pip install torch            # pick the CUDA/CPU build from pytorch.org
-pip install torchtsetlin     # + optional extras: [viz] [vision] [sklearn] [docs] [all]
+`torchtsetlin` is published on PyPI: **<https://pypi.org/project/torchtsetlin/>**. It needs
+Python 3.9+ and PyTorch 2.0+.
+
+1. Install PyTorch first, choosing the CUDA or CPU build for your machine from
+   [pytorch.org](https://pytorch.org/get-started/locally/), e.g.
+
+   ```bash
+   pip install torch                                                     # default build
+   pip install torch --index-url https://download.pytorch.org/whl/cpu    # CPU-only
+   ```
+
+2. Install torchtsetlin from PyPI:
+
+   ```bash
+   pip install torchtsetlin
+   ```
+
+3. Optional extras:
+
+   ```bash
+   pip install "torchtsetlin[viz]"      # matplotlib for torchtsetlin.viz
+   pip install "torchtsetlin[vision]"   # torchvision for the MNIST / torchvision / segmentation dataset helpers
+   pip install "torchtsetlin[sklearn]"  # scikit-learn interop in the examples
+   pip install "torchtsetlin[all]"      # everything, including docs and dev tools
+   ```
+
+Check the installation:
+
+```python
+import torch, torchtsetlin as tt
+print(tt.__version__, torch.cuda.is_available())
 ```
 
-From source: `pip install -e ".[dev]"`, then `pytest` and `mkdocs serve`.
+### From source
+
+```bash
+git clone https://github.com/vlbthambawita/torchtsetlin
+cd torchtsetlin
+pip install -e ".[dev]"
+pytest            # run the test-suite (uses the GPU when available)
+mkdocs serve      # browse the documentation locally
+```
 
 ## How learning works (in one paragraph)
 
