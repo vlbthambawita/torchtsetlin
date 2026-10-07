@@ -4,6 +4,11 @@ The classical Tsetlin machine processes **one example at a time**: evaluate the 
 give feedback, update the automata, move on. On a GPU that leaves most of the hardware idle,
 so `torchtsetlin` offers two ways to consume a mini-batch.
 
+<figure markdown="span">
+  ![Four examples processed one at a time with an update after each, versus together with a single update](../assets/concepts/batching.svg#only-light){ loading=lazy } ![Four examples processed one at a time with an update after each, versus together with a single update](../assets/concepts/batching_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Sequential feedback updates the memory after every example. A mini-batch looks at all its examples against the same memory, adds up their feedback and commits it once — far fewer, larger steps, which is what makes the GPU fast. The price: the examples of a batch do not see each other's updates.</figcaption>
+</figure>
+
 ## `feedback_mode="batch"` (default)
 
 All `B` examples of the batch are evaluated against the *current* automata. For every

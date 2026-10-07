@@ -24,6 +24,11 @@ Reference configurations from the literature:
 | CIFAR-10, conv 3×3 colour thermometer | 2000/class | 1500 | 2.5 | composites |
 | IMDb bag-of-words | 10 000 | 8000 | 2.0 | drop clause 0.75 |
 
+<figure markdown="span">
+  ![A short rule matching 42 of 100 days with small s versus a long rule matching 7 of 100 with large s](../assets/concepts/specificity.svg#only-light){ loading=lazy } ![A short rule matching 42 of 100 days with small s versus a long rule matching 7 of 100 with large s](../assets/concepts/specificity_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Specificity <code>s</code>. Literals that do not help are forgotten with probability <code>1/s</code>: a small <code>s</code> keeps rules short and general, a large <code>s</code> lets them grow long and specific.</figcaption>
+</figure>
+
 Rules of thumb:
 
 * Raise `T` together with the number of clauses; the ratio matters more than either value.

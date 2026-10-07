@@ -10,6 +10,11 @@ protocol and are `nn.Module`s (they move to the GPU and are saved in `state_dict
 `ThermometerEncoder(n_bits, strategy)` turns each value `v` into bits `[v >= t_1, …, v >= t_n]`
 for increasing thresholds. Two literals then express a range: `age>=30 AND NOT age>=50`.
 
+<figure markdown="span">
+  ![Age encoded as five threshold bits that fill up from the left, and a two-literal rule for ages 30 to 49](../assets/concepts/thermometer.svg#only-light){ loading=lazy } ![Age encoded as five threshold bits that fill up from the left, and a two-literal rule for ages 30 to 49](../assets/concepts/thermometer_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Thermometer encoding: each bit answers “is the value at least this much?”, so the 1s fill up from the left as the value grows. Any range is then just two literals.</figcaption>
+</figure>
+
 ```python
 enc = tt.data.ThermometerEncoder(n_bits=8, strategy="quantile").fit(x_train_float)
 xb = enc(x_train_float)                       # (N, F * 8) bool

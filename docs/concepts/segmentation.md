@@ -40,6 +40,11 @@ sums, the Type I / Type II selection, the feedback counting and
 with `padding="same"`, `stride=1`, no OR-pooling and a per-patch label taken from the centre
 pixel.
 
+<figure markdown="span">
+  ![A convolutional machine ORing windows into one answer, next to a dense head painting a label per pixel](../assets/concepts/segmentation-dense.svg#only-light){ loading=lazy } ![A convolutional machine ORing windows into one answer, next to a dense head painting a label per pixel](../assets/concepts/segmentation-dense_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Left: the OR over windows gives one answer for the whole picture — it knows <em>that</em> there is a building, not <em>where</em>. Right: the dense head gives every pixel its own window and its own vote, and the votes form the label map.</figcaption>
+</figure>
+
 This is *CTM-UNet*'s `CTM2D` block without the disjunction, and the paper's `K` parallel
 machines are the `K` clause banks of one `TsetlinMachine`.
 
@@ -99,6 +104,11 @@ reads the pixel's neighbourhood *and* the coarse structure around it. Feed the r
 model with `patch_size=1`. No float parameter and no gradient anywhere — the pooling is
 `functional.boolean_pool` and the machinery to pass one machine's votes into another as
 ordered Boolean planes is `functional.thermometer_cast`.
+
+<figure markdown="span">
+  ![The same 3 by 3 window on the full image and on 2x and 4x coarser copies, covering more and more of the scene](../assets/concepts/segmentation-pyramid.svg#only-light){ loading=lazy } ![The same 3 by 3 window on the full image and on 2x and 4x coarser copies, covering more and more of the scene](../assets/concepts/segmentation-pyramid_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Why the pyramid helps. On the full image, a 3 × 3 window inside the building sees only wall; on coarser copies the same window reaches the sky and the road. (The encoder OR-pools Boolean planes; the colours here are for readability.)</figcaption>
+</figure>
 
 Measured on `make_scenes` (32×32, 4 classes, 220 train / 80 test, 300 clauses/class,
 8 epochs, 4-bit colour thermometer):

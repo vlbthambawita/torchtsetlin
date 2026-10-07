@@ -27,6 +27,15 @@ $$v_k = \sum_{j \in \text{pos}(k)} w_j c_j(x) - \sum_{j \in \text{neg}(k)} w_j c
 
 with `w_j = 1` for the standard TM (integer weights for the weighted TM).
 
+In everyday terms: the machine turns the input into a list of yes/no facts, each clause is a
+small checklist that fires only when *every* item on it is true, and the class with the most
+net votes wins.
+
+<figure markdown="span">
+  ![Four clauses checking a sunny, windy weekend and voting on whether it is a beach day](../assets/concepts/tm-clauses.svg#only-light){ loading=lazy } ![Four clauses checking a sunny, windy weekend and voting on whether it is a beach day](../assets/concepts/tm-clauses_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Deciding “beach day?” for a sunny, windy weekend. Each clause is an AND of literals; it votes only if all of its literals are true. Two clauses vote for, one against, so the total is +1 and the answer is yes.</figcaption>
+</figure>
+
 While **learning**, an empty clause (no included literals) evaluates to True so that it can
 start memorising; while **predicting** it evaluates to False.
 
@@ -37,6 +46,17 @@ Every (clause, literal) pair owns a **Tsetlin automaton** whose state is an inte
 `< N` mean it is *excluded* (forgotten). `N` (`n_states`) is the memory depth: deep states
 are hard to change, states near the boundary flip easily. Automata start just below the
 boundary (`N-1`), "about to be memorised but currently forgotten".
+
+
+Think of each automaton as a token on a track: rewards push it towards *remember*,
+penalties towards *forget*, and the literal is part of the clause only while the token sits
+on the remember side. A token deep in either half needs many consistent signals to change
+its mind — that is what makes learning robust to noise.
+
+<figure markdown="span">
+  ![A token moving along an eight-position track that decides whether Sunny is in the clause](../assets/concepts/tm-automaton.svg#only-light){ loading=lazy } ![A token moving along an eight-position track that decides whether Sunny is in the clause](../assets/concepts/tm-automaton_dark.svg#only-dark){ loading=lazy }
+  <figcaption>One Tsetlin automaton with <code>N = 4</code> (8 states). The token starts just left of the line (<code>N-1</code>); each step right is a reward, each step left a penalty. <em>Sunny</em> is in the clause only while the token is on the right.</figcaption>
+</figure>
 
 ## Feedback
 
@@ -53,6 +73,11 @@ The probabilities implement the *vote margin*: once a class already wins by `T` 
 its clauses stop being updated, which frees them to specialise on other examples
 (resource allocation).
 
+<figure markdown="span">
+  ![Chance of feedback falling with the correct class's vote sum and rising with a wrong class's](../assets/concepts/tm-vote-margin.svg#only-light){ loading=lazy } ![Chance of feedback falling with the correct class's vote sum and rising with a wrong class's](../assets/concepts/tm-vote-margin_dark.svg#only-dark){ loading=lazy }
+  <figcaption>The vote margin <code>T</code>. The class of the example is taught with probability <code>(T - v)/2T</code> — always when it clearly says no, never once it wins by <code>T</code>. A randomly drawn wrong class is corrected with probability <code>(T + v)/2T</code>.</figcaption>
+</figure>
+
 **Type I feedback** makes a clause *recognise* frequent patterns:
 
 * If the clause matches the example (**Type Ia** / Recognize): every True literal is
@@ -65,6 +90,11 @@ its clauses stop being updated, which frees them to specialise on other examples
 **Type II feedback** makes a clause *reject* examples of other classes: if the clause
 matches, every False literal that is currently excluded moves one step towards inclusion
 (deterministically). As soon as one such literal is included the clause no longer matches.
+
+<figure markdown="span">
+  ![Type I feedback teaching a clause Weekend from a beach day, and Type II feedback adding Weekend to reject a weekday](../assets/concepts/tm-feedback.svg#only-light){ loading=lazy } ![Type I feedback teaching a clause Weekend from a beach day, and Type II feedback adding Weekend to reject a weekday](../assets/concepts/tm-feedback_dark.svg#only-dark){ loading=lazy }
+  <figcaption>The same clause, <em>Sunny</em>, under each kind of feedback. <strong>Type I</strong> (an example of its own class): true literals step towards remember, false ones occasionally towards forget. <strong>Type II</strong> (a look-alike from another class): false literals step towards remember, so the clause stops matching. Both end at <em>Sunny AND Weekend</em> by different routes.</figcaption>
+</figure>
 
 Larger `s` means forgetting is rarer, so clauses keep more literals and become more
 specific. `T` controls how many clauses cooperate on each example; larger `T` needs more

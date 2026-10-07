@@ -16,12 +16,22 @@ stride). Each window becomes a patch with
 A clause that includes `y > 2 AND NOT y > 5` therefore only matches windows in rows 3–5,
 i.e. it can learn *where* a pattern is allowed to appear — or ignore position entirely.
 
+<figure markdown="span">
+  ![Window rows with thermometer bits y > 2 and y > 5; only rows 3 to 5 satisfy the clause](../assets/concepts/conv-position.svg#only-light){ loading=lazy } ![Window rows with thermometer bits y > 2 and y > 5; only rows 3 to 5 satisfy the clause](../assets/concepts/conv-position_dark.svg#only-dark){ loading=lazy }
+  <figcaption>Position literals are thermometer bits too. Including <code>y &gt; 2</code> and <code>NOT y &gt; 5</code> restricts the clause to window rows 3–5; including none of them lets it match anywhere.</figcaption>
+</figure>
+
 ## Evaluation and learning
 
 A clause is True for an image if it matches **at least one** patch (OR over patches). Vote
 sums, `T` and the Type I / Type II selection are unchanged. When a matching clause receives
 Type Ia or Type II feedback, **one matching patch is drawn uniformly at random** and its
 literals are used for the update; Type Ib (no match) needs no patch.
+
+<figure markdown="span">
+  ![A plus-shaped clause sliding over an 8 by 8 image and matching at one position](../assets/concepts/conv-sliding.svg#only-light){ loading=lazy } ![A plus-shaped clause sliding over an 8 by 8 image and matching at one position](../assets/concepts/conv-sliding_dark.svg#only-dark){ loading=lazy }
+  <figcaption>A 3 × 3 clause is checked at every window position; the OR over positions makes it true for the image if it matches <em>anywhere</em>. That is why one clause can find a shape no matter where it appears.</figcaption>
+</figure>
 
 `torchtsetlin` implements this with `torch.nn.functional.unfold` for the patches, a single
 matmul for all (patch, clause) matches and a gather of the randomly chosen patch rows for the
