@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 (2026-10-12)
 
 **3D convolution.** Clauses can now slide through volumes: MRI/CT stacks, or frame
 sequences with time as depth.
