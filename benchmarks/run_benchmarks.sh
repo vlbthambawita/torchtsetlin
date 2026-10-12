@@ -17,7 +17,7 @@ REPO_ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 PYTHON=${PYTHON:-python}
 export PYTHONUNBUFFERED=1   # stdout is a pipe into tee; without this progress appears in bursts
 
-ALL_SUITES=(batch small clauses features models feedback threads transfer phases segmentation mnist)
+ALL_SUITES=(batch small clauses features models feedback threads transfer phases segmentation conv3d mnist)
 QUICK_SUITES=(small phases)
 
 # ------------------------------------------------------------------------------- defaults
@@ -59,6 +59,8 @@ ${bold}suites${reset} (--suites, default: all)
   threads    CPU thread scaling (GPU shown as a reference line)
   transfer   dataset resident on the device vs copied from the host per batch
   phases     where the time of one update() goes
+  segmentation  dense per-pixel models, pixels per second and patches_per_commit
+  conv3d     3D convolution on volumes: size, stride and patches_per_chunk
   mnist      end-to-end MNIST epochs, wall clock + test accuracy (needs torchvision)
 
 ${bold}options${reset}

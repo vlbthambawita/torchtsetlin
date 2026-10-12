@@ -14,6 +14,8 @@ Each *suite* varies one axis and measures training (``model.update``) and infere
 ``threads``     CPU thread scaling (GPU shown as a reference line)
 ``transfer``    dataset resident on the device vs copied from the host per batch
 ``phases``      where the time of one update goes (encode / evaluate / counts / commit)
+``segmentation`` dense per-pixel models (pixels per second, ``patches_per_commit``)
+``conv3d``      3D convolution on volumes (volume size, stride, ``patches_per_chunk``)
 ``mnist``       end-to-end MNIST epochs (wall clock + test accuracy)
 ==============  ==========================================================================
 
@@ -48,7 +50,7 @@ DENSITY = 0.2
 SEED = 0
 
 SUITES = ["batch", "small", "clauses", "features", "models", "feedback", "threads",
-          "transfer", "phases", "segmentation", "mnist"]
+          "transfer", "phases", "segmentation", "conv3d", "mnist"]
 
 
 # ---------------------------------------------------------------------------- utilities
@@ -687,6 +689,63 @@ def suite_segmentation(device: torch.device) -> List[Record]:
     return out
 
 
+def suite_conv3d(device: torch.device) -> List[Record]:
+    """3D convolution on Boolean volumes: cost vs volume size / stride, and the patch-axis
+    blocking (``patches_per_chunk``) that bounds memory on MRI-sized inputs.
+
+    Throughput is reported in volumes per second (the examples) and voxels per second
+    (``extra``), since the work grows with the number of window positions. The blocking rows
+    use 2 000 clauses, where one 12x64x64 volume alone exceeds ``max_chunk_elements`` unless
+    the patch axis is split; ``one block`` forces the unsplit path for comparison.
+    """
+    out = []
+    small = dict(classes=2, clauses=100, bs=4, n=16, timing=dict(budget=1.5, max_iters=50))
+    big = dict(classes=10, clauses=200, bs=2, n=4,
+               timing=dict(budget=1.0, max_iters=10, min_iters=1, warmup=1, reps=2))
+    configs = [
+        ("8x32x32, 3x5x5", dict(vol=(8, 32, 32), k=(3, 5, 5), st=1, **small)),
+        ("16x32x32, 3x5x5", dict(vol=(16, 32, 32), k=(3, 5, 5), st=1, **small)),
+        ("12x64x64, 3x7x7, stride (1,2,2)", dict(vol=(12, 64, 64), k=(3, 7, 7), st=(1, 2, 2), **small)),
+        ("12x64x64, 3x7x7", dict(vol=(12, 64, 64), k=(3, 7, 7), st=1, **small)),
+    ]
+    for name, ppc in (("one block", 10**9), ("auto blocks", None), ("patches_per_chunk=2048", 2048)):
+        configs.append((f"12x64x64, 3x7x7, 2000 clauses, {name}",
+                        dict(vol=(12, 64, 64), k=(3, 7, 7), st=1, ppc=ppc, **big)))
+    PROG.plan(len(configs))
+    for label, cfg in configs:
+        PROG.item(label)
+        bs, n_classes, clauses = cfg["bs"], cfg["classes"], cfg["clauses"]
+        shape = (1, *cfg["vol"])
+        x = make_bool(cfg["n"], shape, device)
+        y = make_labels(cfg["n"], n_classes, device)
+        tt.seed_everything(SEED)
+        model = tt.Conv3dTsetlinMachine(
+            n_classes, clauses, T=50.0, s=10.0, patch_size=cfg["k"], stride=cfg["st"],
+            position_encoding=True, input_shape=shape, patches_per_chunk=cfg.get("ppc"),
+        ).to(device)
+        P = model._patches_per_example(x)
+        batches = batch_views(x, y, bs, max(1, cfg["n"] // bs))
+        for phase in ("train", "infer"):
+            sec, reps, iters, peak = measure(model, batches, device, phase, **cfg["timing"])
+            vox = shape[1] * shape[2] * shape[3]
+            out.append(
+                record(
+                    "conv3d", phase, device, model, label, bs, sec, reps, iters, peak,
+                    n_clauses_per_class=clauses, n_classes=n_classes,
+                    extra={"voxels_per_s": bs * vox / sec, "volume": list(cfg["vol"]),
+                           "patches": P, "patch_block": model._patch_block(P),
+                           "patches_per_chunk": cfg.get("ppc")},
+                )
+            )
+            print(f"    {phase:5s} {bs / sec:12,.1f} volumes/s  "
+                  f"({sec * 1e3:8.2f} ms/batch of {bs}, P={P}, block={model._patch_block(P)}, "
+                  f"{iters} iters)", flush=True)
+        del model, x, y, batches
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+    return out
+
+
 SUITE_FN: Dict[str, Callable[[torch.device], List[Record]]] = {
     "batch": suite_batch,
     "small": suite_small,
@@ -698,6 +757,7 @@ SUITE_FN: Dict[str, Callable[[torch.device], List[Record]]] = {
     "transfer": suite_transfer,
     "phases": suite_phases,
     "segmentation": suite_segmentation,
+    "conv3d": suite_conv3d,
     "mnist": suite_mnist,
 }
 

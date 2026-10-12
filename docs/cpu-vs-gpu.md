@@ -10,9 +10,9 @@ Every number on this page comes from one run of `benchmarks/run_benchmarks.sh` o
 | GPU 0 | NVIDIA GeForce RTX 3090 |
 | GPU 1 | NVIDIA GeForce RTX 3080 |
 | PyTorch | 2.10.0+cu128 / CUDA 12.8 |
-| torchtsetlin | 0.2.0 |
+| torchtsetlin | 0.3.0 |
 | Python | 3.10.11 |
-| measured | 2026-09-23 09:41:12 |
+| measured | 2026-10-12 17:20:49 |
 
 
 !!! note "How to read these"
@@ -233,6 +233,28 @@ Dense prediction evaluates one patch per **pixel**, so throughput is quoted in p
     | dense 3x3 32px ppc=32 | 32 | 15,328 | 30,443 | 2× | 1,178,256 | 23,788,438 | 20× |
     | dense 3x3 32px ppc=512 | 512 | 72,302 | 467,149 | 6× | 1,212,365 | 23,742,040 | 20× |
     | dense 3x3 32px ppc=None | all | 152,978 | 5,830,281 | 38× | 1,138,703 | 23,717,435 | 21× |
+
+## 3D convolution
+
+![3D convolution](assets/benchmarks/conv3d-throughput.png#only-light)
+![3D convolution](assets/benchmarks/conv3d-throughput_dark.png#only-dark)
+
+A 3D convolutional machine evaluates every clause at every window position of a volume, so the cost scales with the number of positions `P = Pd·Ph·Pw`. Throughput is quoted in volumes per second.
+
+- On GPU (RTX 3090), a cardiac-sized 12×64×64 volume with a 3×7×7 window has 33,640 window positions and trains at 649.5 volumes/s; an in-plane stride of 2 cuts that to 8,410 positions and runs at 1,963.1 volumes/s (3.0×).
+- With 2 000 clauses one such volume no longer fits `max_chunk_elements`, so the patch axis is split automatically into blocks of 18,982 positions: peak memory 369 MB at 171.36 volumes/s, against 450 MB at 187.05 volumes/s when it is forced into one block. The output is identical (the OR over patches and the random-patch draw are exact under the split); with fewer clauses, ordinary batch chunking already respects the budget and blocking buys nothing.
+
+??? abstract "3D convolution (1 plane; 2 x 100 clauses, batch 4 — or 10 x 200, batch 2)"
+
+    | configuration | patches P | patches per block | CPU train vol/s | GPU train vol/s | train speedup | CPU infer vol/s | GPU infer vol/s | infer speedup | GPU peak memory (train) |
+    |---|---|---|---|---|---|---|---|---|---|
+    | 8x32x32, 3x5x5 | 4,704 | 4,704 | 153.3 | 2,445.1 | 16× | 187.0 | 10,024.3 | 54× | 67 MB |
+    | 16x32x32, 3x5x5 | 10,976 | 10,976 | 62.4 | 2,021.1 | 32× | 64.8 | 4,751.2 | 73× | 147 MB |
+    | 12x64x64, 3x7x7, stride (1,2,2) | 8,410 | 8,410 | 61.8 | 1,963.1 | 32× | 63.8 | 4,441.1 | 70× | 153 MB |
+    | 12x64x64, 3x7x7 | 33,640 | 33,640 | 12.2 | 649.5 | 53× | 12.1 | 898.4 | 75× | 533 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, one block | 33,640 | 33,640 | 4.3 | 187.1 | 44× | 4.4 | 206.5 | 47× | 450 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, auto blocks | 33,640 | 18,982 | 4.0 | 171.4 | 43× | 4.5 | 198.3 | 44× | 369 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, patches_per_chunk=2048 | 33,640 | 2,048 | 5.2 | 133.4 | 26× | 5.9 | 177.5 | 30× | 365 MB |
 
 ## End to end: MNIST
 

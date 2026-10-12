@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+**3D convolution.** Clauses can now slide through volumes: MRI/CT stacks, or frame
+sequences with time as depth.
+
+- **New models:** `Conv3dTsetlinMachine`, `Conv3dCoalescedTsetlinMachine` and
+  `Conv3dRegressionTsetlinMachine` take `(B, Z, D, H, W)` Boolean volumes with a
+  `kd × kh × kw` window and depth/row/column thermometer position literals. Clause evaluation
+  and the random-matching-patch feedback are the 2D code, unchanged. With `D = kd = 1`, the
+  literals and the whole training run are bit-identical to `ConvTsetlinMachine`.
+- **Patch-axis blocking:** when one volume would exceed `max_chunk_elements`, the patch axis
+  is split into blocks (or set `patches_per_chunk`). The output is identical, and the patch
+  draw has the same distribution.
+- `clause_patch` returns `(Z, kd, kh, kw)`, `clause_region` adds a `"d"` range, and
+  `patch_clause_outputs` returns `(B, Pd, Ph, Pw, C)`. `viz.plot_conv_clause(s)` draws 3D
+  clauses slice by slice and takes `depth=` to show one slice.
+- `data.make_3d_shapes`: two shapes that differ only in the order of their slices.
+  `examples/shapes_conv3d.py` gets 1.000 on it, against 0.83–0.98 for the 2D model on
+  slices stacked as channels and 0.73–0.80 for a flat machine.
+- Docs: a "3D volumes" section with two new figures in *Convolution*, a `conv3d` benchmark
+  suite on the CPU-vs-GPU page, and the design and proofs in `plans/conv3d.md`.
+
 ## 0.3.0 (2026-10-01)
 
 **The clause-size budget is now a hard limit.** This is a behaviour change: models trained with

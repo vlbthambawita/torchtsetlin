@@ -25,6 +25,12 @@ folded votes `(B·H·W, K)`.
 
 ::: torchtsetlin.models.Conv1dTsetlinMachine
 
+::: torchtsetlin.models.Conv3dTsetlinMachine
+
+::: torchtsetlin.models.Conv3dCoalescedTsetlinMachine
+
+::: torchtsetlin.models.Conv3dRegressionTsetlinMachine
+
 ::: torchtsetlin.models.SegmentationTsetlinMachine
 
 ::: torchtsetlin.models.CoalescedSegmentationTsetlinMachine

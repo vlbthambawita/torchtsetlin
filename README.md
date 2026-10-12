@@ -46,9 +46,9 @@ trainer.evaluate((x_test, y_test))          # {'accuracy': 0.99}
 
 | | |
 |---|---|
-| **Models** | `TsetlinMachine` (multi-class, optional integer clause weights), `CoalescedTsetlinMachine` (shared clauses; multi-class or multi-label), `RegressionTsetlinMachine`, `ConvTsetlinMachine` / `Conv1dTsetlinMachine` and convolutional coalesced / regression variants, `SegmentationTsetlinMachine` / `CoalescedSegmentationTsetlinMachine` for dense per-pixel prediction |
+| **Models** | `TsetlinMachine` (multi-class, optional integer clause weights), `CoalescedTsetlinMachine` (shared clauses; multi-class or multi-label), `RegressionTsetlinMachine`, `ConvTsetlinMachine` / `Conv1dTsetlinMachine` / `Conv3dTsetlinMachine` (volumes) and convolutional coalesced / regression variants, `SegmentationTsetlinMachine` / `CoalescedSegmentationTsetlinMachine` for dense per-pixel prediction |
 | **Learning** | vote margin `T`, specificity `s`, memory depth, boosted true-positive feedback, clause-size constraint, drop-clause / drop-literal, focused negative sampling, **batched** (GPU-friendly) or **exact sequential** feedback |
-| **Data** | thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer, hypervector and multi-scale pyramid encoders; synthetic datasets (including segmentation scenes); torchvision helpers for classification and segmentation |
+| **Data** | thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer, hypervector and multi-scale pyramid encoders; synthetic datasets (including segmentation scenes and 3D volumes); torchvision helpers for classification and segmentation |
 | **Training** | `Trainer` for tensors / `Dataset` / `DataLoader`, callbacks (early stopping, checkpoints, CSV logs, hyper-parameter schedules), `History` |
 | **Evaluation** | accuracy, confusion matrix, precision/recall/F1, regression and multi-label metrics, IoU / Dice / pixel accuracy / boundary-F1 for segmentation, calibration, trustworthiness curves |
 | **Interpretation** | rule extraction, clause activity/precision, closed-form global & local feature importance, per-example and **per-pixel** explanations |

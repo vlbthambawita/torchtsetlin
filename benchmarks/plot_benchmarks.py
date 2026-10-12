@@ -620,9 +620,10 @@ def fig_mnist(recs, theme, env):
     return fig
 
 
-def fig_segmentation(recs, theme, env):
-    """Dense per-pixel throughput: pixels per second, training and inference."""
-    rows = sel(recs, suite="segmentation", phase="train")
+def _suite_bars(recs, theme, suite, value, unit, title, height=None):
+    """Grouped horizontal bars (one group per device) of ``value(record)`` for every
+    configuration of ``suite``, training and inference side by side."""
+    rows = sel(recs, suite=suite, phase="train")
     if not rows:
         return None
     order = [r["model"] for r in rows if r["device"] == "cpu"] or [r["model"] for r in rows]
@@ -631,20 +632,20 @@ def fig_segmentation(recs, theme, env):
         if m not in seen:
             seen.add(m)
             labels.append(m)
-    fig, axes = plt.subplots(1, 2, figsize=(11.5, 3.6), sharey=True)
-    for ax, phase, title in zip(axes, ("train", "infer"), ("training", "inference")):
+    fig, axes = plt.subplots(1, 2, figsize=(11.5, height or 0.45 * len(labels) + 1.4), sharey=True)
+    for ax, phase, phase_name in zip(axes, ("train", "infer"), ("training", "inference")):
         groups = []
-        for dev in devices_of(sel(recs, suite="segmentation", phase=phase)):
+        for dev in devices_of(sel(recs, suite=suite, phase=phase)):
             vals = []
             for m in labels:
-                hit = [r for r in sel(recs, suite="segmentation", phase=phase, model=m)
+                hit = [r for r in sel(recs, suite=suite, phase=phase, model=m)
                        if r["device"] == dev]
-                vals.append(hit[0]["extra"].get("pixels_per_s", 0.0) if hit else 0.0)
-            ref = [r for r in sel(recs, suite="segmentation", phase=phase) if r["device"] == dev][0]
+                vals.append(value(hit[0]) if hit else 0.0)
+            ref = [r for r in sel(recs, suite=suite, phase=phase) if r["device"] == dev][0]
             groups.append((device_label(ref), color_for(theme, dev), vals))
         _grouped_barh(ax, labels, groups, theme)
         ax.set_xscale("log")
-        ax.set_xlabel(f"pixels per second — {title} (log scale)")
+        ax.set_xlabel(f"{unit} — {phase_name} (log scale)")
         ax.xaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{v:g}"))
         for spine in ("top", "right", "left"):
             ax.spines[spine].set_visible(False)
@@ -654,10 +655,22 @@ def fig_segmentation(recs, theme, env):
         hi = max((max(g[2]) for g in groups), default=1.0)
         ax.set_xlim(right=hi * 4)
     axes[0].legend(loc="upper left", bbox_to_anchor=(0.0, -0.22), ncol=2, labelcolor=theme["ink2"])
-    fig.suptitle("Dense segmentation — pixels per second", x=0.012, ha="left", fontsize=13,
-                 color=theme["ink"], weight="medium")
+    fig.suptitle(title, x=0.012, ha="left", fontsize=13, color=theme["ink"], weight="medium")
     fig.tight_layout(rect=(0, 0, 1, 0.9))
     return fig
+
+
+def fig_segmentation(recs, theme, env):
+    """Dense per-pixel throughput: pixels per second, training and inference."""
+    return _suite_bars(recs, theme, "segmentation",
+                       lambda r: r["extra"].get("pixels_per_s", 0.0), "pixels per second",
+                       "Dense segmentation — pixels per second", height=3.6)
+
+
+def fig_conv3d(recs, theme, env):
+    """3D convolution: volumes per second, training and inference."""
+    return _suite_bars(recs, theme, "conv3d", lambda r: r["examples_per_s"],
+                       "volumes per second", "3D convolution — volumes per second")
 
 
 FIGURES = {
@@ -670,6 +683,7 @@ FIGURES = {
     "feedback-mode": fig_feedback,
     "mnist-epoch": fig_mnist,
     "segmentation-throughput": fig_segmentation,
+    "conv3d-throughput": fig_conv3d,
 }
 
 
@@ -817,6 +831,32 @@ def table_segmentation(recs) -> str:
                      "train speedup", "CPU infer px/s", "GPU infer px/s", "infer speedup"], rows)
 
 
+def table_conv3d(recs) -> str:
+    rows = []
+    seen = set()
+    for r in sel(recs, suite="conv3d", phase="train"):
+        if r["model"] in seen:
+            continue
+        seen.add(r["model"])
+        e = r["extra"]
+        row = [r["model"], num(e.get("patches")), num(e.get("patch_block"))]
+        for phase in ("train", "infer"):
+            cpu = [q for q in sel(recs, suite="conv3d", phase=phase, model=r["model"])
+                   if q["device"] == "cpu"]
+            gpu = [q for q in sel(recs, suite="conv3d", phase=phase, model=r["model"])
+                   if q["device"] != "cpu"]
+            c = cpu[0]["examples_per_s"] if cpu else None
+            g = gpu[0]["examples_per_s"] if gpu else None
+            row += [num(c, 1), num(g, 1), f"{g / c:,.0f}\u00d7" if c and g else "\u2014"]
+        gpu_mem = [q for q in sel(recs, suite="conv3d", phase="train", model=r["model"])
+                   if q["device"] != "cpu" and q.get("peak_mem_mb")]
+        row.append(f"{gpu_mem[0]['peak_mem_mb']:,.0f} MB" if gpu_mem else "\u2014")
+        rows.append(row)
+    return md_table(["configuration", "patches P", "patches per block", "CPU train vol/s",
+                     "GPU train vol/s", "train speedup", "CPU infer vol/s", "GPU infer vol/s",
+                     "infer speedup", "GPU peak memory (train)"], rows)
+
+
 TABLES = [
     ("batch", "Batch size — MNIST scale (784 features, 500 clauses/class)",
      lambda r: speed_rows(r, "batch", "batch_size", "batch")),
@@ -834,6 +874,8 @@ TABLES = [
      table_transfer),
     ("segmentation", "Dense segmentation (4 planes, 4 classes, batch 8 images)",
      table_segmentation),
+    ("conv3d", "3D convolution (1 plane; 2 x 100 clauses, batch 4 — or 10 x 200, batch 2)",
+     table_conv3d),
     ("mnist", "End-to-end MNIST", table_mnist),
 ]
 
@@ -1139,6 +1181,43 @@ def prose_segmentation(recs, env) -> str:
             "1 024 examples.\n\n" + "\n".join(f"- {b}" for b in bits))
 
 
+def prose_conv3d(recs, env) -> str:
+    rows = sel(recs, suite="conv3d", phase="train")
+    if not rows:
+        return ""
+    bits = []
+    full = [r for r in rows if r["model"] == "12x64x64, 3x7x7" and r["device"] != "cpu"]
+    strided = [r for r in rows if r["model"] == "12x64x64, 3x7x7, stride (1,2,2)"
+               and r["device"] != "cpu"]
+    if full and strided:
+        f, st = full[0], strided[0]
+        bits.append(
+            f"On {device_label(f)}, a cardiac-sized 12\u00d764\u00d764 volume with a "
+            f"3\u00d77\u00d77 window has {f['extra']['patches']:,} window positions and trains at "
+            f"{f['examples_per_s']:,.1f} volumes/s; an in-plane stride of 2 cuts that to "
+            f"{st['extra']['patches']:,} positions and runs at {st['examples_per_s']:,.1f} "
+            f"volumes/s ({st['examples_per_s'] / f['examples_per_s']:,.1f}\u00d7)."
+        )
+    gpu = {r["model"]: r for r in rows if r["device"] != "cpu"}
+    one = gpu.get("12x64x64, 3x7x7, 2000 clauses, one block")
+    auto = gpu.get("12x64x64, 3x7x7, 2000 clauses, auto blocks")
+    if one and auto and one.get("peak_mem_mb") and auto.get("peak_mem_mb"):
+        bits.append(
+            f"With 2 000 clauses one such volume no longer fits `max_chunk_elements`, so the "
+            f"patch axis is split automatically into blocks of {auto['extra']['patch_block']:,} "
+            f"positions: peak memory {auto['peak_mem_mb']:,.0f} MB at "
+            f"{auto['examples_per_s']:,.2f} volumes/s, against {one['peak_mem_mb']:,.0f} MB at "
+            f"{one['examples_per_s']:,.2f} volumes/s when it is forced into one block. The "
+            "output is identical (the OR over patches and the random-patch draw are exact "
+            "under the split); with fewer clauses, ordinary batch chunking already respects "
+            "the budget and blocking buys nothing."
+        )
+    return ("A 3D convolutional machine evaluates every clause at every window position of a "
+            "volume, so the cost scales with the number of positions `P = Pd\u00b7Ph\u00b7Pw`. "
+            "Throughput is quoted in volumes per second.\n\n"
+            + "\n".join(f"- {b}" for b in bits))
+
+
 # (figure, heading, prose, [table slugs])
 PAGE_SECTIONS = [
     ("throughput-vs-batch", "Throughput vs batch size", prose_batch, ["batch", "small"]),
@@ -1151,6 +1230,7 @@ PAGE_SECTIONS = [
     ("feedback-mode", "Batched vs sequential feedback", prose_feedback, ["feedback"]),
     (None, "Where the data lives", prose_transfer, ["transfer"]),
     ("segmentation-throughput", "Dense segmentation", prose_segmentation, ["segmentation"]),
+    ("conv3d-throughput", "3D convolution", prose_conv3d, ["conv3d"]),
     ("mnist-epoch", "End to end: MNIST", prose_mnist, ["mnist"]),
 ]
 

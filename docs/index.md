@@ -36,7 +36,7 @@ print(model.rules()[:3])                        # ['IF x0 AND NOT x1 THEN 1', ..
 
 | Area | Highlights |
 |---|---|
-| Models | `TsetlinMachine`, `CoalescedTsetlinMachine`, `RegressionTsetlinMachine`, `ConvTsetlinMachine` (2D), `Conv1dTsetlinMachine`, convolutional coalesced and regression variants, `SegmentationTsetlinMachine` and `CoalescedSegmentationTsetlinMachine` (dense per-pixel) |
+| Models | `TsetlinMachine`, `CoalescedTsetlinMachine`, `RegressionTsetlinMachine`, `ConvTsetlinMachine` (2D), `Conv1dTsetlinMachine`, `Conv3dTsetlinMachine` (volumes), convolutional coalesced and regression variants, `SegmentationTsetlinMachine` and `CoalescedSegmentationTsetlinMachine` (dense per-pixel) |
 | Learning options | vote margin `T`, specificity `s`, memory depth, boosted true-positive feedback, clause weights, clause size constraint, drop-clause / drop-literal, focused negative sampling, batched or exact sequential feedback |
 | Data | `ThermometerEncoder`, `OneHotEncoder`, `BitPlaneEncoder`, `AdaptiveThresholdEncoder`, `ColorThermometerEncoder`, `HypervectorEncoder`, `PyramidEncoder`, synthetic datasets (classification and segmentation), torchvision helpers |
 | Training | `Trainer` (tensors, `Dataset` or `DataLoader`), callbacks (early stopping, checkpoints, CSV logs, schedules), `History` |

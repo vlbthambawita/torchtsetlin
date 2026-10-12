@@ -696,6 +696,182 @@ def fig_conv_position(c: Dict[str, str]) -> Fig:
     return f
 
 
+PLUS3 = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+DOT3 = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
+SPINDLE = [PLUS3, DOT3, PLUS3]   # make_3d_shapes class 0
+CROSS3D = [DOT3, PLUS3, DOT3]    # make_3d_shapes class 1
+
+
+def _spindle_volume() -> List[List[List[int]]]:
+    """A 5 x 6 x 6 volume with a spindle at depth 1, row 2, column 1 and some noise."""
+    vol = [[[0] * 6 for _ in range(6)] for _ in range(5)]
+    for i in range(3):
+        for a in range(3):
+            for b in range(3):
+                vol[1 + i][2 + a][1 + b] = SPINDLE[i][a][b]
+    for d, r, q in [(0, 0, 4), (0, 1, 4), (0, 1, 5), (2, 0, 0), (3, 5, 5), (4, 4, 4),
+                    (4, 3, 4), (4, 4, 3), (4, 4, 5), (4, 5, 4), (0, 5, 0)]:
+        vol[d][r][q] = 1
+    return vol
+
+
+def _mini(f: Fig, pat: List[List[int]], x: float, y: float, cs: float, on: str, off: str) -> None:
+    for r in range(3):
+        for q in range(3):
+            f.add(f.rect(x + q * cs + 0.5, y + r * cs + 0.5, cs - 1, cs - 1,
+                         on if pat[r][q] else off, rx=2))
+
+
+def fig_conv3d_sliding(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 310, c, "A 3D convolutional clause slides through a volume",
+            "A volume of five slices is searched by a three by three by three window that "
+            "moves along columns, rows and depth. The clause looks for a plus, a dot and a "
+            "plus on three consecutive slices. Its matches form one map per depth offset; "
+            "since it is found at one position, the clause is true for the whole volume.",
+            duration=20)
+    vol = _spindle_volume()
+    D, S, k = 5, 6, 3
+    ix, iy, cs, gap = 24, 70, 14, 12
+    sw = S * cs + gap
+    f.add(f.text(ix + (D * sw - gap) / 2, 36, "The volume (5 slices of 6 × 6)", 13.5,
+                 weight="bold"))
+    for d in range(D):
+        x0 = ix + d * sw
+        f.add(f.text(x0 + S * cs / 2, iy - 8, f"d = {d}", 11, c["muted"]))
+        for r in range(S):
+            for q in range(S):
+                fill = c["fg"] if vol[d][r][q] else c["panel2"]
+                f.add(f.rect(x0 + q * cs + 0.5, iy + r * cs + 0.5, cs - 1, cs - 1, fill, rx=2))
+    # the clause
+    cx0, cy0, ccs = ix + 130, 214, 14
+    f.add(f.text(ix, cy0 + 26, "The clause", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(ix, cy0 + 44, "3 × 3 × 3 window", 11.5, c["muted"], anchor="start",
+                 italic=True))
+    for i, pat in enumerate(SPINDLE):
+        x = cx0 + i * (3 * ccs + 26)
+        _mini(f, pat, x, cy0 + 10, ccs, c["accent"], c["panel2"])
+        f.add(f.text(x + 1.5 * ccs, cy0 + 3 * ccs + 26, f"slice {i}", 11, c["muted"]))
+        if i < 2:
+            f.add(f.text(x + 3 * ccs + 13, cy0 + 10 + 1.5 * ccs + 5, "+", 14, c["muted"]))
+    f.add(f.text(cx0 + 200, cy0 + 26, "plus, then dot, then plus", 12, anchor="start"))
+    f.add(f.text(cx0 + 200, cy0 + 44, "on three consecutive slices", 12, anchor="start"))
+    # match maps (one per depth offset)
+    n, P = S - k + 1, D - k + 1
+    mx, my, mcs, mgap = 520, 70, 14, 14
+    msw = n * mcs + mgap
+    f.add(f.text(mx + (P * msw - mgap) / 2, 36, "Where it matches", 13.5, weight="bold"))
+    order = [(u, r, q) for u in range(P) for r in range(n) for q in range(n)]
+    s0, s1 = 2.0, 82.0
+    dt = (s1 - s0) / len(order)
+    hits = []
+    for t_i, (u, r, q) in enumerate(order):
+        hit = all(vol[u + i][r + a][q + b] for i in range(k) for a in range(k)
+                  for b in range(k) if SPINDLE[i][a][b])
+        if hit:
+            hits.append((u, r, q))
+        x = mx + u * msw + q * mcs
+        y = my + r * mcs
+        f.add(f.rect(x + 0.5, y + 0.5, mcs - 1, mcs - 1, c["panel2"], c["line"], rx=2, sw=1))
+        fill = c["accent"] if hit else c["line"]
+        inner = f.rect(x + 0.5, y + 0.5, mcs - 1, mcs - 1, fill, fill, rx=2, sw=1)
+        if hit:
+            inner += f.check(x + mcs / 2, y + mcs / 2, 8, c["on_accent"], 1.8)
+        t = s0 + t_i * dt
+        f.add(f"<g {f.anim(steps([(0, 'opacity:0'), (t, 'opacity:1'), (97, 'opacity:0')]))}>{inner}</g>")
+    assert len(hits) == 1, hits
+    for u in range(P):
+        f.add(f.text(mx + u * msw + n * mcs / 2, my - 8, f"offset {u}", 11, c["muted"]))
+    f.add(f.text(mx + (P * msw - mgap) / 2, my + n * mcs + 20, "one map per depth offset", 12,
+                 c["muted"], italic=True))
+    # the sliding window: three outlines, one per slice it covers
+    hu, hr, hq = hits[0]
+    segs = [(0.0, tx(0))] + [(s0 + t_i * dt, tx((q - hq) * cs + (u - hu) * sw, (r - hr) * cs))
+                             for t_i, (u, r, q) in enumerate(order)]
+    segs += [(s1, tx(0))]
+    win = "".join(f.rect(ix + (hu + i) * sw + hq * cs - 2, iy + hr * cs - 2, k * cs + 4,
+                         k * cs + 4, "none", c["amber"], rx=4, sw=3) for i in range(k))
+    f.add(f"<g {f.anim(steps(segs))}>{win}</g>")
+    f.add(f.text(ix + (D * sw - gap) / 2, iy + S * cs + 26,
+                 "the window covers 3 slices and moves along x, y and depth", 12, c["muted"],
+                 italic=True))
+    # OR -> result
+    ry = my + n * mcs + 44
+    res = f.anim(steps([(0, "opacity:0"), (s1 + 1, "opacity:1"), (97, "opacity:0")]))
+    f.add(f"<g {res}>{f.text(mx + (P * msw - mgap) / 2, ry, 'OR over every position', 12, c['muted'], weight='bold')}"
+          f"{f.rect(mx + 20, ry + 12, P * msw - mgap - 40, 64, c['pos_soft'], c['pos'], rx=10)}"
+          f"{f.text(mx + (P * msw - mgap) / 2, ry + 38, 'found at offset 1', 13, c['pos'], weight='bold')}"
+          f"{f.text(mx + (P * msw - mgap) / 2, ry + 60, 'clause = TRUE', 12, c['pos'])}</g>")
+    return f
+
+
+def fig_conv3d_depth(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 360, c, "Why a 3D window beats stacking depth into channels",
+            "Two shapes differ only in the order of their slices: plus, dot, plus versus dot, "
+            "plus, dot. A 3D window of depth three describes the first with one clause at "
+            "every depth. A 2D model that stacks all five slices as channels sees the whole "
+            "depth at once and needs a separate clause for every depth offset.")
+    ccs = 12
+    # left: the two classes
+    lx = 24
+    f.add(f.text(lx, 34, "Two classes", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(lx, 54, "same slices, other order", 12, c["muted"], anchor="start", italic=True))
+    for row, (name, shape) in enumerate([("spindle", SPINDLE), ("3D cross", CROSS3D)]):
+        y = 84 + row * 92
+        f.add(f.text(lx, y + 4, name, 12.5, anchor="start", weight="bold"))
+        for i, pat in enumerate(shape):
+            x = lx + i * (3 * ccs + 12)
+            _mini(f, pat, x, y + 14, ccs, c["fg"], c["panel2"])
+            f.add(f.text(x + 1.5 * ccs, y + 14 + 3 * ccs + 15, f"d+{i}", 10.5, c["muted"]))
+    f.add(f.text(lx, 284, "Each slice is a plus or a dot", 12, c["muted"], anchor="start",
+                 italic=True))
+    f.add(f.text(lx, 302, "in both — only the order", 12, c["muted"], anchor="start",
+                 italic=True))
+    f.add(f.text(lx, 320, "along depth differs.", 12, c["muted"], anchor="start", italic=True))
+    f.add(f.line(204, 30, 204, 340, c["line"], 1))
+    # middle: 3D window
+    mx = 222
+    f.add(f.text(mx, 34, "3D window (kd = 3)", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(mx, 54, "one clause, slides along depth", 12, c["muted"], anchor="start",
+                 italic=True))
+    for i, pat in enumerate(SPINDLE):
+        x = mx + 22 + i * (3 * ccs + 12)
+        _mini(f, pat, x, 76, ccs, c["accent"], c["panel2"])
+    f.add(f.rect(mx + 14, 68, 3 * (3 * ccs + 12) + 4, 3 * ccs + 16, "none", c["accent"], rx=6,
+                 sw=1.6))
+    f.add(f.text(mx + 90, 150, "clause 1 of 1", 12, c["accent"], weight="bold"))
+    for u in range(3):
+        y = 186 + u * 46
+        f.add(f.text(mx + 4, y + 20, f"offset {u}", 11.5, c["muted"], anchor="start"))
+        for d in range(5):
+            x = mx + 64 + d * 22
+            inside = u <= d < u + 3
+            f.add(f.rect(x, y + 6, 18, 22, c["accent_soft"] if inside else c["panel2"],
+                         c["accent"] if inside else "none", rx=3, sw=1.2))
+        f.add(f.check(mx + 64 + 5 * 22 + 12, y + 17, 12, c["pos"]))
+    f.add(f.text(mx + 90, 336, "same clause at every depth", 12, c["pos"], weight="bold"))
+    f.add(f.line(470, 30, 470, 340, c["line"], 1))
+    # right: depth as channels
+    rx = 496
+    f.add(f.text(rx, 34, "Depth as channels (2D)", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(rx, 54, "the window spans all 5 slices", 12, c["muted"], anchor="start",
+                 italic=True))
+    for u in range(3):
+        y = 76 + u * 86
+        f.add(f.text(rx, y + 10, f"clause {u + 1} (offset {u})", 12, c["fg"], anchor="start",
+                     weight="bold"))
+        for d in range(5):
+            x = rx + d * (3 * 9 + 8)
+            if u <= d < u + 3:
+                _mini(f, SPINDLE[d - u], x, y + 20, 9, c["amber"], c["panel2"])
+            else:
+                f.add(f.rect(x, y + 20, 27, 27, "none", c["line"], rx=2, sw=1,
+                             extra='stroke-dasharray="3 3"'))
+            f.add(f.text(x + 13.5, y + 62, f"d={d}", 9.5, c["muted"]))
+    f.add(f.text(rx + 2, 336, "one clause per depth offset", 12, c["neg"], anchor="start",
+                 weight="bold"))
+    return f
+
+
 def _scene8() -> List[str]:
     return ["SSSSSSSS",
             "SSSSSSSS",
@@ -996,6 +1172,8 @@ FIGURES: Dict[str, Callable[[Dict[str, str]], Fig]] = {
     "batching": fig_batching,
     "conv-sliding": fig_conv_sliding,
     "conv-position": fig_conv_position,
+    "conv3d-sliding": fig_conv3d_sliding,
+    "conv3d-depth": fig_conv3d_depth,
     "segmentation-dense": fig_segmentation_dense,
     "segmentation-pyramid": fig_segmentation_pyramid,
     "thermometer": fig_thermometer,

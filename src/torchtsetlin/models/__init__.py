@@ -5,6 +5,9 @@ from .classifier import TsetlinMachine
 from .coalesced import CoalescedTsetlinMachine
 from .conv import (
     Conv1dTsetlinMachine,
+    Conv3dCoalescedTsetlinMachine,
+    Conv3dRegressionTsetlinMachine,
+    Conv3dTsetlinMachine,
     ConvCoalescedTsetlinMachine,
     ConvRegressionTsetlinMachine,
     ConvTsetlinMachine,
@@ -25,6 +28,9 @@ __all__ = [
     "ConvCoalescedTsetlinMachine",
     "ConvRegressionTsetlinMachine",
     "Conv1dTsetlinMachine",
+    "Conv3dTsetlinMachine",
+    "Conv3dCoalescedTsetlinMachine",
+    "Conv3dRegressionTsetlinMachine",
     "SegmentationTsetlinMachine",
     "CoalescedSegmentationTsetlinMachine",
 ]

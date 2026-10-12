@@ -70,6 +70,11 @@ A new model subclasses `TsetlinMachineBase` and implements `_votes`, `_select_fe
 structure overrides `_encode`, `_evaluate`, `_feedback_counts` and `_chunk_elements_per_example` — that is
 exactly what `models/conv.py::_ConvMixin` does, and it is mixed into each flat model to produce the `Conv*`
 variants (`class ConvTsetlinMachine(_ConvMixin, TsetlinMachine)`). See `docs/guides/extending.md`.
+`_Conv3dMixin(_ConvMixin)` produces the `Conv3d*` volume models by overriding only the geometry
+(`_grid`, `_encode`, `_coerce_input`, ...). Its `_coerce_input` must skip `_ConvMixin`'s via
+`super(_ConvMixin, self)`, which would otherwise reshape to 4D. Its `_evaluate`/`_feedback_counts` only
+add patch-axis blocking and defer to the 2D code when there is a single block, which keeps the
+`D = kd = 1` model bit-identical to the 2D one (`tests/test_conv3d.py` pins this; proofs are in `plans/conv3d.md`).
 
 `models/segmentation.py::_DenseMixin` is the other input-structure mixin: it *drops* the convolutional
 OR over patches and folds the patch axis into the batch axis (`B' = B * P`, one patch per pixel), so each

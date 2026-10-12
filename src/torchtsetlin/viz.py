@@ -146,36 +146,63 @@ def plot_feature_importance(importance, names: Optional[Sequence[str]] = None, t
     return ax
 
 
-def plot_conv_clause(model, clause: int, plane: int = 0, ax=None, show_region: bool = True):
+def plot_conv_clause(model, clause: int, plane: int = 0, ax=None, show_region: bool = True, depth: Optional[int] = None):
     """Draw the patch pattern of a convolutional clause: black = pixel must be on, white =
-    must be off, gray = don't care. The title reports the allowed patch-position range."""
+    must be off, gray = don't care. The title reports the allowed patch-position range.
+
+    For 3D models (:class:`~torchtsetlin.models.Conv3dTsetlinMachine`) the ``kd`` depth
+    slices of the window are drawn side by side, separated by a blank column; pass
+    ``depth`` to draw a single slice instead."""
     plt = _plt()
     patch = _np(model.clause_patch(clause))[plane].astype(float)
+    slice_ticks: Sequence[float] = []
+    slice_labels: Sequence[str] = []
+    if patch.ndim == 3:  # (kd, kh, kw) — a 3D window
+        if depth is not None:
+            patch = patch[depth]
+            slice_ticks, slice_labels = [(patch.shape[1] - 1) / 2], [f"d={depth}"]
+        else:
+            kd, kh, kw = patch.shape
+            gap = np.full((kh, 1), np.nan)
+            parts = []
+            for i in range(kd):
+                parts += [patch[i], gap] if i < kd - 1 else [patch[i]]
+            patch = np.concatenate(parts, axis=1)
+            slice_ticks = [i * (kw + 1) + (kw - 1) / 2 for i in range(kd)]
+            slice_labels = [f"d={i}" for i in range(kd)]
     if ax is None:
         _, ax = plt.subplots(figsize=(3, 3))
-    ax.imshow(-patch, cmap="gray", vmin=-1, vmax=1, interpolation="nearest")
-    ax.set_xticks([])
+    cmap = plt.get_cmap("gray").copy()
+    cmap.set_bad("tab:blue", 0.35)  # the separator between depth slices
+    ax.imshow(-patch, cmap=cmap, vmin=-1, vmax=1, interpolation="nearest")
+    ax.set_xticks(slice_ticks, slice_labels, fontsize=7)
+    ax.tick_params(length=0)
     ax.set_yticks([])
     title = f"clause {clause}"
     if show_region and model.position_encoding:
         r = model.clause_region(clause)
-        title += f"\ny∈[{r['y'][0]},{r['y'][1]}] x∈[{r['x'][0]},{r['x'][1]}]"
+        box = " ".join(f"{a}∈[{r[a][0]},{r[a][1]}]" for a in ("d", "y", "x") if a in r)
+        title += "\n" + box
     ax.set_title(title, fontsize=8)
     return ax
 
 
-def plot_conv_clauses(model, clauses: Sequence[int], ncols: int = 8, plane: int = 0, figsize_per: float = 1.6):
-    """Grid of :func:`plot_conv_clause` panels. Returns the figure."""
+def plot_conv_clauses(model, clauses: Sequence[int], ncols: int = 8, plane: int = 0, figsize_per: float = 1.6, depth: Optional[int] = None):
+    """Grid of :func:`plot_conv_clause` panels. Returns the figure.
+
+    For 3D models each panel shows the ``kd`` depth slices side by side (or only ``depth``)."""
     plt = _plt()
     n = len(clauses)
     ncols = min(ncols, n)
     nrows = int(np.ceil(n / ncols))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(figsize_per * ncols, figsize_per * 1.25 * nrows), squeeze=False)
+    kd = model.patch_size[0] if len(model.patch_size) == 3 and depth is None else 1
+    width = figsize_per * (1 + 0.8 * (kd - 1))
+    fig, axes = plt.subplots(nrows, ncols, figsize=(width * ncols, figsize_per * 1.25 * nrows), squeeze=False)
     for ax in axes.flat:
         ax.axis("off")
     for ax, j in zip(axes.flat, clauses):
         ax.axis("on")
-        plot_conv_clause(model, int(j), plane=plane, ax=ax)
+        plot_conv_clause(model, int(j), plane=plane, ax=ax, depth=depth)
     fig.tight_layout()
     return fig
 

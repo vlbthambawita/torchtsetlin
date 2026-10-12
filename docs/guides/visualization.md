@@ -11,7 +11,7 @@ returns the `Axes` it drew on.
 | `plot_ta_states(model)` | heat-map of all automata (clauses × literals) |
 | `plot_literal_frequency(model)` | how many clauses include each literal |
 | `plot_feature_importance(importance, names)` | horizontal bars |
-| `plot_conv_clause(model, clause)` / `plot_conv_clauses(model, clauses)` | convolutional clause patches (black = on, white = off, gray = free) with the allowed region |
+| `plot_conv_clause(model, clause)` / `plot_conv_clauses(model, clauses)` | convolutional clause patches (black = on, white = off, gray = free) with the allowed region; 3D clauses are drawn slice by slice (`depth=` picks one) |
 | `plot_votes(votes, y)` | distribution of winning vote sums, correct vs incorrect |
 | `plot_trustworthiness(curve)` | accuracy and coverage vs confidence |
 | `plot_clause_weights(model)` | weights of weighted / coalesced models |

@@ -16,17 +16,18 @@ prints what the model *learned*, not just its score. The worked notebooks live i
 ## Convolutional models
 
 A convolutional Tsetlin machine slides its clauses over the input and fires if **any** window
-matches, so one clause covers every position. These four cover the whole convolutional API —
-2-D and 1-D, classification, shared clause pools and regression.
+matches, so one clause covers every position. These five cover the whole convolutional API —
+1-D, 2-D and 3-D, classification, shared clause pools and regression.
 
 | script | model | data | result | runtime |
 |---|---|---|---|---|
 | [`shapes_conv.py`](shapes_conv.py) | `ConvTsetlinMachine` | `make_shapes` (12×12, generated) | 1.000 test accuracy on every seed tried, against 0.55–0.91 for a flat machine with the same clause budget | 6 s |
 | [`conv1d_ramps.py`](conv1d_ramps.py) | `Conv1dTsetlinMachine` | noisy 1-D signals (generated) | 0.996 test accuracy; the clauses print as the ramp they detect | 5 s |
+| [`shapes_conv3d.py`](shapes_conv3d.py) | `Conv3dTsetlinMachine` | `make_3d_shapes` (8×12×12 volumes, generated) | 1.000 test accuracy on every seed tried; slices stacked as channels 0.83–0.98, flat 0.73–0.80 (`--baselines`) | 5 s |
 | [`conv_regression_blobs.py`](conv_regression_blobs.py) | `ConvRegressionTsetlinMachine` | squares of varying size (generated) | MAE 0.20 side-length units, R² 0.96 | 24 s |
 | [`mnist_conv.py`](mnist_conv.py) | `ConvTsetlinMachine`, `ConvCoalescedTsetlinMachine` | MNIST (torchvision) | 0.979 with the defaults (200 clauses/class); 0.985 with `--coalesced --clauses 1000 --T 500` | 80 s / 50 s |
 
-Timings are for the default arguments on an RTX 3090; the three generated-data scripts are
+Timings are for the default arguments on an RTX 3090; the generated-data scripts are
 comfortable on a CPU as well (`--device cpu`).
 
 ## Dense prediction

@@ -20,6 +20,7 @@ __all__ = [
     "make_parity",
     "make_2d_noisy_xor",
     "make_shapes",
+    "make_3d_shapes",
     "make_segmentation_shapes",
     "make_scenes",
     "balanced_class_probabilities",
@@ -183,6 +184,39 @@ def make_shapes(n: int, size: int = 8, seed: Optional[int] = 0, device=None) -> 
     px = torch.randint(0, size - 2, (n,), generator=g)
     for i in range(n):
         x[i, 0, py[i] : py[i] + 3, px[i] : px[i] + 3] = cross if y[i] == 1 else circle
+    dev = torch.device(device) if device else None
+    return (x.to(dev), y.long().to(dev)) if dev else (x, y.long())
+
+
+def make_3d_shapes(
+    n: int, size: Tuple[int, int, int] = (8, 12, 12), seed: Optional[int] = 0, device=None
+) -> Tuple[Tensor, Tensor]:
+    """Toy volume classification that needs depth context: a ``3x3x3`` shape at a random
+    position in a ``(D, H, W)`` volume.
+
+    Class 0 (*spindle*) stacks the 2D slices ``plus, dot, plus``; class 1 (*3D cross*) stacks
+    ``dot, plus, dot``. Every single slice therefore looks the same in both classes (a plus
+    or a dot) — only their order along depth tells them apart, which a 3D window with
+    ``kd = 3`` sees in one clause.
+
+    Returns ``(n, 1, D, H, W)`` Boolean volumes and labels."""
+    D, H, W = (int(v) for v in size)
+    if min(D, H, W) < 3:
+        raise ValueError("every side of the volume must be at least 3")
+    g = torch.Generator().manual_seed(seed) if seed is not None else None
+    x = torch.zeros(n, 1, D, H, W, dtype=torch.bool)
+    y = torch.randint(0, 2, (n,), generator=g)
+    plus = torch.tensor([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=torch.bool)
+    dot = torch.tensor([[0, 0, 0], [0, 1, 0], [0, 0, 0]], dtype=torch.bool)
+    spindle = torch.stack([plus, dot, plus])
+    cross3d = torch.stack([dot, plus, dot])
+    pd = torch.randint(0, D - 2, (n,), generator=g)
+    py = torch.randint(0, H - 2, (n,), generator=g)
+    px = torch.randint(0, W - 2, (n,), generator=g)
+    for i in range(n):
+        x[i, 0, pd[i] : pd[i] + 3, py[i] : py[i] + 3, px[i] : px[i] + 3] = (
+            cross3d if y[i] == 1 else spindle
+        )
     dev = torch.device(device) if device else None
     return (x.to(dev), y.long().to(dev)) if dev else (x, y.long())
 

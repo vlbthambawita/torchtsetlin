@@ -1,8 +1,8 @@
 # Convolution on generated data
 
-Three small scripts that each take a minute or less and need no download. They cover the
-convolutional models that [MNIST](mnist.md) does not: 1-D sequences and convolutional
-regression, plus a controlled look at what `position_encoding` actually does. See
+Four small scripts that each take a minute or less and need no download. They cover the
+convolutional models that [MNIST](mnist.md) does not: 1-D sequences, 3-D volumes and
+convolutional regression, plus a controlled look at what `position_encoding` actually does. See
 [Convolution](../concepts/convolution.md) for the algorithm.
 
 ## Translation invariance
@@ -107,6 +107,56 @@ clause 51 of 'rising': fires on 12% of signals, 100% of them class 'rising'
   #..#####
   #.######
 ```
+
+## Volumes (3D)
+
+Full script: `examples/shapes_conv3d.py`.
+
+`make_3d_shapes` puts a 3 × 3 × 3 shape at a random position in an 8 × 12 × 12 volume. Class
+0, the *spindle*, stacks the slices plus, dot, plus. Class 1, the *3D cross*, stacks dot,
+plus, dot. Every slice is a plus or a dot in both classes, so only the order along depth
+tells them apart.
+
+```python
+import torch, torchtsetlin as tt
+
+x_train, y_train = tt.data.make_3d_shapes(2000, size=(8, 12, 12), seed=0)  # (N, 1, 8, 12, 12)
+x_test, y_test = tt.data.make_3d_shapes(1000, size=(8, 12, 12), seed=1)
+
+model = tt.Conv3dTsetlinMachine(2, n_clauses=20, T=15, s=10, patch_size=3,
+                                position_encoding=False, n_states=100)
+trainer = tt.Trainer(model, device=device, batch_size=16)
+trainer.fit((x_train, y_train), epochs=10, val_data=(x_test, y_test))
+print(trainer.test((x_test, y_test)))           # {'test_accuracy': 1.0}
+```
+
+`--baselines` trains two alternatives with the same clause budget. One is the 2D machine on
+the slices stacked as channels, `(8, 12, 12)`, whose window spans the whole depth. The other
+is a flat machine. Over training seeds 0–4:
+
+| model | test accuracy |
+|---|---|
+| `Conv3dTsetlinMachine`, 3 × 3 × 3 window | 1.000 on all five seeds |
+| `ConvTsetlinMachine`, depth as channels | 0.828 – 0.984 |
+| `TsetlinMachine` (1 152 features) | 0.726 – 0.796 |
+
+The stacked model has to learn every shape once per depth offset (six here); the 3D window
+learns it once. The script prints each class's most precise clause slice by slice
+(`#` = must be on, `.` = must be off). The spindle's clause is the lower half of a plus, a dot,
+and the lower half of a plus again, which is a fragment of the spindle that never occurs in a
+3D cross:
+
+```
+clause 0 of 'spindle': fires on 47% of volumes, 100% of them 'spindle'  region={'d': (0, 5), 'y': (0, 9), 'x': (0, 9)}
+  d=0     d=1     d=2
+  |...|   |...|   |...|
+  |.#.|   |...|   |.#.|
+  |###|   |.#.|   |###|
+```
+
+`--plot` saves the same patches with `tt.viz.plot_conv_clauses`, which draws a 3D clause as
+its `kd` slices side by side. With `--position-encoding` accuracy falls to 0.48, the same
+trap as in 2D.
 
 ## Convolutional regression
 
