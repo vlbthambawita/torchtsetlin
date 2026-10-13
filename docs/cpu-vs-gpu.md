@@ -10,9 +10,9 @@ Every number on this page comes from one run of `benchmarks/run_benchmarks.sh` o
 | GPU 0 | NVIDIA GeForce RTX 3090 |
 | GPU 1 | NVIDIA GeForce RTX 3080 |
 | PyTorch | 2.10.0+cu128 / CUDA 12.8 |
-| torchtsetlin | 0.3.0 |
+| torchtsetlin | 0.3.1 |
 | Python | 3.10.11 |
-| measured | 2026-10-12 17:20:49 |
+| measured | 2026-10-12 21:40:39 |
 
 
 !!! note "How to read these"
@@ -28,7 +28,7 @@ Every number on this page comes from one run of `benchmarks/run_benchmarks.sh` o
 ![Throughput vs batch size](assets/benchmarks/throughput-vs-batch.png#only-light)
 ![Throughput vs batch size](assets/benchmarks/throughput-vs-batch_dark.png#only-dark)
 
-One `update()` call touches every automaton in the machine, so its cost depends far more on the size of the machine than on how many examples are in the batch. Feeding the GPU more examples per call is therefore nearly free: training throughput rises from 434 examples/s at batch 1 to 219,825 at batch 4096. At batch 256 the same model trains 88,409 examples/s on the GPU against 408 on the CPU (217×).
+One `update()` call touches every automaton in the machine, so its cost depends far more on the size of the machine than on how many examples are in the batch. Feeding the GPU more examples per call is therefore nearly free: training throughput rises from 427 examples/s at batch 1 to 220,028 at batch 4096. At batch 256 the same model trains 87,869 examples/s on the GPU against 406 on the CPU (216×).
 
 The Noisy-XOR scale machine in the bottom row is the counter-example: 20 clauses over 12 features is less work than a kernel launch, so only past batch 1024 does the GPU pull ahead. Small machines belong on the CPU.
 
@@ -36,68 +36,68 @@ The Noisy-XOR scale machine in the bottom row is the counter-example: 20 clauses
 
     | batch | CPU train ex/s | GPU train ex/s | train speedup | CPU infer ex/s | GPU infer ex/s | infer speedup |
     |---|---|---|---|---|---|---|
-    | 1 | 14 | 434 | 32.0× | 607 | 4,319 | 7.1× |
-    | 2 | 25 | 866 | 34.1× | 3,730 | 8,359 | 2.2× |
-    | 4 | 41 | 1,731 | 42.5× | 5,469 | 16,732 | 3.1× |
-    | 8 | 60 | 3,463 | 57.9× | 9,038 | 34,308 | 3.8× |
-    | 16 | 86 | 6,879 | 79.7× | 12,850 | 68,535 | 5.3× |
-    | 32 | 118 | 13,491 | 114.5× | 11,748 | 135,560 | 11.5× |
-    | 64 | 178 | 25,984 | 146.4× | 22,527 | 266,289 | 11.8× |
-    | 128 | 268 | 49,740 | 185.7× | 31,275 | 530,798 | 17.0× |
-    | 256 | 408 | 88,409 | 216.5× | 40,350 | 976,002 | 24.2× |
-    | 512 | 602 | 133,502 | 221.8× | 47,781 | 980,196 | 20.5× |
-    | 1,024 | 822 | 135,426 | 164.8× | 50,173 | 997,343 | 19.9× |
-    | 2,048 | 1,561 | 162,962 | 104.4× | 42,538 | 1,039,721 | 24.4× |
-    | 4,096 | 3,574 | 219,825 | 61.5× | 37,102 | 1,058,967 | 28.5× |
+    | 1 | 14 | 427 | 30.5× | 598 | 4,196 | 7.0× |
+    | 2 | 25 | 863 | 34.2× | 4,704 | 8,182 | 1.7× |
+    | 4 | 40 | 1,725 | 42.8× | 5,791 | 16,432 | 2.8× |
+    | 8 | 60 | 3,441 | 57.3× | 9,568 | 33,415 | 3.5× |
+    | 16 | 87 | 6,844 | 78.9× | 10,820 | 66,762 | 6.2× |
+    | 32 | 118 | 13,456 | 114.1× | 15,346 | 132,358 | 8.6× |
+    | 64 | 177 | 25,666 | 144.8× | 25,607 | 254,309 | 9.9× |
+    | 128 | 268 | 49,143 | 183.7× | 37,049 | 507,533 | 13.7× |
+    | 256 | 406 | 87,869 | 216.5× | 44,836 | 1,036,162 | 23.1× |
+    | 512 | 600 | 133,736 | 222.7× | 49,559 | 982,200 | 19.8× |
+    | 1,024 | 825 | 135,655 | 164.3× | 50,099 | 1,012,965 | 20.2× |
+    | 2,048 | 1,562 | 163,199 | 104.5× | 38,611 | 1,045,744 | 27.1× |
+    | 4,096 | 3,572 | 220,028 | 61.6× | 31,372 | 1,059,242 | 33.8× |
 
 ??? abstract "Batch size — Noisy-XOR scale (12 features, 10 clauses/class)"
 
     | batch | CPU train ex/s | GPU train ex/s | train speedup | CPU infer ex/s | GPU infer ex/s | infer speedup |
     |---|---|---|---|---|---|---|
-    | 1 | 2,027 | 876 | 0.4× | 9,078 | 4,344 | 0.5× |
-    | 4 | 7,804 | 3,562 | 0.5× | 33,581 | 17,316 | 0.5× |
-    | 16 | 28,775 | 14,127 | 0.5× | 129,374 | 68,716 | 0.5× |
-    | 64 | 104,052 | 55,547 | 0.5× | 498,255 | 272,231 | 0.5× |
-    | 256 | 348,051 | 221,235 | 0.6× | 1,701,739 | 1,089,140 | 0.6× |
-    | 1,024 | 837,164 | 885,126 | 1.1× | 4,404,556 | 4,344,685 | 1.0× |
+    | 1 | 2,005 | 856 | 0.4× | 9,060 | 4,243 | 0.5× |
+    | 4 | 7,668 | 3,425 | 0.4× | 32,932 | 16,843 | 0.5× |
+    | 16 | 27,988 | 13,306 | 0.5× | 127,638 | 66,415 | 0.5× |
+    | 64 | 101,867 | 53,237 | 0.5× | 485,903 | 261,939 | 0.5× |
+    | 256 | 342,488 | 212,026 | 0.6× | 1,661,668 | 1,043,140 | 0.6× |
+    | 1,024 | 814,544 | 844,508 | 1.0× | 4,119,959 | 4,189,408 | 1.0× |
 
 ## How much the GPU buys you
 
 ![How much the GPU buys you](assets/benchmarks/gpu-speedup.png#only-light)
 ![How much the GPU buys you](assets/benchmarks/gpu-speedup_dark.png#only-dark)
 
-The speedup is not one number. It grows with batch size because the CPU pays the per-clause cost serially while the GPU hides it, peaks at about 222× around batch 512, and falls back to 62× at batch 4096, where the CPU finally amortises its own vectorisation over a long batch. Inference behaves differently again: the CPU forward pass is already cheap, so the gap there tops out at 29× — worth having, but not the same kind of difference.
+The speedup is not one number. It grows with batch size because the CPU pays the per-clause cost serially while the GPU hides it, peaks at about 223× around batch 512, and falls back to 62× at batch 4096, where the CPU finally amortises its own vectorisation over a long batch. Inference behaves differently again: the CPU forward pass is already cheap, so the gap there tops out at 34× — worth having, but not the same kind of difference.
 
 ## Throughput vs model size
 
 ![Throughput vs model size](assets/benchmarks/throughput-vs-model-size.png#only-light)
 ![Throughput vs model size](assets/benchmarks/throughput-vs-model-size_dark.png#only-dark)
 
-Both axes cost the same thing — the update is `n_clauses × 2 × n_features` element-wise work — so both curves fall roughly as `1/x`. The CPU falls off immediately; the GPU stays flat until the machine is big enough to fill it, which is why the gap *widens* with model size: 52× at 50 clauses/class against 272× at 4000; 71× at 128 features against 287× at 8192. Big machines are exactly the ones worth moving to a GPU.
+Both axes cost the same thing — the update is `n_clauses × 2 × n_features` element-wise work — so both curves fall roughly as `1/x`. The CPU falls off immediately; the GPU stays flat until the machine is big enough to fill it, which is why the gap *widens* with model size: 50× at 50 clauses/class against 273× at 4000; 69× at 128 features against 287× at 8192. Big machines are exactly the ones worth moving to a GPU.
 
 ??? abstract "Clause budget (784 features, batch 256)"
 
     | clauses/class | CPU train ex/s | GPU train ex/s | train speedup | CPU infer ex/s | GPU infer ex/s | infer speedup |
     |---|---|---|---|---|---|---|
-    | 50 | 4,297 | 222,144 | 51.7× | 272,321 | 1,060,763 | 3.9× |
-    | 100 | 2,130 | 196,529 | 92.3× | 200,299 | 1,059,681 | 5.3× |
-    | 250 | 850 | 132,949 | 156.4× | 100,482 | 1,064,366 | 10.6× |
-    | 500 | 407 | 89,182 | 219.3× | 43,554 | 1,008,095 | 23.1× |
-    | 1,000 | 195 | 50,129 | 257.7× | 16,104 | 532,965 | 33.1× |
-    | 2,000 | 96 | 25,877 | 268.4× | 5,232 | 259,517 | 49.6× |
-    | 4,000 | 48 | 13,143 | 271.8× | 2,364 | 132,215 | 55.9× |
+    | 50 | 4,317 | 214,398 | 49.7× | 270,425 | 1,035,221 | 3.8× |
+    | 100 | 2,171 | 193,714 | 89.2× | 198,824 | 1,033,967 | 5.2× |
+    | 250 | 843 | 131,802 | 156.3× | 101,325 | 1,041,135 | 10.3× |
+    | 500 | 411 | 88,661 | 215.9× | 45,514 | 1,002,631 | 22.0× |
+    | 1,000 | 196 | 50,089 | 255.6× | 16,232 | 536,367 | 33.0× |
+    | 2,000 | 96 | 25,917 | 268.6× | 5,185 | 260,242 | 50.2× |
+    | 4,000 | 48 | 13,162 | 272.7× | 2,176 | 132,661 | 61.0× |
 
 ??? abstract "Feature count (500 clauses/class, batch 256)"
 
     | features | CPU train ex/s | GPU train ex/s | train speedup | CPU infer ex/s | GPU infer ex/s | infer speedup |
     |---|---|---|---|---|---|---|
-    | 128 | 3,012 | 212,644 | 70.6× | 175,836 | 1,093,778 | 6.2× |
-    | 256 | 1,372 | 164,964 | 120.2× | 111,181 | 1,081,265 | 9.7× |
-    | 512 | 618 | 116,100 | 188.0× | 62,623 | 1,082,033 | 17.3× |
-    | 1,024 | 301 | 73,793 | 244.8× | 33,448 | 789,768 | 23.6× |
-    | 2,048 | 151 | 40,115 | 266.0× | 18,281 | 414,439 | 22.7× |
-    | 4,096 | 76 | 21,289 | 279.9× | 8,680 | 216,221 | 24.9× |
-    | 8,192 | 37 | 10,725 | 286.6× | 1,509 | 115,659 | 76.7× |
+    | 128 | 3,035 | 210,639 | 69.4× | 185,183 | 1,076,020 | 5.8× |
+    | 256 | 1,380 | 164,441 | 119.2× | 110,134 | 1,059,144 | 9.6× |
+    | 512 | 624 | 115,630 | 185.2× | 55,644 | 1,065,061 | 19.1× |
+    | 1,024 | 304 | 73,440 | 241.5× | 33,927 | 806,665 | 23.8× |
+    | 2,048 | 152 | 39,913 | 262.6× | 18,598 | 411,893 | 22.1× |
+    | 4,096 | 76 | 21,310 | 279.3× | 8,715 | 217,643 | 25.0× |
+    | 8,192 | 37 | 10,721 | 287.3× | 1,565 | 116,496 | 74.4× |
 
 ## The model zoo
 
@@ -110,85 +110,85 @@ Weighted and coalesced variants cost about what the plain machine costs: they ch
 
     | model | CPU train ex/s | GPU train ex/s | train speedup | CPU infer ex/s | GPU infer ex/s | infer speedup | GPU peak memory |
     |---|---|---|---|---|---|---|---|
-    | TsetlinMachine | 268 | 49,323 | 184× | 38,947 | 514,720 | 13× | 262 MB |
-    | TsetlinMachine (weighted) | 268 | 49,016 | 183× | 38,871 | 496,297 | 13× | 262 MB |
-    | CoalescedTsetlinMachine | 179 | 43,810 | 245× | 33,236 | 536,311 | 16× | 262 MB |
-    | RegressionTsetlinMachine | 214 | 56,923 | 266× | 37,798 | 589,188 | 16× | 262 MB |
-    | ConvTsetlinMachine | 550 | 15,348 | 28× | 691 | 24,778 | 36× | 182 MB |
-    | ConvCoalescedTsetlinMachine | 407 | 15,167 | 37× | 683 | 24,611 | 36× | 225 MB |
+    | TsetlinMachine | 269 | 48,433 | 180× | 31,087 | 490,091 | 16× | 262 MB |
+    | TsetlinMachine (weighted) | 268 | 48,228 | 180× | 32,101 | 451,039 | 14× | 262 MB |
+    | CoalescedTsetlinMachine | 178 | 42,684 | 240× | 34,131 | 493,050 | 14× | 262 MB |
+    | RegressionTsetlinMachine | 215 | 56,935 | 265× | 42,894 | 541,666 | 13× | 262 MB |
+    | ConvTsetlinMachine | 559 | 14,722 | 26× | 710 | 24,822 | 35× | 182 MB |
+    | ConvCoalescedTsetlinMachine | 393 | 15,116 | 38× | 702 | 24,627 | 35× | 225 MB |
 
 ## Where an update goes
 
 ![Where an update goes](assets/benchmarks/update-cost-breakdown.png#only-light)
 ![Where an update goes](assets/benchmarks/update-cost-breakdown_dark.png#only-dark)
 
-`apply_feedback` — the stochastic increment/decrement of the whole `(n_clauses, 2F)` automaton state — is the expensive part of an update: on the CPU it is 92 % of the 626.8 ms call; on the GPU it is 42 % of the 2.8 ms call. A standalone `torch.binomial` draw of the same `(C, 2F)` shape costs 265.81 ms on the CPU and 0.22 ms on the GPU — the single most expensive op in the commit. Everything before the commit (encoding, clause evaluation, the vote sums and the feedback count matmuls) is comparatively cheap. That is also why batching pays: a batched update draws once per commit, a sequential one draws once per example.
+`apply_feedback` — the stochastic increment/decrement of the whole `(n_clauses, 2F)` automaton state — is the expensive part of an update: on the CPU it is 92 % of the 624.1 ms call; on the GPU it is 42 % of the 2.8 ms call. A standalone `torch.binomial` draw of the same `(C, 2F)` shape costs 266.48 ms on the CPU and 0.22 ms on the GPU — the single most expensive op in the commit. Everything before the commit (encoding, clause evaluation, the vote sums and the feedback count matmuls) is comparatively cheap. That is also why batching pays: a batched update draws once per commit, a sequential one draws once per example.
 
 ??? abstract "Update cost breakdown (5 000 clauses, 784 features, batch 256)"
 
     | stage | cpu (ms) | cuda:0 (ms) |
     |---|---|---|
-    | encode | 0.062 | 0.035 |
-    | evaluate | 5.524 | 0.208 |
-    | votes+select | 7.389 | 0.477 |
-    | feedback_counts | 14.683 | 0.675 |
-    | accumulator_alloc | 16.395 | 0.113 |
-    | coerce_targets | 0.015 | 0.063 |
-    | apply_feedback | 576.668 | 1.178 |
-    | refresh_include | 15.261 | 0.264 |
-    | commit | 591.943 | 1.506 |
-    | torch.binomial (C x 2F) | 265.808 | 0.217 |
-    | **update() total** | **626.797** | **2.802** |
+    | encode | 0.080 | 0.037 |
+    | evaluate | 5.327 | 0.208 |
+    | votes+select | 8.032 | 0.501 |
+    | feedback_counts | 14.199 | 0.668 |
+    | accumulator_alloc | 15.683 | 0.114 |
+    | coerce_targets | 0.015 | 0.069 |
+    | apply_feedback | 574.483 | 1.210 |
+    | refresh_include | 14.542 | 0.267 |
+    | commit | 589.040 | 1.545 |
+    | torch.binomial (C x 2F) | 266.475 | 0.216 |
+    | **update() total** | **624.090** | **2.849** |
 
 ## CPU thread scaling
 
 ![CPU thread scaling](assets/benchmarks/cpu-threads.png#only-light)
 ![CPU thread scaling](assets/benchmarks/cpu-threads_dark.png#only-dark)
 
-More CPU threads buy surprisingly little in training: 1.4× going from 1 to 32 threads. The batched update is a chain of large element-wise ops over the state, and the binomial draw that dominates it does not thread. Inference scales much better (8.8× over the same range): the forward pass is one big matmul-shaped reduction. If a CPU run is too slow, the lever is the clause budget or the batch size, not `torch.set_num_threads`.
+More CPU threads buy surprisingly little in training: 1.3× going from 1 to 32 threads. The batched update is a chain of large element-wise ops over the state, and the binomial draw that dominates it does not thread. Inference scales much better (10.8× over the same range): the forward pass is one big matmul-shaped reduction. If a CPU run is too slow, the lever is the clause budget or the batch size, not `torch.set_num_threads`.
 
 ??? abstract "CPU thread scaling (5 000 clauses, 784 features, batch 256)"
 
     | threads | train ex/s | infer ex/s |
     |---|---|---|
-    | 1 | 288 | 4,452 |
-    | 2 | 342 | 7,537 |
-    | 4 | 369 | 12,881 |
-    | 8 | 395 | 26,670 |
-    | 16 | 407 | 42,968 |
-    | 32 | 396 | 39,286 |
+    | 1 | 288 | 4,422 |
+    | 2 | 341 | 7,608 |
+    | 4 | 370 | 13,011 |
+    | 8 | 397 | 28,373 |
+    | 16 | 409 | 46,742 |
+    | 32 | 376 | 47,690 |
 
 ## Batched vs sequential feedback
 
 ![Batched vs sequential feedback](assets/benchmarks/feedback-mode.png#only-light)
 ![Batched vs sequential feedback](assets/benchmarks/feedback-mode_dark.png#only-dark)
 
-`feedback_mode="sequential"` is the exact per-example algorithm: it commits once per example, so a mini-batch of 32 pays 32 commits instead of one. Measured at batch 32 that is 7-28× slower than the batched update, depending on the model scale and the device. Batching is the default for that reason — but it is an approximation, and its fidelity degrades as the batch grows. See [Batched vs sequential feedback](concepts/batching.md) for the accuracy side of this trade.
+`feedback_mode="sequential"` is the exact per-example algorithm: it commits once per example, so a mini-batch of 32 pays 32 commits instead of one. Measured at batch 32 that is 7-29× slower than the batched update, depending on the model scale and the device. Batching is the default for that reason — but it is an approximation, and its fidelity degrades as the batch grows. See [Batched vs sequential feedback](concepts/batching.md) for the accuracy side of this trade.
 
 ??? abstract "Batched vs sequential feedback"
 
     | scale | feedback_mode | batch | device | examples/s | ms / update call |
     |---|---|---|---|---|---|
-    | mnist-1k | batch | 1 | cpu | 110 | 9.09 |
-    | mnist-1k | batch | 1 | cuda:0 | 855 | 1.17 |
-    | mnist-1k | batch | 32 | cpu | 675 | 47.38 |
-    | mnist-1k | batch | 32 | cuda:0 | 26,662 | 1.20 |
-    | mnist-1k | batch | 256 | cpu | 2,167 | 118.16 |
-    | mnist-1k | batch | 256 | cuda:0 | 197,313 | 1.30 |
-    | mnist-1k | sequential | 1 | cpu | 112 | 8.89 |
-    | mnist-1k | sequential | 1 | cuda:0 | 863 | 1.16 |
-    | mnist-1k | sequential | 32 | cpu | 93 | 345.63 |
-    | mnist-1k | sequential | 32 | cuda:0 | 989 | 32.35 |
-    | xor | batch | 1 | cpu | 2,012 | 0.50 |
-    | xor | batch | 1 | cuda:0 | 881 | 1.13 |
-    | xor | batch | 32 | cpu | 52,113 | 0.61 |
-    | xor | batch | 32 | cuda:0 | 28,080 | 1.14 |
-    | xor | batch | 256 | cpu | 329,822 | 0.78 |
-    | xor | batch | 256 | cuda:0 | 224,628 | 1.14 |
-    | xor | sequential | 1 | cpu | 1,979 | 0.51 |
-    | xor | sequential | 1 | cuda:0 | 887 | 1.13 |
-    | xor | sequential | 32 | cpu | 2,269 | 14.10 |
-    | xor | sequential | 32 | cuda:0 | 998 | 32.06 |
+    | mnist-1k | batch | 1 | cpu | 109 | 9.18 |
+    | mnist-1k | batch | 1 | cuda:0 | 829 | 1.21 |
+    | mnist-1k | batch | 32 | cpu | 678 | 47.18 |
+    | mnist-1k | batch | 32 | cuda:0 | 25,939 | 1.23 |
+    | mnist-1k | batch | 256 | cpu | 2,171 | 117.93 |
+    | mnist-1k | batch | 256 | cuda:0 | 192,806 | 1.33 |
+    | mnist-1k | sequential | 1 | cpu | 113 | 8.89 |
+    | mnist-1k | sequential | 1 | cuda:0 | 831 | 1.20 |
+    | mnist-1k | sequential | 32 | cpu | 92 | 346.36 |
+    | mnist-1k | sequential | 32 | cuda:0 | 957 | 33.46 |
+    | xor | batch | 1 | cpu | 1,982 | 0.50 |
+    | xor | batch | 1 | cuda:0 | 869 | 1.15 |
+    | xor | batch | 32 | cpu | 53,831 | 0.59 |
+    | xor | batch | 32 | cuda:0 | 27,736 | 1.15 |
+    | xor | batch | 256 | cpu | 339,139 | 0.75 |
+    | xor | batch | 256 | cuda:0 | 221,460 | 1.16 |
+    | xor | sequential | 1 | cpu | 2,007 | 0.50 |
+    | xor | sequential | 1 | cuda:0 | 873 | 1.15 |
+    | xor | sequential | 32 | cpu | 2,234 | 14.33 |
+    | xor | sequential | 32 | cuda:0 | 965 | 33.16 |
 
 ## Where the data lives
 
@@ -198,18 +198,18 @@ Keeping the Boolean dataset in host memory and copying each mini-batch across co
 
     | device | batch | dataset lives on | examples/s | ms / update |
     |---|---|---|---|---|
-    | cpu | 32 | device | 117 | 272.68 |
-    | cpu | 32 | host | 118 | 271.68 |
-    | cpu | 256 | device | 406 | 631.26 |
-    | cpu | 256 | host | 408 | 627.34 |
-    | cpu | 2048 | device | 1,544 | 1,326.40 |
-    | cpu | 2048 | host | 1,553 | 1,318.62 |
-    | cuda:0 | 32 | device | 13,496 | 2.37 |
-    | cuda:0 | 32 | host | 13,454 | 2.38 |
-    | cuda:0 | 256 | device | 89,091 | 2.87 |
-    | cuda:0 | 256 | host | 88,214 | 2.90 |
-    | cuda:0 | 2048 | device | 163,871 | 12.50 |
-    | cuda:0 | 2048 | host | 162,128 | 12.63 |
+    | cpu | 32 | device | 119 | 269.80 |
+    | cpu | 32 | host | 118 | 270.09 |
+    | cpu | 256 | device | 407 | 629.42 |
+    | cpu | 256 | host | 410 | 625.02 |
+    | cpu | 2048 | device | 1,530 | 1,338.58 |
+    | cpu | 2048 | host | 1,550 | 1,321.30 |
+    | cuda:0 | 32 | device | 13,358 | 2.40 |
+    | cuda:0 | 32 | host | 13,379 | 2.39 |
+    | cuda:0 | 256 | device | 88,270 | 2.90 |
+    | cuda:0 | 256 | host | 87,406 | 2.93 |
+    | cuda:0 | 2048 | device | 164,467 | 12.45 |
+    | cuda:0 | 2048 | host | 162,524 | 12.60 |
 
 ## Dense segmentation
 
@@ -218,21 +218,21 @@ Keeping the Boolean dataset in host memory and copying each mini-batch across co
 
 Dense prediction evaluates one patch per **pixel**, so throughput is quoted in pixels per second rather than examples per second — one 32×32 image is 1 024 examples.
 
-- A 3×3 dense model on 32×32 inputs runs at 35,062 px/s training and 1,168,161 px/s predicting on CPU — prediction is roughly 33× cheaper, because it never draws feedback or touches the automata.
-- `patches_per_commit` is the price of fidelity: committing once per batch reaches 152,978 px/s against 35,062 at the default 128, a 4.4× speedup that costs real accuracy (see the segmentation guide's ablation).
+- A 3×3 dense model on 32×32 inputs runs at 34,942 px/s training and 1,092,082 px/s predicting on CPU — prediction is roughly 31× cheaper, because it never draws feedback or touches the automata.
+- `patches_per_commit` is the price of fidelity: committing once per batch reaches 147,761 px/s against 34,942 at the default 128, a 4.2× speedup that costs real accuracy (see the segmentation guide's ablation).
 
 ??? abstract "Dense segmentation (4 planes, 4 classes, batch 8 images)"
 
     | configuration | patches/commit | CPU train px/s | GPU train px/s | train speedup | CPU infer px/s | GPU infer px/s | infer speedup |
     |---|---|---|---|---|---|---|---|
-    | dense 3x3 32px | 128 | 35,062 | 120,483 | 3× | 1,168,161 | 24,033,611 | 21× |
-    | dense 5x5 32px | 128 | 16,307 | 121,884 | 7× | 868,853 | 23,677,635 | 27× |
-    | dense 3x3 64px | 128 | 35,317 | 121,988 | 3× | 758,268 | 47,635,221 | 63× |
-    | dense 3x3 32px + position | 128 | 27,527 | 121,877 | 4× | 1,084,049 | 19,955,657 | 18× |
-    | dense 3x3 32px 400 clauses | 128 | 11,799 | 121,492 | 10× | 197,546 | 13,462,205 | 68× |
-    | dense 3x3 32px ppc=32 | 32 | 15,328 | 30,443 | 2× | 1,178,256 | 23,788,438 | 20× |
-    | dense 3x3 32px ppc=512 | 512 | 72,302 | 467,149 | 6× | 1,212,365 | 23,742,040 | 20× |
-    | dense 3x3 32px ppc=None | all | 152,978 | 5,830,281 | 38× | 1,138,703 | 23,717,435 | 21× |
+    | dense 3x3 32px | 128 | 34,942 | 117,649 | 3× | 1,092,082 | 23,409,547 | 21× |
+    | dense 5x5 32px | 128 | 15,909 | 117,856 | 7× | 913,850 | 23,320,156 | 26× |
+    | dense 3x3 64px | 128 | 35,587 | 113,464 | 3× | 756,434 | 48,090,961 | 64× |
+    | dense 3x3 32px + position | 128 | 27,498 | 113,179 | 4× | 1,082,538 | 19,173,991 | 18× |
+    | dense 3x3 32px 400 clauses | 128 | 11,843 | 112,511 | 10× | 200,035 | 13,487,900 | 67× |
+    | dense 3x3 32px ppc=32 | 32 | 15,467 | 29,651 | 2× | 1,171,982 | 23,386,595 | 20× |
+    | dense 3x3 32px ppc=512 | 512 | 72,166 | 439,624 | 6× | 1,179,878 | 22,758,744 | 19× |
+    | dense 3x3 32px ppc=None | all | 147,761 | 5,791,600 | 39× | 1,109,169 | 23,533,208 | 21× |
 
 ## 3D convolution
 
@@ -241,20 +241,20 @@ Dense prediction evaluates one patch per **pixel**, so throughput is quoted in p
 
 A 3D convolutional machine evaluates every clause at every window position of a volume, so the cost scales with the number of positions `P = Pd·Ph·Pw`. Throughput is quoted in volumes per second.
 
-- On GPU (RTX 3090), a cardiac-sized 12×64×64 volume with a 3×7×7 window has 33,640 window positions and trains at 649.5 volumes/s; an in-plane stride of 2 cuts that to 8,410 positions and runs at 1,963.1 volumes/s (3.0×).
-- With 2 000 clauses one such volume no longer fits `max_chunk_elements`, so the patch axis is split automatically into blocks of 18,982 positions: peak memory 369 MB at 171.36 volumes/s, against 450 MB at 187.05 volumes/s when it is forced into one block. The output is identical (the OR over patches and the random-patch draw are exact under the split); with fewer clauses, ordinary batch chunking already respects the budget and blocking buys nothing.
+- On GPU (RTX 3090), a cardiac-sized 12×64×64 volume with a 3×7×7 window has 33,640 window positions and trains at 655.7 volumes/s; an in-plane stride of 2 cuts that to 8,410 positions and runs at 1,991.5 volumes/s (3.0×).
+- With 2 000 clauses one such volume no longer fits `max_chunk_elements`, so the patch axis is split automatically into blocks of 18,982 positions: peak memory 369 MB at 170.64 volumes/s, against 450 MB at 185.45 volumes/s when it is forced into one block. The output is identical (the OR over patches and the random-patch draw are exact under the split); with fewer clauses, ordinary batch chunking already respects the budget and blocking buys nothing.
 
 ??? abstract "3D convolution (1 plane; 2 x 100 clauses, batch 4 — or 10 x 200, batch 2)"
 
     | configuration | patches P | patches per block | CPU train vol/s | GPU train vol/s | train speedup | CPU infer vol/s | GPU infer vol/s | infer speedup | GPU peak memory (train) |
     |---|---|---|---|---|---|---|---|---|---|
-    | 8x32x32, 3x5x5 | 4,704 | 4,704 | 153.3 | 2,445.1 | 16× | 187.0 | 10,024.3 | 54× | 67 MB |
-    | 16x32x32, 3x5x5 | 10,976 | 10,976 | 62.4 | 2,021.1 | 32× | 64.8 | 4,751.2 | 73× | 147 MB |
-    | 12x64x64, 3x7x7, stride (1,2,2) | 8,410 | 8,410 | 61.8 | 1,963.1 | 32× | 63.8 | 4,441.1 | 70× | 153 MB |
-    | 12x64x64, 3x7x7 | 33,640 | 33,640 | 12.2 | 649.5 | 53× | 12.1 | 898.4 | 75× | 533 MB |
-    | 12x64x64, 3x7x7, 2000 clauses, one block | 33,640 | 33,640 | 4.3 | 187.1 | 44× | 4.4 | 206.5 | 47× | 450 MB |
-    | 12x64x64, 3x7x7, 2000 clauses, auto blocks | 33,640 | 18,982 | 4.0 | 171.4 | 43× | 4.5 | 198.3 | 44× | 369 MB |
-    | 12x64x64, 3x7x7, 2000 clauses, patches_per_chunk=2048 | 33,640 | 2,048 | 5.2 | 133.4 | 26× | 5.9 | 177.5 | 30× | 365 MB |
+    | 8x32x32, 3x5x5 | 4,704 | 4,704 | 166.1 | 2,451.8 | 15× | 196.8 | 10,209.2 | 52× | 67 MB |
+    | 16x32x32, 3x5x5 | 10,976 | 10,976 | 64.1 | 2,054.6 | 32× | 69.2 | 4,760.6 | 69× | 147 MB |
+    | 12x64x64, 3x7x7, stride (1,2,2) | 8,410 | 8,410 | 61.6 | 1,991.5 | 32× | 63.6 | 4,422.9 | 70× | 153 MB |
+    | 12x64x64, 3x7x7 | 33,640 | 33,640 | 12.4 | 655.7 | 53× | 12.3 | 897.7 | 73× | 533 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, one block | 33,640 | 33,640 | 4.5 | 185.4 | 42× | 4.5 | 205.6 | 46× | 450 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, auto blocks | 33,640 | 18,982 | 4.1 | 170.6 | 41× | 4.4 | 197.9 | 45× | 369 MB |
+    | 12x64x64, 3x7x7, 2000 clauses, patches_per_chunk=2048 | 33,640 | 2,048 | 5.3 | 134.6 | 25× | 6.0 | 176.9 | 29× | 365 MB |
 
 ## End to end: MNIST
 
@@ -263,8 +263,8 @@ A 3D convolutional machine evaluates every clause at every window position of a 
 
 Synthetic micro-benchmarks flatter whichever device wins the micro-benchmark, so here is the whole thing end to end, `Trainer.fit` included:
 
-- **ConvTsetlinMachine 200/class 10x10** — 0.7 s/epoch on the GPU vs 17 s on the CPU (24×), 80.4% test accuracy
-- **TsetlinMachine 500/class** — 1.5 s/epoch on the GPU vs 114 s on the CPU (74×), 95.5% test accuracy
+- **ConvTsetlinMachine 200/class 10x10** — 0.7 s/epoch on the GPU vs 15 s on the CPU (22×), 80.4% test accuracy
+- **TsetlinMachine 500/class** — 1.5 s/epoch on the GPU vs 113 s on the CPU (74×), 95.5% test accuracy
 
 Accuracy matches across devices to within run-to-run noise, as it should — only the wall clock moves. These are short runs at a modest clause budget; see [Benchmarks](benchmarks.md) for what longer runs reach.
 
@@ -272,10 +272,10 @@ Accuracy matches across devices to within run-to-run noise, as it should — onl
 
     | model | device | train examples | epochs | s / epoch | examples/s | test accuracy | GPU peak memory |
     |---|---|---|---|---|---|---|---|
-    | ConvTsetlinMachine 200/class 10x10 | cpu | 10,000 | 1 | 16.68 | 600 | 0.8470 | — |
-    | ConvTsetlinMachine 200/class 10x10 | cuda:0 | 10,000 | 1 | 0.70 | 14,214 | 0.8035 | 322 MB |
-    | TsetlinMachine 500/class | cpu | 60,000 | 3 | 113.78 | 527 | 0.9542 | — |
-    | TsetlinMachine 500/class | cuda:0 | 60,000 | 3 | 1.53 | 39,165 | 0.9548 | 316 MB |
+    | ConvTsetlinMachine 200/class 10x10 | cpu | 10,000 | 1 | 15.49 | 645 | 0.8470 | — |
+    | ConvTsetlinMachine 200/class 10x10 | cuda:0 | 10,000 | 1 | 0.70 | 14,196 | 0.8035 | 322 MB |
+    | TsetlinMachine 500/class | cpu | 60,000 | 3 | 113.45 | 529 | 0.9542 | — |
+    | TsetlinMachine 500/class | cuda:0 | 60,000 | 3 | 1.54 | 38,917 | 0.9548 | 316 MB |
 
 ## Reproducing
 
