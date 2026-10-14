@@ -1,0 +1,370 @@
+{
+ "parts": {
+  "diag": "| model | record | val mIoU (128 grid) | val mIoU (native) |\n|---|---|---|---|\n| B0 all-background | `E0_kvasir_B0_majority` | 0.425 | 0.427 |\n| B5 local CNN, 3\u00d73 RF, B1 planes | `E2_kvasir_B5_local_bool_t0` | 0.426 | 0.427 |\n| B1 dense TM, 3\u00d73 patch | `E0_kvasir_B1` | 0.483 | 0.489 |\n| B2 dense TM, pyramid (1,2,4) | `E2_kvasir_B2_t07` | 0.504 | 0.512 |\n| dense TM, wide OR pyramid (1\u202632) | `E2_kvasir_CTX_or_wide` | 0.506 | 0.516 |\n| linear, wide OR planes | `E2_kvasir_CTX_linear_or_wide` | 0.544 | \u2013 |\n| dense TM, wide OR, sampled pixels | `E1_kvasir_S_or_wide` | 0.555 | 0.568 |\n| U-Net on wide OR Boolean planes | `E2_kvasir_CTX_unet_bool_or_wide` | 0.687 | 0.686 |\n| U-Net on RGB (best of 12) | `E2_kvasir_B4_t11` | 0.776 | 0.789 |\n\nPixel-level check on the same wide-OR Boolean vectors (`DIAG_pixels_or_wide`, 60000 sampled training pixels, 648 features): logistic regression val mIoU 0.529, gradient boosting 0.560 (train 0.746), flat TM best epoch 0.571.\n\nVote clipping at prediction time changes 0.000\u20130.016 of pixel decisions; |mIoU(clipped) \u2212 mIoU(unclipped)| \u2264 0.003 (`DIAG_ties_*`).\n",
+  "h1s": "| order (8-image chunk) | q = 32 | q = 128 | q = 512 |\n|---|---|---|---|\n| raster | 0.968 \u00b1 0.004 | 0.919 \u00b1 0.005 | 0.825 \u00b1 0.008 |\n| perm | 0.974 \u00b1 0.001 | 0.974 \u00b1 0.001 | 0.932 \u00b1 0.012 |\n| disperse | 0.972 \u00b1 0.002 | 0.975 \u00b1 0.003 | 0.902 \u00b1 0.005 |\n\n| H1 sampling arm (D0 scenes, 3 seeds) | val mIoU | train min (contended) |\n|---|---|---|\n| sample 256 px/img, a=0.0, b=0.0 | 0.971 \u00b1 0.001 | 4.0 \u00b1 0.0 |\n| sample 256 px/img, a=0.5, b=0.0 | 0.970 \u00b1 0.004 | 3.9 \u00b1 0.0 |\n| sample 256 px/img, a=0.0, b=0.5 | 0.971 \u00b1 0.002 | 3.9 \u00b1 0.0 |\n| sample 256 px/img, a=0.25, b=0.25 | 0.972 \u00b1 0.001 | 4.0 \u00b1 0.0 |\n| all pixels, perm, q=128 | 0.974 \u00b1 0.001 | 10.2 \u00b1 0.0 |\n| all pixels + class_feedback_p (balanced) | 0.952 \u00b1 0.003 | 14.0 \u00b1 0.0 |\n",
+  "h1k": "| arm (Kvasir, 1 seed) | record | val mIoU 128 | val mIoU native | pixels fed (M) | train min |\n|---|---|---|---|---|---|\n| all pixels, raster, q=128 (B2 features) | `E1_kvasir_H1_raster_q128` | 0.464 | \u2013 | 100.1 | 58 |\n| all pixels, perm within 1 image, q=128 | `E1_kvasir_H1_perm_q128` | 0.486 | \u2013 | 100.1 | 58 |\n| all pixels, raster, q=512 | `E1_kvasir_H1_raster_q512` | 0.497 | \u2013 | 100.1 | 25 |\n| all pixels, perm within 1 image, q=512 | `E1_kvasir_H1_perm_q512` | 0.483 | \u2013 | 100.1 | 25 |\n| all pixels, raster, q=128 (wide OR) | `E2_kvasir_CTX_or_wide` | 0.506 | 0.516 | 100.1 | 109 |\n| all pixels, perm across 8 images, q=128 (wide OR) | `E1_kvasir_H1x_xperm8_q128_r3` | 0.526 | 0.532 | 100.1 | 166 |\n| all pixels, dispersed across 8 images (wide OR) | `E1_kvasir_H1x_disperse8_q128_r3` | 0.519 | 0.524 | 100.1 | 166 |\n| sampled 512/img, a=b=0, q=32, 16-img pool | `E1_kvasir_H1x_samp512_a0.0_b0.0_q32` | 0.556 | 0.569 | 7.2 | 38 |\n| sampled 512/img, a=b=0, q=32, 1-img pool | `E1_kvasir_H1x_samp512_a0.0_b0.0_q32_1img` | 0.552 | 0.561 | 7.2 | 40 |\n| sampled 512/img, a=b=0, q=128 | `E1_kvasir_H1x_samp512_a0.0_b0.0_q128_r2` | 0.552 | 0.563 | 7.2 | 11 |\n| sampled 512/img, a=b=0.25, q=32 | `E1_kvasir_H1x_samp512_a0.25_b0.25_q32_r2` | 0.551 | 0.562 | 7.2 | 44 |\n| sampled 512/img, a=b=0.25, q=128 | `E1_kvasir_H1x_samp512_a0.25_b0.25_q128_r2` | 0.555 | 0.568 | 7.2 | 10 |\n| sampled 512/img, class mix a=0.5, q=32 | `E1_kvasir_H1x_samp512_a0.5_b0.0_q32_r2` | 0.566 | 0.576 | 7.2 | 55 |\n| sampled 512/img, boundary mix b=0.5, q=32 | `E1_kvasir_H1x_samp512_a0.0_b0.5_q32_r2` | 0.558 | 0.567 | 7.2 | 59 |\n| sampled 2048/img, a=b=0, q=128 | `E1_kvasir_H1x_samp2048_a0.0_b0.0_q128_r2` | 0.535 | 0.548 | 14.3 | 40 |\n",
+  "h2s": "| D0 scenes arm (perm, q=128) | val mIoU | seeds |\n|---|---|---|\n| OR pyramid (1,2,4) [B2 features] | 0.974 \u00b1 0.001 | 3 |\n| AND pyramid | 0.969 \u00b1 0.001 | 3 |\n| occupancy \u2265 0.5 | 0.967 \u00b1 0.002 | 3 |\n| occupancy {0.25, 0.5, 0.75} | 0.973 \u00b1 0.004 | 3 |\n| occupancy \u00d73, clauses cut to equal 2FC | 0.955 \u00b1 0.005 | 3 |\n| OR pyramid + contrast literals | 0.995 \u00b1 0.000 | 3 |\n| \u2026 contrast, clauses cut to equal 2FC | 0.993 \u00b1 0.000 | 3 |\n| single 5\u00d75 patch (no pyramid) | 0.950 \u00b1 0.004 | 3 |\n| 3\u00d73 patch + extra thermometer levels (= B2 F) | 0.957 \u00b1 0.002 | 3 |\n| linear on OR pyramid planes | 0.901 \u00b1 0.003 | 3 |\n| linear on occupancy planes | 0.933 \u00b1 0.002 | 3 |\n| linear on OR + contrast planes | 0.984 \u00b1 0.001 | 3 |\n\n| Kvasir arm (sampled recipe, 1 seed) | val mIoU 128 | val mIoU native | F |\n|---|---|---|---|\n| OR (1,2,4) [B2 features] | 0.501 | 0.510 | 324 |\n| OR (1\u202632) | 0.555 | 0.568 | 648 |\n| AND (1\u202632) | 0.535 | 0.545 | 648 |\n| occupancy \u2265 0.5 (1\u202632), same F as OR | 0.537 | 0.540 | 648 |\n| occupancy \u00d73 (1\u202632) | 0.536 | 0.549 | 1728 |\n| OR (1\u202632) + contrast | 0.565 | 0.574 | 1620 |\n| occupancy (1\u202632) + contrast | 0.544 | 0.556 | 1620 |\n",
+  "d1": "| D1 long-range arm (all pixels, raster) | val mIoU | seeds |\n|---|---|---|\n| B1 3\u00d73 patch | 0.520 | 1 |\n| B2 OR (1,2,4) | 0.544 \u00b1 0.013 | 3 |\n| OR (1\u202632) | 0.842 \u00b1 0.029 | 3 |\n| AND (1\u202632) | 0.545 | 1 |\n| occupancy \u2265 0.5 (1\u202632) | 0.536 \u00b1 0.011 | 3 |\n| occupancy \u00d73 (1\u202632) | 0.547 | 1 |\n| linear, OR (1\u202632) | 0.696 | 1 |\n| linear, occupancy (1\u202632) | 0.522 | 1 |\n| H3 stack, out-of-fold coarse votes | 0.791 \u00b1 0.024 | 3 |\n| H3, in-sample coarse votes (mismatch ablation) | 0.815 | 1 |\n| H3, bilinear-upsampled votes | 0.869 | 1 |\n| H3, shuffled coarse maps (control) | 0.539 \u00b1 0.005 | 3 |\n| H3, ground-truth coarse maps (ORACLE diagnostic) | 0.928 | 1 |\n| U-Net on OR (1\u202632) planes | 1.000 | 1 |\n| U-Net on raw image | 0.990 \u00b1 0.006 | 3 |\n",
+  "h3k": "| Kvasir H3 arm (1 seed) | val mIoU native | coarse mIoU on train features | coarse mIoU val (deploy) | vote-bit rate train | vote-bit rate val |\n|---|---|---|---|---|---|\n| fine only (B2 features), sampled | 0.510 | \u2013 | \u2013 | \u2013 | \u2013 |\n| fixed wide OR pyramid, sampled | 0.568 | \u2013 | \u2013 | \u2013 | \u2013 |\n| H3: fine + OOF coarse votes, sampled | 0.548 | 0.511 | 0.524 | 0.538 | 0.498 |\n| H3 shuffled coarse maps, sampled | 0.530 | 0.511 | 0.524 | 0.538 | 0.498 |\n| H3 ORACLE coarse maps, sampled | 0.957 | \u2013 | \u2013 | \u2013 | \u2013 |\n| H3 OOF, all pixels (fine = B1 patch) | 0.499 | 0.530 | 0.500 | 0.504 | 0.502 |\n| H3 in-sample, all pixels | 0.537 | 0.511 | 0.500 | 0.503 | 0.502 |\n| H3 bilinear, all pixels | 0.507 | 0.530 | 0.500 | 0.503 | 0.501 |\n| H3 shuffled, all pixels | 0.500 | 0.530 | 0.500 | 0.504 | 0.502 |\n",
+  "refine": "| unaries | refinement | raw mIoU | \u0394 mIoU | \u0394 BF1 (norm-tol, fg) | changed px | ms/img |\n|---|---|---|---|---|---|---|\n| Kvasir TM sampled wide | majority3 | 0.568 | +0.000 | -0.010 | 0.0118 | 60 |\n| Kvasir TM sampled wide | potts_l1.0_s0.15 | 0.568 | +0.000 | -0.013 | 0.0116 | 76 |\n| Kvasir TM sampled wide | potts_unw_l1.0 | 0.568 | -0.000 | -0.008 | 0.0099 | 74 |\n| Kvasir TM sampled wide | diff_l1.0_t1.0 | 0.568 | +0.003 | -0.014 | 0.0135 | 67 |\n| Kvasir TM sampled wide | diff_l10.0_t1.0 | 0.568 | +0.007 | -0.020 | 0.0332 | 87 |\n| Kvasir TM sampled wide | diff_unw_l10.0 | 0.568 | +0.006 | -0.034 | 0.0352 | 88 |\n| Kvasir TM sampled wide | diff_l1.0_t1.0_explicit100 | 0.568 | +0.003 | -0.014 | 0.0135 | 93 |\n| Kvasir TM all-pixel wide | majority3 | 0.516 | -0.001 | -0.006 | 0.0090 | 69 |\n| Kvasir TM all-pixel wide | potts_l1.0_s0.15 | 0.516 | -0.001 | -0.003 | 0.0083 | 148 |\n| Kvasir TM all-pixel wide | potts_unw_l1.0 | 0.516 | -0.001 | -0.003 | 0.0078 | 135 |\n| Kvasir TM all-pixel wide | diff_l1.0_t1.0 | 0.516 | +0.003 | -0.006 | 0.0128 | 110 |\n| Kvasir TM all-pixel wide | diff_l10.0_t1.0 | 0.516 | -0.001 | -0.020 | 0.0264 | 224 |\n| Kvasir TM all-pixel wide | diff_unw_l10.0 | 0.516 | -0.002 | -0.032 | 0.0278 | 228 |\n| Kvasir TM all-pixel wide | diff_l1.0_t1.0_explicit100 | 0.516 | +0.003 | -0.006 | 0.0128 | 225 |\n| Kvasir U-Net | majority3 | 0.789 | -0.000 | +0.012 | 0.0031 | 66 |\n| Kvasir U-Net | potts_l1.0_s0.15 | 0.789 | -0.001 | +0.006 | 0.0034 | 124 |\n| Kvasir U-Net | potts_unw_l1.0 | 0.789 | -0.000 | +0.007 | 0.0030 | 117 |\n| Kvasir U-Net | diff_l1.0_t1.0 | 0.789 | +0.000 | +0.012 | 0.0020 | 106 |\n| Kvasir U-Net | diff_l10.0_t1.0 | 0.789 | +0.000 | +0.022 | 0.0068 | 231 |\n| Kvasir U-Net | diff_unw_l10.0 | 0.789 | +0.000 | +0.019 | 0.0074 | 236 |\n| Kvasir U-Net | diff_l1.0_t1.0_explicit100 | 0.789 | +0.000 | +0.012 | 0.0019 | 233 |\n| ACDC TM sampled wide | majority3 | 0.396 | +0.001 | +0.009 | 0.0111 | 9 |\n| ACDC TM sampled wide | potts_l1.0_s0.15 | 0.396 | -0.002 | +0.001 | 0.0116 | 46 |\n| ACDC TM sampled wide | potts_unw_l1.0 | 0.396 | -0.003 | +0.003 | 0.0105 | 45 |\n| ACDC TM sampled wide | diff_l1.0_t1.0 | 0.396 | +0.013 | +0.024 | 0.0123 | 27 |\n| ACDC TM sampled wide | diff_l10.0_t1.0 | 0.396 | +0.010 | +0.006 | 0.0308 | 78 |\n| ACDC TM sampled wide | diff_unw_l10.0 | 0.396 | -0.002 | -0.024 | 0.0342 | 80 |\n| ACDC TM sampled wide | diff_l1.0_t1.0_explicit100 | 0.396 | +0.013 | +0.024 | 0.0123 | 78 |\n| ACDC U-Net | majority3 | 0.863 | -0.010 | -0.001 | 0.0023 | 9 |\n| ACDC U-Net | potts_l1.0_s0.15 | 0.863 | -0.009 | -0.002 | 0.0023 | 31 |\n| ACDC U-Net | potts_unw_l1.0 | 0.863 | -0.010 | -0.002 | 0.0022 | 28 |\n| ACDC U-Net | diff_l1.0_t1.0 | 0.863 | -0.001 | -0.002 | 0.0010 | 26 |\n| ACDC U-Net | diff_l10.0_t1.0 | 0.863 | -0.069 | -0.046 | 0.0062 | 79 |\n| ACDC U-Net | diff_unw_l10.0 | 0.863 | -0.116 | -0.080 | 0.0085 | 81 |\n| ACDC U-Net | diff_l1.0_t1.0_explicit100 | 0.863 | -0.001 | -0.002 | 0.0010 | 81 |\n",
+  "e4k": "| arm | seeds val/final | val mIoU | FINAL mIoU | FINAL fg Dice (pooled) | FINAL mean img fg Dice | FINAL BF1 norm-tol fg | train min (contended) |\n|---|---|---|---|---|---|---|---|\n| base: tuned B2 (all pixels, raster, pyramid 1\u20134) | 5/5 | 0.491 \u00b1 0.008 | 0.485 \u00b1 0.008 | 0.374 \u00b1 0.048 | 0.316 \u00b1 0.049 | 0.151 \u00b1 0.015 | 70 \u00b1 30 |\n| A: base + sampled pixels | 5/5 | 0.505 \u00b1 0.007 | 0.494 \u00b1 0.006 | 0.386 \u00b1 0.024 | 0.323 \u00b1 0.022 | 0.175 \u00b1 0.015 | 11 \u00b1 3 |\n| B: base + wide OR pyramid (1\u201332) | 5/5 | 0.532 \u00b1 0.012 | 0.505 \u00b1 0.016 | 0.357 \u00b1 0.053 | 0.309 \u00b1 0.048 | 0.134 \u00b1 0.020 | 70 \u00b1 30 |\n| A+B: finalist | 5/5 | 0.561 \u00b1 0.007 | 0.538 \u00b1 0.005 | 0.431 \u00b1 0.009 | 0.387 \u00b1 0.011 | 0.191 \u00b1 0.007 | 15 \u00b1 3 |\n| U-Net (B4, tuned) | 5/5 | 0.787 \u00b1 0.007 | 0.751 \u00b1 0.017 | 0.742 \u00b1 0.022 | 0.738 \u00b1 0.019 | 0.577 \u00b1 0.014 | 3 \u00b1 0 |\n\n| paired contrast on the sealed split (\u0394, 95% hierarchical bootstrap) | estimate [CI] | seeds | groups |\n|---|---|---|---|\n| AB_vs_base | +0.052 [+0.030, +0.071] | 5 | 150 |\n| AB_vs_base_fgdice | +0.057 [+0.005, +0.113] | 5 | 150 |\n| AB_vs_base_bf1 | +0.041 [+0.020, +0.059] | 5 | 150 |\n| A_vs_base | +0.009 [-0.005, +0.022] | 5 | 150 |\n| B_vs_base | +0.020 [-0.001, +0.040] | 5 | 150 |\n| interaction | +0.023 [+0.003, +0.048] | 5 | 150 |\n| AB_vs_A | +0.043 [+0.016, +0.068] | 5 | 150 |\n| AB_vs_B | +0.032 [+0.018, +0.048] | 5 | 150 |\n| unet_vs_AB | +0.213 [+0.173, +0.254] | 5 | 150 |\n",
+  "e4a": "| arm | seeds val/final | val mIoU | FINAL mIoU | FINAL fg Dice (pooled) | FINAL mean img fg Dice | FINAL BF1 norm-tol fg | 3D Dice RV | 3D Dice MYO | 3D Dice LV | 3D fg Dice | train min (contended) |\n|---|---|---|---|---|---|---|---|---|---|---|---|\n| base: tuned B2 (all pixels, raster, pyramid 1\u20134) | 5/5 | 0.265 \u00b1 0.019 | 0.265 \u00b1 0.021 | 0.091 \u00b1 0.068 | 0.080 \u00b1 0.063 | 0.119 \u00b1 0.050 | 0.087 \u00b1 0.063 | 0.085 \u00b1 0.060 | 0.095 \u00b1 0.087 | 0.089 \u00b1 0.068 | 41 \u00b1 2 |\n| A: base + sampled pixels | 5/5 | 0.305 \u00b1 0.006 | 0.307 \u00b1 0.008 | 0.188 \u00b1 0.011 | 0.165 \u00b1 0.011 | 0.201 \u00b1 0.018 | 0.151 \u00b1 0.022 | 0.178 \u00b1 0.028 | 0.214 \u00b1 0.010 | 0.181 \u00b1 0.010 | 14 \u00b1 5 |\n| B: base + wide OR pyramid (1\u201332) | 5/5 | 0.339 \u00b1 0.016 | 0.342 \u00b1 0.021 | 0.235 \u00b1 0.049 | 0.164 \u00b1 0.036 | 0.269 \u00b1 0.050 | 0.139 \u00b1 0.076 | 0.168 \u00b1 0.042 | 0.305 \u00b1 0.023 | 0.204 \u00b1 0.042 | 41 \u00b1 2 |\n| A+B: finalist | 5/5 | 0.394 \u00b1 0.004 | 0.392 \u00b1 0.002 | 0.342 \u00b1 0.006 | 0.282 \u00b1 0.014 | 0.344 \u00b1 0.018 | 0.265 \u00b1 0.038 | 0.308 \u00b1 0.016 | 0.394 \u00b1 0.016 | 0.323 \u00b1 0.009 | 16 \u00b1 7 |\n| U-Net (B4, tuned) | 5/5 | 0.868 \u00b1 0.003 | 0.859 \u00b1 0.003 | 0.896 \u00b1 0.003 | 0.799 \u00b1 0.005 | 0.962 \u00b1 0.002 | 0.868 \u00b1 0.004 | 0.858 \u00b1 0.004 | 0.917 \u00b1 0.005 | 0.881 \u00b1 0.002 | 7 \u00b1 2 |\n\n| paired contrast on the sealed split (\u0394, 95% hierarchical bootstrap) | estimate [CI] | seeds | groups |\n|---|---|---|---|\n| AB_vs_base | +0.127 [+0.105, +0.146] | 5 | 50 |\n| AB_vs_base_fgdice | +0.251 [+0.190, +0.311] | 5 | 50 |\n| AB_vs_base_bf1 | +0.225 [+0.190, +0.258] | 5 | 50 |\n| A_vs_base | +0.042 [+0.025, +0.060] | 5 | 50 |\n| B_vs_base | +0.077 [+0.049, +0.104] | 5 | 50 |\n| interaction | +0.009 [-0.022, +0.034] | 5 | 50 |\n| AB_vs_A | +0.085 [+0.073, +0.098] | 5 | 50 |\n| AB_vs_B | +0.050 [+0.029, +0.070] | 5 | 50 |\n| unet_vs_AB | +0.466 [+0.453, +0.481] | 5 | 50 |\n",
+  "acdcvol": "| arm | phase | RV Dice / HD95 | MYO Dice / HD95 | LV Dice / HD95 |\n|---|---|---|---|---|\n| base | ED | 0.111 / 142.2 mm (2.2 undef.) | 0.097 / 119.7 mm (0.4 undef.) | 0.129 / 115.0 mm (0.4 undef.) |\n| base | ES | 0.063 / 147.6 mm (3.4 undef.) | 0.073 / 125.3 mm (0.2 undef.) | 0.061 / 129.7 mm (0.8 undef.) |\n| A+B | ED | 0.325 / 97.2 mm | 0.340 / 77.6 mm | 0.501 / 88.5 mm |\n| A+B | ES | 0.206 / 105.6 mm | 0.277 / 83.2 mm | 0.287 / 99.1 mm |\n| U-Net | ED | 0.904 / 6.6 mm | 0.852 / 2.8 mm | 0.951 / 3.7 mm |\n| U-Net | ES | 0.831 / 8.6 mm | 0.863 / 4.6 mm | 0.884 / 6.7 mm |\n",
+  "cost": "| dataset | arm | pixels fed, seed 0 (M) | train min (contended) | automaton states / CNN params | checkpoint MiB | peak GPU MiB (train) | latency b=1 ms (idle) | images/s b=16 (idle) |\n|---|---|---|---|---|---|---|---|---|\n| kvasir | F_base_B2 | 100.1 | 70 \u00b1 30 | 777600 | 3.0 | 211 | 2.9 | 401 |\n| kvasir | F_A_sampled | 7.2 | 11 \u00b1 3 | 777600 | 3.0 | 710 | 2.8 | 413 |\n| kvasir | F_B_wide | 100.1 | 70 \u00b1 30 | 1555200 | 5.9 | 366 | 5.1 | 217 |\n| kvasir | F_AB_sampled_wide | 7.2 | 15 \u00b1 3 | 1555200 | 5.9 | 1009 | 5.1 | 236 |\n| kvasir | F_unet | \u2013 | 3 \u00b1 0 | 1927042 | 7.4 | 712 | 1.6 | 2991 |\n| acdc | F_base_B2 | 83.9 | 41 \u00b1 2 | 1036800 | 4.0 | 370 | 3.5 | 316 |\n| acdc | F_A_sampled | 15.9 | 14 \u00b1 5 | 1036800 | 4.0 | 1381 | \u2013 | \u2013 |\n| acdc | F_B_wide | 83.9 | 41 \u00b1 2 | 2073600 | 7.9 | 391 | \u2013 | \u2013 |\n| acdc | F_AB_sampled_wide | 15.9 | 16 \u00b1 7 | 2073600 | 7.9 | 1402 | 5.8 | 190 |\n| acdc | F_unet | \u2013 | 7 \u00b1 2 | 1926532 | 7.4 | 1134 | 1.6 | 2991 |\n",
+  "stress": "| model (seed 0) | stress (validation) | clean mIoU | \u0394 mIoU |\n|---|---|---|---|\n| E4_acdc_F_AB_sampled_wide_s0 | bias0.8-1.2 | 0.389 | -0.010 |\n| E4_acdc_F_AB_sampled_wide_s0 | noise0.05 | 0.389 | -0.002 |\n| E4_acdc_F_AB_sampled_wide_s0 | gamma0.7 | 0.389 | -0.036 |\n| E4_acdc_F_AB_sampled_wide_s0 | gamma1.4 | 0.389 | -0.016 |\n| E4_acdc_F_AB_sampled_wide_s0 | zoom0.75 | 0.389 | -0.048 |\n| E4_acdc_F_base_B2_s0 | bias0.8-1.2 | 0.290 | -0.006 |\n| E4_acdc_F_base_B2_s0 | noise0.05 | 0.290 | -0.006 |\n| E4_acdc_F_base_B2_s0 | gamma0.7 | 0.290 | -0.021 |\n| E4_acdc_F_base_B2_s0 | gamma1.4 | 0.290 | -0.003 |\n| E4_acdc_F_base_B2_s0 | zoom0.75 | 0.290 | +0.004 |\n| E4_acdc_F_unet_s0 | bias0.8-1.2 | 0.872 | -0.000 |\n| E4_acdc_F_unet_s0 | noise0.05 | 0.872 | -0.318 |\n| E4_acdc_F_unet_s0 | gamma0.7 | 0.872 | -0.011 |\n| E4_acdc_F_unet_s0 | gamma1.4 | 0.872 | -0.049 |\n| E4_acdc_F_unet_s0 | zoom0.75 | 0.872 | -0.102 |\n| E4_kvasir_F_AB_sampled_wide_s0 | bright+0.1 | 0.555 | -0.009 |\n| E4_kvasir_F_AB_sampled_wide_s0 | bright-0.1 | 0.555 | -0.017 |\n| E4_kvasir_F_AB_sampled_wide_s0 | gamma0.7 | 0.555 | -0.005 |\n| E4_kvasir_F_AB_sampled_wide_s0 | gamma1.4 | 0.555 | -0.009 |\n| E4_kvasir_F_AB_sampled_wide_s0 | noise0.05 | 0.555 | -0.006 |\n| E4_kvasir_F_AB_sampled_wide_s0 | zoom0.75 | 0.555 | -0.025 |\n| E4_kvasir_F_base_B2_s0 | bright+0.1 | 0.490 | -0.034 |\n| E4_kvasir_F_base_B2_s0 | bright-0.1 | 0.490 | -0.001 |\n| E4_kvasir_F_base_B2_s0 | gamma0.7 | 0.490 | -0.034 |\n| E4_kvasir_F_base_B2_s0 | gamma1.4 | 0.490 | -0.001 |\n| E4_kvasir_F_base_B2_s0 | noise0.05 | 0.490 | -0.019 |\n| E4_kvasir_F_base_B2_s0 | zoom0.75 | 0.490 | +0.005 |\n| E4_kvasir_F_unet_s0 | bright+0.1 | 0.784 | -0.022 |\n| E4_kvasir_F_unet_s0 | bright-0.1 | 0.784 | -0.016 |\n| E4_kvasir_F_unet_s0 | gamma0.7 | 0.784 | -0.020 |\n| E4_kvasir_F_unet_s0 | gamma1.4 | 0.784 | -0.019 |\n| E4_kvasir_F_unet_s0 | noise0.05 | 0.784 | -0.056 |\n| E4_kvasir_F_unet_s0 | zoom0.75 | 0.784 | -0.027 |\n",
+  "profile": "| model (all-pixel TM, q=128; RGB, 2 classes) | px | train step, 8 images (s) | inference 1 image (ms) | inference 8 images (ms) | peak GPU MiB |\n|---|---|---|---|---|---|\n| B1 | 32 | 0.082 | 0.5 | 0.6 | 51 |\n| B2 | 32 | 0.084 | 0.8 | 1.4 | 73 |\n| B4_unet16 | 32 | 0.006 | 1.6 | 1.6 | 29 |\n| B1 | 64 | 0.326 | 0.5 | 1.6 | 143 |\n| B2 | 64 | 0.327 | 0.9 | 3.6 | 177 |\n| B4_unet16 | 64 | 0.006 | 1.5 | 1.6 | 60 |\n| B1 | 128 | 1.297 | 0.9 | 5.7 | 104 |\n| B2 | 128 | 1.302 | 2.1 | 13.1 | 188 |\n| B4_unet16 | 128 | 0.007 | 1.6 | 1.8 | 402 |\n| B1 | 256 | 5.226 | 2.8 | 20.8 | 364 |\n| B2 | 256 | 5.192 | 8.6 | 67.2 | 696 |\n| B4_unet16 | 256 | 0.020 | 1.6 | 4.7 | 707 |\n",
+  "explain": "- weight 36, 9 literals: s1:raw(ch0>=3/5)@+0,+0 AND s1:raw(ch0>=4/5)@-1,+1 AND s2:or(ch0>=4/5)@+0,+1 AND s32:or(ch0>=2/5)@-1,+1 AND s32:or(ch0>=4/5)@-1,+0 AND s32:or(ch1>=1/5)@-1,-1 AND s32:or(ch1>=1/5)@+1,+1 AND s32:or(ch1>=3/5)@-1,+1 AND NOT s1:raw(ch2>=3/5)@-1,+0\n- weight 35, 9 literals: s1:raw(ch0>=3/5)@+1,+0 AND s2:or(ch0>=3/5)@+1,+1 AND s32:or(ch2>=3/5)@-1,+1 AND s32:or(ch2>=3/5)@+0,-1 AND NOT s1:raw(ch2>=1/5)@-1,+1 AND NOT s2:or(ch1>=2/5)@-1,+1 AND NOT s8:or(ch0>=4/5)@-1,+0 AND NOT s8:or(ch2>=2/5)@+0,+0 AND NOT s16:or(ch2>=3/5)@+0,+0\n- weight 35, 20 literals: s32:or(ch2>=1/5)@+1,-1 AND NOT s1:raw(ch2>=1/5)@-1,-1 AND NOT s1:raw(ch2>=1/5)@+0,-1 AND NOT s2:or(ch1>=2/5)@+1,+0 AND NOT s2:or(ch2>=1/5)@+0,-1 AND NOT s4:or(ch0>=4/5)@-1,+1 AND NOT s4:or(ch0>=4/5)@+0,-1 AND NOT s8:or(ch0>=4/5)@-1,-1 AND NOT s8:or(ch0>=4/5)@+0,+1 AND NOT s8:or(ch2>=2/5)@+0,+0 AND NOT s16:or(ch0>=4/5)@+0,+1 AND NOT s16:or(ch1>=4/5)@+1,-1 AND \u2026\n"
+ },
+ "figs": {
+  "curves": "fig/kvasir_curves.png",
+  "fk": "fig/kvasir_final.png",
+  "fa": "fig/acdc_final.png",
+  "qual": "fig/kvasir_qualitative.png"
+ },
+ "res_kvasir": {
+  "AB_vs_base": {
+   "metric": "miou",
+   "estimate": 0.05238360381160152,
+   "ci95": [
+    0.030403918458222455,
+    0.07141043175079165
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.052842695347259605,
+    0.05443800994674525,
+    0.042612064468846134,
+    0.053955792734658004,
+    0.05806945656049861
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_base_fgdice": {
+   "metric": "fg_dice",
+   "estimate": 0.05741233369833006,
+   "ci95": [
+    0.004742889054117455,
+    0.11279271010137984
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.04227665918478685,
+    0.04460278543235818,
+    0.011120781794785373,
+    0.04696895359982295,
+    0.14209248847989697
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_base_bf1": {
+   "metric": "bf1_n_fg",
+   "estimate": 0.04055565491883747,
+   "ci95": [
+    0.020258537699005163,
+    0.05867721780599475
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.005842699169579968,
+    0.05476397702929309,
+    0.0409965332301864,
+    0.048671217706354714,
+    0.05250384745877318
+   ],
+   "n_boot": 500,
+   "boot_seed": 20261013
+  },
+  "A_vs_base": {
+   "metric": "miou",
+   "estimate": 0.009305198434815087,
+   "ci95": [
+    -0.004936745401338423,
+    0.02185230145755044
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.02236877365039802,
+    0.009757455591360376,
+    0.007003498033002709,
+    -0.0035616416969408426,
+    0.010957906596255174
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "B_vs_base": {
+   "metric": "miou",
+   "estimate": 0.02022428221429513,
+   "ci95": [
+    -0.000691612781947385,
+    0.039590444942641384
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.016251885379718778,
+    0.0372323846030122,
+    0.021084166867821663,
+    0.02120263803221234,
+    0.005350336188710669
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "interaction": {
+   "metric": "miou",
+   "estimate": 0.022854123162491302,
+   "ci95": [
+    0.0033593577466304813,
+    0.04774982690399023
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.014222036317142805,
+    0.007448169752372669,
+    0.014524399568021762,
+    0.036314796399386506,
+    0.04176121377553277
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_A": {
+   "metric": "miou",
+   "estimate": 0.043078405376786436,
+   "ci95": [
+    0.016418673597472542,
+    0.06801740005374295
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.030473921696861583,
+    0.04468055435538487,
+    0.035608566435843425,
+    0.057517434431598846,
+    0.04711154996424344
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_B": {
+   "metric": "miou",
+   "estimate": 0.03215932159730639,
+   "ci95": [
+    0.017610171236522462,
+    0.04830300183098543
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.03659080996754083,
+    0.017205625343733044,
+    0.02152789760102447,
+    0.032753154702445664,
+    0.05271912037178794
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "unet_vs_AB": {
+   "metric": "miou",
+   "estimate": 0.2131080841038667,
+   "ci95": [
+    0.1734302015430083,
+    0.25359915220417634
+   ],
+   "n_seeds": 5,
+   "n_groups": 150,
+   "per_seed": [
+    0.24393958261090798,
+    0.19110740638697654,
+    0.21299649165516465,
+    0.208873569133032,
+    0.20862337073325243
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  }
+ },
+ "res_acdc": {
+  "AB_vs_base": {
+   "metric": "miou",
+   "estimate": 0.1271659714352994,
+   "ci95": [
+    0.10493660765128633,
+    0.14600327120385984
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.09568472616491108,
+    0.11855842743295641,
+    0.14747462309498766,
+    0.13023854270615304,
+    0.14387353777748876
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_base_fgdice": {
+   "metric": "fg_dice",
+   "estimate": 0.25149883827574004,
+   "ci95": [
+    0.18955485060878524,
+    0.3107735168169087
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.17749800833416293,
+    0.23369102728828284,
+    0.32931853159916946,
+    0.19166545513867875,
+    0.32532116901840646
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_base_bf1": {
+   "metric": "bf1_n_fg",
+   "estimate": 0.2245116797744247,
+   "ci95": [
+    0.1903958532865009,
+    0.25772187943450575
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.18394283090741584,
+    0.18435514536359413,
+    0.26308069456034006,
+    0.227139193420288,
+    0.26404053462048543
+   ],
+   "n_boot": 500,
+   "boot_seed": 20261013
+  },
+  "A_vs_base": {
+   "metric": "miou",
+   "estimate": 0.04173831596805774,
+   "ci95": [
+    0.025009508076461087,
+    0.059678154824948725
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.015846925702004966,
+    0.03732589178794121,
+    0.06641141038652071,
+    0.03418909580334201,
+    0.05491825616047982
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "B_vs_base": {
+   "metric": "miou",
+   "estimate": 0.07682203189611189,
+   "ci95": [
+    0.04921865069198283,
+    0.10416098492093197
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.0646354205890472,
+    0.031662141652908427,
+    0.1093102718825904,
+    0.07264783073828918,
+    0.10585449461772431
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "interaction": {
+   "metric": "miou",
+   "estimate": 0.008605623571129744,
+   "ci95": [
+    -0.02235212254805058,
+    0.03436999179583756
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.015202379873858918,
+    0.049570393992106776,
+    -0.028247059174123457,
+    0.023401616164521855,
+    -0.01689921300071537
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_A": {
+   "metric": "miou",
+   "estimate": 0.08542765546724165,
+   "ci95": [
+    0.07250687202246299,
+    0.09840807965252366
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.07983780046290612,
+    0.0812325356450152,
+    0.08106321270846695,
+    0.09604944690281103,
+    0.08895528161700894
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "AB_vs_B": {
+   "metric": "miou",
+   "estimate": 0.05034393953918749,
+   "ci95": [
+    0.02891906609177246,
+    0.07045662641176759
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.031049305575863884,
+    0.08689628578004799,
+    0.03816435121239725,
+    0.05759071196786386,
+    0.038019043159764454
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  },
+  "unet_vs_AB": {
+   "metric": "miou",
+   "estimate": 0.4663462826960879,
+   "ci95": [
+    0.45291401557997246,
+    0.4805836672042466
+   ],
+   "n_seeds": 5,
+   "n_groups": 50,
+   "per_seed": [
+    0.4621753106083769,
+    0.4622200260241244,
+    0.46919608064451784,
+    0.4684749232966954,
+    0.469665072906725
+   ],
+   "n_boot": 2000,
+   "boot_seed": 20261013
+  }
+ }
+}
