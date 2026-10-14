@@ -115,6 +115,54 @@ clause and the number of empty clauses --- the two numbers that tell you whether
 right range.
 \end{ttcallout}
 
+\subsection{Volumes and dense prediction}
+
+The 3D and segmentation models change the input shape and the output, not the workflow. A
+volume classifier takes $(B, Z, D, H, W)$ Booleans; a single-plane volume may be passed as
+$(B, D, H, W)$.
+
+\begin{lstlisting}[style=ttpython]
+x_train, y_train = tt.data.make_3d_shapes(2000, size=(8, 12, 12))   # (n, 1, 8, 12, 12)
+x_test,  y_test  = tt.data.make_3d_shapes(1000, size=(8, 12, 12), seed=1)
+
+model = tt.Conv3dTsetlinMachine(
+    n_classes=2, n_clauses=20, T=15, s=10.0,
+    patch_size=3,                 # (kd, kh, kw); an int means a cube
+    stride=(1, 2, 2),             # in-plane stride cuts the patch count fourfold
+    position_encoding=False,      # translation-invariant task: leave position out
+)
+tt.Trainer(model, device="cuda", batch_size=16).fit((x_train, y_train), epochs=10)
+
+model.clause_patch(0)             # (Z, kd, kh, kw) stencil: +1 on, -1 off, 0 free
+model.clause_region(0)            # {"d": (lo, hi), "y": (lo, hi), "x": (lo, hi)}
+tt.viz.plot_conv_clauses(model, range(8))     # 3D clauses drawn slice by slice
+\end{lstlisting}
+
+A segmentation model takes $(B, Z, H, W)$ planes and $(B, H, W)$ label maps, and the
+trainer reports pixel accuracy, mean IoU, mean Dice and per-class IoU on its own.
+
+\begin{lstlisting}[style=ttpython]
+rgb, labels = tt.data.make_scenes(300, size=32)          # (n, 3, 32, 32) RGB, (n, 32, 32)
+enc = tt.data.ColorThermometerEncoder(n_bits=4, value_range=(0.0, 1.0))
+pyramid = tt.data.PyramidEncoder(scales=(1, 2, 4), patch=3)  # neighbourhood + coarse layout
+x = pyramid(enc(rgb).float()).float()                       # Boolean planes per pixel
+x_tr, y_tr, x_te, y_te = x[:220], labels[:220], x[220:], labels[220:]
+
+model = tt.SegmentationTsetlinMachine(
+    n_classes=4, n_clauses=300, T=60, s=10.0, weighted=True,
+    patch_size=1,                 # the pyramid already gathered the context
+    position_encoding=8,          # 8 thermometer bits per axis
+    patches_per_commit=128,       # commit size in pixels: the fidelity knob
+)
+trainer = tt.Trainer(model, device="cuda", batch_size=8)
+trainer.fit((x_tr, y_tr), epochs=8)
+print(trainer.test((x_te, y_te)))           # pixel accuracy, mean IoU, Dice, IoU per class
+
+model.eval()
+label_map = model.predict(x_te.cuda())                   # (80, 32, 32)
+print(tt.interpret.explain_pixel(model, x_te[0].cuda(), 12, 20))   # why this pixel?
+\end{lstlisting}
+
 \subsection{Explaining a single prediction}
 
 \begin{lstlisting}[style=ttpython]

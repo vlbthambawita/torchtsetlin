@@ -95,3 +95,19 @@ write('breakdown.csv', 'idx,stage,cpu_ms,gpu_ms', rows)
 print('\nall phase keys:', sorted(stages))
 for s in sorted(stages):
     print(f'  {s:24s} cpu {stages[s].get("cpu", float("nan")):9.3f}  gpu {stages[s].get("cuda:0", float("nan")):7.3f}')
+
+# ---- dense segmentation: pixels/s against commit size (3x3, 32 px, 100 clauses/class)
+seg = {}
+for r in R:
+    if r['suite'] != 'segmentation' or not r['model'].startswith('dense 3x3 32px'):
+        continue
+    if r['model'] not in ('dense 3x3 32px', 'dense 3x3 32px ppc=32', 'dense 3x3 32px ppc=512',
+                          'dense 3x3 32px ppc=None'):
+        continue
+    ppc = r['extra']['patches_per_commit']
+    if ppc is None:  # one commit per batch: every pixel of the batch
+        ppc = r['batch_size'] * r['extra']['image_px']
+    seg.setdefault(ppc, {})[(r['phase'], r['device'])] = r['extra']['pixels_per_s']
+write('segmentation-commit.csv', 'ppc,cpu_train,gpu_train,cpu_infer,gpu_infer',
+      [[p, round(v[('train', 'cpu')]), round(v[('train', 'cuda:0')]),
+        round(v[('infer', 'cpu')]), round(v[('infer', 'cuda:0')])] for p, v in sorted(seg.items())])

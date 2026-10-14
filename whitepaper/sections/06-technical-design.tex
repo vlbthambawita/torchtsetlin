@@ -179,6 +179,38 @@ not an oversight, and is documented as such in the repository so that the next p
 the idea finds the answer before spending a week on it.
 \end{ttcallout}
 
+\subsection{The clause budget is a hard cap}
+\label{sec:budget}
+
+\code{max\_included\_literals}~$=b$ implements the clause-size constraint of~\ttcite{6}: a
+matching clause that already includes more than $b$ literals receives no Type~Ia feedback,
+and its Type~I events all act as Type~Ib (forgetting) until it shrinks. In the sequential
+algorithm that check runs before every example, so a clause can overshoot by at most one
+step. A batched commit is different. It aggregates many Type~Ia and Type~II events, and
+Type~II is never gated by the budget, so a clause under budget at the start of a commit could
+end it far over. Measured before the fix, 41\% of the extracted rules exceeded a budget of~6,
+and dense segmentation models averaged about 200 literals per clause against a budget of~32.
+
+Since version 0.3.0 the commit enforces the budget directly. With $\mathcal{I}_j$ the
+literals clause $j$ included before the commit and $\mathcal{I}'_j$ after it, the clause may
+keep
+\[
+  a_j \;=\; \max\!\big(0,\; b - |\mathcal{I}_j \cap \mathcal{I}'_j|\big)
+\]
+of its newly included literals $\mathcal{I}'_j \setminus \mathcal{I}_j$. If it has more, a
+uniformly random subset of $a_j$ is kept and the rest are reset to state $N-1$, just below
+the include boundary, where one more event would re-include them. Forgetting is untouched,
+so an oversized clause can still only shrink. The selection is one \code{argsort} over random
+keys per offending row and runs only when some clause actually overshoots. The guarantee is
+the one a user expects from the parameter's name: no clause ends a commit with more than $b$
+literals unless it started with more.
+
+\begin{ttcallout}[A behaviour change, documented as one]
+Models trained with a budget learn differently under 0.3.0 than under 0.2.0, and results
+measured with a budget before 1~October~2026 are not directly comparable with later ones.
+Without a budget nothing changed.
+\end{ttcallout}
+
 \subsection{Memory as an explicit budget}
 
 Intermediates, not the model, dominate memory. \ttlibname never silently allocates a tensor
@@ -196,7 +228,10 @@ elements). Chunking never changes the result of a batched update --- accumulatio
 addition --- so it is purely a memory-for-nothing trade. Getting the per-example estimate
 wrong is not benign, however: an under-estimate produces many tiny chunks per batch and a
 4--20$\times$ slowdown, which is why the estimate is part of the subclass contract rather
-than a heuristic.
+than a heuristic. The 3D models extend the budget along the other axis: when a single volume
+exceeds it, the patch axis itself is split into blocks of $P_b$ positions, and the estimate
+becomes $3P_bC + PC/4 + 2C\cdot 2F + P\cdot 2F$, with the Boolean match tensor counted at one
+byte per entry (Section~\ref{sec:conv3d}).
 
 \subsection{Convolutional machines}
 \label{sec:conv}
@@ -240,6 +275,146 @@ accuracy oscillates between 0.5 and 0.9 with them enabled and reaches 1.000 on e
 with them disabled. On MNIST, where digits are centred and position is informative, they are
 worth about a point of accuracy. Check this flag before suspecting the feedback code.
 \end{ttcallout}
+
+\subsection{Volumes: 3D convolution}
+\label{sec:conv3d}
+
+Cardiac MRI and CT come as stacks of slices, and cine sequences as stacks of frames. A 2D
+convolutional machine cannot see how a pattern changes from one slice to the next unless the
+slices are stacked as channels, which pins every pattern to a fixed depth.
+\clsname{Conv3dTsetlinMachine} lets the window slide in depth as well
+(Figure~\ref{fig:structures}, right). For a Boolean volume
+$X\in\{0,1\}^{Z\times D\times H\times W}$, a $k_d\times k_h\times k_w$ window with stride
+$(s_d,s_h,s_w)$ gives a grid of $P = P_dP_hP_w$ positions, and each patch has
+\[
+  F \;=\; Z k_d k_h k_w + (P_d-1) + (P_h-1) + (P_w-1)
+\]
+features: the voxels under the window, then three thermometer blocks $[d>k]$, $[y>k]$,
+$[x>k]$ for its position. The patches come from three chained \code{Tensor.unfold} calls and
+one reshape; there is no new kernel.
+
+The design rests on one observation: the convolutional learning code never reads the
+geometry. Clause evaluation is an OR over the patch axis, and the feedback draw picks a
+uniformly random matching patch on that axis; neither cares whether the patches came from a
+line, a plane or a volume. The 3D mix-in therefore overrides only the encoder, the input
+coercion and the interpretation helpers, and inherits the learning path. Four results make
+that safe. Their proofs are in the repository (\code{plans/conv3d.md}) and each one is pinned
+by a test.
+
+\begin{enumerate}[leftmargin=1.4em, itemsep=0.3em, topsep=0.35em]
+  \item \textbf{Exact reduction to 2D.} With $D = k_d = 1$ the 3D literal tensor is bitwise
+    identical to the 2D one: the patch order, the feature order and the position bits all
+    coincide, and the depth thermometer has $P_d - 1 = 0$ bits. Because the learning code is
+    shared, the whole training run is identical under the same seed. The test compares the
+    automata after training, bit for bit.
+  \item \textbf{Position literals describe boxes.} A conjunction of position literals admits
+    exactly an axis-aligned box of window positions, $[a_d,b_d]\times[a_h,b_h]\times[a_w,b_w]$,
+    and every box costs at most six literals. A one-hot position code would need $P$ features
+    --- 33{,}640 for a $12\times64\times64$ volume with a $3\times7\times7$ window --- and
+    could not express a box as one conjunction. \code{clause\_region} decodes the box back.
+  \item \textbf{Depth as channels is the special case $k_d = D$, and it is strictly weaker.}
+    Stacking the slices as channels of a 2D machine gives exactly the 3D machine with a
+    full-depth window. On the concept ``some voxel is on'' with $D$ slices, the 3D machine
+    with $k_d = 1$ needs one clause; any depth-as-channels machine needs at least $D$, because
+    each single-voxel positive needs a clause that contains that voxel's positive literal and
+    no other.
+  \item \textbf{Splitting the patch axis is exact.} When one volume exceeds the memory budget,
+    the patches are processed in blocks. The OR over all patches is the OR of the per-block
+    ORs, and the largest random key over a union is the largest of the per-block maxima, so a
+    running ``best key, best patch'' carried across blocks draws from the same uniform
+    distribution over matching patches. The draw is equal in distribution, not bit for bit;
+    with a single block the code takes the 2D path, which keeps result~1 exact.
+\end{enumerate}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-structures}}
+\caption{Two new input structures over the same learning code. Left: a dense head gives every
+  pixel its own window and its own example, so the votes form a label map instead of being
+  ORed into one answer. Right: a 3D window also slides in depth, so one clause covers a
+  pattern at every slice offset, where depth-as-channels pins it to one.}
+\label{fig:structures}
+\end{figure}
+
+Result~3 is visible in data. \code{data.make\_3d\_shapes} generates two shapes that differ
+only in the order of their slices --- every individual slice is a plus or a dot in both
+classes --- at a random position in an $8\times12\times12$ volume. With 20 clauses per class
+and the same hyper-parameters, the 3D machine with a $3\times3\times3$ window reaches 1.000
+test accuracy on five of five seeds; the 2D machine with the slices stacked as channels
+reaches 0.83--0.98, and a flat machine 0.73--0.80. Position literals cost the 3D machine
+what they cost in 2D on a translation-invariant task (accuracy falls to 0.48), so they are
+off in this comparison. Throughput and memory are in Section~\ref{sec:bench-new}.
+
+\subsection{Dense prediction: segmentation}
+\label{sec:segmentation}
+
+A convolutional machine cannot segment. The OR over patches that gives it translation
+tolerance also erases \emph{where} a pattern matched: afterwards it knows that a building is
+in the picture, not which pixels are building. \clsname{SegmentationTsetlinMachine} keeps the
+patch axis instead and folds it into the batch axis
+(Figure~\ref{fig:structures}, left). With \code{padding="same"} and stride~1 every pixel has
+one $k_h\times k_w$ neighbourhood, and that neighbourhood is an ordinary example of a flat
+machine whose label is the pixel's class:
+\[
+  \underbrace{(B, Z, H, W)}_{\text{planes}} \xrightarrow{\ \text{unfold}\ }
+  \underbrace{(B\cdot P,\; Zk_hk_w)}_{\text{one example per pixel}}
+  \;\to\; \underbrace{(B\cdot P,\, C)}_{\text{clauses}}
+  \;\to\; \underbrace{(B\cdot P,\, K)}_{\text{votes}} \;\to\; (B, K, H, W).
+\]
+With $B' = B\cdot P$, the vote sums, Type~I\slash Type~II selection, event counting and the
+commit all apply unchanged. \code{predict} returns a $(B,H,W)$ label map and \code{vote\_map}
+a $(B,K,H,W)$ vote surface, while \code{forward} returns the folded $(B\cdot P, K)$ votes,
+which is what keeps the trainer, the metrics and the interpretation tools working unchanged.
+
+\paragraph{The commit size is a real hyper-parameter.}
+One batch of eight $32\times32$ images is 8{,}192 pixel-examples, and committing all their
+feedback at once is a mini-batch of 8{,}192 --- far past the point where batched feedback
+stops matching the classical algorithm (Section~\ref{sec:fidelity}).
+\code{patches\_per\_commit} (default 128) bounds it. Measured over three seeds on a toy
+where the classes are only separable from the neighbourhood, mean IoU is flat up to 128 and
+then falls away, and the seed-to-seed spread grows with it:
+
+\begin{center}\small
+\begin{tabular}{@{}lcccccc@{}}
+\ttoprule
+\thead{\code{patches\_per\_commit}} & 64 & \textbf{128} & 256 & 512 & 1024 & 4096\\
+\ttmidrule
+mean IoU    & 0.741 & \textbf{0.749} & 0.659 & 0.620 & 0.591 & 0.527\\
+seed s.d.   & 0.002 & 0.009 & 0.056 & 0.097 & 0.029 & 0.073\\
+relative time & 21$\times$ & 11$\times$ & 5.7$\times$ & 3.0$\times$ & 1.7$\times$ & 1$\times$\\
+\ttbotrule
+\end{tabular}
+\end{center}
+
+\paragraph{Context without gradients.}
+A $3\times3$ patch of building wall and a $3\times3$ patch of road look alike once lighting
+varies; telling them apart needs to know where the horizon is, which is not inside the
+window. Two Tsetlin-native mechanisms supply it. Thermometer-encoded \emph{position literals}
+let a clause say ``only in these rows'' (an integer \code{position\_encoding} bounds the
+feature count on large images). A \emph{multi-scale pyramid}, \clsname{PyramidEncoder},
+OR-pools the Boolean planes, takes the same window at each level and resamples every level
+back to full resolution, so a clause reads both the neighbourhood and the coarse layout
+around it. On generated street scenes (32$\times$32, four classes, 300 clauses per class),
+building IoU goes from 0.505 with neither, to 0.699 with the pyramid, 0.894 with position
+literals and 0.921 with both, and mean IoU from 0.798 to 0.959. There is no float parameter
+anywhere.
+
+\begin{ttcallout}[Report the floor]
+On the same scenes, a baseline that never sees a pixel --- it labels every pixel with the most
+common class of its row --- already scores 0.876 pixel accuracy, because the scenes have a
+stable vertical layout. It scores 0.410 mean IoU and zero on two of the four classes. Any
+dataset with a consistent layout has a floor like this, which is why the library's examples
+report mean IoU and the floor alongside pixel accuracy.
+\end{ttcallout}
+
+\paragraph{Imbalance.}
+Background dominates real segmentation data, and a Tsetlin machine has no loss to reweight.
+The lever is which pixels produce feedback: \code{class\_feedback\_p} sets a per-class
+probability that a pixel takes part in an update, and
+\code{data.balanced\_class\_probabilities} computes the equalising choice. It is a rescue,
+not a default. It lifts a pyramid-only run from 0.874 to 0.927 mean IoU, and costs 0.05 once
+position literals are on, because by then the classes are separable anyway and discarding most
+of the road pixels is pure loss.
 
 \subsection{Booleanization}
 
@@ -313,13 +488,23 @@ to the clauses that actually matched and to the literals that are True gives a p
 attribution; \code{interpret.explain} returns the matching clauses ranked by weight, which is
 an account of the prediction in the model's own terms rather than a surrogate.
 
+\paragraph{Spatial explanations.} For convolutional models, \code{clause\_patch} returns
+the pattern a clause looks for as a stencil over the window --- $(Z, k_d, k_h, k_w)$ for
+volumes --- and \code{clause\_region} decodes its position literals into the box of window
+positions it may fire in. For segmentation, \code{interpret.explain\_pixel} lists the
+clauses that decided one pixel, decoded over \emph{absolute} image coordinates
+(\code{p[1,21,13]} is ``plane~1 of pixel $(21,13)$''), so a dense prediction can be audited
+pixel by pixel rather than attributed by a saliency heuristic.
+
 \subsection{Correctness}
 
-The library is tested with 44 tests, parametrised over a \code{device} fixture so that every
-device-marked test runs twice on a GPU machine. The tests that matter most are not the
+The library is tested with 110 tests, parametrised over a \code{device} fixture so that every
+device-marked test runs twice on a GPU machine (174 runs in all). The tests that matter most are not the
 smoke tests but the semantic pins: brute-force reference implementations of clause evaluation
 and of convolutional patch semantics; the empty-clause train\slash eval asymmetry; the
-RNG-free prediction path for convolutional models; the encoder device-transfer race described
+RNG-free prediction path for convolutional models; the hard clause budget under batched
+commits; bitwise equality of the 3D and 2D models at depth one; a $\chi^2$ test that the
+random matching patch is uniform, with and without patch blocking; the encoder device-transfer race described
 above; and a packaging test asserting that the version agrees between
 \code{pyproject.toml} and \code{\_\_init\_\_.py} and that every subpackage ships in the wheel
 --- which exists because a \code{.gitignore} rule once silently excluded

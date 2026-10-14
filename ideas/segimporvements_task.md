@@ -1,0 +1,1 @@
+This tsetlin machine does not work as CNNs for segmentation tasks. HOw we can improve it to perform segmentation tasks. you are alowed to explore match and physics to apply interesting concepts from those to improve TM. make a complet plan to do experiments and explore these new improvements before applying these to the library as a part of it.

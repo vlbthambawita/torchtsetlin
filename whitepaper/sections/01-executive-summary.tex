@@ -42,6 +42,10 @@ else follows from that decision:
   \item \textbf{Batched feedback.} The learning update is reformulated so that a mini-batch
     is consumed in a handful of tensor operations rather than one stochastic pass per
     example. This is what makes GPU execution worthwhile (Section~\ref{sec:batched}).
+  \item \textbf{One mechanism, many input structures.} Sequences, images and volumes are
+    the same convolutional machine over a different patch set, and dense segmentation is a
+    flat machine with one example per pixel. Neither re-implements learning
+    (Sections~\ref{sec:conv}--\ref{sec:segmentation}).
   \item \textbf{A complete workflow.} Booleanization encoders, a Keras-style
     \code{Trainer} with callbacks, metrics, rule extraction, closed-form feature importance
     and plotting ship in the same package.
@@ -61,24 +65,32 @@ Table~\ref{tab:glance} is the whole package in one view.
   \clsname{CoalescedTsetlinMachine} (shared clause pool; multi-class or multi-label),
   \clsname{RegressionTsetlinMachine}, and convolutional variants
   \clsname{ConvTsetlinMachine}, \clsname{ConvCoalescedTsetlinMachine},
-  \clsname{ConvRegressionTsetlinMachine}, \clsname{Conv1dTsetlinMachine}\\
+  \clsname{ConvRegressionTsetlinMachine}, \clsname{Conv1dTsetlinMachine}; 3D variants
+  \clsname{Conv3dTsetlinMachine}, \clsname{Conv3dCoalescedTsetlinMachine},
+  \clsname{Conv3dRegressionTsetlinMachine}; dense
+  \clsname{SegmentationTsetlinMachine}, \clsname{CoalescedSegmentationTsetlinMachine}\\
 \ttmidrule
 \thead{Learning} & vote margin $T$, specificity $s$, memory depth $N$, boosted true-positive
-  feedback, clause-size constraint, drop-clause\slash drop-literal, focused negative
+  feedback, clause-size budget (a hard cap), per-class feedback rates, drop-clause\slash drop-literal, focused negative
   sampling, batched or exact sequential feedback\\
 \ttmidrule
-\thead{Data} & thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer and
-  hypervector encoders; synthetic datasets; torchvision helpers\\
+\thead{Data} & thermometer, one-hot, bit-plane, adaptive-threshold, colour-thermometer,
+  hypervector and multi-scale pyramid encoders; synthetic images, volumes and scenes;
+  torchvision and segmentation loaders\\
 \ttmidrule
 \thead{Training} & \clsname{Trainer} over tensors\slash\code{Dataset}\slash\code{DataLoader};
   early stopping, checkpoints, CSV logging, hyper-parameter schedules, \clsname{History}\\
 \ttmidrule
-\thead{Interpretation} & rule extraction, clause activity and precision, closed-form global
-  and local feature importance, per-example explanations\\
+\thead{Evaluation} & classification, regression and multi-label metrics; pixel accuracy,
+  IoU, Dice and boundary F1 for segmentation\\
 \ttmidrule
-\thead{Peak measured} & $2.19\times10^{5}$ training examples\slash s and
-  $1.05\times10^{6}$ inference examples\slash s (RTX~3090, 784 features, 500
-  clauses\slash class); up to $282\times$ a 16-core CPU on the same code\\
+\thead{Interpretation} & rule extraction, clause activity and precision, closed-form global
+  and local feature importance, per-example and per-pixel explanations, the image or volume
+  region a convolutional clause is allowed to fire in\\
+\ttmidrule
+\thead{Peak measured} & $2.20\times10^{5}$ training examples\slash s and
+  $1.06\times10^{6}$ inference examples\slash s (RTX~3090, 784 features, 500
+  clauses\slash class); up to $287\times$ a 16-core CPU on the same code\\
 \ttmidrule
 \thead{Footprint} & pure Python + PyTorch $\ge$ 2.0 and NumPy; no compiler, no CUDA
   toolkit, no C extension; Python 3.9--3.12; MIT licence\\
@@ -89,5 +101,5 @@ Table~\ref{tab:glance} is the whole package in one view.
 \begin{ttkey}
 A Tsetlin machine is a matrix of small integers updated by counting events. Once that is
 said in tensors instead of in C, the algorithm inherits the entire PyTorch ecosystem for
-free --- and a GPU turns a 114-second MNIST epoch into a 1.5-second one.
+free --- and a GPU turns a 113-second MNIST epoch into a 1.5-second one.
 \end{ttkey}

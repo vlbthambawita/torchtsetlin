@@ -1,0 +1,21 @@
+% Figure: dense segmentation throughput against commit size (patches_per_commit).
+\begin{tikzpicture}
+\begin{axis}[
+    ttaxis,
+    width=0.62\linewidth, height=5.0cm,
+    xmode=log, ymode=log, log basis x=2,
+    xlabel={pixels per commit (\code{patches\_per\_commit})}, ylabel={pixels / s},
+    xtick={32,128,512,8192}, xticklabels={32,128 (default),512,8192 (per batch)},
+    legend style={at={(0.5,-0.36)}, anchor=north, legend columns=2},
+  ]
+  \pgfplotstableread[col sep=comma]{data/segmentation-commit.csv}\segtbl
+  \addplot[ttgpu] table[x=ppc, y=gpu_train] {\segtbl};
+  \addlegendentry{training, GPU}
+  \addplot[ttcpu] table[x=ppc, y=cpu_train] {\segtbl};
+  \addlegendentry{training, CPU}
+  \addplot[ttgpu, dashed, mark=o] table[x=ppc, y=gpu_infer] {\segtbl};
+  \addlegendentry{prediction, GPU}
+  \addplot[ttcpu, dashed, mark=o] table[x=ppc, y=cpu_infer] {\segtbl};
+  \addlegendentry{prediction, CPU}
+\end{axis}
+\end{tikzpicture}

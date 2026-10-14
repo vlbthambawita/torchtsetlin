@@ -31,9 +31,13 @@ commit. It knows nothing about classes, labels or images.
 \paragraph{Layer 3 --- concrete models.}
 Each variant supplies only an \emph{output layer} (how clause outputs become votes) and a
 \emph{feedback policy} (which clauses receive which feedback for a labelled example).
-Convolution is orthogonal to both and enters as a mix-in, so
+Input structure is orthogonal to both and enters as a mix-in, so
 \code{class ConvTsetlinMachine(\_ConvMixin, TsetlinMachine)} is the entire definition of the
-convolutional classifier's learning behaviour.
+convolutional classifier's learning behaviour. Three mix-ins exist: \code{\_ConvMixin}
+(images and sequences), \code{\_Conv3dMixin}, which subclasses it and replaces only the
+geometry (volumes), and \code{\_DenseMixin}, which drops the OR over patches and folds the
+patch axis into the batch axis (segmentation). Each combines with the flat classifier, the
+coalesced machine and, where it makes sense, the regression machine.
 
 \paragraph{Layer 4 --- workflow.}
 Data preparation, training, metrics, interpretation and plotting. These depend on the models
@@ -109,7 +113,7 @@ A new model is a subclass, not a fork. The required surface is three methods:
 \ttmidrule
 \multicolumn{2}{@{}l@{}}{\emph{optional}}\\
 \code{\_accumulate\_weights} / \code{\_commit\_weights} & clause weights\\
-\code{\_encode} / \code{\_evaluate} / \code{\_feedback\_counts} & a different input structure (this is the convolutional mix-in)\\
+\code{\_encode} / \code{\_evaluate} / \code{\_feedback\_counts} & a different input structure (the convolutional, 3D and dense mix-ins)\\
 \code{\_chunk\_elements\_per\_example} & the memory model for that structure\\
 \code{rules()} & how the model prints itself\\
 \ttbotrule
@@ -119,5 +123,6 @@ A new model is a subclass, not a fork. The required surface is three methods:
 \begin{ttkey}
 Learning mathematics is stateless and lives in one file; state and the loop live in one base
 class; variants supply an output layer and a feedback policy. The entire convolutional family
-is one mix-in over that structure --- roughly 360 lines, none of which re-implement learning.
+is one mix-in over that structure --- roughly 360 lines, none of which re-implement learning
+--- and its 3D extension adds about 290 more, all geometry.
 \end{ttkey}

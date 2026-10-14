@@ -1,0 +1,108 @@
+% Figure: the two input structures added after 0.1.x — dense per-pixel prediction (left) and
+% 3D convolution over volumes (right). Both reuse the flat / convolutional learning code.
+\begin{tikzpicture}[font=\sffamily\small]
+
+  \def\g{0.34}   % cell size
+
+  % ================================================================ left: dense head
+  \node[tttitle, anchor=south west, font=\sffamily\bfseries\small] at (0,0.5)
+    {Dense head: one example per pixel};
+
+  % Boolean input planes (6 x 6)
+  \foreach \r in {0,...,5}{
+    \foreach \c in {0,...,5}{
+      \pgfmathsetmacro{\on}{mod(\r*3+\c*2,5)<2 ? 1 : 0}
+      \ifdim \on pt > 0.5pt
+        \fill[ttorange!70] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+      \fi
+      \draw[ttgray!35, line width=0.3pt] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+    }
+  }
+  % two pixels, each with its own 3x3 window (padding="same")
+  \fill[ttdeep] (1*\g,-1*\g) rectangle ++(\g,\g);
+  \draw[ttdeep, line width=1.2pt] (0*\g,1*\g) rectangle (3*\g,-2*\g);
+  \fill[ttslate] (4*\g,-3*\g) rectangle ++(\g,\g);
+  \draw[ttslate, line width=1.2pt, dashed] (3*\g,-1*\g) rectangle (6*\g,-4*\g);
+  \node[ttlabel, anchor=north west, text width=2.3cm] at (0,-5.3*\g)
+    {$(B,Z,H,W)$; every pixel gets its own $k_h\times k_w$ window};
+
+  % folded examples
+  \node[ttnode, anchor=west, text width=2.05cm] (fold) at (2.55,-0.85)
+    {$(B\!\cdot\!P,\; Zk_hk_w)$\\[1pt]\scriptsize one flat example per pixel, label = its class};
+  \draw[ttarrow] (2.12,-0.85) -- (fold.west);
+
+  % label map
+  \begin{scope}[shift={(5.55,0)}]
+    \foreach \r in {0,...,5}{
+      \foreach \c in {0,...,5}{
+        \ifnum\r<2
+          \fill[ttslatel] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+        \else
+          \ifnum\r<4
+            \ifnum\c>1 \fill[ttorange!75] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+            \else \fill[ttmoss!55] (\c*\g,-\r*\g) rectangle ++(\g,\g); \fi
+          \else
+            \fill[ttgray!40] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+          \fi
+        \fi
+        \draw[white, line width=0.4pt] (\c*\g,-\r*\g) rectangle ++(\g,\g);
+      }
+    }
+  \end{scope}
+  \draw[ttarrow] (fold.east) -- (5.45,-0.85);
+  \node[ttlabel, anchor=north west, text width=2.3cm] at (5.55,-5.3*\g)
+    {votes $(B\!\cdot\!P,K)$ unfolded into a $(B,H,W)$ label map};
+
+  % divider
+  \draw[ttorange!35, line width=0.7pt] (8.0,0.75) -- (8.0,-3.0);
+
+  % ================================================================ right: 3D window
+  \node[tttitle, anchor=south west, font=\sffamily\bfseries\small] at (8.4,0.5)
+    {3D convolution: the window slides in depth too};
+
+  \def\h{0.30}   % voxel size
+  \def\dx{0.55}  % oblique offset per slice
+  \def\dy{0.36}
+  \begin{scope}[shift={(8.6,-1.15)}]
+    % D = 4 slices of 4 x 4 voxels, drawn back to front. The window is 2 x 2 x 2 at
+    % rows 1-2, columns 1-2, slices 1-2.
+    \foreach \d in {3,2,1,0}{
+      \ifnum\d=1
+        % edges of the window box running between slice 2 and slice 1
+        \foreach \px/\py in {1/-1, 3/-1, 1/-3, 3/-3}{
+          \draw[ttdeep, line width=0.9pt] (\px*\h+2*\dx,\py*\h+2*\dy) -- (\px*\h+\dx,\py*\h+\dy);
+        }
+      \fi
+      \begin{scope}[shift={(\d*\dx,\d*\dy)}]
+        \fill[white] (0,0) rectangle (4*\h,-4*\h);
+        \foreach \r in {0,...,3}{
+          \foreach \c in {0,...,3}{
+            \pgfmathsetmacro{\on}{mod(\r*2+\c*3+\d*4,7)<2 ? 1 : 0}
+            \ifdim \on pt > 0.5pt
+              \fill[ttorange!45] (\c*\h,-\r*\h-\h) rectangle ++(\h,\h);
+            \fi
+            \draw[ttgray!40, line width=0.3pt] (\c*\h,-\r*\h-\h) rectangle ++(\h,\h);
+          }
+        }
+        \ifnum\d>0 \ifnum\d<3
+          \fill[ttamber!35, opacity=0.8] (1*\h,-1*\h) rectangle (3*\h,-3*\h);
+          \draw[ttdeep, line width=1.2pt] (1*\h,-1*\h) rectangle (3*\h,-3*\h);
+        \fi \fi
+        \draw[ttgray!75, line width=0.5pt] (0,0) rectangle (4*\h,-4*\h);
+      \end{scope}
+    }
+    % depth axis along the top-left edge
+    \draw[ttarrow] (-0.18,0.08) -- ++(3*\dx,3*\dy) node[ttlabel, anchor=south east] {depth $d$};
+    \node[ttlabel, anchor=north] at (2*\h,-4*\h-0.02) {$H\times W$ slice};
+  \end{scope}
+
+  \node[ttlabel, anchor=north west, text width=3.9cm, font=\sffamily\scriptsize]
+    at (11.75,0.3)
+    {a $k_d\times k_h\times k_w$ window over $(B,Z,D,H,W)$ gives $P = P_dP_hP_w$ positions,
+     with position thermometers $[d>k]$, $[y>k]$, $[x>k]$};
+  \node[ttnode, anchor=north west, text width=3.6cm, font=\sffamily\scriptsize, align=left]
+    at (11.75,-1.6)
+    {\textbf{One clause, every slice offset.}
+     Depth as channels is the case $k_d = D$: a single offset, so each pattern has to be
+     learned once per depth.};
+\end{tikzpicture}

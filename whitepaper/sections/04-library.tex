@@ -30,11 +30,13 @@ one wins.
 \subsection{What the library provides}
 
 \paragraph{Models.}
-Seven concrete machines, all sharing one base class and one learning loop
-(Table~\ref{tab:models}). The flat and convolutional families are not parallel hierarchies:
-convolution is a mix-in that overrides input encoding, clause evaluation and feedback
-counting, and is combined with each flat model to produce its convolutional counterpart
-(Section~\ref{sec:conv}).
+Twelve concrete machines, all sharing one base class and one learning loop
+(Table~\ref{tab:models}). The flat, convolutional, volumetric and dense families are not
+parallel hierarchies. Each input structure is a mix-in that overrides input encoding, clause
+evaluation and feedback counting, and is combined with a flat model to produce its
+counterpart: convolution over images (Section~\ref{sec:conv}), its 3D extension over
+volumes (Section~\ref{sec:conv3d}), and dense per-pixel prediction
+(Section~\ref{sec:segmentation}).
 
 \begin{table}[htbp]
 \centering
@@ -43,7 +45,7 @@ counting, and is combined with each flat model to produce its convolutional coun
   $K$ the number of outputs. Every model stores its automata in one
   $(C, 2F)$ integer buffer.}
 \label{tab:models}
-\begin{tabularx}{\linewidth}{@{}L{4.5cm}L{2.5cm}>{\raggedright\arraybackslash}X@{}}
+\begin{tabularx}{\linewidth}{@{}L{5.55cm}L{2.45cm}>{\raggedright\arraybackslash}X@{}}
 \ttoprule
 \thead{Class} & \thead{Task} & \thead{Output layer and distinguishing feature}\\
 \ttmidrule
@@ -64,6 +66,20 @@ counting, and is combined with each flat model to produce its convolutional coun
   reads a continuous quantity off an image~\ttcite{7}\\
 \clsname{Conv1dTsetlinMachine} & sequences, signals &
   $1\times k$ windows over $(B, Z, L)$ Boolean channels\\
+\ttmidrule
+\clsname{Conv3dTsetlinMachine} & volume classification &
+  $k_d\times k_h\times k_w$ windows over $(B, Z, D, H, W)$ volumes (MRI\slash CT stacks, or
+  frames with time as depth); depth\slash row\slash column position literals\\
+\clsname{Conv3dCoalescedTsetlinMachine} & volume, multi-label &
+  3D convolutional clauses over a shared pool\\
+\clsname{Conv3dRegressionTsetlinMachine} & volume regression &
+  reads a continuous quantity off a volume\\
+\ttmidrule
+\clsname{SegmentationTsetlinMachine} & semantic segmentation &
+  one example per pixel, classified from its $k_h\times k_w$ neighbourhood; returns a
+  $(B,H,W)$ label map and a $(B,K,H,W)$ vote map\\
+\clsname{CoalescedSegmentationTsetlinMachine} & segmentation, multi-label &
+  dense head over a shared clause pool; one clause can serve every class it helps\\
 \ttbotrule
 \end{tabularx}
 \end{table}
@@ -71,14 +87,16 @@ counting, and is combined with each flat model to produce its convolutional coun
 \paragraph{Learning options.}
 The switches that the literature has shown to matter are constructor arguments rather than
 forks: vote margin $T$ and specificity $s$; memory depth $N$; boosted true-positive feedback;
-integer clause weights; the clause-size constraint of~\ttcite{6}; drop-clause and
-drop-literal regularisation~\ttcite{8}; focused negative sampling; and the choice between
-batched and exact sequential feedback.
+integer clause weights; the clause-size constraint of~\ttcite{6}, enforced as a hard cap
+(Section~\ref{sec:budget}); drop-clause and drop-literal regularisation~\ttcite{8}; focused
+negative sampling; per-class feedback rates for imbalanced segmentation; and the choice
+between batched and exact sequential feedback.
 
 \paragraph{Booleanization.}
-Seven encoders --- a plain binarizer, thermometer (quantile, uniform or unique-value
-thresholds), one-hot, bit plane, adaptive Gaussian\slash mean threshold, colour thermometer
-and sparse hypervector~\ttcite{13} --- all implemented as \code{nn.Module}s with the scikit-learn
+Eight encoders --- a plain binarizer, thermometer (quantile, uniform or unique-value
+thresholds), one-hot, bit plane, adaptive Gaussian\slash mean threshold, colour thermometer,
+sparse hypervector~\ttcite{13} and an OR-pooled multi-scale pyramid for dense prediction ---
+all implemented as \code{nn.Module}s with the scikit-learn
 \code{fit}\slash\code{transform} protocol, composable with \clsname{Compose}, movable to a
 device and saved in a \code{state\_dict}. Encoders also carry their inverse knowledge:
 \code{ThermometerEncoder.decode\_range} turns included bits back into an interval in the
@@ -94,15 +112,17 @@ is a first-class way to use the library.
 
 \paragraph{Evaluation and interpretation.}
 Accuracy, confusion matrix, per-class precision\slash recall\slash F1, regression and
-multi-label metrics, expected calibration error and trustworthiness curves; rule extraction,
-clause activity and precision, closed-form global and local feature
-importance~\ttcite{4}, and per-example explanations listing the clauses that fired and how
-they voted.
+multi-label metrics, expected calibration error and trustworthiness curves; for segmentation,
+pixel accuracy, IoU, mean IoU, Dice and boundary F1, accumulated batch by batch so a test set
+never has to sit in memory as a vote map. Rule extraction, clause activity and precision,
+closed-form global and local feature importance~\ttcite{4}, per-example explanations listing
+the clauses that fired and how they voted, and per-pixel explanations decoded into statements
+about named pixels of the input.
 
 \paragraph{Visualisation.}
 Training curves, confusion matrices, automata-state heat maps, clause memory plots,
-convolutional clause patches rendered as pixel stencils, vote distributions and
-trustworthiness plots.
+convolutional clause patches rendered as pixel stencils (3D clauses slice by slice), vote
+distributions, trustworthiness plots, and segmentation panels and per-class vote maps.
 
 \begin{ttcallout}[What \ttlibname is not]
 It is not a reimplementation of every Tsetlin machine variant in the literature --- graph

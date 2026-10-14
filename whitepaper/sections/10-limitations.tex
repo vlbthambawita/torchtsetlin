@@ -44,13 +44,25 @@ feature importance is weighted by literal values only for flat models; for convo
 models the per-example attribution is computed over clause weights and inclusion without the
 per-patch literal gating, which makes it coarser than its flat counterpart.
 
+\paragraph{Dense and volumetric models multiply the work.}
+A segmentation model evaluates every clause at every pixel, and a 3D model at every window
+position of a volume, so both cost one to two orders of magnitude more per input than a
+classifier. Dense training is also bounded by the commit size: the default of 128 pixels
+keeps fidelity and leaves most of the GPU's speed unused (Section~\ref{sec:bench-new}).
+Blocking the patch axis keeps a single large volume inside the memory budget, but it saved
+only 18\% of peak memory in the measured case; for big volumes the stride is the effective
+lever. There is no 3D segmentation model yet, and its fold $B' = B\cdot P$ would make the
+commit-size problem worse.
+
 \paragraph{Single-device, single-process.}
 There is no multi-GPU or distributed training path today.
 
 \paragraph{Early-stage API.}
-Version 0.1.x is classified alpha. The core --- \code{update}, \code{forward}, the buffer
+Version 0.3.x is classified alpha. The core --- \code{update}, \code{forward}, the buffer
 layout --- is stable in intent, but the surface may still move, and checkpoints are tied to
-the state layout rather than a versioned format.
+the state layout rather than a versioned format. Behaviour has changed between minor
+versions when a measurement demanded it --- the clause budget became a hard cap in 0.3.0
+(Section~\ref{sec:budget}) --- and the changelog says so each time.
 
 \subsection{Where it goes next}
 
@@ -80,6 +92,11 @@ In rough order of how well each fits the current architecture: clause-size and
 sparsity-oriented variants (a feedback-policy change), TM composites (a wrapper over several
 trained machines), absorbing automata (a state-transition change in \code{apply\_feedback}),
 and graph machines (a new input structure, in the same place convolution lives).
+
+\paragraph{Volumes, further.}
+A dense 3D head (per-voxel segmentation) is the natural next mix-in, and the same proofs carry
+over. Anisotropic MRI spacing is already expressible through the depth window and stride, and
+a cyclic position code for cardiac phase would be a change to the position literals only.
 
 \paragraph{Validation against the reference implementations.}
 A test suite that checks \ttlibname's sequential path against the reference C implementation

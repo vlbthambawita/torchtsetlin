@@ -3,7 +3,7 @@
 
 \subsection{What ships with the library}
 
-The repository includes eight runnable example scripts and five worked notebooks, chosen so
+The repository includes ten runnable example scripts and five worked notebooks, chosen so
 that each one demonstrates a different part of the design rather than a different dataset.
 
 \begin{table}[htbp]
@@ -29,11 +29,18 @@ that each one demonstrates a different part of the design rather than a differen
   clause budget --- and what \code{position\_encoding} costs on a translation-invariant task\\
 \code{conv1d\_ramps.py} & \clsname{Conv1dTsetlinMachine} &
   0.996 on noisy 1-D signals; the clauses print as the ramp they detect\\
+\code{shapes\_conv3d.py} & \clsname{Conv3dTsetlinMachine} &
+  shapes that differ only along depth: 1.000 on every seed tried, against 0.83--0.98 for
+  slices stacked as channels and 0.73--0.80 for a flat machine; clauses print slice by
+  slice\\
 \code{conv\_regression\_blobs.py} & \clsname{ConvRegressionTsetlinMachine} &
   reading a continuous quantity (a square's side length) off an image: MAE 0.20, $R^2$ 0.96\\
 \code{mnist\_conv.py} & \clsname{ConvTsetlinMachine}, \clsname{ConvCoalescedTsetlinMachine} &
   0.979 with 200 clauses per class; 0.985 with \code{-{}-coalesced -{}-clauses 1000 -{}-T 500},
   in less time\\
+\code{segmentation\_scenes.py} & \clsname{SegmentationTsetlinMachine} &
+  generated street scenes: 0.991 pixel accuracy and 0.946 mean IoU with position literals,
+  0.959 adding a pyramid; prints the row-prior floor and explains single pixels\\
 \ttmidrule
 \multicolumn{3}{@{}l@{}}{\emph{notebooks}}\\
 Iris & \clsname{TsetlinMachine} & a rule set small enough to read in full\\
@@ -47,9 +54,13 @@ CTM-UNet & \clsname{TsetlinMachine} & a dense per-pixel Tsetlin segmentation hea
 The two segmentation notebooks are worth singling out. They reproduce the structure of
 published Tsetlin-machine segmentation work --- convolutional regression~\ttcite{18} and a
 U-Net hybrid~\ttcite{19} --- and the second builds a dense per-pixel classification head on top
-of \clsname{TsetlinMachine}. Neither required new model code: they are compositions of what
-the library already provides, which is the clearest evidence that the abstraction is at the
-right level.
+of \clsname{TsetlinMachine} without any new model code. That notebook is where
+\clsname{SegmentationTsetlinMachine} came from: once the folding trick had been shown to work
+as a composition, making it a model was a mix-in of the same kind as convolution, plus the
+metrics, commit-size control and per-pixel explanations a notebook leaves out. The 3D models
+followed the same path in reverse, from a written analysis with proofs to a mix-in that
+changes only geometry --- which is the clearest evidence that the abstraction is at the right
+level.
 
 \subsection{Where a Tsetlin machine earns its place}
 
@@ -76,7 +87,12 @@ motivated \ttlibname: in a cardiac-MRI research group the surrounding stack is P
 volumes are large, and an interpretable model that cannot consume a \code{DataLoader} or run
 on the GPU next to the U-Net baseline is not a practical option. Making a convolutional
 Tsetlin machine an \code{nn.Module} is what makes that comparison a one-file experiment rather
-than a project.
+than a project. The library now covers the shapes of that data directly:
+\clsname{Conv3dTsetlinMachine} reads a stack of short-axis slices --- or a cine sequence with
+time as depth --- as one volume, and \clsname{SegmentationTsetlinMachine} produces a label
+map whose every pixel can be explained in terms of named input pixels. A cardiac-sized
+$12\times64\times64$ volume trains at several hundred volumes per second on one GPU
+(Section~\ref{sec:bench-new}).
 
 \paragraph{Edge and hardware inference.}
 Inference is an \textsc{and} over included literals and a vote count, so a trained machine

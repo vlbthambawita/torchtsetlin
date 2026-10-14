@@ -20,8 +20,8 @@ reproduced --- or replaced with another machine's numbers --- with one command.
 \ttoprule
 \thead{CPU} & AMD Ryzen 9 3950X, 16 cores / 32 threads (PyTorch using 16 threads)\\
 \thead{GPU} & NVIDIA GeForce RTX 3090 (24\,GB)\\
-\thead{Software} & PyTorch 2.10.0+cu128 / CUDA 12.8, Python 3.10.11, \ttlibname 0.1.3\\
-\thead{Measured} & 17 September 2026\\
+\thead{Software} & PyTorch 2.10.0+cu128 / CUDA 12.8, Python 3.10.11, \ttlibname 0.3.1\\
+\thead{Measured} & 12 October 2026\\
 \thead{Reference config} & 784 Boolean features, 500 clauses per class, 10 classes, unless
   stated otherwise\\
 \ttbotrule
@@ -41,8 +41,8 @@ should, not to compete with 400-epoch results from the literature.
 One \code{update()} call touches every automaton in the machine, so its cost depends far more
 on the \emph{size of the machine} than on how many examples are in the batch. That is the
 whole point of the reformulation in Section~\ref{sec:batched}, and
-Figure~\ref{fig:bench-batch} is what it buys: on the GPU, training throughput rises from 434
-examples/s at batch 1 to 219{,}330 at batch 4096 --- a factor of 505 for feeding the same
+Figure~\ref{fig:bench-batch} is what it buys: on the GPU, training throughput rises from 427
+examples/s at batch 1 to 220{,}028 at batch 4096 --- a factor of 515 for feeding the same
 kernel more work.
 
 \begin{figure}[htbp]
@@ -51,13 +51,13 @@ kernel more work.
 \caption{Throughput against batch size for a 784-feature, 500-clause-per-class machine
   (log--log). Training on the GPU scales almost linearly with batch size until the device
   saturates. The dashed line is the counter-example: a 12-feature, 10-clause machine is less
-  work than a kernel launch, and only overtakes the CPU past batch 1024.}
+  work than a kernel launch, and only draws level with the CPU at batch 1024.}
 \label{fig:bench-batch}
 \end{figure}
 
-At batch 256 the same model trains at 88{,}771 examples/s on the GPU against 404 on the CPU
---- $220\times$. Inference behaves differently: the CPU forward pass is already cheap, so the
-gap there tops out around $30\times$, reaching $1.05\times10^{6}$ examples/s on the GPU.
+At batch 256 the same model trains at 87{,}869 examples/s on the GPU against 406 on the CPU
+--- $216\times$. Inference behaves differently: the CPU forward pass is already cheap, so the
+gap there tops out around $34\times$, reaching $1.06\times10^{6}$ examples/s on the GPU.
 
 The dashed series is the honest counterpoint. A Noisy-XOR-scale machine (12 features, 10
 clauses per class) is \emph{slower} on the GPU than on the CPU for every batch size below
@@ -70,8 +70,8 @@ Both axes of model size cost the same thing --- an update is $O(C \cdot 2F)$ ele
 --- so both throughput curves fall roughly as $1/x$. The interesting quantity is the
 \emph{ratio}, in Figure~\ref{fig:bench-scale}: the CPU falls off immediately while the GPU
 stays flat until the machine is large enough to fill it, so the advantage \emph{widens} with
-model size, from $50\times$ at 50 clauses per class to $275\times$ at 4000, and from
-$70\times$ at 128 features to $282\times$ at 8192.
+model size, from $50\times$ at 50 clauses per class to $273\times$ at 4000, and from
+$69\times$ at 128 features to $287\times$ at 8192.
 
 \begin{figure}[htbp]
 \centering
@@ -84,7 +84,7 @@ $70\times$ at 128 features to $282\times$ at 8192.
 This matters for a practical reason. The published configurations that reach competitive
 accuracy on images use thousands of clauses per class; on a CPU those are overnight runs, and
 the resulting iteration speed is what keeps people away. At 2000 clauses per class the GPU
-trains at 25{,}864 examples/s against 95 on the CPU.
+trains at 25{,}917 examples/s against 96 on the CPU.
 
 \subsection{The model zoo}
 
@@ -93,7 +93,7 @@ output layer and the feedback policy, not the per-clause work that dominates
 (Table~\ref{tab:zoo}). The convolutional models are the outlier at roughly $3\times$ the cost
 per example on the GPU, which is arithmetic rather than overhead: a $10\times10$ window over a
 $28\times28$ image is 361 patches, and every patch is evaluated against every clause. Their
-\emph{inference} cost is the striking one --- 24{,}805 examples/s against 529{,}243 for the
+\emph{inference} cost is the striking one --- 24{,}822 examples/s against 490{,}091 for the
 flat machine --- because prediction is where the patch dimension has no feedback work to hide
 behind.
 
@@ -110,12 +110,12 @@ behind.
 & \multicolumn{3}{c}{\thead{Training}} & \multicolumn{3}{c}{\thead{Inference}}\\
 \thead{Model} & \thead{CPU} & \thead{GPU} & \thead{speedup} & \thead{CPU} & \thead{GPU} & \thead{speedup}\\
 \ttmidrule
-\clsname{TsetlinMachine}            & 269 & 49{,}794 & 185$\times$ & 37{,}801 & 529{,}243 & 14$\times$\\
-\clsname{TsetlinMachine} (weighted) & 267 & 49{,}534 & 185$\times$ & 33{,}830 & 482{,}612 & 14$\times$\\
-\clsname{CoalescedTsetlinMachine}   & 177 & 43{,}563 & 246$\times$ & 34{,}536 & 527{,}674 & 15$\times$\\
-\clsname{RegressionTsetlinMachine}  & 213 & 56{,}950 & 267$\times$ & 39{,}960 & 562{,}748 & 14$\times$\\
-\clsname{ConvTsetlinMachine}        & 535 & 15{,}275 &  29$\times$ &      676 &  24{,}805 & 37$\times$\\
-\clsname{ConvCoalescedTsetlinMachine} & 389 & 15{,}356 & 39$\times$ & 658 & 24{,}565 & 37$\times$\\
+\clsname{TsetlinMachine}            & 269 & 48{,}433 & 180$\times$ & 31{,}087 & 490{,}091 & 16$\times$\\
+\clsname{TsetlinMachine} (weighted) & 268 & 48{,}228 & 180$\times$ & 32{,}101 & 451{,}039 & 14$\times$\\
+\clsname{CoalescedTsetlinMachine}   & 178 & 42{,}684 & 240$\times$ & 34{,}131 & 493{,}050 & 14$\times$\\
+\clsname{RegressionTsetlinMachine}  & 215 & 56{,}935 & 265$\times$ & 42{,}894 & 541{,}666 & 13$\times$\\
+\clsname{ConvTsetlinMachine}        & 559 & 14{,}722 &  26$\times$ &      710 &  24{,}822 & 35$\times$\\
+\clsname{ConvCoalescedTsetlinMachine} & 393 & 15{,}116 & 38$\times$ & 702 & 24{,}627 & 35$\times$\\
 \ttbotrule
 \end{tabularx}
 \end{table}
@@ -128,15 +128,15 @@ the binding constraint on most cards.
 
 Figure~\ref{fig:bench-breakdown} breaks one \code{update()} call into stages. The result is
 unambiguous: \code{apply\_feedback} --- the stochastic increment and decrement of the whole
-$(C,2F)$ state --- is 92\% of the 625\,ms CPU call and 42\% of the 2.8\,ms GPU call. A
-standalone \code{torch.binomial} draw of the same shape costs 266.7\,ms on the CPU against
+$(C,2F)$ state --- is 92\% of the 624\,ms CPU call and 42\% of the 2.8\,ms GPU call. A
+standalone \code{torch.binomial} draw of the same shape costs 266.5\,ms on the CPU against
 0.22\,ms on the GPU, making it the single most expensive operation in the commit.
 
 \begin{figure}[htbp]
 \centering
 \input{figures/fig-bench-breakdown}
 \caption{Stage timings for one update (5000 clauses, 784 features, batch 256). Note the log
-  scale: the CPU total is 625.3\,ms and the GPU total 2.79\,ms. Everything before the commit
+  scale: the CPU total is 624.1\,ms and the GPU total 2.85\,ms. Everything before the commit
   --- encoding, clause evaluation, votes and the feedback-count matmuls --- is comparatively
   free.}
 \label{fig:bench-breakdown}
@@ -151,7 +151,7 @@ call happens exactly once.
 More CPU threads buy surprisingly little in training --- $1.3\times$ from 1 to 32 threads
 (Figure~\ref{fig:bench-threads}). The batched update is a chain of large element-wise
 operations over the state, and the binomial draw that dominates it does not thread.
-Inference scales much better, $8.6\times$ over the same range, because the forward pass is
+Inference scales much better, $10.8\times$ over the same range, because the forward pass is
 one large matmul-shaped reduction. If a CPU run is too slow, the lever is the clause budget
 or the batch size, not \code{torch.set\_num\_threads}.
 
@@ -164,11 +164,78 @@ or the batch size, not \code{torch.set\_num\_threads}.
 
 \subsection{Where the data lives}
 
-Keeping the Boolean dataset in host memory and copying each mini-batch across costs at most
-2\% of throughput on this machine --- the update is long enough to hide the transfer. Streaming
+Keeping the Boolean dataset in host memory and copying each mini-batch across costs about
+1\% of throughput on this machine --- the update is long enough to hide the transfer. Streaming
 a dataset that does not fit in VRAM is therefore free in practice. The copy that \emph{does}
 bite is the one in the other direction, into a CPU-resident encoder, which is the hazard
 described in Section~\ref{sec:design}.
+
+\subsection{Segmentation and volumes}
+\label{sec:bench-new}
+
+The two newer input structures multiply the work per input by the number of window
+positions, so their throughput is quoted per pixel and per volume.
+
+\paragraph{Dense segmentation.}
+A $3\times3$ dense model on $32\times32$ inputs (four planes, four classes, 100 clauses per
+class, eight images per batch) trains at 34{,}942 pixels/s on the CPU and 117{,}649 on the
+GPU at the default commit size of 128 pixels, and predicts at $1.09\times10^{6}$ and
+$2.34\times10^{7}$ pixels/s. The training speedup is small, $3\times$, and
+Figure~\ref{fig:bench-seg} shows why: at 128 pixels per commit the GPU spends its time on
+commits rather than on pixels. Committing once per batch is $49\times$ faster on the GPU
+(5.8~million pixels/s), but commits that large are the ones Section~\ref{sec:segmentation}
+shows costing almost a third of the mean IoU (0.749 at 128 pixels, 0.527 at 4{,}096). The commit size is a fidelity knob that happens to also be the
+speed knob, and the default sides with fidelity.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-segmentation}
+\caption{Dense segmentation throughput against commit size ($3\times3$ windows,
+  $32\times32$ images, batch of eight; log--log). Prediction does not depend on the commit
+  size. The rightmost point is one commit per batch (8{,}192 pixels).}
+\label{fig:bench-seg}
+\end{figure}
+
+\paragraph{3D convolution.}
+Table~\ref{tab:conv3d} covers volumes from $8\times32\times32$ to a cardiac-sized
+$12\times64\times64$. On the GPU the large volume with a $3\times7\times7$ window has
+33{,}640 window positions and trains at 656 volumes/s; an in-plane stride of 2 cuts the
+positions fourfold and runs $3.0\times$ faster. The GPU advantage is large for the same reason
+it is large for big flat machines: every volume is tens of thousands of patch evaluations.
+
+\begin{table}[htbp]
+\centering
+\small\sffamily\sloppy
+\caption{3D convolution, one Boolean plane. The first four rows use 2 classes $\times$ 100
+  clauses at batch 4; the last three 10 classes $\times$ 200 clauses (2000 in all) at batch 2.
+  Throughput in volumes/s; memory is GPU peak during training.}
+\label{tab:conv3d}
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X R{1.3cm}R{1.05cm}R{1.3cm}R{1.4cm}R{1.45cm}R{1.3cm}@{}}
+\ttoprule
+& & \multicolumn{3}{c}{\thead{Training}} & \thead{Inference} & \\
+\thead{Volume, window} & \thead{patches} & \thead{CPU} & \thead{GPU} & \thead{speedup} & \thead{GPU} & \thead{memory}\\
+\ttmidrule
+$8\times32\times32$, $3\times5\times5$   & 4{,}704  & 166.1 & 2{,}451.8 & 15$\times$ & 10{,}209 & 67\,MB\\
+$16\times32\times32$, $3\times5\times5$  & 10{,}976 & 64.1  & 2{,}054.6 & 32$\times$ & 4{,}761 & 147\,MB\\
+$12\times64\times64$, $3\times7\times7$, stride $(1,2,2)$ & 8{,}410 & 61.6 & 1{,}991.5 & 32$\times$ & 4{,}423 & 153\,MB\\
+$12\times64\times64$, $3\times7\times7$  & 33{,}640 & 12.4 & 655.7 & 53$\times$ & 898 & 533\,MB\\
+\ttmidrule
+\quad 2000 clauses, one block              & 33{,}640 & 4.5 & 185.4 & 42$\times$ & 206 & 450\,MB\\
+\quad 2000 clauses, auto blocks (18{,}982)& 33{,}640 & 4.1 & 170.6 & 41$\times$ & 198 & 369\,MB\\
+\quad 2000 clauses, blocks of 2{,}048      & 33{,}640 & 5.3 & 134.6 & 25$\times$ & 177 & 365\,MB\\
+\ttbotrule
+\end{tabularx}
+\end{table}
+
+The last three rows test patch blocking (Section~\ref{sec:conv3d}), and the result is more
+modest than the design analysis predicted. With 2000 clauses one volume no longer fits the
+memory budget, and automatic blocking lowers peak memory from 450 to 369\,MB --- 18\% --- for
+an 8\% loss of throughput; much smaller blocks save nothing further and cost a quarter of the
+speed. With 200 clauses blocking does not engage at all, because ordinary batch chunking
+already keeps the intermediates inside the budget. The design analysis had estimated about
+1\,GB of intermediates per volume; that was a worst case, not what the chunked code
+allocates. In practice, the in-plane stride is the cheaper
+lever and blocking is the safety net for very large clause banks.
 
 \subsection{End to end}
 
@@ -189,18 +256,18 @@ validation and all.
 \thead{Model} & \thead{Device} & \thead{train ex.} & \thead{epochs} & \thead{s / epoch} & \thead{test acc.}\\
 \ttmidrule
 \multirow{2}{*}{\clsname{TsetlinMachine} 500/class}
-  & CPU  & 60{,}000 & 3 & 114.05 & 0.9542\\
-  & GPU  & 60{,}000 & 3 & \textbf{1.53} & 0.9548\\
+  & CPU  & 60{,}000 & 3 & 113.45 & 0.9542\\
+  & GPU  & 60{,}000 & 3 & \textbf{1.54} & 0.9548\\
 \ttmidrule
 \multirow{2}{*}{\clsname{ConvTsetlinMachine} 200/class, $10\times10$}
-  & CPU  & 10{,}000 & 1 & 16.10 & 0.8470\\
+  & CPU  & 10{,}000 & 1 & 15.49 & 0.8470\\
   & GPU  & 10{,}000 & 1 & \textbf{0.70} & 0.8035\\
 \ttbotrule
 \end{tabularx}
 \end{table}
 
-A 114-second epoch becomes a 1.5-second one ($75\times$); the convolutional run goes from 16
-seconds to 0.7 ($23\times$). That is the difference between a hyper-parameter sweep you plan
+A 113-second epoch becomes a 1.5-second one ($74\times$); the convolutional run goes from 15.5
+seconds to 0.7 ($22\times$). That is the difference between a hyper-parameter sweep you plan
 and one you simply run.
 
 On accuracy: the flat 500-clause machine reaches 95.8\% after five epochs, and the
@@ -237,14 +304,14 @@ models and 8--32 for convolutional ones, and if accuracy lags, halve the batch o
 before touching $T$ and $s$.
 
 The cost of exactness is measurable too. At batch 32, \code{feedback\_mode="sequential"} runs
-7--28$\times$ slower than the batched update depending on model scale and device, because it
+7--29$\times$ slower than the batched update depending on model scale and device, because it
 performs 32 commits where the batched path performs one. That is the trade, stated in numbers:
 \emph{batching buys one to two orders of magnitude and costs accuracy only once the batch
 grows past a few tens of examples.}
 
 \begin{ttkey}
 Reformulating the update as event counting plus one binomial draw makes the cost of an update
-nearly independent of batch size --- which is what turns a $114$-second MNIST epoch into a
+nearly independent of batch size --- which is what turns a $113$-second MNIST epoch into a
 $1.5$-second one, and what makes a clause budget of thousands a routine choice rather than an
 overnight one.
 \end{ttkey}

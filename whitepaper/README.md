@@ -4,7 +4,7 @@ LaTeX source for **_torchtsetlin: A GPU-native, PyTorch-idiomatic framework for 
 machines_** — an orange-themed white paper with TikZ diagrams and pgfplots charts drawn from
 the repository's own benchmark records.
 
-Built PDF: [`main.pdf`](main.pdf) (~32 pages, A4).
+Built PDF: [`main.pdf`](main.pdf) (~39 pages, A4). Describes version 0.3.1.
 
 ## Build
 
@@ -89,10 +89,15 @@ The figures pick the new values up with no other changes. **The hand-written tab
 prose figures are not derived from the CSVs** — after a re-run, check these against
 `../benchmarks/results/tables.md` by hand:
 
-- the environment table, model zoo and end-to-end MNIST tables in `sections/08-benchmarks.tex`
-- the throughput/speedup numbers quoted in §8 prose, the "peak measured" row in §1, and the
-  peak speedup in the title-page abstract
-- the `8.6×` / `1.3×` annotations in `figures/fig-bench-threads.tex`
+- the environment table, model zoo, 3D convolution and end-to-end MNIST tables in
+  `sections/08-benchmarks.tex`
+- the throughput/speedup numbers quoted in §8 prose (including the segmentation and 3D
+  paragraphs of §8.8), the "peak measured" row in §1, and the peak speedup in the title-page
+  abstract
+- the `10.8×` / `1.3×` annotations in `figures/fig-bench-threads.tex`
+
+The accuracy numbers in §6 (3D shapes, segmentation commit size and context ablations) come
+from the examples and the docs' concept pages, not from the benchmark driver.
 
 ## Figures
 
@@ -104,11 +109,13 @@ prose figures are not derived from the CSVs** — after a re-run, check these ag
 | `fig-automaton.tex` | one Tsetlin automaton: state line, boundary, feedback types |
 | `fig-batched.tex` | sequential commits vs the batched event-counting formulation |
 | `fig-conv.tex` | convolutional evaluation and where the random patch is drawn |
+| `fig-structures.tex` | the dense segmentation head and the 3D convolution window |
 | `fig-bench-batch.tex` | throughput vs batch size, training and inference |
 | `fig-bench-scale.tex` | GPU speedup vs clause budget and feature count |
 | `fig-bench-breakdown.tex` | where one `update()` call spends its time |
 | `fig-bench-threads.tex` | CPU thread scaling |
 | `fig-bench-fidelity.tex` | what batching costs in accuracy (Noisy XOR, 3 seeds) |
+| `fig-bench-segmentation.tex` | dense segmentation throughput against commit size |
 
 ## Licence
 
