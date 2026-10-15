@@ -1,0 +1,323 @@
+\documentclass[10pt,a4paper]{article}
+% Build:  cd experiments/IMN && python -m experiments.IMN.code.latex_report  (tables, macros, figures)
+%         cd report && latexmk -pdf report.tex
+% Every number in this document is a macro from generated/macros.tex or a generated table (rule C2).
+\usepackage[T1]{fontenc}
+\usepackage{XCharter}
+\usepackage[a4paper,margin=2.1cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,multirow,graphicx,subcaption,caption}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,fit,backgrounds,calc,shapes.misc}
+\usepackage{microtype,enumitem,placeins}
+\usepackage[colorlinks,linkcolor=MidnightBlue,citecolor=MidnightBlue,urlcolor=MidnightBlue]{hyperref}
+\captionsetup{font=small,labelfont=bf}
+\setlist{nosep,leftmargin=*}
+
+\input{generated/macros.tex}
+\input{figures/ga_body.tex}
+\newcommand{\imn}{\textsc{IMN}}
+\newcommand{\arm}[1]{\textsf{#1}}
+
+\title{Replacing the Linear Local Model of Interpretable Mesomorphic Networks\\with a Tsetlin Machine}
+\author{IMN $\times$ TM research programme, \texttt{experiments/IMN} \\
+  \small torchtsetlin 0.3.1, revision \texttt{06a2ce5}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Interpretable Mesomorphic Networks (\imn{}; Kadra et al., NeurIPS 2024) train a deep hypernetwork that
+writes, for every example, a linear model in the original feature space; the linear model is both the
+prediction and its explanation. Their stated limitation is that the per-example models are linear. We
+replace the linear model by a \emph{Tsetlin machine} (TM), a weighted vote of conjunctive rules over
+thresholded features. Because TM clauses are learned by discrete feedback and have no gradient, we train a
+TM first, freeze its clauses, and let the hypernetwork generate per-example \emph{clause weights}
+(\arm{IMN-TM}); we also study a linear+rules hybrid and a model in which the TM itself plays the
+hypernetwork (\arm{TM-Gated}, no black box).
+
+\emph{Accuracy.} On \MainDatasets{} AutoML-benchmark datasets with default hyper-parameters
+(\MainRecords{} runs), \arm{IMN-TM} improves on its source TM on
+\MainimntmtmWins/\MainDatasets{} datasets (Holm $p=\MainimntmtmHolm$) and ties \imn{} on average
+($\Delta$AUROC \MainimntmimnMean). The per-dataset difference tracks how much tree ensembles beat
+linear models (Pearson $r=\MainGapCorr$). After a 20-trial search per method (\HpoRecords{}
+final runs), \arm{IMN-TM} beats its TM on \HpoimntmtmWins/\HpoDatasets{} datasets and a global
+re-fit of its clause weights (Holm $p=\HpoimntmclauselrHolm$). It shares the best average rank
+with gradient boosting (\HpoRankimntm), ahead of \imn{} (\HpoRankimn). Its margin over \imn{}
+(\HpoimntmimnMean) is not significant, and the tree-gap pattern disappears because tuning
+mostly helps \imn{} on threshold-shaped data.
+
+\emph{Explanations.} Clause explanations remain valid on an example's neighbourhood: local
+fidelity is \HpoFidimntm{} vs.\ \HpoFidimn{} for \imn{}. On \XaiVsimnN{} synthetic tasks with
+known contributions, they are closer to the truth than \imn{}'s on \XaiVsimnWins{} tasks
+(Wilcoxon $p=\XaiVsimnP$). The price is length: \MainClausesimntm--\HpoClausesimntm{} weighted
+rules vs.\ \MainLinimn{} features cover 90\% of an explanation.
+
+\emph{Larger datasets.} On \TiertwoDatasets{} larger datasets under a fixed training budget,
+\arm{IMN-TM} beats \imn{} significantly (\TiertwoimntmimnMean, Holm $p=\TiertwoimntmimnHolm$).
+The gain comes almost entirely from datasets where the step cap leaves \imn{} under-trained
+($r=\TiertwoPaperGapCorr$ with \imn{}'s shortfall against the paper); elsewhere it is
+\TiertwoRestMean.
+
+\emph{What matters.} Ablations show that learned clauses matter for explanation fidelity, not
+for accuracy, and that initialising at the TM's votes matters for fidelity and for
+budget-limited training.
+\end{abstract}
+
+\begin{figure}[t]
+  \centering
+  \resizebox{\textwidth}{!}{\GraphicalAbstract}
+  \caption{\textbf{Graphical abstract.} (a) \imn{}: a TabResNet hypernetwork generates a linear model per
+  example. (b) \arm{IMN-TM}: a Tsetlin machine is trained first (stage 1) and its clauses are frozen; the
+  hypernetwork then generates one weight per clause and example (stage 2), so the local model is a weighted
+  TM. (c) \arm{TM-Gated}: the frozen clauses themselves generate the coefficients of a linear model, so no
+  black box remains. Rules in (b) and coefficients in (c) are schematic; Figure~\ref{fig:example} shows a
+  real explanation. Findings: tuned hyper-parameters, \HpoDatasets{} datasets $\times$ \HpoSeeds{} seeds, and the synthetic benchmark of Section~\ref{sec:xai}.}
+  \label{fig:ga}
+\end{figure}
+
+\section{Introduction}
+\imn{} \cite{kadra2024} make a deep tabular model explainable by construction: a hypernetwork
+$w(x;\theta)$ outputs the parameters of a linear model, and the logit is that linear model evaluated at
+$x$, $z_k(x)=\sum_m w_{km}(x)\,x_m + w_{k0}(x)$. The explanation of $x$ is the vector of feature impacts
+$w_m(x)\,x_m$. Section~7 of the paper names the obvious limitation: the local models are hyperplanes, and
+it suggests non-linear interpretable local models as future work.
+
+A Tsetlin machine \cite{granmo2018} is an interpretable non-linear model of exactly that kind: a weighted
+sum of conjunctions (\emph{clauses}) of Boolean literals, $v_k(x)=\sum_j W_{kj}\,c_j(x)$, where on tabular
+data each literal is a threshold test $x_m\ge t$ or its negation. This report asks whether the linear
+local model of \imn{} can be replaced by a TM, what that costs in accuracy, and what it changes about the
+explanations. Contributions:
+\begin{enumerate}
+  \item a feasibility analysis and three constructions (Section~\ref{sec:method}), implemented on top of
+        the \texttt{torchtsetlin} library without modifying it;
+  \item a faithful re-implementation of \imn{} (read from the official code) and a controlled comparison
+        with the original TM, \imn{} and the paper's baselines on the AutoML benchmark, with default and
+        equal-budget tuned hyper-parameters;
+  \item interpretability measurements that apply to every method: removal attributions, explanation
+        size, local fidelity, self-consistency, and ground-truth attribution quality on synthetic tasks.
+\end{enumerate}
+
+\section{Method}\label{sec:method}
+Readers who prefer numbers to symbols can start with Section~\ref{sec:example}. It follows one
+toy example through every equation of this section.
+
+\subsection{Why the clauses must be frozen}
+A hypernetwork is trained by back-propagation, so whatever it generates must enter the loss
+differentiably. A TM clause is a discrete set of included literals learned by Type~I/II feedback; it has
+no gradient. The clause \emph{weights}, however, are continuous, and once the clauses are fixed their
+outputs $c_j(x)\in\{0,1\}$ are ordinary Boolean features of $x$. This gives three constructions
+(Figure~\ref{fig:ga}); a fourth---a hypernetwork that emits the clauses themselves---is not pursued: the
+include masks are discrete, and a rule generated \emph{for} $x$ and evaluated \emph{at} $x$ is trivially
+true or false, so it explains nothing unless constrained to a neighbourhood.
+
+\paragraph{IMN-TM (local model = weighted TM).} With a frozen clause basis $c(x)\in\{0,1\}^K$ from a TM
+trained in stage~1, the hypernetwork outputs $W(x)\in\mathbb{R}^{K\times n_\text{out}}$ and $b(x)$, and
+\begin{equation}
+  z_k(x)=\sum_{j=1}^{K} W_{kj}(x)\,c_j(x)+b_k(x).\label{eq:imntm}
+\end{equation}
+The output layer is zero-initialised and its bias set to the TM's signed clause votes divided by $T$, so
+before training \arm{IMN-TM} \emph{is} the source TM (unclamped), for every input. The explanation is the
+list of active rules with their weights $W_{kj}(x)$.
+
+\paragraph{IMN-Hybrid.} The local model has both terms, $z_k(x)=\sum_m w_{km}(x)x_m+\sum_j W_{kj}(x)c_j(x)+b_k(x)$.
+
+\paragraph{TM-Gated (TM as the hypernetwork).} The local model stays linear, but its coefficients are a
+linear function of the clause outputs, $w_k(x)=w_{0k}+\sum_j c_j(x)\,V_{jk}$, learned by gradient descent
+with the clauses frozen. Every coefficient of every local model is a global term plus one term per fired
+rule, so the whole model is interpretable.
+
+\paragraph{Controls.} \arm{Clause-LR} re-fits one \emph{global} weight per clause (no hypernetwork);
+\arm{IMN-TM (rand.)} replaces the learned clauses by random data-anchored conjunctions of matched length.
+
+\subsection{Training and regularisation}
+Stage~1 trains a weighted TM (\texttt{torchtsetlin}, 200 clauses per class, $T=100$, $s=5$, batch
+feedback with batch 32) on a thermometer encoding with up to 10 unique quantile thresholds per
+standardised column, keeping the validation-best epoch. Duplicate and empty clauses are removed. Stage~2
+reproduces the official \imn{} training loop exactly: TabResNet with 2 blocks of width 128, Adam with
+learning rate and weight decay 0.01, 5 warm-up epochs, cosine annealing with three warm restarts, three
+snapshots, 500 epochs, batch 64, and an $\ell_1$ penalty $\lambda\,\overline{|w(x)|}$ on the generated
+parameters. For the clause arms the penalty can instead shrink the generated weights toward the TM's votes,
+$\lambda\,\overline{|W(x)-W_\text{TM}|}$ (\texttt{prior}); Section~\ref{sec:reg} selects between the variants on
+validation data.
+
+\subsection{Attribution for every method}
+Following Eq.~(2) of the paper, the impact of feature $m$ is the change of the explained logit when $x_m$
+is set to 0 (its training mean) \emph{with the local model held fixed}:
+$\phi_m(x)=z(x;w(x))-z(x\odot\delta^m;w(x))$. For \imn{} this is exactly $w_m(x)x_m$ (tested); for clause
+local models the clauses are re-evaluated on the modified input; methods without a local model use the same
+removal on the full model (occlusion).
+
+\input{method_example.tex}
+
+\section{Experimental protocol}\label{sec:protocol}
+\paragraph{Data.} Tier~1 is 12 of the paper's 35 AutoML-benchmark datasets (5--145 features, 690--48,842
+rows, 3 multi-class); Tier~2 the other 23. Preprocessing follows the official code (standardisation, target
+encoding for binary and ordinal encoding for multi-class tasks). Every method sees the same stratified
+60/20/20 train/validation/test split per seed; the TM needs a validation split, and giving it to all
+methods keeps the comparison fair, but it also means our numbers are not directly comparable to the
+paper's 80/20 protocol.
+\paragraph{Methods.} LR, DT, RF (500 trees), GBDT (sklearn HistGradientBoosting; CatBoost was unavailable),
+TabResNet, \imn{}, TM, and the TM-based arms of Section~\ref{sec:method}.
+\paragraph{Statistics.} The unit of analysis is the dataset-level mean test AUROC over seeds. We report
+average ranks with a Friedman test and Nemenyi critical difference (as in the paper) and preregistered
+two-sided Wilcoxon signed-rank tests with Holm correction, plus a paired bootstrap CI of the mean
+difference. Non-inferiority of \arm{IMN-TM} to \imn{} was preregistered as a 95\% CI above $-0.01$.
+\paragraph{Rules.} The library was not modified; every number is generated from the run records; all
+selection uses validation data only. Deviations from the paper are logged in \texttt{DECISIONS.md}.
+
+\section{Results}
+\subsection{Phase 1: regulariser of the clause arms}\label{sec:reg}
+\begin{table}[h]
+  \centering\small
+  \caption{Mean validation AUROC over 6 datasets $\times$ 3 seeds (\RegRecords{} runs) for the nine
+  penalty settings. The selected setting is \texttt{\RegMode}, $\lambda=\RegLambda$.}
+  \label{tab:reg}
+  \input{generated/reg_table.tex}
+\end{table}
+Shrinking toward the TM's votes with the largest weight tried wins for both clause arms
+(Table~\ref{tab:reg}), but all nine settings lie within a few thousandths of AUROC, and the winner sits at
+the edge of the grid; the tuned stage therefore searches $\lambda\in[10^{-5},10]$.
+
+\subsection{Main benchmark, default hyper-parameters}\label{sec:main}
+\begin{table}[t]
+  \centering
+  \caption{Test AUROC (mean{\tiny$\pm$sd} over \MainSeeds{} seeds), default hyper-parameters. Top: baselines;
+  bottom: TM family, with \imn{} repeated for reference. Bold: best within each half. Last column: the paper's
+  Table~8 \imn{} value (its own split; reference only).}
+  \label{tab:main}
+  \small
+  \resizebox{\textwidth}{!}{\input{generated/main_auroc_a.tex}}\\[4pt]
+  \resizebox{\textwidth}{!}{\input{generated/main_auroc_b.tex}}
+\end{table}
+\begin{table}[t]
+  \centering\small
+  \caption{Preregistered comparisons, default hyper-parameters (\MainDatasets{} datasets).
+  $^\ast$: Holm-corrected $p<0.05$.}
+  \label{tab:mainpairs}
+  \input{generated/main_pairs.tex}
+\end{table}
+Table~\ref{tab:main} gives the per-dataset results and Table~\ref{tab:mainpairs} the preregistered tests.
+\begin{itemize}
+  \item \textbf{Q1 (vs.\ the TM).} \arm{IMN-TM} improves on its own source TM on \MainimntmtmWins{} of
+        \MainDatasets{} datasets (mean \MainimntmtmMean, CI [\MainimntmtmLo, \MainimntmtmHi], Holm
+        $p=\MainimntmtmHolm$), the only significant comparison.
+  \item \textbf{Q2 (vs.\ \imn).} Mean difference \MainimntmimnMean{} with \MainimntmimnWins/\MainimntmimnLosses{}
+        wins/losses; the CI [\MainimntmimnLo, \MainimntmimnHi] is too wide to establish the preregistered
+        non-inferiority margin, so the question is open in both directions.
+  \item \textbf{Q3--Q6.} The hybrid behaves like \arm{IMN-TM} (\MainimnhybridimntmMean); \arm{TM-Gated} is
+        level with LR, the TM and \imn{}; the per-example generator adds \MainimntmclauselrMean{} over a
+        global re-fit of the clause weights; random clauses reach the same AUROC as learned ones
+        (\MainimntmimntmrandMean).
+  \item \textbf{Reproduction.} \imn{} and TabResNet are statistically indistinguishable
+        (\MainimntabresnetMean), as in the paper; the largest gaps to the paper's own numbers are
+        \MainWorstPaperGap.
+\end{itemize}
+Average ranks are in Figure~\ref{fig:ranks}: RF (\MainRankrf) and GBDT (\MainRankgbdt) lead; all
+mesomorphic variants lie between \MainRankimntmrand{} and \MainRanktmgated{} (Friedman
+$p=\MainFriedmanP$, critical difference \MainCD).
+
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/main_gap.pdf}
+    \caption{Gain over \imn{} vs.\ the tree-ensemble advantage over linear models (one point per dataset).}
+    \label{fig:gap}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/main_delta.pdf}
+    \caption{Per-dataset $\Delta$AUROC vs.\ \imn{}, sorted by the \arm{IMN-TM} gain.}
+    \label{fig:delta}
+  \end{subfigure}
+  \caption{\textbf{Where the TM helps.} Default hyper-parameters, mean over \MainSeeds{} seeds.}
+  \label{fig:where}
+\end{figure}
+
+\paragraph{The gain is predictable.} The average hides a strong structure (Figure~\ref{fig:where}):
+the per-dataset gain of \arm{IMN-TM} over \imn{} correlates with the gap between the best tree ensemble and
+the best linear model at $r=\MainGapCorr$. Where axis-aligned thresholds and interactions matter
+(phoneme, jungle-chess, kc1), conjunctive local models beat hyperplanes; where the problem is smooth or
+nearly linear (blood-transfusion, vehicle, credit-g), they lose. The hybrid was meant to cover both cases
+but does not; Section~\ref{sec:abl} tests whether the strong prior penalty suppresses its linear term.
+
+\subsection{Interpretability}\label{sec:interp}
+\begin{table}[t]
+  \centering\small
+  \caption{Explanation size and validity (500 test examples per run, mean over datasets and seeds).
+  ``terms'': number of terms covering 90\% of the absolute contribution; self-consist.: cosine between the
+  frozen-local-model attribution and the removal effect on the full model; fid.: accuracy of an example's
+  local model on its $k$ nearest test neighbours per class.}
+  \label{tab:interp}
+  \input{generated/main_interp.tex}
+\end{table}
+\begin{figure}[t]
+  \centering
+  \begin{minipage}[b]{0.42\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/main_interp.pdf}
+    \captionof{figure}{Explanation length vs.\ local fidelity.}
+    \label{fig:interp}
+  \end{minipage}\hfill
+  \begin{minipage}[b]{0.52\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/ranks.pdf}
+    \captionof{figure}{Average ranks (test AUROC) per protocol.}
+    \label{fig:ranks}
+  \end{minipage}
+\end{figure}
+Clause local models describe the model around an example far better than \imn{}'s hyperplanes
+(Table~\ref{tab:interp}, Figure~\ref{fig:interp}): the local model of an example classifies its 10
+nearest neighbours per class with accuracy \MainFidimntm{} for \arm{IMN-TM} vs.\ \MainFidimn{} for \imn{},
+and the frozen local model agrees with the full model's response to feature removal (self-consistency
+\MainSelfimntm{} vs.\ \MainSelfimn). Learned clauses matter here even though they do not matter for
+AUROC: random clauses drop to \MainFidimntmrand{} and \MainSelfimntmrand. The cost is length:
+\MainClausesimntm{} weighted rules are needed to cover 90\% of an \arm{IMN-TM} explanation vs.\
+\MainLinimn{} features for \imn{}. \arm{TM-Gated} gives short linear explanations (\MainLintmgated{} terms) but
+the lowest fidelity (\MainFidtmgated): its local hyperplane changes whenever a rule switches.
+Figure~\ref{fig:example} shows both kinds of explanation for one real decision.
+
+\begin{figure}[t]
+  \centering
+  \resizebox{\textwidth}{!}{\input{generated/example_fig.tex}}
+  \caption{\textbf{One credit-g decision, two explanations} (seed-0 models of Table~\ref{tab:main}).
+  Left: \imn{}'s feature impacts. Right: the four strongest of the active rules of \arm{IMN-TM} with their
+  per-example weights; thermometer literals of one column are merged into an interval. ``(enc.)'':
+  categorical feature in its target-encoded value.}
+  \label{fig:example}
+\end{figure}
+
+% ---------------------------------------------------------------- remaining phases
+\input{sections_later.tex}
+
+\FloatBarrier
+\section{Limitations}
+\begin{itemize}
+  \item \textbf{Two-stage training.} The clause basis is fixed before the hypernetwork sees it:
+        the TM's clauses are learned for its own fixed vote, not for per-example re-weighting.
+        Random clauses match the learned ones in AUROC, so better bases are an open direction.
+  \item \textbf{Explanation length.} Clause explanations are long, and an accuracy-only search
+        makes them longer. The removal attribution of a clause model depends on the baseline.
+  \item \textbf{Hyper-parameter selection.} Winners were selected on one validation split
+        (seed 0). On small datasets this is noisy: the tuned \imn{} lost
+        \TuneimnWorst{} against its own default.
+  \item \textbf{Reproduction.} Our split differs from the paper's. Our default-HP \imn{} falls
+        short of the paper's numbers on some datasets (\MainWorstPaperGap), which flatters the
+        TM arms there. Tuning closes these gaps.
+  \item \textbf{Substitutions and caps.} CatBoost was replaced by HistGradientBoosting. Tier-2
+        runs use a step cap that binds on \TiertwoCappedN{} of \TiertwoDatasets{} datasets.
+        It favours models with a good initialisation, so Tier-2 differences between \imn{}
+        and the clause models partly measure training efficiency
+        (Section~\ref{sec:tier2}). Three Tier-2 datasets could not be downloaded verifiably
+        and are excluded.
+\end{itemize}
+
+\begin{thebibliography}{9}\small
+\bibitem{kadra2024} A.~Kadra, S.~Pineda Arango, J.~Grabocka. Interpretable Mesomorphic Networks for Tabular
+  Data. \emph{NeurIPS}, 2024.
+\bibitem{granmo2018} O.-C.~Granmo. The Tsetlin Machine---A Game Theoretic Bandit Driven Approach to Optimal
+  Pattern Recognition with Propositional Logic. \emph{arXiv:1804.01508}, 2018.
+\bibitem{xaibench} Y.~Liu, S.~Khandagale, C.~White, W.~Neiswanger. Synthetic Benchmarks for Scientific
+  Research in Explainable Machine Learning. \emph{NeurIPS Datasets and Benchmarks}, 2021.
+\bibitem{yeh2019} C.-K.~Yeh et al. On the (In)fidelity and Sensitivity of Explanations. \emph{NeurIPS}, 2019.
+\end{thebibliography}
+\end{document}

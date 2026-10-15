@@ -1,0 +1,133 @@
+% TikZ body of the graphical abstract; \input by graphical_abstract.tex (standalone) and report.tex.
+% Needs: tikz with positioning, arrows.meta, fit, backgrounds, calc; the result macros.
+\definecolor{gaInk}{HTML}{0B0B0B}
+\definecolor{gaInkTwo}{HTML}{52514E}
+\definecolor{gaMuted}{HTML}{8A8984}
+\definecolor{gaGrid}{HTML}{E4E3DF}
+\definecolor{gaBlue}{HTML}{2A78D6}
+\definecolor{gaOrange}{HTML}{EB6834}
+\definecolor{gaAqua}{HTML}{1BAF7A}
+\definecolor{gaBox}{HTML}{3A3936}
+\tikzset{
+  ga/.style={font=\small, text=gaInk},
+  ga panel/.style={draw=gaGrid, rounded corners=6pt, line width=0.8pt, fill=white},
+  ga title/.style={font=\bfseries\normalsize, anchor=north west, text=gaInk},
+  ga sub/.style={font=\footnotesize, text=gaInkTwo, anchor=north west},
+  ga data/.style={draw=gaMuted, fill=gaGrid!40, rounded corners=2pt, minimum height=7mm, minimum width=13mm,
+                  font=\footnotesize, align=center},
+  ga black/.style={draw=gaBox, fill=gaBox, text=white, rounded corners=3pt, minimum height=9mm,
+                   minimum width=27mm, font=\footnotesize, align=center},
+  ga tm/.style={draw=gaOrange, fill=gaOrange!12, rounded corners=3pt, minimum height=9mm,
+                minimum width=27mm, font=\footnotesize, align=center, line width=0.8pt},
+  ga gen/.style={draw=gaAqua, fill=gaAqua!12, rounded corners=3pt, minimum height=9mm,
+                 minimum width=27mm, font=\footnotesize, align=center, line width=0.8pt},
+  ga local/.style={draw=#1, line width=1.1pt, rounded corners=3pt, fill=white, minimum height=10mm,
+                   minimum width=44mm, font=\footnotesize, align=center},
+  ga arrow/.style={-{Stealth[length=2.4mm]}, line width=0.9pt, draw=gaInkTwo},
+  ga lbl/.style={font=\scriptsize, text=gaInkTwo, fill=white, inner sep=1pt},
+  ga find/.style={draw=gaGrid, fill=gaGrid!35, rounded corners=4pt, text width=38.9mm, minimum height=17mm,
+                  font=\scriptsize, align=left, inner sep=4pt, text=gaInk},
+}
+% a tiny table icon standing for the input row x
+\newcommand{\gaTable}[1]{%
+  \begin{scope}[shift={(#1)}]
+    \foreach \i in {0,...,3} {\draw[gaMuted, fill=gaGrid!60] (\i*0.32,0) rectangle ++(0.30,0.30);}
+  \end{scope}}
+% horizontal impact bars: list of signed lengths
+\newcommand{\gaBars}[3]{% anchor, colour, list
+  \begin{scope}[shift={(#1)}]
+    \draw[gaMuted, line width=0.5pt] (0,0.15) -- (0,-1.15);
+    \foreach \v [count=\k] in {#3} {
+      \fill[#2, rounded corners=0.6pt] (0,{-(\k-1)*0.26}) rectangle ({\v},{-(\k-1)*0.26-0.17});
+    }
+  \end{scope}}
+
+\newcommand{\GraphicalAbstract}{%
+\begin{tikzpicture}[ga, x=1cm, y=1cm]
+  % ---------------------------------------------------------------- panel geometry
+  \def\pw{5.55} \def\ph{8.15} \def\gap{0.3}
+  \foreach \p in {0,1,2} {\draw[ga panel] ({\p*(\pw+\gap)},0) rectangle ++(\pw,\ph);}
+
+  % ================================================================= (a) IMN
+  \begin{scope}[shift={(0,0)}]
+    \node[ga title] at (0.25,\ph-0.2) {(a) IMN \textmd{(Kadra et al., 2024)}};
+    \node[ga sub]   at (0.25,\ph-0.72) {a black box writes one \emph{linear} model per $x$};
+    \gaTable{0.55,6.45}
+    \node[font=\footnotesize, anchor=west] at (1.95,6.6) {$x\in\mathbb{R}^d$};
+    \node[ga black] (hA) at (2.78,5.35) {hypernetwork\\[-1pt]{\scriptsize TabResNet, $\theta$}};
+    \draw[ga arrow] (2.78,6.3) -- (hA.north);
+    \node[ga local=gaBlue] (lA) at (2.78,3.75) {$\hat y=\sigma\!\big(\textstyle\sum_m w_m(x)\,x_m + b(x)\big)$};
+    \draw[ga arrow] (hA.south) -- node[ga lbl, right=2pt] {$w(x),\,b(x)$} (lA.north);
+    \node[font=\scriptsize\bfseries, text=gaBlue, anchor=west] at (0.4,2.65) {explanation: feature impacts $w_m(x)\,x_m$};
+    \gaBars{2.4,2.15}{gaBlue}{1.6,-1.05,0.75,-0.45,0.25}
+    \foreach \n [count=\k] in {$x_3$,$x_1$,$x_7$,$x_2$,$x_5$}
+      \node[font=\tiny, text=gaInkTwo, anchor=east] at (1.15,{2.07-(\k-1)*0.26}) {\n};
+    \node[font=\scriptsize, text=gaInkTwo, align=center, text width=5cm] at (\pw/2,0.45)
+      {local model = a tangent hyperplane};
+  \end{scope}
+
+  % ================================================================= (b) IMN-TM
+  \begin{scope}[shift={(\pw+\gap,0)}]
+    \node[ga title] at (0.25,\ph-0.2) {(b) IMN-TM \textmd{(this work)}};
+    \node[ga sub]   at (0.25,\ph-0.72) {the local model \emph{is} a weighted TM};
+    % stage 1
+    \node[font=\scriptsize\bfseries, text=gaOrange, anchor=west] at (0.25,6.85) {stage 1 \textmd{(TM feedback, no gradients)}};
+    \node[ga tm, minimum width=46mm, minimum height=8mm] (tmB) at (2.78,6.25)
+      {TM on bits $[x_m\!\ge t]$ $\Rightarrow$ clauses $c_j(x)\in\{0,1\}$};
+    \node[font=\scriptsize, text=gaOrange, anchor=north] at (2.78,5.78) {frozen after stage 1};
+    % stage 2
+    \node[font=\scriptsize\bfseries, text=gaInkTwo, anchor=west] at (0.25,5.25) {stage 2 \textmd{(back-prop.)}};
+    \node[ga black, minimum width=22mm] (hB) at (1.55,4.5) {hypernetwork\\[-1pt]{\scriptsize $x\mapsto W(x)$}};
+    \node[ga tm, minimum width=19mm] (cB) at (4.28,4.5) {$c_1(x)\dots c_K(x)$};
+    \draw[ga arrow] (tmB.south -| cB.north) ++(0,-0.35) -- (cB.north);
+    \node[ga local=gaOrange] (lB) at (2.78,3.05) {$\hat y=\sigma\!\big(\textstyle\sum_j W_j(x)\,c_j(x) + b(x)\big)$};
+    \draw[ga arrow] (hB.south) -- (hB.south |- lB.north);
+    \draw[ga arrow] (cB.south) -- (cB.south |- lB.north);
+    \node[font=\scriptsize\bfseries, text=gaOrange, anchor=west] at (0.4,2.1) {explanation: active rules, weighted};
+    \foreach \w/\r [count=\k] in {+1.4/{$x_3\!\ge t_1 \wedge \neg\, x_7\!\ge t_2$},
+                                  -0.9/{$x_1\!\ge t_3$},
+                                  +0.6/{$\neg\, x_2\!\ge t_4 \wedge x_5\!\ge t_5$}} {
+      \node[font=\tiny, anchor=east, text=gaOrange] at (1.25,{1.7-(\k-1)*0.33}) {\w};
+      \node[font=\tiny, anchor=west, draw=gaOrange!50, rounded corners=1.5pt, inner sep=1.5pt]
+        at (1.35,{1.7-(\k-1)*0.33}) {\r};
+    }
+    \node[font=\scriptsize, text=gaInkTwo, align=center, text width=5cm] at (\pw/2,0.45)
+      {local model = constant on a box of $x$};
+  \end{scope}
+
+  % ================================================================= (c) TM-Gated
+  \begin{scope}[shift={(2*\pw+2*\gap,0)}]
+    \node[ga title] at (0.25,\ph-0.2) {(c) TM-Gated \textmd{(this work)}};
+    \node[ga sub]   at (0.25,\ph-0.72) {the TM \emph{is} the hypernetwork: no black box};
+    \gaTable{0.55,6.45}
+    \node[font=\footnotesize, anchor=west] at (1.95,6.6) {$x\in\mathbb{R}^d$};
+    \node[ga tm] (cC) at (2.78,5.35) {frozen TM clauses\\[-1pt]{\scriptsize $c_1(x)\dots c_K(x)$}};
+    \draw[ga arrow] (2.78,6.3) -- (cC.north);
+    \node[ga gen, minimum width=44mm] (gC) at (2.78,4.15) {$w(x)=w_0+\textstyle\sum_j c_j(x)\,V_j$};
+    \draw[ga arrow] (cC.south) -- (gC.north);
+    \node[ga local=gaAqua] (lC) at (2.78,2.95) {$\hat y=\sigma\!\big(w(x)^{\!\top} x + b(x)\big)$};
+    \draw[ga arrow] (gC.south) -- (lC.north);
+    \node[font=\scriptsize\bfseries, text=gaAqua, anchor=west] at (0.4,2.1) {explanation: every weight traces to rules};
+    \node[font=\tiny, text=gaInkTwo, align=left, anchor=north west, text width=4.9cm] at (0.4,1.85)
+      {$w_m(x) = \underbrace{w_{0m}}_{\text{global}} + \underbrace{V_{3m}}_{\text{rule 3 fired}} + \underbrace{V_{8m}}_{\text{rule 8 fired}}$};
+    \node[font=\scriptsize, text=gaInkTwo, align=center, text width=5cm] at (\pw/2,0.45)
+      {local model = a hyperplane chosen by rules};
+  \end{scope}
+
+  % ================================================================= findings strip
+  \def\fy{-0.35}
+  \node[font=\bfseries\small, anchor=north west] at (0,\fy) {What we found
+    \textmd{\footnotesize\ (\HpoDatasets\ AutoML-benchmark datasets $\times$ \HpoSeeds\ seeds, tuned; \XaiVsimnN\ synthetic tasks)}};
+  \node[ga find, anchor=north west] (f1) at (0,\fy-0.55)
+    {\textbf{Better than the TM.} IMN-TM beats its own source TM on \HpoimntmtmWins/\HpoDatasets\ datasets
+     (mean $\Delta$AUROC \HpoimntmtmMean, Holm $p=\HpoimntmtmHolm$).};
+  \node[ga find, right=2.5mm of f1] (f2)
+    {\textbf{Level with the best.} Tuned, IMN-TM shares the best average rank with GBDT
+     (\HpoRankimntm; IMN \HpoRankimn); vs.\ IMN: \HpoimntmimnMean, not significant.};
+  \node[ga find, right=2.5mm of f2] (f3)
+    {\textbf{More faithful explanations.} Neighbour accuracy \HpoFidimntm\ vs.\ \HpoFidimn\ for IMN; closer to
+     the true attributions on \XaiVsimnWins/\XaiVsimnN\ synthetic tasks.};
+  \node[ga find, right=2.5mm of f3] (f4)
+    {\textbf{The price is length.} \MainClausesimntm\ (default) to \HpoClausesimntm\ (tuned) weighted rules
+     cover 90\% of an IMN-TM explanation, vs.\ \MainLinimn\ features for IMN.};
+\end{tikzpicture}}

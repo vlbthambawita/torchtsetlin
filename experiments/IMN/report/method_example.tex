@@ -1,0 +1,205 @@
+% Worked example of the method (Section 2.4). The toy numbers are illustrative, chosen by hand and
+% checked by hand-written arithmetic; they are not results and do not come from results/*.json.
+\subsection{A worked example}\label{sec:example}
+This section follows one toy input through every step of \arm{IMN-TM}, then through \imn{} and
+\arm{TM-Gated}, so that each symbol in the equations above has a concrete value. The numbers are
+\emph{illustrative}: they are chosen by hand to be easy to follow and are not measured. A real run
+differs only in size. It has tens to thousands of threshold bits, hundreds of clauses, $T=100$
+instead of $T=10$, and weights produced by a trained TabResNet. Table~\ref{tab:notation} collects
+the notation and Figure~\ref{fig:worked} draws the whole computation.
+
+\paragraph{The task.} A binary task ($y=1$: disease, $y=0$: healthy) with $d=2$ numeric features, \emph{age} and
+\emph{blood pressure} (bp). As in the official \imn{} pipeline, numeric columns are standardised on the
+training split, so a value is in units of standard deviations from the training mean. The example to
+explain is
+\[
+  x=(x_1,x_2)=(\underbrace{0.8}_{\text{age}},\ \underbrace{-0.3}_{\text{bp}}),\qquad y=1 ,
+\]
+a somewhat older patient with slightly low blood pressure. Binary tasks use a single output
+($n_\text{out}=1$), so the model produces one logit $z(x)$ and $p(y{=}1\mid x)=\sigma(z(x))$.
+
+\begin{table}[h!]
+  \centering\small\setlength{\tabcolsep}{4pt}
+  \caption{Notation, with the value each symbol takes in the worked example of Section~\ref{sec:example}.}
+  \label{tab:notation}
+  \begin{tabular}{@{}l l l l@{}}
+    \toprule
+    Symbol & Meaning & Shape & Toy value\\
+    \midrule
+    $x=(x_1,\dots,x_d)$ & standardised input features & $d$ & $(0.8,\,-0.3)$, $d=2$\\
+    $t_b,\ m(b)$ & threshold of bit $b$ and the feature it reads & per bit & $t_2=0.2$, $m(2)=1$ (age)\\
+    $\beta_b(x)=[x_{m(b)}\ge t_b]$ & Boolean (thermometer) bit & $F$ bits & $(1,1,0,\,1,0,0)$, $F=6$\\
+    $\ell(x)=(\beta,\ \lnot\beta)$ & literals: every bit and its negation & $2F$ & 12 literals\\
+    $c_j(x)$ & output of clause $j$ (AND of its literals) & $K$ & $(1,0,1)$, $K=3$\\
+    $W^\text{TM}_{j}$ & signed integer vote of clause $j$ in the trained TM & $K\times n_\text{out}$ & $(+6,\,+4,\,-3)$\\
+    $T$ & TM vote margin (scales votes to logits) & scalar & $10$ (real runs: $100$)\\
+    $W_{j}(x),\ b(x)$ & clause weights and bias generated for $x$ & $K\times n_\text{out}$, $n_\text{out}$ & $(1.4,\,0.2,\,-0.5)$, $-0.3$\\
+    $z(x)$ & logit of the local model & $n_\text{out}$ & $0.6$\\
+    $\lambda$ & strength of the penalty on generated weights & scalar & $0.1$\\
+    $\phi_m(x)$ & removal attribution of feature $m$ & $d$ & $(1.4,\,-0.2)$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\paragraph{Step 1: from numbers to bits.} The TM reads Boolean inputs, so every feature is cut at a few
+thresholds (\emph{thermometer} encoding). The thresholds are quantiles of the training data; real runs
+keep up to 10 per feature, and the toy keeps 3:
+\[
+\begin{array}{l@{\qquad}ccc@{\qquad}l}
+  \text{age } (x_1=0.8): & t_1=-0.5 & t_2=0.2 & t_3=0.9 & \beta_{1..3}=(1,1,0)\\
+  \text{bp } (x_2=-0.3): & t_4=-0.6 & t_5=0.0 & t_6=0.7 & \beta_{4..6}=(1,0,0)
+\end{array}
+\qquad \beta_b(x)=[\,x_{m(b)}\ge t_b\,].
+\]
+Here $[\cdot]$ is 1 when the condition holds and 0 otherwise, and $m(b)$ is the feature that bit $b$
+reads. Bits 1--3 have $m(b)=1$ (age) and bits 4--6 have $m(b)=2$ (bp). The thermometer pattern
+$1,1,0$ says ``age is at least $0.2$ but below $0.9$''. The TM may use each bit as it is or negated,
+which gives $2F=12$ literals $\ell(x)$.
+
+\paragraph{Step 2: the frozen clauses (stage 1).} A weighted TM is trained on the bits as usual. After
+training, its clauses are fixed rules. Suppose that, once empty and duplicate clauses are removed,
+$K=3$ remain:
+\[
+\begin{array}{l@{\ \ }l@{\qquad}c@{\qquad}r}
+  & \text{clause (in words)} & c_j(x) & W^\text{TM}_j\\[2pt]
+  c_1: & [\text{age}\ge0.2]\ \land\ \lnot[\text{bp}\ge0.7] & 1\land1=1 & +6\\
+  c_2: & [\text{bp}\ge0.0]                               & 0          & +4\\
+  c_3: & \lnot[\text{age}\ge0.9]\ \land\ [\text{bp}\ge-0.6] & 1\land1=1 & -3
+\end{array}
+\]
+A clause outputs 1 only when \emph{all} of its literals are 1. For a binary task, $W^\text{TM}_j$ is the
+clause's vote for class~1 minus its vote for class~0: $c_1$ and $c_2$ vote for disease, and $c_3$ votes
+for healthy. The TM's own prediction is the vote sum scaled by the margin $T$:
+\[
+  z^\text{TM}(x)=\frac{1}{T}\sum_{j=1}^{K}W^\text{TM}_j\,c_j(x)=\frac{6\cdot1+4\cdot0-3\cdot1}{10}=0.3,
+  \qquad \sigma(0.3)=0.57 .
+\]
+The weights $W^\text{TM}_j$ are the \emph{same for every patient}, which makes the TM a global model. From
+here on the clauses never change. For any input, $c(x)\in\{0,1\}^K$ is just a vector of $K$ yes/no
+answers, and gradient descent can use it like any other fixed feature.
+
+\paragraph{Step 3: the hypernetwork writes a local model (stage 2).} The TabResNet hypernetwork reads the
+\emph{raw} standardised input $x=(0.8,-0.3)$ and outputs $P=K+1=4$ numbers: one weight per clause and a
+bias. For a $C$-class task it outputs $(K{+}1)\times C$ numbers. Suppose that for this patient it
+outputs
+\[
+  W(x)=(W_1(x),W_2(x),W_3(x))=(1.4,\ 0.2,\ -0.5),\qquad b(x)=-0.3 .
+\]
+The local model is the TM with these weights in place of $W^\text{TM}/T$. This is Eq.~\eqref{eq:imntm} with
+$n_\text{out}=1$:
+\[
+  z(x)=\sum_{j=1}^{K}W_j(x)\,c_j(x)+b(x)=1.4\cdot1+0.2\cdot0-0.5\cdot1-0.3=0.6,\qquad \sigma(0.6)=0.65 .
+\]
+Only \emph{active} clauses ($c_j(x)=1$) contribute. $W_2(x)=0.2$ is generated, but it is multiplied by
+$c_2(x)=0$ and is not part of the explanation. The explanation of this prediction reads: ``\emph{age
+$\ge0.2$ and bp $<0.7$} pushes towards disease with weight $1.4$; \emph{age $<0.9$ and bp $\ge-0.6$}
+pushes towards healthy with weight $0.5$; baseline $-0.3$.'' Each rule is a box in feature space.
+
+Another patient gets other weights. For $x'=(-0.9,\,0.8)$ the bits are $(0,0,0,\,1,1,1)$ and the active
+clauses are $c(x')=(0,1,1)$. If the hypernetwork outputs $W(x')=(0.9,1.1,-0.2)$ and $b(x')=0.1$, then
+$z(x')=1.1-0.2+0.1=1.0$. This explanation is led by the rule ``\emph{bp $\ge0$}'' with weight $1.1$. The
+global TM, by contrast, gives that rule $4/10=0.4$ for every patient. \emph{Which rules count, and by
+how much, is decided per example; what the rules are is decided once, by the TM.}
+
+\paragraph{Step 4: initialisation at the TM.} Before training, the last layer of the hypernetwork is
+zero. Its bias is set to $W^\text{TM}/T=(0.6,0.4,-0.3)$ for the clause weights and to $0$ for $b$. The
+hypernetwork therefore outputs exactly these numbers for every input, and the untrained \arm{IMN-TM}
+reproduces the TM: $z(x)=0.6\cdot1+0.4\cdot0-0.3\cdot1+0=0.3=z^\text{TM}(x)$. Training then only
+\emph{moves} the weights away from the TM's votes where that lowers the loss. The one difference from
+the TM is that the TM clamps each class's vote sum to $[-T,T]$, and this initialisation does not.
+
+\paragraph{Step 5: the training loss.} The hypernetwork parameters $\theta$ are trained by Adam on the
+cross-entropy plus a penalty on the generated parameters. For the \texttt{prior} variant the penalty
+pulls them towards the TM initialisation $w^\text{prior}=(0.6,0.4,-0.3,\,0)$:
+\[
+  \mathcal{L}(x,y)=\underbrace{-\log\sigma(z(x))}_{y=1:\ \log(1+e^{-0.6})=0.437}
+  +\ \lambda\,\underbrace{\tfrac{1}{P}\textstyle\sum_{p=1}^{P}\big|w_p(x)-w^\text{prior}_p\big|}_{(0.8+0.2+0.2+0.3)/4=0.375}
+  =0.437+0.1\cdot0.375=0.475 .
+\]
+Here $w(x)=(W(x),b(x))$ is the full generated vector of length $P$, and $\lambda=0.1$ is an example
+value. The gradient of $\mathcal{L}$ flows through $z(x)$ into $W(x)$ and $b(x)$, and from there into
+$\theta$. It never flows into the clauses, which is why they had to be learned first. With the original
+\texttt{all} variant, $w^\text{prior}=0$ and the penalty is $\lambda\,\overline{|w(x)|}$ as in \imn{}.
+
+\paragraph{Step 6: feature attributions.} A doctor asks how much \emph{age} mattered. Following the
+paper, we set that feature to 0 (its training mean), \emph{keep the generated weights $W(x),b(x)$
+fixed}, re-evaluate the clauses, and measure how much the logit drops:
+\[
+  \phi_m(x)=z\big(x;\,W(x)\big)-z\big(x\odot\delta^m;\,W(x)\big),
+\]
+where $x\odot\delta^m$ is $x$ with feature $m$ set to 0.
+\begin{itemize}[topsep=3pt,itemsep=2pt]
+  \item \emph{age} $\to0$: $x=(0,-0.3)$ has bits $(1,0,0,\,1,0,0)$. Now $c_1=0$ (age $<0.2$) while
+        $c_3$ stays on, so $z=-0.5-0.3=-0.8$ and $\phi_\text{age}=0.6-(-0.8)=1.4$.
+  \item \emph{bp} $\to0$: $x=(0.8,0)$ has bits $(1,1,0,\,1,1,0)$. Now $c_2$ switches \emph{on}, so
+        $z=1.4+0.2-0.5-0.3=0.8$ and $\phi_\text{bp}=0.6-0.8=-0.2$.
+\end{itemize}
+Age therefore pushes this patient towards disease, and bp pushes slightly towards healthy, because
+raising bp to average would fire the disease rule $c_2$. A feature's attribution sums the effect of
+every rule that it switches on or off. This is why a clause explanation stays correct under small
+changes of $x$ (local fidelity, Section~\ref{sec:interp}). A rule only changes its contribution when
+$x$ crosses one of its thresholds.
+
+\paragraph{The same patient under \imn{} and \arm{TM-Gated}.} The original \imn{} hypernetwork outputs
+a linear model, for example $w(x)=(1.2,\,0.5)$ and $w_0(x)=-0.1$, so
+\[
+  z(x)=w_1(x)x_1+w_2(x)x_2+w_0(x)=1.2\cdot0.8+0.5\cdot(-0.3)-0.1=0.71,
+  \qquad \phi(x)=(w_1x_1,\ w_2x_2)=(0.96,\,-0.15).
+\]
+The explanation is two numbers instead of two rules, and it assumes the logit changes linearly in
+age and bp around $x$. In \arm{TM-Gated} there is no TabResNet: the coefficients of the linear model
+are themselves a TM-style vote, $w(x)=w_0+\sum_j c_j(x)V_j$, where row $V_j$ is what clause $j$ adds to
+the coefficients (age, bp, bias) when it fires. With $w_0=(0.3,\,0.1,\,0)$, $V_1=(0.8,\,0,\,0.1)$ and
+$V_3=(0,\,-0.4,\,0)$, the active clauses $c_1,c_3$ give $w(x)=(1.1,\,-0.3,\,0.1)$ and
+$z(x)=1.1\cdot0.8-0.3\cdot(-0.3)+0.1=1.07$. Every coefficient can be traced to a global value plus the
+rules that fired. \arm{IMN-Hybrid} simply adds the \imn{} linear term and the \arm{IMN-TM} clause term
+before the shared bias.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    font=\small, >={Stealth[length=2.2mm]},
+    box/.style={draw, rounded corners=2pt, align=center, inner sep=4pt, fill=#1},
+    box/.default=white,
+    lab/.style={font=\footnotesize\bfseries, text=black!70},
+    arr/.style={->, thick, black!65}]
+  % column 1: input
+  \node[box=gray!10, minimum width=2.3cm] (x) {$x=(0.8,\,-0.3)$\\[1pt]\footnotesize age, bp};
+  % column 2: bits
+  \node[box=blue!6, right=1.0cm of x, minimum width=3.1cm] (bits)
+    {$\beta(x)=(1,1,0\,|\,1,0,0)$\\[1pt]\footnotesize age $\ge\{-.5,.2,.9\}$ \,|\, bp $\ge\{-.6,0,.7\}$};
+  % column 3: clauses
+  \node[box=orange!10, right=1.0cm of bits, align=left] (cl)
+    {$c_1$: age${\ge}.2\land$ bp${<}.7$ \hfill $=1$\\
+     $c_2$: bp${\ge}0$ \hfill $=0$\\
+     $c_3$: age${<}.9\land$ bp${\ge}{-.6}$ \hfill $=1$};
+  % hypernetwork below
+  \node[box=green!8, below=1.2cm of x, minimum width=2.3cm] (hn) {TabResNet\\hypernetwork $\theta$};
+  \node[box=green!8, right=1.0cm of hn, minimum width=3.1cm] (w)
+    {$W(x)=(1.4,\ 0.2,\ -0.5)$\\$b(x)=-0.3$};
+  % local model
+  \node[box=red!7, right=1.0cm of w, align=center] (z)
+    {$z=1.4{\cdot}1+0.2{\cdot}0-0.5{\cdot}1-0.3$\\$=0.6,\quad p=\sigma(0.6)=0.65$};
+  \draw[arr] (x) -- node[above, lab]{1} (bits);
+  \draw[arr] (bits) -- node[above, lab]{2} (cl);
+  \draw[arr] (x) -- node[left, lab]{3} (hn);
+  \draw[arr] (hn) -- (w);
+  \draw[arr] (w) -- (z);
+  \draw[arr] (cl) -- node[right, font=\footnotesize]{$c(x)$} (z);
+  % stage annotations
+  \begin{scope}[on background layer]
+    \node[draw=orange!60, dashed, rounded corners, fit=(bits)(cl), inner sep=5pt,
+          label={[font=\footnotesize, text=orange!70!black]above:stage 1: TM, then frozen}] {};
+    \node[draw=green!50!black, dashed, rounded corners, fit=(hn)(w), inner sep=5pt,
+          label={[font=\footnotesize, text=green!40!black]below:stage 2: trained by gradient descent}] {};
+  \end{scope}
+  \node[below=0.35cm of z, align=center, font=\footnotesize, text=black!70]
+    {TM alone: $(6\cdot1-3\cdot1)/T=0.3$\\ at init.\ $W(x)=W^\text{TM}/T=(.6,.4,-.3)$};
+\end{tikzpicture}
+\caption{\textbf{The worked example of Section~\ref{sec:example}.} (1) The standardised input is cut at
+training-set thresholds into bits. (2) The frozen TM clauses are evaluated on the bits. (3) Separately,
+the hypernetwork maps the raw input to one weight per clause plus a bias. The logit is the sum of the
+weights of the active clauses ($c_j=1$). Only the hypernetwork is trained in stage~2. Numbers are
+illustrative.}
+\label{fig:worked}
+\end{figure}

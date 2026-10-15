@@ -1,0 +1,258 @@
+% Sections for Phases 3-6; filled in when their records exist.
+\subsection{Tuned hyper-parameters}\label{sec:hpo}
+Every method received 20 random-search trials per dataset (\S\ref{sec:protocol}). The winner of
+each method and dataset was chosen on the seed-0 validation AUROC only and then re-run on
+seeds 0--4. Tables~\ref{tab:hpo} and~\ref{tab:hpopairs} repeat the main-stage analysis on these
+\HpoRecords{} runs.
+
+\begin{table}[t]
+  \centering
+  \caption{Test AUROC (mean{\tiny$\pm$sd} over \HpoSeeds{} seeds) with tuned hyper-parameters.
+  Layout as in Table~\ref{tab:main}.}
+  \label{tab:hpo}
+  \small
+  \resizebox{\textwidth}{!}{\input{generated/hpo_final_auroc_a.tex}}\\[4pt]
+  \resizebox{\textwidth}{!}{\input{generated/hpo_final_auroc_b.tex}}
+\end{table}
+\begin{table}[t]
+  \centering\small
+  \caption{Preregistered comparisons, tuned hyper-parameters (\HpoDatasets{} datasets).
+  $^\ast$: Holm-corrected $p<0.05$.}
+  \label{tab:hpopairs}
+  \input{generated/hpo_final_pairs.tex}
+\end{table}
+\begin{figure}[t]
+  \centering
+  \begin{subfigure}[t]{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/hpo_final_gap.pdf}
+    \caption{Gain over \imn{} vs.\ the tree-ensemble advantage, tuned.}
+    \label{fig:hpogap}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.49\textwidth}\centering
+    \includegraphics[width=\linewidth]{figures/hpo_final_delta.pdf}
+    \caption{Per-dataset $\Delta$AUROC vs.\ \imn{}, tuned.}
+    \label{fig:hpodelta}
+  \end{subfigure}
+  \caption{\textbf{Where the TM helps, after tuning.} Compare with Figure~\ref{fig:where}.}
+  \label{fig:hpowhere}
+\end{figure}
+
+\paragraph{Tuning helps the clause models most.} \arm{IMN-TM} improves on its default
+configuration on \TuneimntmWins{} of 12 datasets (\TuneimntmMean{} mean AUROC, to
+\TuneimntmAuroc). \imn{} gains \TuneimnMean{} on \TuneimnWins{} datasets and TabResNet gains
+\TunetabresnetMean. Random forests lose \TunerfMean, which shows that selecting on one
+validation split is noisy. After tuning, \arm{IMN-TM} shares the best average rank with GBDT
+(both \HpoRankimntm; \arm{IMN-Hybrid} \HpoRankimnhybrid, TabResNet \HpoRanktabresnet, \imn{}
+\HpoRankimn; Figure~\ref{fig:ranks}). The critical difference is \HpoCD, however, so the leading
+group cannot be separated statistically.
+
+\paragraph{Preregistered questions.}
+\begin{itemize}
+  \item \textbf{Q1} is stronger than with defaults: \arm{IMN-TM} beats its source TM on
+        \HpoimntmtmWins/12 datasets (\HpoimntmtmMean, Holm $p=\HpoimntmtmHolm$).
+  \item \textbf{Q5} becomes significant. The per-example generator beats a single global re-fit
+        of the same clause weights by \HpoimntmclauselrMean{}
+        (\HpoimntmclauselrWins/\HpoimntmclauselrLosses, Holm $p=\HpoimntmclauselrHolm$).
+  \item \textbf{Q2} moves in favour of \arm{IMN-TM} (\HpoimntmimnMean,
+        \HpoimntmimnWins/\HpoimntmimnLosses) but remains unresolved: the confidence interval
+        includes zero. One dataset dominates the mean: on \HpoImntmImnBest{} the tuned \imn{}
+        lost \TuneimnWorst{} against its own default, a selection failure on a dataset of
+        748 rows. Without it the mean difference is \HpoImntmImnMeanNoBest.
+  \item \textbf{Q6} is unchanged. Random clauses remain as accurate as learned ones
+        (\HpoimntmimntmrandMean).
+  \item \textbf{R}: tuned \imn{} falls behind tuned TabResNet (\HpoimntabresnetMean,
+        \HpoimntabresnetWins/\HpoimntabresnetLosses, Holm $p=\HpoimntabresnetHolm$). The paper
+        reports them level.
+\end{itemize}
+
+\paragraph{The default-HP pattern does not survive tuning.} With tuning, \imn{} gains most on
+exactly the datasets where clauses had helped: \TuneimnBest. The correlation between the
+\arm{IMN-TM} gain and the tree-ensemble advantage falls from $r=\MainGapCorr$ to
+$r=\HpoGapCorr$ (Figure~\ref{fig:hpowhere}). The default-HP result should therefore be read as
+follows. The clause basis gives the hypernetwork a good inductive bias for threshold-shaped
+problems without any search. A tuned hyperplane model closes most of that gap, at a much higher
+search cost.
+
+\paragraph{Explanations after tuning.} Local fidelity is unchanged (\arm{IMN-TM}
+\HpoFidimntm{} vs.\ \imn{} \HpoFidimn) and self-consistency stays high (\HpoSelfimntm). The tuned
+clause models choose weaker L1 penalties, though, and their explanations grow from
+\MainClausesimntm{} to \HpoClausesimntm{} rules for 90\% of the evidence. An accuracy-only
+search therefore trades away explanation length; a search that also scores explanation size
+would need an explicit constraint.
+\subsection{Tier 2: twenty larger datasets}\label{sec:tier2}
+Tier~2 covers the remaining AutoML-benchmark datasets. They have up to 324k training rows,
+up to 4{,}296 features and up to 100 classes. Three are excluded (D25): guillermo and robert
+fail OpenML's checksum, and albert cannot be downloaded. The remaining \TiertwoDatasets{}
+datasets are run with \TiertwoSeeds{} seeds and default hyper-parameters (\TiertwoRecords{}
+runs). All runs completed; \TiertwoSkipped{} were skipped for size.
+
+Two preregistered caps keep the cost bounded (D24):
+\begin{itemize}
+  \item neural training stops after 50{,}000 steps;
+  \item the source TM trains for at most 20 epochs.
+\end{itemize}
+The step cap binds on \TiertwoCappedN{} of the \TiertwoDatasets{} datasets.
+Tables~\ref{tab:t2} and~\ref{tab:t2pairs} report the results.
+
+\begin{table}[t]
+  \centering
+  \caption{Tier 2: test AUROC (mean{\tiny$\pm$sd} over \TiertwoSeeds{} seeds), default
+  hyper-parameters with the step cap. Layout as in Table~\ref{tab:main}.}
+  \label{tab:t2}
+  \small
+  \resizebox{\textwidth}{!}{\input{generated/tier2_auroc_a.tex}}\\[4pt]
+  \resizebox{\textwidth}{!}{\input{generated/tier2_auroc_b.tex}}
+\end{table}
+\begin{table}[t]
+  \centering\small
+  \caption{Preregistered comparisons on Tier 2 (\TiertwoDatasets{} datasets).
+  $^\ast$: Holm-corrected $p<0.05$.}
+  \label{tab:t2pairs}
+  \input{generated/tier2_pairs.tex}
+\end{table}
+
+\paragraph{Headline.} On Tier~2 every clause-based question that was open on Tier~1 comes out
+significant:
+\begin{itemize}
+  \item \arm{IMN-TM} beats its TM on \TiertwoimntmtmWins/\TiertwoDatasets{} datasets
+        (\TiertwoimntmtmMean, Holm $p=\TiertwoimntmtmHolm$);
+  \item it beats \imn{} on \TiertwoimntmimnWins/\TiertwoDatasets{} (\TiertwoimntmimnMean,
+        Holm $p=\TiertwoimntmimnHolm$);
+  \item learned clauses beat random ones (\TiertwoimntmimntmrandMean,
+        \TiertwoimntmimntmrandWins/\TiertwoimntmimntmrandLosses, Holm
+        $p=\TiertwoimntmimntmrandHolm$).
+\end{itemize}
+
+\paragraph{Most of the gain comes from an under-trained \imn{}.} Our \imn{} falls well short
+of the paper's own numbers (Table~\ref{tab:t2}, last column) on \TiertwoShortN{} datasets:
+\TiertwoShortList. All \TiertwoShortCapped{} of them are datasets where the step cap stopped
+training early. They are also the datasets with the largest \arm{IMN-TM} gains. Across
+datasets, the \arm{IMN-TM}$-$\imn{} difference correlates with \imn{}'s shortfall against the
+paper at $r=\TiertwoPaperGapCorr$.
+
+The likely mechanism is the initialisation. \arm{IMN-TM} starts from a trained TM's votes, so
+a truncated schedule costs it little. \imn{} starts from scratch and loses most of its cosine
+schedule.
+
+On the other \TiertwoRestN{} datasets the advantage is \TiertwoRestMean{}
+(\TiertwoRestWins/\TiertwoRestLosses, Wilcoxon $p=\TiertwoRestP$). This is the same
+small, non-significant edge as on Tier~1 (\S\ref{sec:main}, \S\ref{sec:hpo}). The Tier-2
+result is therefore evidence that \arm{IMN-TM} is the better choice \emph{under a fixed
+training budget}. It is not evidence that the clause basis is a better local model.
+
+The learned-vs-random gap (Q6) has the same caveat: random clauses give a weaker starting
+point.
+
+\paragraph{Other observations.}
+\begin{itemize}
+  \item \textbf{Clause-LR.} A single global re-fit of the clause weights ranks third
+        (\TiertwoRankclauselr). It is ahead of both mesomorphic clause models
+        (\arm{IMN-Hybrid} \TiertwoRankimnhybrid, \arm{IMN-TM} \TiertwoRankimntm) and far ahead
+        of \imn{} (\TiertwoRankimn). On large datasets, a fixed linear model over trained
+        clauses is a strong and cheap interpretable baseline.
+  \item \textbf{Leaders.} GBDT (\TiertwoRankgbdt) and RF (\TiertwoRankrf) lead (Friedman
+        $p=\TiertwoFriedmanP$, CD \TiertwoCD).
+  \item \textbf{Explanation length.} On these wider inputs, an \imn{} explanation needs
+        \TiertwoLinimn{} features for 90\% of its evidence, and an \arm{IMN-TM} explanation
+        \TiertwoClausesimntm{} clauses.
+  \item \textbf{Local fidelity.} \arm{IMN-TM} \TiertwoFidimntm{} vs.\ \imn{} \TiertwoFidimn.
+\end{itemize}
+\subsection{Synthetic attribution benchmark}\label{sec:xai}
+On real data the true reason for a decision is unknown. Phase~4 therefore uses three synthetic
+families whose per-feature contributions are known by construction. Each has $d=8$ features
+and $n=10{,}000$ examples:
+\begin{itemize}
+  \item Gaussian linear;
+  \item non-linear additive;
+  \item piecewise constant, i.e.\ axis-aligned thresholds.
+\end{itemize}
+Each family is generated at feature correlations $\rho\in\{0, 0.25, 0.5, 0.75\}$ with five
+seeds, giving 60 tasks and \XaiRecords{} runs. Every method is explained with the same removal
+attribution (\S\ref{sec:method}) on 500 test rows. The headline metric is the Pearson
+correlation between these attributions and the true contributions (``GT corr.'',
+Table~\ref{tab:xai}, Figure~\ref{fig:xai}).
+
+\begin{table}[t]
+  \centering\small
+  \caption{Synthetic attribution benchmark: mean over $\rho$ and seeds, per family. GT corr.:
+  correlation of the removal attributions with the true contributions. infid.: infidelity
+  under small Gaussian perturbations. It penalises piecewise-constant models, whose output
+  jumps, and is reported for completeness only.}
+  \label{tab:xai}
+  \resizebox{\textwidth}{!}{\input{generated/xai_table.tex}}
+\end{table}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\textwidth]{figures/xai_gt.pdf}
+  \caption{\textbf{Attribution quality vs.\ feature correlation.} Mean over five seeds.}
+  \label{fig:xai}
+\end{figure}
+
+\paragraph{IMN-TM explanations are closer to the truth than \imn{}'s.} Paired over the 60
+tasks, the attributions of \arm{IMN-TM} correlate better with the true contributions than those
+of \imn{} on \XaiVsimnWins{} of \XaiVsimnN{} tasks (mean \XaiVsimnMean, Wilcoxon
+$p=\XaiVsimnP$).
+\begin{itemize}
+  \item \textbf{Piecewise constant.} The difference is clearest here: \Xaiimntmpiecewise{} for
+        \arm{IMN-TM} vs.\ \Xaiimnpiecewise{} for \imn{}. In this family \imn{} is also less
+        accurate (AUROC \XaiAucimnpiecewise{} vs.\ \XaiAucimntmpiecewise).
+  \item \textbf{Gaussian linear.} Surprisingly, the difference also holds on the linear family
+        (\Xaiimntmlinear{} vs.\ \Xaiimnlinear). As $\rho$ rises from 0 to 0.75, \imn{}'s
+        correlation drops by \XaiLinDropimn{} and \arm{IMN-TM}'s by only \XaiLinDropimntm.
+        With correlated inputs, a per-example hyperplane can shift weight between correlated
+        features without changing its output. The TM-initialised clause weights are anchored
+        to a global rule set and drift less.
+\end{itemize}
+
+\paragraph{Baselines.} The best global models remain ahead.
+\begin{itemize}
+  \item Plain logistic regression is nearly perfect on its own family (\Xailrlinear).
+  \item GBDT's removal attributions beat \arm{IMN-TM} on \XaiVsgbdtLosses{} of the
+        \XaiVsgbdtN{} tasks (\XaiVsgbdtMean, $p=\XaiVsgbdtP$).
+\end{itemize}
+The mesomorphic models are thus not more faithful than a removal-attributed tree ensemble.
+Their advantage is that the explanation is the model's own local function, not a post-hoc
+probe.
+
+\paragraph{TM-Gated explanations are unreliable.} \arm{TM-Gated} is the least faithful method
+in every family (\Xaitmgatedpiecewise{} on piecewise data; \arm{IMN-TM} is ahead on
+\XaiVstmgatedWins/\XaiVstmgatedN{} tasks). Its local hyperplane is re-composed from rule-gated
+pieces, and the removal of one feature switches rules on or off. The same failure appeared as
+low local fidelity on real data (\S\ref{sec:interp}).
+\subsection{Ablations}\label{sec:abl}
+Each variant of Table~\ref{tab:abl} is run on the twelve Tier-1 datasets with seeds 0--2. It is
+compared with the main-stage record of its reference arm on the same seeds, using a paired
+Wilcoxon test over datasets without multiplicity correction. No variant changes test AUROC
+significantly. Read together, the rows answer four design questions.
+
+\paragraph{Basis size.} The source TM gains from more clauses (800 per class:
+\AblTmEightMean, \AblTmEightWins/\AblTmEightLosses{} wins/losses, $p=\AblTmEightP$). IMN-TM
+does not (\AblImntmEightMean, $p=\AblImntmEightP$), and 50 clauses per class are also enough
+(\AblImntmFiftyMean, $p=\AblImntmFiftyP$). Re-weighting the clauses per example therefore
+recovers what a larger TM gets by adding clauses, and the default of 200 is not a binding choice.
+
+\paragraph{Initialisation.} Starting the generated weights at zero instead of at the TM's own
+votes leaves accuracy unchanged (\AblNoinitMean, $p=\AblNoinitP$). It does lower local fidelity
+from \AblNoinitRefFid{} to \AblNoinitFid. The initialisation is therefore an interpretability
+device: it keeps the per-example weights close to a global rule set.
+
+\paragraph{Generator input.} Feeding the clause outputs to the hypernetwork as well,
+$[x, c(x)]$, is the worst variant (\AblXcMean, \AblXcWins/\AblXcLosses, $p=\AblXcP$). The
+generator then sees the same binary evidence it is weighting, which appears to encourage
+over-fitting. The raw input $x$ alone is the better choice.
+
+\paragraph{Which clauses.} Random conjunctions matched to the trained clauses' firing rates give
+nearly the same accuracy (\AblRandfrMean, $p=\AblRandfrP$), confirming the main-stage
+random-clause control. Their local fidelity, however, drops from \AblRandfrRefFid{} to
+\AblRandfrFid. The trained TM is not needed for accuracy, but it is what makes the explanations
+generalise to the neighbourhood of an example.
+
+\paragraph{Hybrid split.} Giving the linear block of IMN-Hybrid its own, weaker L1 penalty
+($\lambda=0.1$) does not change accuracy (\AblSplitMean, $p=\AblSplitP$). The main-stage
+hypothesis that the strong prior penalty suppressed a useful linear term is not supported.
+
+\begin{table}[h]\centering\small
+\caption{Ablations (Tier 1, seeds 0--2). $\Delta$ is the test AUROC change versus the reference
+arm on the same seeds; $p$ is an uncorrected two-sided Wilcoxon test over datasets. The last
+column is local fidelity at $k=10$.}\label{tab:abl}
+\input{generated/abl_table.tex}\end{table}
