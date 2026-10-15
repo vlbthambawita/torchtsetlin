@@ -1,0 +1,191 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "imn",
+ "seed": 0,
+ "tag": "t16",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 201,
+  "lr": 0.00011811490670608451,
+  "batch_size": 64,
+  "weight_decay": 0.00018219418058859188,
+  "dropout": 0.48642470863320164,
+  "weight_norm": 0.6907744761653556
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9171922188984538,
+   "accuracy": 0.7416173570019724,
+   "log_loss": 0.7584814135931071
+  },
+  "valid": {
+   "auroc": 0.8839902076854559,
+   "accuracy": 0.6449704142011834,
+   "log_loss": 0.8271787384719401
+  },
+  "test": {
+   "auroc": 0.8848546462218337,
+   "accuracy": 0.6411764705882353,
+   "log_loss": 0.8980623534638078
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 201,
+   "batch_size": 64,
+   "lr": 0.00011811490670608451,
+   "weight_decay": 0.00018219418058859188,
+   "weight_norm": 0.6907744761653556,
+   "l1_mode": "all",
+   "dropout": 0.48642470863320164,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 79564,
+  "train_time": 5.3416430950164795,
+  "epochs": 201,
+  "steps": 1608,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 5.027130660220716,
+    "time": 0.03146243095397949
+   },
+   {
+    "epoch": 25,
+    "train_loss": 3.3292540901981633,
+    "time": 0.6914055347442627
+   },
+   {
+    "epoch": 50,
+    "train_loss": 2.2705327646266777,
+    "time": 1.2951562404632568
+   },
+   {
+    "epoch": 75,
+    "train_loss": 2.148574907398788,
+    "time": 1.8945212364196777
+   },
+   {
+    "epoch": 100,
+    "train_loss": 1.8845913936870808,
+    "time": 2.5025854110717773
+   },
+   {
+    "epoch": 125,
+    "train_loss": 1.8004366349891798,
+    "time": 3.1407477855682373
+   },
+   {
+    "epoch": 150,
+    "train_loss": 1.689954225128219,
+    "time": 3.7984373569488525
+   },
+   {
+    "epoch": 175,
+    "train_loss": 1.392486159853211,
+    "time": 4.590857267379761
+   },
+   {
+    "epoch": 200,
+    "train_loss": 1.4426868979982606,
+    "time": 5.310296058654785
+   },
+   {
+    "epoch": 201,
+    "train_loss": 1.4736211944143682,
+    "time": 5.341641664505005
+   }
+  ],
+  "inference_time": 0.0165560245513916
+ },
+ "explain": {
+  "n_explained": 170,
+  "local_vs_full_removal_corr": 0.7449566721916199,
+  "linear_terms_90": 10.594117647058823,
+  "local_acc_k10": 0.4389705955982208,
+  "local_acc_k25": 0.4572941063081517,
+  "local_acc_k50": 0.4191437581006218,
+  "global_importance_top10": [
+   [
+    "MAX.LENGTH_ASPECT_RATIO",
+    0.5554277300834656
+   ],
+   [
+    "SCALED_VARIANCE_MINOR",
+    0.2882545590400696
+   ],
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.28735867142677307
+   ],
+   [
+    "CIRCULARITY",
+    0.2634176015853882
+   ],
+   [
+    "PR.AXIS_RECTANGULARITY",
+    0.2405187487602234
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    0.23972617089748383
+   ],
+   [
+    "ELONGATEDNESS",
+    0.23553691804409027
+   ],
+   [
+    "RADIUS_RATIO",
+    0.21882185339927673
+   ],
+   [
+    "SCATTER_RATIO",
+    0.21675491333007812
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    0.2117767035961151
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.014870307643745195,
+   0.025866642038517074,
+   0.06962017149517141,
+   0.08678502053502057,
+   0.0915959474553224
+  ],
+  "attribution_time": 1.0962069034576416
+ },
+ "wall_time": 6.480513572692871,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:53:57"
+ }
+}

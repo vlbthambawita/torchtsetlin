@@ -1,0 +1,160 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tabresnet",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 86,
+  "lr": 0.010597032209828645,
+  "batch_size": 128,
+  "weight_decay": 0.0016639071593494282,
+  "dropout": 0.2606981467311316
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "57576f95bc9058dfcd4f97432f9a59a46139d6a087aac27bb5fcc1df65aa4e8c"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9912239148230699,
+   "accuracy": 0.9230769230769231,
+   "log_loss": 0.19961209225035648
+  },
+  "valid": {
+   "auroc": 0.9597060723514212,
+   "accuracy": 0.8402366863905325,
+   "log_loss": 0.3396315292271351
+  },
+  "test": {
+   "auroc": 0.9614494533244533,
+   "accuracy": 0.8176470588235294,
+   "log_loss": 0.3312837235487572
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 86,
+   "batch_size": 128,
+   "lr": 0.010597032209828645,
+   "weight_decay": 0.0016639071593494282,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.2606981467311316,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70276,
+  "train_time": 0.9415230751037598,
+  "epochs": 86,
+  "steps": 344,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.456560911981782,
+    "time": 0.014276266098022461
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.38122847999576515,
+    "time": 0.2856307029724121
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.3233515603772752,
+    "time": 0.5618484020233154
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.22331294993441955,
+    "time": 0.8298022747039795
+   },
+   {
+    "epoch": 86,
+    "train_loss": 0.1708994157450674,
+    "time": 0.941521406173706
+   }
+  ],
+  "inference_time": 0.0129547119140625
+ },
+ "explain": {
+  "n_explained": 170,
+  "global_importance_top10": [
+   [
+    "HOLLOWS_RATIO",
+    2.0475850105285645
+   ],
+   [
+    "RADIUS_RATIO",
+    1.982926368713379
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    1.6987340450286865
+   ],
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    1.6664187908172607
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    1.5936462879180908
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    1.2820199728012085
+   ],
+   [
+    "ELONGATEDNESS",
+    1.2297577857971191
+   ],
+   [
+    "SCALED_RADIUS_OF_GYRATION",
+    1.0672056674957275
+   ],
+   [
+    "PR.AXIS_ASPECT_RATIO",
+    0.9852198958396912
+   ],
+   [
+    "CIRCULARITY",
+    0.9589084386825562
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.13809331293706295,
+   0.15295263330419584,
+   0.21639223623598625,
+   0.22373663229131968,
+   0.1780855559371184
+  ],
+  "attribution_time": 0.0560760498046875
+ },
+ "wall_time": 1.0394470691680908,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:15:09"
+ }
+}

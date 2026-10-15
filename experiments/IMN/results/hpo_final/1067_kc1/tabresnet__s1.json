@@ -1,0 +1,205 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1067,
+ "dataset": "kc1",
+ "arm": "tabresnet",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 324,
+  "lr": 0.000368386478677844,
+  "batch_size": 32,
+  "weight_decay": 0.01962100715461863,
+  "dropout": 0.4762520203756181
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 1265,
+  "n_valid": 422,
+  "n_test": 422,
+  "n_features": 21,
+  "n_classes": 2,
+  "fingerprint": "adfcbc283ddff7c7320c5f62150a4dba36f718f99b75962c4c333f2ddb14c4d8"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8201208453446861,
+   "accuracy": 0.8592885375494071,
+   "log_loss": 0.35554461930250614
+  },
+  "valid": {
+   "auroc": 0.836996336996337,
+   "accuracy": 0.8672985781990521,
+   "log_loss": 0.3425392053513624
+  },
+  "test": {
+   "auroc": 0.7970911441499677,
+   "accuracy": 0.8578199052132701,
+   "log_loss": 0.3630498639879388
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 324,
+   "batch_size": 32,
+   "lr": 0.000368386478677844,
+   "weight_decay": 0.01962100715461863,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.4762520203756181,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70273,
+  "train_time": 37.39298057556152,
+  "epochs": 324,
+  "steps": 12960,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.8189638519475583,
+    "time": 0.10640621185302734
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.37762779473316055,
+    "time": 2.7033615112304688
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.3707215182630441,
+    "time": 5.524539470672607
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.35771175255417353,
+    "time": 8.28170919418335
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.3573288783725542,
+    "time": 10.992039680480957
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.34684686399260056,
+    "time": 13.922533512115479
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.347645904541958,
+    "time": 16.67297339439392
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.35366991640550816,
+    "time": 19.43242621421814
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.3601479950629675,
+    "time": 22.186658143997192
+   },
+   {
+    "epoch": 225,
+    "train_loss": 0.3539946941990155,
+    "time": 25.198816776275635
+   },
+   {
+    "epoch": 250,
+    "train_loss": 0.3471694361551006,
+    "time": 28.179523706436157
+   },
+   {
+    "epoch": 275,
+    "train_loss": 0.3511343625929987,
+    "time": 31.31631326675415
+   },
+   {
+    "epoch": 300,
+    "train_loss": 0.35205060726569104,
+    "time": 34.38365697860718
+   },
+   {
+    "epoch": 324,
+    "train_loss": 0.34616422723875684,
+    "time": 37.39297866821289
+   }
+  ],
+  "inference_time": 0.014028787612915039
+ },
+ "explain": {
+  "n_explained": 422,
+  "global_importance_top10": [
+   [
+    "d",
+    0.3689200282096863
+   ],
+   [
+    "i",
+    0.21515296399593353
+   ],
+   [
+    "loc",
+    0.1888630986213684
+   ],
+   [
+    "total_Op",
+    0.15917105972766876
+   ],
+   [
+    "b",
+    0.15293177962303162
+   ],
+   [
+    "v(g)",
+    0.14738987386226654
+   ],
+   [
+    "n",
+    0.12129195034503937
+   ],
+   [
+    "total_Opnd",
+    0.09720530360937119
+   ],
+   [
+    "lOBlank",
+    0.09300803393125534
+   ],
+   [
+    "branchCount",
+    0.0912465825676918
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.04128420599008842,
+   0.13337642749407463,
+   0.3510881275587159,
+   0.1468218056453351,
+   0.3367377720318897
+  ],
+  "attribution_time": 0.0670313835144043
+ },
+ "wall_time": 37.49559545516968,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:13:12"
+ }
+}

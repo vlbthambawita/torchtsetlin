@@ -1,0 +1,115 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "gbdt",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "learning_rate": 0.0023596291079793657,
+  "max_iter": 3768,
+  "l2_regularization": 5.203690781610748
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "780873101d50ade1896489af9d337f8a8cee06c3e7c0cf15573b2f661de1bb93"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9975529100529101,
+   "accuracy": 0.9866666666666667,
+   "log_loss": 0.20009897101251187
+  },
+  "valid": {
+   "auroc": 0.8029761904761905,
+   "accuracy": 0.77,
+   "log_loss": 0.484966293653344
+  },
+  "test": {
+   "auroc": 0.7960714285714285,
+   "accuracy": 0.805,
+   "log_loss": 0.4893358883204091
+  }
+ },
+ "info": {
+  "impl": "sklearn.HistGradientBoosting",
+  "params": {
+   "learning_rate": 0.0023596291079793657,
+   "max_iter": 3768,
+   "l2_regularization": 5.203690781610748
+  },
+  "train_time": 4.545926094055176,
+  "inference_time": 0.1759660243988037
+ },
+ "explain": {
+  "n_explained": 200,
+  "global_importance_top10": [
+   [
+    "checking_status",
+    1.1298964023590088
+   ],
+   [
+    "other_payment_plans",
+    0.7700655460357666
+   ],
+   [
+    "credit_history",
+    0.7021816968917847
+   ],
+   [
+    "duration",
+    0.45797833800315857
+   ],
+   [
+    "purpose",
+    0.3901422619819641
+   ],
+   [
+    "savings_status",
+    0.36189717054367065
+   ],
+   [
+    "employment",
+    0.34431537985801697
+   ],
+   [
+    "job",
+    0.3136835992336273
+   ],
+   [
+    "credit_amount",
+    0.2686570882797241
+   ],
+   [
+    "other_parties",
+    0.2581765651702881
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.07392857142857134,
+   0.07023809523809521,
+   0.09821428571428559,
+   0.13238095238095227,
+   0.09928571428571431
+  ],
+  "attribution_time": 0.6504161357879639
+ },
+ "wall_time": 5.379995346069336,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:14:24"
+ }
+}

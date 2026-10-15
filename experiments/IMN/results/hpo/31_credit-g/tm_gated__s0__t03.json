@@ -1,0 +1,191 @@
+{
+ "stage": "hpo",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "tm_gated",
+ "seed": 0,
+ "tag": "t03",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 95,
+  "lr": 0.00015186623681411117,
+  "batch_size": 256,
+  "weight_decay": 0.01013047005313739,
+  "dropout": 0.43908775753799584,
+  "weight_norm": 0.024726701199791885
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 1.0,
+  "s": 3.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "de52a25be3e35754b3bdc85c93a9c79dcd91c45130f885ec8cfe0f9f7be0cff5"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9599470899470899,
+   "accuracy": 0.9016666666666666,
+   "log_loss": 0.3031139065682245
+  },
+  "valid": {
+   "auroc": 0.8007142857142856,
+   "accuracy": 0.78,
+   "log_loss": 0.4848545139693268
+  },
+  "test": {
+   "auroc": 0.8369047619047619,
+   "accuracy": 0.78,
+   "log_loss": 0.4518445761098435
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 95,
+   "batch_size": 256,
+   "lr": 0.00015186623681411117,
+   "weight_decay": 0.01013047005313739,
+   "weight_norm": 0.024726701199791885,
+   "l1_mode": "all",
+   "dropout": 0.43908775753799584,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "credit-g_d31_s0_830800d4fb",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 1.0,
+   "s": 3.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 7.978426456451416,
+  "train_clause_firing_rate": 0.22017554938793182,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 16569,
+  "train_time": 0.3836531639099121,
+  "epochs": 95,
+  "steps": 285,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.692556353410085,
+    "time": 0.0049285888671875
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.3700847351551056,
+    "time": 0.09320569038391113
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2996356586615245,
+    "time": 0.20560288429260254
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.22762841542561849,
+    "time": 0.2958357334136963
+   },
+   {
+    "epoch": 95,
+    "train_loss": 0.21688425342241924,
+    "time": 0.3836517333984375
+   }
+  ],
+  "inference_time": 0.003283977508544922
+ },
+ "explain": {
+  "n_explained": 200,
+  "local_vs_full_removal_corr": 0.6738366484642029,
+  "linear_terms_90": 14.46,
+  "local_acc_k10": 0.508000002503395,
+  "local_acc_k25": 0.5095999953150749,
+  "local_acc_k50": 0.5114499954879284,
+  "global_importance_top10": [
+   [
+    "credit_amount",
+    0.1545148342847824
+   ],
+   [
+    "duration",
+    0.1401730179786682
+   ],
+   [
+    "residence_since",
+    0.1382695734500885
+   ],
+   [
+    "credit_history",
+    0.12497107684612274
+   ],
+   [
+    "purpose",
+    0.11642476916313171
+   ],
+   [
+    "checking_status",
+    0.11537894606590271
+   ],
+   [
+    "other_parties",
+    0.10934999585151672
+   ],
+   [
+    "savings_status",
+    0.10663112998008728
+   ],
+   [
+    "foreign_worker",
+    0.1038903295993805
+   ],
+   [
+    "personal_status",
+    0.10299272835254669
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.003690476190476244,
+   0.04571428571428571,
+   0.04547619047619056,
+   0.07845238095238094,
+   0.08630952380952384
+  ],
+  "attribution_time": 1.1703147888183594
+ },
+ "wall_time": 1.581341028213501,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T21:22:15"
+ }
+}

@@ -1,0 +1,205 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1067,
+ "dataset": "kc1",
+ "arm": "tabresnet",
+ "seed": 0,
+ "tag": "t13",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 324,
+  "lr": 0.000368386478677844,
+  "batch_size": 32,
+  "weight_decay": 0.01962100715461863,
+  "dropout": 0.4762520203756181
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 1265,
+  "n_valid": 422,
+  "n_test": 422,
+  "n_features": 21,
+  "n_classes": 2,
+  "fingerprint": "6c7a90304ccfca016a9d619e308b2f32d25fe5f76c507733dc37f782286a6b29"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8102436952330043,
+   "accuracy": 0.8584980237154151,
+   "log_loss": 0.36093717286111027
+  },
+  "valid": {
+   "auroc": 0.837211807800043,
+   "accuracy": 0.8554502369668247,
+   "log_loss": 0.3513692240434674
+  },
+  "test": {
+   "auroc": 0.8091359620771386,
+   "accuracy": 0.8625592417061612,
+   "log_loss": 0.3584914190357243
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 324,
+   "batch_size": 32,
+   "lr": 0.000368386478677844,
+   "weight_decay": 0.01962100715461863,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.4762520203756181,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70273,
+  "train_time": 36.23654627799988,
+  "epochs": 324,
+  "steps": 12960,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.7018193059759178,
+    "time": 0.12534356117248535
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.3778331839048815,
+    "time": 2.6473844051361084
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.3654083974276607,
+    "time": 5.385259389877319
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.3648820359009528,
+    "time": 8.208903312683105
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.36655131260396934,
+    "time": 11.03903317451477
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.36062867937116283,
+    "time": 13.659094095230103
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.36637882280491085,
+    "time": 16.472100973129272
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.35984934872318164,
+    "time": 19.312158346176147
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.3651230696161745,
+    "time": 22.05491542816162
+   },
+   {
+    "epoch": 225,
+    "train_loss": 0.35966107967813965,
+    "time": 24.748263120651245
+   },
+   {
+    "epoch": 250,
+    "train_loss": 0.35904958957268784,
+    "time": 27.469231843948364
+   },
+   {
+    "epoch": 275,
+    "train_loss": 0.35691240036440464,
+    "time": 30.265745162963867
+   },
+   {
+    "epoch": 300,
+    "train_loss": 0.3568853095114938,
+    "time": 33.491016149520874
+   },
+   {
+    "epoch": 324,
+    "train_loss": 0.35816803232954425,
+    "time": 36.236544609069824
+   }
+  ],
+  "inference_time": 0.013344049453735352
+ },
+ "explain": {
+  "n_explained": 422,
+  "global_importance_top10": [
+   [
+    "i",
+    0.2360469251871109
+   ],
+   [
+    "d",
+    0.2308400422334671
+   ],
+   [
+    "uniq_Opnd",
+    0.20588244497776031
+   ],
+   [
+    "total_Op",
+    0.17967180907726288
+   ],
+   [
+    "b",
+    0.15371985733509064
+   ],
+   [
+    "v(g)",
+    0.14555887877941132
+   ],
+   [
+    "total_Opnd",
+    0.12790492177009583
+   ],
+   [
+    "n",
+    0.1118641197681427
+   ],
+   [
+    "uniq_Op",
+    0.10260370373725891
+   ],
+   [
+    "v",
+    0.10206537693738937
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   -0.0015513897866838988,
+   0.08093083387201028,
+   0.312863606981254,
+   0.04128420599008831,
+   0.22792501616031025
+  ],
+  "attribution_time": 0.05467867851257324
+ },
+ "wall_time": 36.325204372406006,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:50:54"
+ }
+}

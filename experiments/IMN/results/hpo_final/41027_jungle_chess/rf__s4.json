@@ -1,0 +1,103 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "rf",
+ "seed": 4,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "gini",
+  "max_depth": 11,
+  "min_samples_split": 2,
+  "max_leaf_nodes": 26,
+  "n_estimators": 1479
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "e3a480dd1663d8e44073e28ed7d5ced1a9ff4fe661b9facb434ad86df67155a0"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9018826927365606,
+   "accuracy": 0.753858168160351,
+   "log_loss": 0.5974618022581039
+  },
+  "valid": {
+   "auroc": 0.9000900857869784,
+   "accuracy": 0.749219098616689,
+   "log_loss": 0.6009340002401722
+  },
+  "test": {
+   "auroc": 0.8960804504273767,
+   "accuracy": 0.7531236055332441,
+   "log_loss": 0.6045508978769033
+  }
+ },
+ "info": {
+  "impl": "sklearn.RandomForest",
+  "params": {
+   "criterion": "gini",
+   "max_depth": 11,
+   "min_samples_split": 2,
+   "max_leaf_nodes": 26,
+   "n_estimators": 1479
+  },
+  "train_time": 3.258450984954834,
+  "inference_time": 0.9380066394805908
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    0.3036257028579712
+   ],
+   [
+    "black_piece0_rank",
+    0.2708033323287964
+   ],
+   [
+    "white_piece0_strength",
+    0.15909793972969055
+   ],
+   [
+    "black_piece0_strength",
+    0.12616118788719177
+   ],
+   [
+    "white_piece0_file",
+    0.04237651079893112
+   ],
+   [
+    "black_piece0_file",
+    0.034329239279031754
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09647617793855501,
+   0.20850232768120425,
+   0.30347004903572417,
+   0.27989921724371414,
+   0.31128594630496753
+  ],
+  "attribution_time": 1.9682013988494873
+ },
+ "wall_time": 6.205740451812744,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T23:28:55"
+ }
+}

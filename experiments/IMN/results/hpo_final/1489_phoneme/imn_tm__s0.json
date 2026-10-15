@@ -1,0 +1,184 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn_tm",
+ "seed": 0,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 141,
+  "lr": 1.9187513666698394e-05,
+  "batch_size": 64,
+  "weight_decay": 1.3965458746278252e-05,
+  "dropout": 0.15989626556632885,
+  "weight_norm": 0.00595059360509494,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "15fe29bbcabe1d332e5e2d509a7a229f95033b22dd511672333604111262be10"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9882802465964552,
+   "accuracy": 0.9469463294262801,
+   "log_loss": 0.146040039073392
+  },
+  "valid": {
+   "auroc": 0.9524047434224653,
+   "accuracy": 0.8945420906567992,
+   "log_loss": 0.25272921295607553
+  },
+  "test": {
+   "auroc": 0.950629263217005,
+   "accuracy": 0.8815911193339501,
+   "log_loss": 0.25542730131913255
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 141,
+   "batch_size": 64,
+   "lr": 1.9187513666698394e-05,
+   "weight_decay": 1.3965458746278252e-05,
+   "weight_norm": 0.00595059360509494,
+   "l1_mode": "all",
+   "dropout": 0.15989626556632885,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "phoneme_d1489_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 799,
+  "clause_len_mean": 6.828535556793213,
+  "train_clause_firing_rate": 0.04921752214431763,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171296,
+  "train_time": 24.7097008228302,
+  "epochs": 141,
+  "steps": 7191,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.2305274981175728,
+    "time": 0.18544387817382812
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.181814297307501,
+    "time": 4.1838648319244385
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.1539503574867737,
+    "time": 8.618008613586426
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.14153360873736548,
+    "time": 12.948316097259521
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.1219355989383151,
+    "time": 17.39152503013611
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.1128828885616306,
+    "time": 21.871529579162598
+   },
+   {
+    "epoch": 141,
+    "train_loss": 0.11214042882872245,
+    "time": 24.709699630737305
+   }
+  ],
+  "inference_time": 0.018048763275146484
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.947801411151886,
+  "active_clauses_mean": 39.071998596191406,
+  "clause_terms_90": 26.196,
+  "active_clause_len_mean": 5.878697395324707,
+  "local_acc_k10": 0.7820000100135803,
+  "local_acc_k25": 0.8108999767899513,
+  "local_acc_k50": 0.8326499798893928,
+  "global_importance_top10": [
+   [
+    "V1",
+    1.8558499813079834
+   ],
+   [
+    "V4",
+    1.6237742900848389
+   ],
+   [
+    "V2",
+    1.4186663627624512
+   ],
+   [
+    "V3",
+    1.304508924484253
+   ],
+   [
+    "V5",
+    1.2186638116836548
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09908005351214766,
+   0.12551819247857043,
+   0.16766726675144927,
+   0.21744264786034007,
+   0.450629263217005
+  ],
+  "attribution_time": 1.6112942695617676
+ },
+ "wall_time": 26.380173921585083,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T23:52:13"
+ }
+}

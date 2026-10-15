@@ -1,0 +1,204 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "imn_tm",
+ "seed": 0,
+ "tag": "t18",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 134,
+  "lr": 4.6671809264918364e-05,
+  "batch_size": 128,
+  "weight_decay": 7.94540753508975e-05,
+  "dropout": 0.4125255996921827,
+  "weight_norm": 0.004059627314848826,
+  "l1_mode": "prior"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9469824498649825,
+   "accuracy": 0.8895713895713896,
+   "log_loss": 0.24502430642179424
+  },
+  "valid": {
+   "auroc": 0.9074551500571376,
+   "accuracy": 0.8520831200737026,
+   "log_loss": 0.31955966341653785
+  },
+  "test": {
+   "auroc": 0.9075912998963144,
+   "accuracy": 0.8559729757395844,
+   "log_loss": 0.321299752945782
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 134,
+   "batch_size": 128,
+   "lr": 4.6671809264918364e-05,
+   "weight_decay": 7.94540753508975e-05,
+   "weight_norm": 0.004059627314848826,
+   "l1_mode": "prior",
+   "dropout": 0.4125255996921827,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.060483723878860474,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171029,
+  "train_time": 104.24785494804382,
+  "epochs": 134,
+  "steps": 30686,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3170856038403908,
+    "time": 0.8425407409667969
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.27101862029465634,
+    "time": 19.521504163742065
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.25546742609996725,
+    "time": 38.98220157623291
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.2509136657440822,
+    "time": 58.414358615875244
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.23781625922019775,
+    "time": 77.74482107162476
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.23258829313713508,
+    "time": 97.3350305557251
+   },
+   {
+    "epoch": 134,
+    "train_loss": 0.23385267876599156,
+    "time": 104.24785351753235
+   }
+  ],
+  "inference_time": 0.03687596321105957
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9618324637413025,
+  "active_clauses_mean": 45.1619987487793,
+  "clause_terms_90": 28.516,
+  "active_clause_len_mean": 4.512287139892578,
+  "local_acc_k10": 0.6965000127255917,
+  "local_acc_k25": 0.7268999880552292,
+  "local_acc_k50": 0.7538999849557877,
+  "global_importance_top10": [
+   [
+    "occupation",
+    1.0143179893493652
+   ],
+   [
+    "age",
+    0.8113442063331604
+   ],
+   [
+    "relationship",
+    0.6451789140701294
+   ],
+   [
+    "sex",
+    0.6380869150161743
+   ],
+   [
+    "education",
+    0.5966232419013977
+   ],
+   [
+    "marital-status",
+    0.5574080944061279
+   ],
+   [
+    "native-country",
+    0.5304635167121887
+   ],
+   [
+    "workclass",
+    0.5222153663635254
+   ],
+   [
+    "race",
+    0.45134103298187256
+   ],
+   [
+    "education-num",
+    0.4372464120388031
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.015777488220974356,
+   0.024480941801730216,
+   0.027075383807619646,
+   0.02873237319121491,
+   0.03775023918366616
+  ],
+  "attribution_time": 1.6502301692962646
+ },
+ "wall_time": 106.00021052360535,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T19:14:07"
+ }
+}

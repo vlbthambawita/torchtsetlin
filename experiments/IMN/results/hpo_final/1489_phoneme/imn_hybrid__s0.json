@@ -1,0 +1,185 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 141,
+  "lr": 1.9187513666698394e-05,
+  "batch_size": 64,
+  "weight_decay": 1.3965458746278252e-05,
+  "dropout": 0.15989626556632885,
+  "weight_norm": 0.00595059360509494,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "15fe29bbcabe1d332e5e2d509a7a229f95033b22dd511672333604111262be10"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.988303640233386,
+   "accuracy": 0.9466378778531771,
+   "log_loss": 0.14604434564060603
+  },
+  "valid": {
+   "auroc": 0.9524006143987316,
+   "accuracy": 0.8945420906567992,
+   "log_loss": 0.2526451303527439
+  },
+  "test": {
+   "auroc": 0.9506375212644722,
+   "accuracy": 0.8806660499537465,
+   "log_loss": 0.2554185258319336
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 141,
+   "batch_size": 64,
+   "lr": 1.9187513666698394e-05,
+   "weight_decay": 1.3965458746278252e-05,
+   "weight_norm": 0.00595059360509494,
+   "l1_mode": "all",
+   "dropout": 0.15989626556632885,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "phoneme_d1489_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 799,
+  "clause_len_mean": 6.828535556793213,
+  "train_clause_firing_rate": 0.04921752214431763,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171941,
+  "train_time": 25.32933235168457,
+  "epochs": 141,
+  "steps": 7191,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.23047898742867282,
+    "time": 0.17370891571044922
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.18173406468468783,
+    "time": 4.307521343231201
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.1539444668031195,
+    "time": 8.592853784561157
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.1415679365819358,
+    "time": 13.211124658584595
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.12196272308263126,
+    "time": 18.089125633239746
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.11289353196191464,
+    "time": 22.537567615509033
+   },
+   {
+    "epoch": 141,
+    "train_loss": 0.1122204331723648,
+    "time": 25.329330682754517
+   }
+  ],
+  "inference_time": 0.01589512825012207
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9474971890449524,
+  "linear_terms_90": 3.188,
+  "active_clauses_mean": 39.071998596191406,
+  "clause_terms_90": 26.222,
+  "active_clause_len_mean": 5.878697395324707,
+  "local_acc_k10": 0.7820000100135803,
+  "local_acc_k25": 0.8110999768972397,
+  "local_acc_k50": 0.832849979698658,
+  "global_importance_top10": [
+   [
+    "V1",
+    1.8612627983093262
+   ],
+   [
+    "V4",
+    1.622869610786438
+   ],
+   [
+    "V2",
+    1.4142975807189941
+   ],
+   [
+    "V3",
+    1.3042763471603394
+   ],
+   [
+    "V5",
+    1.2160414457321167
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09910069863081572,
+   0.1254067088377624,
+   0.16763836358531392,
+   0.2170586486531123,
+   0.4506375212644722
+  ],
+  "attribution_time": 1.5180580615997314
+ },
+ "wall_time": 26.90396213531494,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T23:53:48"
+ }
+}

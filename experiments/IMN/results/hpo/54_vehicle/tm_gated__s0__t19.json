@@ -1,0 +1,186 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tm_gated",
+ "seed": 0,
+ "tag": "t19",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 67,
+  "lr": 0.002184200424535057,
+  "batch_size": 128,
+  "weight_decay": 0.001159324632094149,
+  "dropout": 0.17333607419167102,
+  "weight_norm": 0.13801350292820624
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 12.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 1.0,
+   "accuracy": 1.0,
+   "log_loss": 0.00041932665593605436
+  },
+  "valid": {
+   "auroc": 0.9253587771005369,
+   "accuracy": 0.7396449704142012,
+   "log_loss": 1.071546342783739
+  },
+  "test": {
+   "auroc": 0.9142681840728716,
+   "accuracy": 0.7411764705882353,
+   "log_loss": 1.1617142979260193
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 67,
+   "batch_size": 128,
+   "lr": 0.002184200424535057,
+   "weight_decay": 0.001159324632094149,
+   "weight_norm": 0.13801350292820624,
+   "l1_mode": "all",
+   "dropout": 0.17333607419167102,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "vehicle_d54_s0_69614bb6ea",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 12.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 3170,
+  "clause_len_mean": 23.938800811767578,
+  "train_clause_firing_rate": 0.09684169292449951,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 240996,
+  "train_time": 0.31324315071105957,
+  "epochs": 67,
+  "steps": 268,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.1887004018065022,
+    "time": 0.0048067569732666016
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.06967109870863619,
+    "time": 0.1129915714263916
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.02674578864649085,
+    "time": 0.22874069213867188
+   },
+   {
+    "epoch": 67,
+    "train_loss": 0.02233927235874316,
+    "time": 0.31324219703674316
+   }
+  ],
+  "inference_time": 0.0029702186584472656
+ },
+ "explain": {
+  "n_explained": 170,
+  "local_vs_full_removal_corr": 0.8377066850662231,
+  "linear_terms_90": 10.552941176470588,
+  "local_acc_k10": 0.3411764747079681,
+  "local_acc_k25": 0.3491176380830653,
+  "local_acc_k50": 0.3073790495009983,
+  "global_importance_top10": [
+   [
+    "RADIUS_RATIO",
+    0.6551612019538879
+   ],
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.6346331834793091
+   ],
+   [
+    "SCATTER_RATIO",
+    0.6319537162780762
+   ],
+   [
+    "SCALED_VARIANCE_MINOR",
+    0.627565860748291
+   ],
+   [
+    "ELONGATEDNESS",
+    0.6252740621566772
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    0.6241710782051086
+   ],
+   [
+    "PR.AXIS_RECTANGULARITY",
+    0.6134962439537048
+   ],
+   [
+    "COMPACTNESS",
+    0.6100848317146301
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    0.5913079380989075
+   ],
+   [
+    "HOLLOWS_RATIO",
+    0.5632686018943787
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.007299688159063233,
+   -0.01185616900460662,
+   0.000977793907481428,
+   0.018434898434898428,
+   0.04604317991036744
+  ],
+  "attribution_time": 1.4426777362823486
+ },
+ "wall_time": 1.7987804412841797,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T21:25:15"
+ }
+}

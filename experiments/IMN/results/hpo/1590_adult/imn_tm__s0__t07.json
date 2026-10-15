@@ -1,0 +1,189 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "imn_tm",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 68,
+  "lr": 1.6224876686567294e-05,
+  "batch_size": 128,
+  "weight_decay": 7.578620304777133e-05,
+  "dropout": 0.2653775937286625,
+  "weight_norm": 0.024729117690446598,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9335940782707842,
+   "accuracy": 0.8771157521157521,
+   "log_loss": 0.2721892522799673
+  },
+  "valid": {
+   "auroc": 0.9112512856546049,
+   "accuracy": 0.8549493295117208,
+   "log_loss": 0.3101973934443364
+  },
+  "test": {
+   "auroc": 0.9118092898924455,
+   "accuracy": 0.8604770191421844,
+   "log_loss": 0.30982302605205586
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 68,
+   "batch_size": 128,
+   "lr": 1.6224876686567294e-05,
+   "weight_decay": 7.578620304777133e-05,
+   "weight_norm": 0.024729117690446598,
+   "l1_mode": "all",
+   "dropout": 0.2653775937286625,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.060483723878860474,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171029,
+  "train_time": 52.308921098709106,
+  "epochs": 68,
+  "steps": 15572,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.32085391633373256,
+    "time": 0.8131611347198486
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.27630597629607,
+    "time": 19.09901785850525
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.26637443877734224,
+    "time": 38.23896551132202
+   },
+   {
+    "epoch": 68,
+    "train_loss": 0.2613805812660736,
+    "time": 52.30891966819763
+   }
+  ],
+  "inference_time": 0.039697885513305664
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9612959027290344,
+  "active_clauses_mean": 45.1619987487793,
+  "clause_terms_90": 29.224,
+  "active_clause_len_mean": 4.512287139892578,
+  "local_acc_k10": 0.7020000100135804,
+  "local_acc_k25": 0.7311999854445458,
+  "local_acc_k50": 0.7538499823212623,
+  "global_importance_top10": [
+   [
+    "occupation",
+    0.796699583530426
+   ],
+   [
+    "age",
+    0.624722957611084
+   ],
+   [
+    "marital-status",
+    0.4993915855884552
+   ],
+   [
+    "relationship",
+    0.4854761064052582
+   ],
+   [
+    "education",
+    0.43485796451568604
+   ],
+   [
+    "sex",
+    0.42792344093322754
+   ],
+   [
+    "education-num",
+    0.3348625600337982
+   ],
+   [
+    "workclass",
+    0.3193834125995636
+   ],
+   [
+    "native-country",
+    0.30779409408569336
+   ],
+   [
+    "fnlwgt",
+    0.2886379063129425
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.010912600083874069,
+   0.021772016265064975,
+   0.04033394655984768,
+   0.11660406622017527,
+   0.11569432793677903
+  ],
+  "attribution_time": 1.7006278038024902
+ },
+ "wall_time": 54.10806393623352,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T19:05:03"
+ }
+}

@@ -1,0 +1,94 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1464,
+ "dataset": "blood-transfusion",
+ "arm": "rf",
+ "seed": 0,
+ "tag": "t14",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "gini",
+  "max_depth": 3,
+  "min_samples_split": 5,
+  "max_leaf_nodes": 13,
+  "n_estimators": 3610
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 448,
+  "n_valid": 150,
+  "n_test": 150,
+  "n_features": 4,
+  "n_classes": 2,
+  "fingerprint": "79efb716894577451ae38cb7e8c6edb8ec0789887f3f3d28c34f9476ea3364df"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.824809665673618,
+   "accuracy": 0.8214285714285714,
+   "log_loss": 0.42090032133319555
+  },
+  "valid": {
+   "auroc": 0.7022417153996101,
+   "accuracy": 0.7866666666666666,
+   "log_loss": 0.5043247320280957
+  },
+  "test": {
+   "auroc": 0.6751949317738791,
+   "accuracy": 0.7466666666666667,
+   "log_loss": 0.5316331031561594
+  }
+ },
+ "info": {
+  "impl": "sklearn.RandomForest",
+  "params": {
+   "criterion": "gini",
+   "max_depth": 3,
+   "min_samples_split": 5,
+   "max_leaf_nodes": 13,
+   "n_estimators": 3610
+  },
+  "train_time": 3.992539644241333,
+  "inference_time": 1.229914665222168
+ },
+ "explain": {
+  "n_explained": 150,
+  "global_importance_top10": [
+   [
+    "V1",
+    0.7349922060966492
+   ],
+   [
+    "V2",
+    0.34833189845085144
+   ],
+   [
+    "V3",
+    0.34692487120628357
+   ],
+   [
+    "V4",
+    0.30201655626296997
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09234892787524362,
+   0.13084795321637432,
+   0.18701267056530213,
+   0.17519493177387913
+  ],
+  "attribution_time": 2.5935513973236084
+ },
+ "wall_time": 7.823608875274658,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:54:59"
+ }
+}

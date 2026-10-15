@@ -1,0 +1,150 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tabresnet",
+ "seed": 0,
+ "tag": "t15",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 33,
+  "lr": 0.012334963455016314,
+  "batch_size": 32,
+  "weight_decay": 0.006724523767904823,
+  "dropout": 0.44415686671223176
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9393495083072749,
+   "accuracy": 0.7928994082840237,
+   "log_loss": 0.5126364165884172
+  },
+  "valid": {
+   "auroc": 0.9138261209684941,
+   "accuracy": 0.7396449704142012,
+   "log_loss": 0.5356668079011526
+  },
+  "test": {
+   "auroc": 0.9161383841852591,
+   "accuracy": 0.7352941176470589,
+   "log_loss": 0.6286523477287231
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 33,
+   "batch_size": 32,
+   "lr": 0.012334963455016314,
+   "weight_decay": 0.006724523767904823,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.44415686671223176,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70276,
+  "train_time": 1.5997536182403564,
+  "epochs": 33,
+  "steps": 528,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.5567882253808618,
+    "time": 0.04469180107116699
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.6679390280909793,
+    "time": 1.205700397491455
+   },
+   {
+    "epoch": 33,
+    "train_loss": 0.5431851166239857,
+    "time": 1.5997521877288818
+   }
+  ],
+  "inference_time": 0.013459444046020508
+ },
+ "explain": {
+  "n_explained": 170,
+  "global_importance_top10": [
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.7658079266548157
+   ],
+   [
+    "RADIUS_RATIO",
+    0.7322263121604919
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    0.5987276434898376
+   ],
+   [
+    "ELONGATEDNESS",
+    0.5574087500572205
+   ],
+   [
+    "PR.AXIS_ASPECT_RATIO",
+    0.5499734878540039
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    0.5193156003952026
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    0.49953311681747437
+   ],
+   [
+    "MAX.LENGTH_ASPECT_RATIO",
+    0.36952343583106995
+   ],
+   [
+    "SCALED_RADIUS_OF_GYRATION",
+    0.3325895369052887
+   ],
+   [
+    "COMPACTNESS",
+    0.3317440152168274
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.061280035069097405,
+   0.06860201430513913,
+   0.19361571154539903,
+   0.2260645821192695,
+   0.20357751189782425
+  ],
+  "attribution_time": 0.06600451469421387
+ },
+ "wall_time": 1.7073252201080322,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:53:47"
+ }
+}

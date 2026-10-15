@@ -1,0 +1,115 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "gbdt",
+ "seed": 0,
+ "tag": "t12",
+ "status": "ok",
+ "nn_overrides": {
+  "learning_rate": 0.7119121422282706,
+  "max_iter": 928,
+  "l2_regularization": 3.5020460256378283
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 1.0,
+   "accuracy": 1.0,
+   "log_loss": 0.0005268854409119828
+  },
+  "valid": {
+   "auroc": 0.9162329359332197,
+   "accuracy": 0.757396449704142,
+   "log_loss": 1.0663288215493192
+  },
+  "test": {
+   "auroc": 0.9179661484348984,
+   "accuracy": 0.7470588235294118,
+   "log_loss": 0.9717307726787832
+  }
+ },
+ "info": {
+  "impl": "sklearn.HistGradientBoosting",
+  "params": {
+   "learning_rate": 0.7119121422282706,
+   "max_iter": 928,
+   "l2_regularization": 3.5020460256378283
+  },
+  "train_time": 3.007132053375244,
+  "inference_time": 0.15891718864440918
+ },
+ "explain": {
+  "n_explained": 170,
+  "global_importance_top10": [
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.6815446615219116
+   ],
+   [
+    "SCALED_VARIANCE_MINOR",
+    0.5393879413604736
+   ],
+   [
+    "COMPACTNESS",
+    0.5019775629043579
+   ],
+   [
+    "PR.AXIS_ASPECT_RATIO",
+    0.3883836567401886
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    0.33542385697364807
+   ],
+   [
+    "HOLLOWS_RATIO",
+    0.2202356606721878
+   ],
+   [
+    "RADIUS_RATIO",
+    0.2133985161781311
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    0.19801756739616394
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    0.17018792033195496
+   ],
+   [
+    "KURTOSIS_ABOUT_MAJOR",
+    0.16996176540851593
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.0027948136932511858,
+   0.025566672910422916,
+   0.032005078255078256,
+   0.06558573804667556,
+   0.06650243853368853
+  ],
+  "attribution_time": 0.5937285423278809
+ },
+ "wall_time": 3.7738707065582275,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:53:37"
+ }
+}

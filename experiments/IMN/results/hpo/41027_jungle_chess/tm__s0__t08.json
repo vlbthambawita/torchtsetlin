@@ -1,0 +1,115 @@
+{
+ "stage": "hpo",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "tm",
+ "seed": 0,
+ "tag": "t08",
+ "status": "ok",
+ "nn_overrides": {},
+ "tm_overrides": {
+  "n_clauses": 200,
+  "T_ratio": 0.25,
+  "s": 20.0,
+  "n_bits": 10,
+  "max_included_literals": 16
+ },
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "cbc43acf7200d1ffedcb13e8aeedefd96397fe20dce72c505d6e80eeba4ef16b"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9648844075421285,
+   "accuracy": 0.8577591015581422,
+   "log_loss": 0.4834002836413637
+  },
+  "valid": {
+   "auroc": 0.9605097076175815,
+   "accuracy": 0.8514056224899599,
+   "log_loss": 0.4934352746113163
+  },
+  "test": {
+   "auroc": 0.9602133273415611,
+   "accuracy": 0.8468317715305667,
+   "log_loss": 0.49767612278558804
+  }
+ },
+ "info": {
+  "tm_key": "jungle_chess_d41027_s0_5c998fd985",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 200,
+   "T_ratio": 0.25,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 16,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "train_time": 98.15629529953003,
+  "best_epoch": 29,
+  "T": 50,
+  "n_bool": 36,
+  "n_clauses_raw": 600,
+  "n_clauses_basis": 564,
+  "clause_len_mean": 3.9787232875823975,
+  "inference_time": 0.002718687057495117
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "black_piece0_rank",
+    0.46348002552986145
+   ],
+   [
+    "black_piece0_strength",
+    0.3582000434398651
+   ],
+   [
+    "white_piece0_rank",
+    0.3425998389720917
+   ],
+   [
+    "white_piece0_strength",
+    0.3328399360179901
+   ],
+   [
+    "white_piece0_file",
+    0.2598399817943573
+   ],
+   [
+    "black_piece0_file",
+    0.23767997324466705
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.15767349738906788,
+   0.2083320907807532,
+   0.3446042892634311,
+   0.34945157480026223,
+   0.38825895678053535
+  ],
+  "attribution_time": 0.04820561408996582
+ },
+ "wall_time": 98.24813342094421,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T17:38:47"
+ }
+}

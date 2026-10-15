@@ -1,0 +1,183 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "imn_tm_rand",
+ "seed": 3,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 108,
+  "lr": 0.0004991325242785947,
+  "batch_size": 256,
+  "weight_decay": 0.002389521994914165,
+  "dropout": 0.4553323345456057,
+  "weight_norm": 0.0019998246773323763,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 5.0,
+  "n_bits": 10,
+  "max_included_literals": 16
+ },
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "3c8efeaa19e57d1f7c33e817eaf16cf2feeca0787032c49b1af944be3525e516"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9885078899360357,
+   "accuracy": 0.9124614183183964,
+   "log_loss": 0.18729752876140543
+  },
+  "valid": {
+   "auroc": 0.9719498426668874,
+   "accuracy": 0.859660865684962,
+   "log_loss": 0.28257544289210074
+  },
+  "test": {
+   "auroc": 0.9713715484415745,
+   "accuracy": 0.858991521642124,
+   "log_loss": 0.2876173887597006
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 108,
+   "batch_size": 256,
+   "lr": 0.0004991325242785947,
+   "weight_decay": 0.002389521994914165,
+   "weight_norm": 0.0019998246773323763,
+   "l1_mode": "active",
+   "dropout": 0.4553323345456057,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "jungle_chess_d41027_s3_db02bf7de1",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 5.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 16,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "random",
+  "n_clauses_basis": 2396,
+  "clause_len_mean": 8.731218338012695,
+  "train_clause_firing_rate": 0.03800543397665024,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 995863,
+  "train_time": 39.920220375061035,
+  "epochs": 108,
+  "steps": 11448,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 5.885399423647971,
+    "time": 0.353574275970459
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.38874824818839215,
+    "time": 9.219075441360474
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.21278187787385186,
+    "time": 18.466105937957764
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.22232143124973808,
+    "time": 27.861963510513306
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.18508872243225505,
+    "time": 36.87296795845032
+   },
+   {
+    "epoch": 108,
+    "train_loss": 0.17580120961085643,
+    "time": 39.92021894454956
+   }
+  ],
+  "inference_time": 0.06214332580566406
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.96156907081604,
+  "active_clauses_mean": 91.08799743652344,
+  "clause_terms_90": 58.956,
+  "active_clause_len_mean": 6.167483806610107,
+  "local_acc_k10": 0.7123333750665188,
+  "local_acc_k25": 0.7084666794538498,
+  "local_acc_k50": 0.7076066115498543,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    3.327136993408203
+   ],
+   [
+    "black_piece0_rank",
+    3.0446865558624268
+   ],
+   [
+    "white_piece0_file",
+    2.810319662094116
+   ],
+   [
+    "black_piece0_file",
+    2.7526915073394775
+   ],
+   [
+    "black_piece0_strength",
+    1.4872652292251587
+   ],
+   [
+    "white_piece0_strength",
+    1.4134658575057983
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.13943050724360584,
+   0.2529066534190908,
+   0.2898124995303806,
+   0.2931517771209875,
+   0.39051054926787065
+  ],
+  "attribution_time": 1.9423742294311523
+ },
+ "wall_time": 42.06161832809448,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T23:40:08"
+ }
+}

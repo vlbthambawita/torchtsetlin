@@ -1,0 +1,191 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tm_gated",
+ "seed": 0,
+ "tag": "t03",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 95,
+  "lr": 0.00015186623681411117,
+  "batch_size": 256,
+  "weight_decay": 0.01013047005313739,
+  "dropout": 0.43908775753799584,
+  "weight_norm": 0.024726701199791885
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 12.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 1.0,
+   "accuracy": 1.0,
+   "log_loss": 0.052764797309376214
+  },
+  "valid": {
+   "auroc": 0.9292556287229424,
+   "accuracy": 0.7692307692307693,
+   "log_loss": 0.5500288645518514
+  },
+  "test": {
+   "auroc": 0.9234221334221335,
+   "accuracy": 0.7529411764705882,
+   "log_loss": 0.5580782094003205
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 95,
+   "batch_size": 256,
+   "lr": 0.00015186623681411117,
+   "weight_decay": 0.01013047005313739,
+   "weight_norm": 0.024726701199791885,
+   "l1_mode": "all",
+   "dropout": 0.43908775753799584,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "vehicle_d54_s0_69614bb6ea",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 12.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 3170,
+  "clause_len_mean": 23.938800811767578,
+  "train_clause_firing_rate": 0.09684169292449951,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 240996,
+  "train_time": 0.23399901390075684,
+  "epochs": 95,
+  "steps": 190,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.3862943649291992,
+    "time": 0.002930164337158203
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.08866336827094738,
+    "time": 0.059480905532836914
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.04685211761375151,
+    "time": 0.12506628036499023
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.027186488934757676,
+    "time": 0.18364691734313965
+   },
+   {
+    "epoch": 95,
+    "train_loss": 0.025260355694612574,
+    "time": 0.23399782180786133
+   }
+  ],
+  "inference_time": 0.003731250762939453
+ },
+ "explain": {
+  "n_explained": 170,
+  "local_vs_full_removal_corr": 0.8821093440055847,
+  "linear_terms_90": 10.858823529411765,
+  "local_acc_k10": 0.38102941723430855,
+  "local_acc_k25": 0.4056470489677261,
+  "local_acc_k50": 0.3714932176120141,
+  "global_importance_top10": [
+   [
+    "RADIUS_RATIO",
+    0.2266474813222885
+   ],
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.22149455547332764
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    0.2184562385082245
+   ],
+   [
+    "ELONGATEDNESS",
+    0.2097184807062149
+   ],
+   [
+    "SCATTER_RATIO",
+    0.19817648828029633
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    0.1973700076341629
+   ],
+   [
+    "SCALED_VARIANCE_MAJOR",
+    0.1956140249967575
+   ],
+   [
+    "PR.AXIS_RECTANGULARITY",
+    0.19367314875125885
+   ],
+   [
+    "SCALED_VARIANCE_MINOR",
+    0.19119489192962646
+   ],
+   [
+    "MAX.LENGTH_ASPECT_RATIO",
+    0.17975595593452454
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.006024305555555665,
+   -0.002360044469419398,
+   0.002621813949938989,
+   0.008098021769896935,
+   0.024499558601121185
+  ],
+  "attribution_time": 1.8450157642364502
+ },
+ "wall_time": 2.1291260719299316,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T21:25:04"
+ }
+}

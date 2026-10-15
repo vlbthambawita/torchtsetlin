@@ -1,0 +1,189 @@
+{
+ "stage": "hpo",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "imn_tm_rand",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 68,
+  "lr": 1.6224876686567294e-05,
+  "batch_size": 128,
+  "weight_decay": 7.578620304777133e-05,
+  "dropout": 0.2653775937286625,
+  "weight_norm": 0.024729117690446598,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 1.0,
+  "s": 3.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "de52a25be3e35754b3bdc85c93a9c79dcd91c45130f885ec8cfe0f9f7be0cff5"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.6402513227513227,
+   "accuracy": 0.6766666666666666,
+   "log_loss": 0.8945577290194476
+  },
+  "valid": {
+   "auroc": 0.669047619047619,
+   "accuracy": 0.7,
+   "log_loss": 0.8695058895433648
+  },
+  "test": {
+   "auroc": 0.6085714285714285,
+   "accuracy": 0.65,
+   "log_loss": 1.0465864462886814
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 68,
+   "batch_size": 128,
+   "lr": 1.6224876686567294e-05,
+   "weight_decay": 7.578620304777133e-05,
+   "weight_norm": 0.024729117690446598,
+   "l1_mode": "all",
+   "dropout": 0.2653775937286625,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "credit-g_d31_s0_830800d4fb",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 1.0,
+   "s": 3.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "random",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 7.978426456451416,
+  "train_clause_firing_rate": 0.16672588884830475,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171797,
+  "train_time": 1.1859900951385498,
+  "epochs": 68,
+  "steps": 340,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.8970921452840168,
+    "time": 0.019536256790161133
+   },
+   {
+    "epoch": 25,
+    "train_loss": 1.782191185951233,
+    "time": 0.42222023010253906
+   },
+   {
+    "epoch": 50,
+    "train_loss": 1.5475854690869648,
+    "time": 0.8777239322662354
+   },
+   {
+    "epoch": 68,
+    "train_loss": 1.579592326482137,
+    "time": 1.1859889030456543
+   }
+  ],
+  "inference_time": 0.015160322189331055
+ },
+ "explain": {
+  "n_explained": 200,
+  "local_vs_full_removal_corr": 0.6833927631378174,
+  "active_clauses_mean": 132.22500610351562,
+  "clause_terms_90": 86.295,
+  "active_clause_len_mean": 3.623670816421509,
+  "local_acc_k10": 0.5612500107288361,
+  "local_acc_k25": 0.54839998498559,
+  "local_acc_k50": 0.548149986565113,
+  "global_importance_top10": [
+   [
+    "personal_status",
+    1.64971125125885
+   ],
+   [
+    "checking_status",
+    1.3802385330200195
+   ],
+   [
+    "other_payment_plans",
+    1.2422415018081665
+   ],
+   [
+    "housing",
+    1.2000434398651123
+   ],
+   [
+    "property_magnitude",
+    1.0731991529464722
+   ],
+   [
+    "purpose",
+    1.0176273584365845
+   ],
+   [
+    "employment",
+    0.9788275957107544
+   ],
+   [
+    "credit_history",
+    0.9388892650604248
+   ],
+   [
+    "own_telephone",
+    0.9316814541816711
+   ],
+   [
+    "credit_amount",
+    0.8504285216331482
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.026904761904761876,
+   0.045952380952380856,
+   0.048452380952380913,
+   0.01750000000000007,
+   -0.009047619047619082
+  ],
+  "attribution_time": 1.6202418804168701
+ },
+ "wall_time": 2.876218795776367,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T21:21:27"
+ }
+}

@@ -1,0 +1,190 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1067,
+ "dataset": "kc1",
+ "arm": "imn_hybrid",
+ "seed": 4,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 56,
+  "lr": 1.3854610008015807e-05,
+  "batch_size": 64,
+  "weight_decay": 0.0066186316288010735,
+  "dropout": 0.3616381881990327,
+  "weight_norm": 0.04592465468759204,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 200,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 1265,
+  "n_valid": 422,
+  "n_test": 422,
+  "n_features": 21,
+  "n_classes": 2,
+  "fingerprint": "f8e09bd3d0e85b5ea6cab8a85fde70b0a3f2dbfb73772134f4c3bab44b2af5de"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8824048796319276,
+   "accuracy": 0.8806324110671937,
+   "log_loss": 0.29596494439998233
+  },
+  "valid": {
+   "auroc": 0.853566041801336,
+   "accuracy": 0.8507109004739336,
+   "log_loss": 0.32801668043082816
+  },
+  "test": {
+   "auroc": 0.8210730446024563,
+   "accuracy": 0.8530805687203792,
+   "log_loss": 0.3430717868087233
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 56,
+   "batch_size": 64,
+   "lr": 1.3854610008015807e-05,
+   "weight_decay": 0.0066186316288010735,
+   "weight_norm": 0.04592465468759204,
+   "l1_mode": "active",
+   "dropout": 0.3616381881990327,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "kc1_d1067_s4_8bc096a717",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 200,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 400,
+  "clause_len_mean": 10.175000190734863,
+  "train_clause_firing_rate": 0.05730435252189636,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 124582,
+  "train_time": 3.6499013900756836,
+  "epochs": 56,
+  "steps": 1120,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3179365830930325,
+    "time": 0.07161641120910645
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.29903745582923585,
+    "time": 1.5867931842803955
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.28607067729644625,
+    "time": 3.231832265853882
+   },
+   {
+    "epoch": 56,
+    "train_loss": 0.28551836178707984,
+    "time": 3.649899959564209
+   }
+  ],
+  "inference_time": 0.01595282554626465
+ },
+ "explain": {
+  "n_explained": 422,
+  "local_vs_full_removal_corr": 0.9970303773880005,
+  "linear_terms_90": 14.803317535545023,
+  "active_clauses_mean": 23.248815536499023,
+  "clause_terms_90": 15.255924170616113,
+  "active_clause_len_mean": 8.836772918701172,
+  "local_acc_k10": 0.5070000019669533,
+  "local_acc_k25": 0.5032999962568283,
+  "local_acc_k50": 0.5080999909341335,
+  "global_importance_top10": [
+   [
+    "e",
+    0.7005626559257507
+   ],
+   [
+    "v",
+    0.6843579411506653
+   ],
+   [
+    "lOCode",
+    0.5805085897445679
+   ],
+   [
+    "t",
+    0.5642297863960266
+   ],
+   [
+    "uniq_Opnd",
+    0.5083030462265015
+   ],
+   [
+    "loc",
+    0.4987425208091736
+   ],
+   [
+    "b",
+    0.49678418040275574
+   ],
+   [
+    "total_Op",
+    0.48674672842025757
+   ],
+   [
+    "n",
+    0.4066423177719116
+   ],
+   [
+    "d",
+    0.3527202010154724
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.04710191769015293,
+   0.11316526610644251,
+   0.20310277957336775,
+   0.2899806076276664,
+   0.46507218271924144
+  ],
+  "attribution_time": 1.3079779148101807
+ },
+ "wall_time": 5.015490531921387,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-15T00:14:10"
+ }
+}

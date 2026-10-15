@@ -1,0 +1,194 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "clause_lr",
+ "seed": 4,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 94,
+  "lr": 1.089738159262924e-05,
+  "batch_size": 128,
+  "weight_decay": 0.004140231775026709,
+  "dropout": 0.28796536109644244,
+  "weight_norm": 0.22338369967867697,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 1.0,
+  "s": 3.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "3525f646f9751d9f3fb0d82b656dffe690a9304cee7e32a034a406f89bc62382"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9876719576719577,
+   "accuracy": 0.9483333333333334,
+   "log_loss": 0.2491317279890838
+  },
+  "valid": {
+   "auroc": 0.8071428571428572,
+   "accuracy": 0.78,
+   "log_loss": 0.46476097055767096
+  },
+  "test": {
+   "auroc": 0.8292857142857142,
+   "accuracy": 0.775,
+   "log_loss": 0.4597171315482086
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 94,
+   "batch_size": 128,
+   "lr": 1.089738159262924e-05,
+   "weight_decay": 0.004140231775026709,
+   "weight_norm": 0.22338369967867697,
+   "l1_mode": "all",
+   "dropout": 0.28796536109644244,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "credit-g_d31_s4_830800d4fb",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 1.0,
+   "s": 3.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 798,
+  "clause_len_mean": 8.033834457397461,
+  "train_clause_firing_rate": 0.24058271944522858,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 799,
+  "train_time": 0.5518016815185547,
+  "epochs": 94,
+  "steps": 470,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.266946169535319,
+    "time": 0.005553007125854492
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.26254276156425477,
+    "time": 0.1376209259033203
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2601987103621165,
+    "time": 0.2852442264556885
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.25768482764561973,
+    "time": 0.43173813819885254
+   },
+   {
+    "epoch": 94,
+    "train_loss": 0.2572774807612101,
+    "time": 0.5518004894256592
+   }
+  ],
+  "inference_time": 0.002918720245361328
+ },
+ "explain": {
+  "n_explained": 200,
+  "local_vs_full_removal_corr": 1.0,
+  "active_clauses_mean": 215.10000610351562,
+  "clause_terms_90": 141.885,
+  "active_clause_len_mean": 7.259387016296387,
+  "local_acc_k10": 0.7315000095963478,
+  "local_acc_k25": 0.7385999837517738,
+  "local_acc_k50": 0.7157999816536903,
+  "global_importance_top10": [
+   [
+    "other_parties",
+    1.4314974546432495
+   ],
+   [
+    "other_payment_plans",
+    1.106258749961853
+   ],
+   [
+    "credit_history",
+    1.059835433959961
+   ],
+   [
+    "personal_status",
+    0.9056636095046997
+   ],
+   [
+    "checking_status",
+    0.8414353132247925
+   ],
+   [
+    "housing",
+    0.8323395252227783
+   ],
+   [
+    "credit_amount",
+    0.6101060509681702
+   ],
+   [
+    "property_magnitude",
+    0.6043068170547485
+   ],
+   [
+    "purpose",
+    0.5752874612808228
+   ],
+   [
+    "job",
+    0.5430005788803101
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.034404761904761716,
+   0.049047619047618896,
+   0.06880952380952376,
+   0.08047619047619037,
+   0.17202380952380936
+  ],
+  "attribution_time": 1.3691699504852295
+ },
+ "wall_time": 1.9451565742492676,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:14:47"
+ }
+}

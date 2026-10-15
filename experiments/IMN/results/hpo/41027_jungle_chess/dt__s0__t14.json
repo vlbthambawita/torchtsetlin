@@ -1,0 +1,103 @@
+{
+ "stage": "hpo",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "dt",
+ "seed": 0,
+ "tag": "t14",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "gini",
+  "max_depth": 16,
+  "min_samples_split": 3,
+  "max_leaf_nodes": 8,
+  "splitter": "best"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "cbc43acf7200d1ffedcb13e8aeedefd96397fe20dce72c505d6e80eeba4ef16b"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8123867221729125,
+   "accuracy": 0.6997880331709494,
+   "log_loss": 0.6955347250482093
+  },
+  "valid": {
+   "auroc": 0.8143451998249827,
+   "accuracy": 0.6997991967871486,
+   "log_loss": 0.6930765114997921
+  },
+  "test": {
+   "auroc": 0.8061169614701263,
+   "accuracy": 0.6980142793395805,
+   "log_loss": 0.7041450705002484
+  }
+ },
+ "info": {
+  "impl": "sklearn.DecisionTree",
+  "params": {
+   "criterion": "gini",
+   "max_depth": 16,
+   "min_samples_split": 3,
+   "max_leaf_nodes": 8,
+   "splitter": "best"
+  },
+  "train_time": 0.013488054275512695,
+  "inference_time": 0.0014829635620117188
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    0.37151920795440674
+   ],
+   [
+    "black_piece0_rank",
+    0.2507200539112091
+   ],
+   [
+    "white_piece0_strength",
+    0.2117704153060913
+   ],
+   [
+    "black_piece0_strength",
+    0.1287701576948166
+   ],
+   [
+    "white_piece0_file",
+    0.0
+   ],
+   [
+    "black_piece0_file",
+    0.0
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.10028406146879254,
+   0.18801264134489948,
+   0.24963195571375407,
+   0.30611696147012635,
+   0.30611696147012635
+  ],
+  "attribution_time": 0.04767322540283203
+ },
+ "wall_time": 0.09050154685974121,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T18:16:18"
+ }
+}

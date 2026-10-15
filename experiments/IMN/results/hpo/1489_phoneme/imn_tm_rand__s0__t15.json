@@ -1,0 +1,184 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn_tm_rand",
+ "seed": 0,
+ "tag": "t15",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 141,
+  "lr": 1.9187513666698394e-05,
+  "batch_size": 64,
+  "weight_decay": 1.3965458746278252e-05,
+  "dropout": 0.15989626556632885,
+  "weight_norm": 0.00595059360509494,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "15fe29bbcabe1d332e5e2d509a7a229f95033b22dd511672333604111262be10"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9309892297530366,
+   "accuracy": 0.8676742751388032,
+   "log_loss": 0.3044111102646688
+  },
+  "valid": {
+   "auroc": 0.9100203147967694,
+   "accuracy": 0.8381128584643849,
+   "log_loss": 0.34928407665941946
+  },
+  "test": {
+   "auroc": 0.8953498934711878,
+   "accuracy": 0.8334875115633672,
+   "log_loss": 0.3799661650343371
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 141,
+   "batch_size": 64,
+   "lr": 1.9187513666698394e-05,
+   "weight_decay": 1.3965458746278252e-05,
+   "weight_norm": 0.00595059360509494,
+   "l1_mode": "all",
+   "dropout": 0.15989626556632885,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "phoneme_d1489_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "random",
+  "n_clauses_basis": 799,
+  "clause_len_mean": 6.828535556793213,
+  "train_clause_firing_rate": 0.15191954374313354,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171296,
+  "train_time": 24.72871971130371,
+  "epochs": 141,
+  "steps": 7191,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 2.6369530891357273,
+    "time": 0.1577591896057129
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.643854939739032,
+    "time": 4.272514343261719
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.4671926768490887,
+    "time": 8.763571977615356
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.41459487953133084,
+    "time": 13.119736671447754
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.34164347275769835,
+    "time": 17.641773223876953
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.31151009451673767,
+    "time": 22.027677059173584
+   },
+   {
+    "epoch": 141,
+    "train_loss": 0.3373663196734335,
+    "time": 24.728718519210815
+   }
+  ],
+  "inference_time": 0.015085697174072266
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.5055172443389893,
+  "active_clauses_mean": 120.66600036621094,
+  "clause_terms_90": 79.084,
+  "active_clause_len_mean": 4.492241382598877,
+  "local_acc_k10": 0.5805000074207782,
+  "local_acc_k25": 0.5785999888181687,
+  "local_acc_k50": 0.5698499903082848,
+  "global_importance_top10": [
+   [
+    "V1",
+    1.3672124147415161
+   ],
+   [
+    "V3",
+    1.2826793193817139
+   ],
+   [
+    "V4",
+    1.1942256689071655
+   ],
+   [
+    "V2",
+    1.0130620002746582
+   ],
+   [
+    "V5",
+    0.8199588656425476
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.06537896179827252,
+   0.11056699753910204,
+   0.23443358052422092,
+   0.35269707830280617,
+   0.39534989347118776
+  ],
+  "attribution_time": 1.5799131393432617
+ },
+ "wall_time": 26.377907276153564,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T20:53:08"
+ }
+}

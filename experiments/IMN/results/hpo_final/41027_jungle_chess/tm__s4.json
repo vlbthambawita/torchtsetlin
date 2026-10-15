@@ -1,0 +1,115 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "tm",
+ "seed": 4,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {},
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 5.0,
+  "n_bits": 10,
+  "max_included_literals": 16
+ },
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "e3a480dd1663d8e44073e28ed7d5ced1a9ff4fe661b9facb434ad86df67155a0"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9782268685943022,
+   "accuracy": 0.8847197947268602,
+   "log_loss": 0.4323707426392981
+  },
+  "valid": {
+   "auroc": 0.9716550663227422,
+   "accuracy": 0.8665774207942882,
+   "log_loss": 0.45380484169514357
+  },
+  "test": {
+   "auroc": 0.9674878814123128,
+   "accuracy": 0.856648817492191,
+   "log_loss": 0.4648617386120553
+  }
+ },
+ "info": {
+  "tm_key": "jungle_chess_d41027_s4_db02bf7de1",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 5.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 16,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "train_time": 143.93060755729675,
+  "best_epoch": 47,
+  "T": 1600,
+  "n_bool": 36,
+  "n_clauses_raw": 2400,
+  "n_clauses_basis": 2390,
+  "clause_len_mean": 9.128870964050293,
+  "inference_time": 0.007922649383544922
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    0.4947325885295868
+   ],
+   [
+    "black_piece0_rank",
+    0.40548738837242126
+   ],
+   [
+    "white_piece0_strength",
+    0.36985889077186584
+   ],
+   [
+    "black_piece0_strength",
+    0.36688631772994995
+   ],
+   [
+    "black_piece0_file",
+    0.2975762188434601
+   ],
+   [
+    "white_piece0_file",
+    0.28466007113456726
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.15933486825670962,
+   0.25052846993030287,
+   0.34438698602196816,
+   0.3555644235854478,
+   0.3873027222670632
+  ],
+  "attribution_time": 0.05583453178405762
+ },
+ "wall_time": 144.0377585887909,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T23:29:10"
+ }
+}

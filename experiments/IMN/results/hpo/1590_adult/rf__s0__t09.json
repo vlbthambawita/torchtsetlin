@@ -1,0 +1,119 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "rf",
+ "seed": 0,
+ "tag": "t09",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "gini",
+  "max_depth": 6,
+  "min_samples_split": 6,
+  "max_leaf_nodes": 3,
+  "n_estimators": 800
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8902463506460792,
+   "accuracy": 0.8255869505869506,
+   "log_loss": 0.3985258616817712
+  },
+  "valid": {
+   "auroc": 0.8872437730099356,
+   "accuracy": 0.8193264407820657,
+   "log_loss": 0.40115089533702064
+  },
+  "test": {
+   "auroc": 0.889970678632354,
+   "accuracy": 0.8263895997543249,
+   "log_loss": 0.3990796605937344
+  }
+ },
+ "info": {
+  "impl": "sklearn.RandomForest",
+  "params": {
+   "criterion": "gini",
+   "max_depth": 6,
+   "min_samples_split": 6,
+   "max_leaf_nodes": 3,
+   "n_estimators": 800
+  },
+  "train_time": 1.6798439025878906,
+  "inference_time": 0.46120309829711914
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "relationship",
+    0.27386870980262756
+   ],
+   [
+    "marital-status",
+    0.20680895447731018
+   ],
+   [
+    "education",
+    0.08125276863574982
+   ],
+   [
+    "education-num",
+    0.08073675632476807
+   ],
+   [
+    "occupation",
+    0.07192949950695038
+   ],
+   [
+    "age",
+    0.04450258985161781
+   ],
+   [
+    "sex",
+    0.03667256981134415
+   ],
+   [
+    "capital-gain",
+    0.02890501730144024
+   ],
+   [
+    "hours-per-week",
+    0.025736290961503983
+   ],
+   [
+    "capital-loss",
+    0.0020531625486910343
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   -0.0040510996002114386,
+   0.054940352871740705,
+   0.05162680579207235,
+   0.050145484450672795,
+   0.07934528889046988
+  ],
+  "attribution_time": 1.1694905757904053
+ },
+ "wall_time": 3.3316943645477295,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T16:45:44"
+ }
+}

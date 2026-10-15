@@ -1,0 +1,189 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "imn_tm_rand",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 68,
+  "lr": 1.6224876686567294e-05,
+  "batch_size": 128,
+  "weight_decay": 7.578620304777133e-05,
+  "dropout": 0.2653775937286625,
+  "weight_norm": 0.024729117690446598,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8885700376857739,
+   "accuracy": 0.8491332241332241,
+   "log_loss": 0.3795005251449413
+  },
+  "valid": {
+   "auroc": 0.8816751843443312,
+   "accuracy": 0.8412324700583478,
+   "log_loss": 0.40549765175867625
+  },
+  "test": {
+   "auroc": 0.8843066217757691,
+   "accuracy": 0.8496263691268298,
+   "log_loss": 0.4113007758111032
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 68,
+   "batch_size": 128,
+   "lr": 1.6224876686567294e-05,
+   "weight_decay": 7.578620304777133e-05,
+   "weight_norm": 0.024729117690446598,
+   "l1_mode": "all",
+   "dropout": 0.2653775937286625,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "random",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.23227667808532715,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171029,
+  "train_time": 52.18770122528076,
+  "epochs": 68,
+  "steps": 15572,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 3.237171102670122,
+    "time": 0.7583022117614746
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.6263207525397271,
+    "time": 18.97752857208252
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.5097324212261994,
+    "time": 38.195377349853516
+   },
+   {
+    "epoch": 68,
+    "train_loss": 0.48306440605741036,
+    "time": 52.187700033187866
+   }
+  ],
+  "inference_time": 0.036023855209350586
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.7575579285621643,
+  "active_clauses_mean": 186.86199951171875,
+  "clause_terms_90": 121.694,
+  "active_clause_len_mean": 3.2096872329711914,
+  "local_acc_k10": 0.5895000101625919,
+  "local_acc_k25": 0.6134999883174896,
+  "local_acc_k50": 0.646799986064434,
+  "global_importance_top10": [
+   [
+    "relationship",
+    1.3516680002212524
+   ],
+   [
+    "marital-status",
+    1.3225245475769043
+   ],
+   [
+    "occupation",
+    1.1779910326004028
+   ],
+   [
+    "education",
+    0.9711719751358032
+   ],
+   [
+    "sex",
+    0.7627463340759277
+   ],
+   [
+    "age",
+    0.7423654198646545
+   ],
+   [
+    "fnlwgt",
+    0.6975508332252502
+   ],
+   [
+    "native-country",
+    0.6369903087615967
+   ],
+   [
+    "workclass",
+    0.6341710686683655
+   ],
+   [
+    "race",
+    0.6233192086219788
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.06669998143168088,
+   0.13338056570404955,
+   0.2068175489381121,
+   0.2990746979424852,
+   0.3307468919361808
+  ],
+  "attribution_time": 1.5875988006591797
+ },
+ "wall_time": 53.890382051467896,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T19:18:59"
+ }
+}

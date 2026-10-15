@@ -1,0 +1,189 @@
+{
+ "stage": "hpo",
+ "dataset_id": 40984,
+ "dataset": "segment",
+ "arm": "clause_lr",
+ "seed": 0,
+ "tag": "t12",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 51,
+  "lr": 0.00011954105079210746,
+  "batch_size": 128,
+  "weight_decay": 0.00014269267523845273,
+  "dropout": 0.4214624343284648,
+  "weight_norm": 0.008679659410282252,
+  "l1_mode": "prior"
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 5.0,
+  "n_bits": 10,
+  "max_included_literals": 16
+ },
+ "data": {
+  "n_train": 1386,
+  "n_valid": 462,
+  "n_test": 462,
+  "n_features": 17,
+  "n_classes": 7,
+  "fingerprint": "e788c886bc533cbca351eb387b35031b179e8f42ac5d45ba3cdf7a584fef4d42"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9999131526909305,
+   "accuracy": 0.9935064935064936,
+   "log_loss": 0.04434225238054684
+  },
+  "valid": {
+   "auroc": 0.9993112947658401,
+   "accuracy": 0.974025974025974,
+   "log_loss": 0.07870948212469626
+  },
+  "test": {
+   "auroc": 0.9978409637500547,
+   "accuracy": 0.9632034632034632,
+   "log_loss": 0.11209749542653985
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 51,
+   "batch_size": 128,
+   "lr": 0.00011954105079210746,
+   "weight_decay": 0.00014269267523845273,
+   "weight_norm": 0.008679659410282252,
+   "l1_mode": "prior",
+   "dropout": 0.4214624343284648,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "segment_d40984_s0_db02bf7de1",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 5.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 16,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 5222,
+  "clause_len_mean": 9.854270935058594,
+  "train_clause_firing_rate": 0.18261580169200897,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 36561,
+  "train_time": 1.0886402130126953,
+  "epochs": 51,
+  "steps": 561,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.2499762097048381,
+    "time": 0.027420759201049805
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.04478911034128539,
+    "time": 0.6817810535430908
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.028941780890500736,
+    "time": 1.0773108005523682
+   },
+   {
+    "epoch": 51,
+    "train_loss": 0.028841917917755946,
+    "time": 1.0886390209197998
+   }
+  ],
+  "inference_time": 0.002806425094604492
+ },
+ "explain": {
+  "n_explained": 462,
+  "local_vs_full_removal_corr": 1.0,
+  "active_clauses_mean": 946.2510986328125,
+  "clause_terms_90": 583.2316017316017,
+  "active_clause_len_mean": 6.718177795410156,
+  "local_acc_k10": 0.946928585767746,
+  "local_acc_k25": 0.9719999849796295,
+  "local_acc_k50": 0.973214291036129,
+  "global_importance_top10": [
+   [
+    "region.centroid.row",
+    1.5526875257492065
+   ],
+   [
+    "hue.mean",
+    1.3031041622161865
+   ],
+   [
+    "exgreen.mean",
+    0.9005061984062195
+   ],
+   [
+    "saturation.mean",
+    0.8471434116363525
+   ],
+   [
+    "rawgreen.mean",
+    0.7371711134910583
+   ],
+   [
+    "exred.mean",
+    0.7314246296882629
+   ],
+   [
+    "rawred.mean",
+    0.7249778509140015
+   ],
+   [
+    "intensity.mean",
+    0.6856358051300049
+   ],
+   [
+    "hedge.sd",
+    0.6551668047904968
+   ],
+   [
+    "vegde.sd",
+    0.6512275338172913
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.025214263850627527,
+   0.04574423892605717,
+   0.05861646770737672,
+   0.0674548515457607,
+   0.07094210503301424
+  ],
+  "attribution_time": 3.1984899044036865
+ },
+ "wall_time": 4.3646626472473145,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T21:13:01"
+ }
+}

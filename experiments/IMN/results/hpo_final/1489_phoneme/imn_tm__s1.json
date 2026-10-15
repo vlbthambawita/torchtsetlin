@@ -1,0 +1,184 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn_tm",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 141,
+  "lr": 1.9187513666698394e-05,
+  "batch_size": 64,
+  "weight_decay": 1.3965458746278252e-05,
+  "dropout": 0.15989626556632885,
+  "weight_norm": 0.00595059360509494,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "aa4619687717b57afd09972c298163e2d685905bc781a364c944bdcbf570c1c9"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9849867894756156,
+   "accuracy": 0.9380012338062924,
+   "log_loss": 0.16003027405309111
+  },
+  "valid": {
+   "auroc": 0.9476357210101243,
+   "accuracy": 0.8852913968547641,
+   "log_loss": 0.26547195327706713
+  },
+  "test": {
+   "auroc": 0.9419541843526517,
+   "accuracy": 0.879740980573543,
+   "log_loss": 0.28119758667922723
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 141,
+   "batch_size": 64,
+   "lr": 1.9187513666698394e-05,
+   "weight_decay": 1.3965458746278252e-05,
+   "weight_norm": 0.00595059360509494,
+   "l1_mode": "all",
+   "dropout": 0.15989626556632885,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "phoneme_d1489_s1_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 798,
+  "clause_len_mean": 8.140351295471191,
+  "train_clause_firing_rate": 0.05623868480324745,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171167,
+  "train_time": 24.2775297164917,
+  "epochs": 141,
+  "steps": 7191,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.2585982595197512,
+    "time": 0.1545422077178955
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.1998474417434733,
+    "time": 4.307772636413574
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.1685626096540877,
+    "time": 8.568845510482788
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.15640965739309898,
+    "time": 12.811643838882446
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.13450002839431432,
+    "time": 17.11840319633484
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.12566814536227627,
+    "time": 21.540364742279053
+   },
+   {
+    "epoch": 141,
+    "train_loss": 0.12486742780228444,
+    "time": 24.277528285980225
+   }
+  ],
+  "inference_time": 0.015432596206665039
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9640223383903503,
+  "active_clauses_mean": 44.86000061035156,
+  "clause_terms_90": 30.012,
+  "active_clause_len_mean": 6.922914505004883,
+  "local_acc_k10": 0.7255000126361847,
+  "local_acc_k25": 0.7798999801278115,
+  "local_acc_k50": 0.8152499765157699,
+  "global_importance_top10": [
+   [
+    "V1",
+    2.210526704788208
+   ],
+   [
+    "V2",
+    1.2819781303405762
+   ],
+   [
+    "V3",
+    1.2234219312667847
+   ],
+   [
+    "V4",
+    1.1722522974014282
+   ],
+   [
+    "V5",
+    0.9414680600166321
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.08240292665202242,
+   0.11365137826812233,
+   0.14265570548499518,
+   0.250611095512577,
+   0.44195418435265166
+  ],
+  "attribution_time": 1.4479122161865234
+ },
+ "wall_time": 25.77860689163208,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T23:52:15"
+ }
+}

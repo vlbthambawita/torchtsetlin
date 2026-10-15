@@ -1,0 +1,194 @@
+{
+ "stage": "hpo",
+ "dataset_id": 3,
+ "dataset": "kr-vs-kp",
+ "arm": "clause_lr",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 94,
+  "lr": 1.089738159262924e-05,
+  "batch_size": 128,
+  "weight_decay": 0.004140231775026709,
+  "dropout": 0.28796536109644244,
+  "weight_norm": 0.22338369967867697,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 0.5,
+  "s": 8.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 1917,
+  "n_valid": 639,
+  "n_test": 640,
+  "n_features": 36,
+  "n_classes": 2,
+  "fingerprint": "dc95bd16329ae3e7e5f35b4f8063266a62523e924a545f34bdd9502bd20272c3"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 1.0,
+   "accuracy": 1.0,
+   "log_loss": 0.028006410422234854
+  },
+  "valid": {
+   "auroc": 0.9996809659369784,
+   "accuracy": 0.9827856025039123,
+   "log_loss": 0.0499627738170939
+  },
+  "test": {
+   "auroc": 0.9995499197683065,
+   "accuracy": 0.9875,
+   "log_loss": 0.04754826857151957
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 94,
+   "batch_size": 128,
+   "lr": 1.089738159262924e-05,
+   "weight_decay": 0.004140231775026709,
+   "weight_norm": 0.22338369967867697,
+   "l1_mode": "all",
+   "dropout": 0.28796536109644244,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "kr-vs-kp_d3_s0_e0255a6dbc",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 800,
+   "T_ratio": 0.5,
+   "s": 8.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 1563,
+  "clause_len_mean": 14.136916160583496,
+  "train_clause_firing_rate": 0.10340886563062668,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 1564,
+  "train_time": 1.6119208335876465,
+  "epochs": 94,
+  "steps": 1410,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.04783065338805124,
+    "time": 0.017905712127685547
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.04678721897144708,
+    "time": 0.4186520576477051
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.04627914681261134,
+    "time": 0.8509137630462646
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.04569762689632305,
+    "time": 1.2919976711273193
+   },
+   {
+    "epoch": 94,
+    "train_loss": 0.04560159883293312,
+    "time": 1.6119191646575928
+   }
+  ],
+  "inference_time": 0.002476215362548828
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 1.0,
+  "active_clauses_mean": 153.91600036621094,
+  "clause_terms_90": 107.354,
+  "active_clause_len_mean": 10.194835662841797,
+  "local_acc_k10": 0.9335000091791152,
+  "local_acc_k25": 0.9656999862194061,
+  "local_acc_k50": 0.9812999716401101,
+  "global_importance_top10": [
+   [
+    "bxqsq",
+    4.895244598388672
+   ],
+   [
+    "wknck",
+    3.9146320819854736
+   ],
+   [
+    "wkna8",
+    2.3070874214172363
+   ],
+   [
+    "wkpos",
+    2.1763813495635986
+   ],
+   [
+    "mulch",
+    2.1425955295562744
+   ],
+   [
+    "rxmsq",
+    1.9469797611236572
+   ],
+   [
+    "rimmx",
+    1.9161789417266846
+   ],
+   [
+    "katri",
+    1.839897871017456
+   ],
+   [
+    "skrxp",
+    1.6419788599014282
+   ],
+   [
+    "bkon8",
+    1.3675493001937866
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.08012895777073314,
+   0.2580769832883254,
+   0.280199405111346,
+   0.29149054831513443,
+   0.30340299792571723
+  ],
+  "attribution_time": 1.3160874843597412
+ },
+ "wall_time": 2.9602973461151123,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T21:04:19"
+ }
+}

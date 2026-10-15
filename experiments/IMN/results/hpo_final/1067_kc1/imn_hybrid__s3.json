@@ -1,0 +1,190 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1067,
+ "dataset": "kc1",
+ "arm": "imn_hybrid",
+ "seed": 3,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 56,
+  "lr": 1.3854610008015807e-05,
+  "batch_size": 64,
+  "weight_decay": 0.0066186316288010735,
+  "dropout": 0.3616381881990327,
+  "weight_norm": 0.04592465468759204,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 200,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 1265,
+  "n_valid": 422,
+  "n_test": 422,
+  "n_features": 21,
+  "n_classes": 2,
+  "fingerprint": "34cbff34c8879796ac3071352c51650e03f010b340f10e2e92d29a32e4889a94"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.920651094862641,
+   "accuracy": 0.9011857707509882,
+   "log_loss": 0.2689270619694374
+  },
+  "valid": {
+   "auroc": 0.800495582848524,
+   "accuracy": 0.8364928909952607,
+   "log_loss": 0.36643472490781115
+  },
+  "test": {
+   "auroc": 0.8292178409825468,
+   "accuracy": 0.8507109004739336,
+   "log_loss": 0.3448421119624663
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 56,
+   "batch_size": 64,
+   "lr": 1.3854610008015807e-05,
+   "weight_decay": 0.0066186316288010735,
+   "weight_norm": 0.04592465468759204,
+   "l1_mode": "active",
+   "dropout": 0.3616381881990327,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "kc1_d1067_s3_8bc096a717",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 200,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 400,
+  "clause_len_mean": 10.2524995803833,
+  "train_clause_firing_rate": 0.05487549677491188,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 124582,
+  "train_time": 3.9082071781158447,
+  "epochs": 56,
+  "steps": 1120,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3014850060459182,
+    "time": 0.07642698287963867
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.26489904328532843,
+    "time": 1.7198705673217773
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2539785243070173,
+    "time": 3.5400965213775635
+   },
+   {
+    "epoch": 56,
+    "train_loss": 0.25168353005831423,
+    "time": 3.90820574760437
+   }
+  ],
+  "inference_time": 0.01693129539489746
+ },
+ "explain": {
+  "n_explained": 422,
+  "local_vs_full_removal_corr": 0.9965097308158875,
+  "linear_terms_90": 14.433649289099526,
+  "active_clauses_mean": 22.447866439819336,
+  "clause_terms_90": 14.492890995260664,
+  "active_clause_len_mean": 10.737221717834473,
+  "local_acc_k10": 0.5065000019967556,
+  "local_acc_k25": 0.5107999968528748,
+  "local_acc_k50": 0.5818499743938446,
+  "global_importance_top10": [
+   [
+    "lOCode",
+    0.6899128556251526
+   ],
+   [
+    "t",
+    0.6882727146148682
+   ],
+   [
+    "b",
+    0.6263999938964844
+   ],
+   [
+    "e",
+    0.6099421977996826
+   ],
+   [
+    "n",
+    0.5753769278526306
+   ],
+   [
+    "d",
+    0.5717130303382874
+   ],
+   [
+    "uniq_Op",
+    0.5252645015716553
+   ],
+   [
+    "uniq_Opnd",
+    0.48145830631256104
+   ],
+   [
+    "total_Op",
+    0.47681912779808044
+   ],
+   [
+    "total_Opnd",
+    0.4619905650615692
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.03719026071967246,
+   0.08196509372979954,
+   0.16759319112260285,
+   0.2196078431372548,
+   0.26231415643180345
+  ],
+  "attribution_time": 1.537212610244751
+ },
+ "wall_time": 5.505373001098633,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:14:07"
+ }
+}

@@ -1,0 +1,191 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn",
+ "seed": 0,
+ "tag": "t19",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 321,
+  "lr": 2.8942008389076067e-05,
+  "batch_size": 64,
+  "weight_decay": 1.0885348109415649e-05,
+  "dropout": 0.25280708873151286,
+  "weight_norm": 0.005939883750862634
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "15fe29bbcabe1d332e5e2d509a7a229f95033b22dd511672333604111262be10"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8970505669516715,
+   "accuracy": 0.8303516347933374,
+   "log_loss": 0.3749309277298621
+  },
+  "valid": {
+   "auroc": 0.8906304193436504,
+   "accuracy": 0.8242368177613321,
+   "log_loss": 0.37719725848589464
+  },
+  "test": {
+   "auroc": 0.8901184204006803,
+   "accuracy": 0.8279370952821462,
+   "log_loss": 0.3899268376915075
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 321,
+   "batch_size": 64,
+   "lr": 2.8942008389076067e-05,
+   "weight_decay": 1.0885348109415649e-05,
+   "weight_norm": 0.005939883750862634,
+   "l1_mode": "all",
+   "dropout": 0.25280708873151286,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 68870,
+  "train_time": 51.911155700683594,
+  "epochs": 321,
+  "steps": 16371,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.7674302317932901,
+    "time": 0.1535038948059082
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.5395388565704751,
+    "time": 3.7362070083618164
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.5186974749309203,
+    "time": 7.8111982345581055
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.4605103343044954,
+    "time": 11.690717458724976
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.4318415428075726,
+    "time": 15.590670585632324
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.42710758770490265,
+    "time": 19.37682843208313
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.4142861214410663,
+    "time": 23.41905403137207
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.38931013723716995,
+    "time": 27.76472043991089
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.38035184849124865,
+    "time": 31.632186889648438
+   },
+   {
+    "epoch": 225,
+    "train_loss": 0.3759012869079491,
+    "time": 35.86133050918579
+   },
+   {
+    "epoch": 250,
+    "train_loss": 0.36964495677700904,
+    "time": 40.24616241455078
+   },
+   {
+    "epoch": 275,
+    "train_loss": 0.3717091144933,
+    "time": 44.28288292884827
+   },
+   {
+    "epoch": 300,
+    "train_loss": 0.3637581837721477,
+    "time": 48.10364651679993
+   },
+   {
+    "epoch": 321,
+    "train_loss": 0.3803270779444361,
+    "time": 51.91115427017212
+   }
+  ],
+  "inference_time": 0.015279054641723633
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.810677707195282,
+  "linear_terms_90": 3.286,
+  "local_acc_k10": 0.5275000055134297,
+  "local_acc_k25": 0.5451999907195568,
+  "local_acc_k50": 0.5681499901413918,
+  "global_importance_top10": [
+   [
+    "V3",
+    0.5388081669807434
+   ],
+   [
+    "V1",
+    0.5092380046844482
+   ],
+   [
+    "V2",
+    0.3935037851333618
+   ],
+   [
+    "V4",
+    0.2153480499982834
+   ],
+   [
+    "V5",
+    0.18211539089679718
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.046298743125175235,
+   0.10295307777429086,
+   0.14166680430079104,
+   0.20744008786562496,
+   0.39011842040068034
+  ],
+  "attribution_time": 1.2410411834716797
+ },
+ "wall_time": 53.192872285842896,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:34:48"
+ }
+}

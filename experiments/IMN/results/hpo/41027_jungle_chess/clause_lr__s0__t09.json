@@ -1,0 +1,203 @@
+{
+ "stage": "hpo",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "clause_lr",
+ "seed": 0,
+ "tag": "t09",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 218,
+  "lr": 7.711793201699073e-05,
+  "batch_size": 512,
+  "weight_decay": 0.00952436680727557,
+  "dropout": 0.288649043615534,
+  "weight_norm": 0.0003644054562817775,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 5.0,
+  "n_bits": 10,
+  "max_included_literals": 16
+ },
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "cbc43acf7200d1ffedcb13e8aeedefd96397fe20dce72c505d6e80eeba4ef16b"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.978611714964358,
+   "accuracy": 0.8849429177048083,
+   "log_loss": 0.2701323287023579
+  },
+  "valid": {
+   "auroc": 0.9718081275405677,
+   "accuracy": 0.8640116019634092,
+   "log_loss": 0.2959841751719931
+  },
+  "test": {
+   "auroc": 0.9727777911682591,
+   "accuracy": 0.8649040606871932,
+   "log_loss": 0.2945043403766873
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 218,
+   "batch_size": 512,
+   "lr": 7.711793201699073e-05,
+   "weight_decay": 0.00952436680727557,
+   "weight_norm": 0.0003644054562817775,
+   "l1_mode": "active",
+   "dropout": 0.288649043615534,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "jungle_chess_d41027_s0_db02bf7de1",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 5.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 16,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 2380,
+  "clause_len_mean": 9.25882339477539,
+  "train_clause_firing_rate": 0.14400388300418854,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 7143,
+  "train_time": 14.329678058624268,
+  "epochs": 218,
+  "steps": 11554,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.31533477753971556,
+    "time": 0.06745457649230957
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.2756324843647782,
+    "time": 1.6069700717926025
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2719883648855636,
+    "time": 3.29771089553833
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.26964362201494824,
+    "time": 4.99544358253479
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.2697864036431766,
+    "time": 6.714266777038574
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.26859998553941444,
+    "time": 8.331023693084717
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.2680345236000542,
+    "time": 9.968879222869873
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.2677801896343403,
+    "time": 11.595932722091675
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.2675393427904708,
+    "time": 13.19553518295288
+   },
+   {
+    "epoch": 218,
+    "train_loss": 0.26747221567091617,
+    "time": 14.329676866531372
+   }
+  ],
+  "inference_time": 0.011719942092895508
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 1.0,
+  "active_clauses_mean": 345.656005859375,
+  "clause_terms_90": 196.242,
+  "active_clause_len_mean": 8.160682678222656,
+  "local_acc_k10": 0.8253333821892739,
+  "local_acc_k25": 0.8354000195860862,
+  "local_acc_k50": 0.8365072998404502,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    1.6882658004760742
+   ],
+   [
+    "black_piece0_rank",
+    1.5934758186340332
+   ],
+   [
+    "white_piece0_file",
+    1.2851979732513428
+   ],
+   [
+    "black_piece0_file",
+    1.0552970170974731
+   ],
+   [
+    "black_piece0_strength",
+    0.9784507155418396
+   ],
+   [
+    "white_piece0_strength",
+    0.9152249693870544
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.1461841554020774,
+   0.26135327638176653,
+   0.27562636670886764,
+   0.2881471579669874,
+   0.39598802639369524
+  ],
+  "attribution_time": 2.034195899963379
+ },
+ "wall_time": 16.430508613586426,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T19:54:30"
+ }
+}

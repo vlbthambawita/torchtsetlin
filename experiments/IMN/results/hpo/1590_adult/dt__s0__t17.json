@@ -1,0 +1,119 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "dt",
+ "seed": 0,
+ "tag": "t17",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "entropy",
+  "max_depth": 12,
+  "min_samples_split": 4,
+  "max_leaf_nodes": 10,
+  "splitter": "random"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8586603421076416,
+   "accuracy": 0.8232664482664482,
+   "log_loss": 0.38049362688098626
+  },
+  "valid": {
+   "auroc": 0.8565414716594052,
+   "accuracy": 0.8207595455010749,
+   "log_loss": 0.38299516550136176
+  },
+  "test": {
+   "auroc": 0.8560849349228183,
+   "accuracy": 0.8233186610707339,
+   "log_loss": 0.3828795893518704
+  }
+ },
+ "info": {
+  "impl": "sklearn.DecisionTree",
+  "params": {
+   "criterion": "entropy",
+   "max_depth": 12,
+   "min_samples_split": 4,
+   "max_leaf_nodes": 10,
+   "splitter": "random"
+  },
+  "train_time": 0.011463403701782227,
+  "inference_time": 0.0019137859344482422
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "marital-status",
+    0.9424666166305542
+   ],
+   [
+    "education",
+    0.7906708121299744
+   ],
+   [
+    "occupation",
+    0.552673876285553
+   ],
+   [
+    "relationship",
+    0.14399273693561554
+   ],
+   [
+    "education-num",
+    0.05690544471144676
+   ],
+   [
+    "age",
+    0.05214235559105873
+   ],
+   [
+    "capital-gain",
+    0.0
+   ],
+   [
+    "fnlwgt",
+    0.0
+   ],
+   [
+    "workclass",
+    0.0
+   ],
+   [
+    "hours-per-week",
+    0.0
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.10890417101088223,
+   0.10890417101088223,
+   0.35608493492281834,
+   0.35608493492281834,
+   0.35608493492281834
+  ],
+  "attribution_time": 0.03021073341369629
+ },
+ "wall_time": 0.06330323219299316,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T16:45:31"
+ }
+}

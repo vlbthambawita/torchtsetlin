@@ -1,0 +1,190 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 68,
+  "lr": 1.6224876686567294e-05,
+  "batch_size": 128,
+  "weight_decay": 7.578620304777133e-05,
+  "dropout": 0.2653775937286625,
+  "weight_norm": 0.024729117690446598,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9337396401738929,
+   "accuracy": 0.8768086268086268,
+   "log_loss": 0.27181679943525167
+  },
+  "valid": {
+   "auroc": 0.9115745417127844,
+   "accuracy": 0.8548469648889344,
+   "log_loss": 0.3098793309908399
+  },
+  "test": {
+   "auroc": 0.9118956273968011,
+   "accuracy": 0.8601699252738254,
+   "log_loss": 0.3101208621308382
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 68,
+   "batch_size": 128,
+   "lr": 1.6224876686567294e-05,
+   "weight_decay": 7.578620304777133e-05,
+   "weight_norm": 0.024729117690446598,
+   "l1_mode": "all",
+   "dropout": 0.2653775937286625,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.060483723878860474,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 172835,
+  "train_time": 51.9966139793396,
+  "epochs": 68,
+  "steps": 15572,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.32041869595862466,
+    "time": 0.7931571006774902
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.2758508360340333,
+    "time": 19.36816382408142
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.26595360998276835,
+    "time": 37.99870800971985
+   },
+   {
+    "epoch": 68,
+    "train_loss": 0.26093791221420265,
+    "time": 51.996612548828125
+   }
+  ],
+  "inference_time": 0.036516666412353516
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9631837010383606,
+  "linear_terms_90": 7.64,
+  "active_clauses_mean": 45.1619987487793,
+  "clause_terms_90": 29.238,
+  "active_clause_len_mean": 4.512287139892578,
+  "local_acc_k10": 0.7007500103116036,
+  "local_acc_k25": 0.7309999856352806,
+  "local_acc_k50": 0.7527999827265739,
+  "global_importance_top10": [
+   [
+    "occupation",
+    0.8005658984184265
+   ],
+   [
+    "age",
+    0.6214624643325806
+   ],
+   [
+    "marital-status",
+    0.5025269389152527
+   ],
+   [
+    "relationship",
+    0.4874342978000641
+   ],
+   [
+    "education",
+    0.43991437554359436
+   ],
+   [
+    "sex",
+    0.42804986238479614
+   ],
+   [
+    "education-num",
+    0.3354853689670563
+   ],
+   [
+    "workclass",
+    0.3216645121574402
+   ],
+   [
+    "native-country",
+    0.3136851191520691
+   ],
+   [
+    "fnlwgt",
+    0.289866179227829
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.011043689194654038,
+   0.021757597901837622,
+   0.040563345308920806,
+   0.11855152374759115,
+   0.11773330321881192
+  ],
+  "attribution_time": 1.7092654705047607
+ },
+ "wall_time": 53.802592754364014,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T19:35:45"
+ }
+}

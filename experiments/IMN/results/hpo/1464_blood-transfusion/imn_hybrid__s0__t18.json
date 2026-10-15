@@ -1,0 +1,180 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1464,
+ "dataset": "blood-transfusion",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "t18",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 134,
+  "lr": 4.6671809264918364e-05,
+  "batch_size": 128,
+  "weight_decay": 7.94540753508975e-05,
+  "dropout": 0.4125255996921827,
+  "weight_norm": 0.004059627314848826,
+  "l1_mode": "prior"
+ },
+ "tm_overrides": {
+  "n_clauses": 200,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 448,
+  "n_valid": 150,
+  "n_test": 150,
+  "n_features": 4,
+  "n_classes": 2,
+  "fingerprint": "79efb716894577451ae38cb7e8c6edb8ec0789887f3f3d28c34f9476ea3364df"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8970263709588435,
+   "accuracy": 0.8482142857142857,
+   "log_loss": 0.34329250479499845
+  },
+  "valid": {
+   "auroc": 0.7370857699805068,
+   "accuracy": 0.8066666666666666,
+   "log_loss": 0.49720726389025033
+  },
+  "test": {
+   "auroc": 0.6659356725146198,
+   "accuracy": 0.7533333333333333,
+   "log_loss": 0.5787149027818715
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 134,
+   "batch_size": 128,
+   "lr": 4.6671809264918364e-05,
+   "weight_decay": 7.94540753508975e-05,
+   "weight_norm": 0.004059627314848826,
+   "l1_mode": "prior",
+   "dropout": 0.4125255996921827,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "blood-transfusion_d1464_s0_8bc096a717",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 200,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 400,
+  "clause_len_mean": 9.369999885559082,
+  "train_clause_firing_rate": 0.05162946507334709,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 120213,
+  "train_time": 1.684286117553711,
+  "epochs": 134,
+  "steps": 536,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3694967670100076,
+    "time": 0.01648235321044922
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.34937114800725666,
+    "time": 0.3449113368988037
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.34189336214746746,
+    "time": 0.6473085880279541
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.3331938215664455,
+    "time": 0.9492630958557129
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.3249737322330475,
+    "time": 1.248518705368042
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.3267735413142613,
+    "time": 1.5695416927337646
+   },
+   {
+    "epoch": 134,
+    "train_loss": 0.32611893330301556,
+    "time": 1.6842849254608154
+   }
+  ],
+  "inference_time": 0.014493942260742188
+ },
+ "explain": {
+  "n_explained": 150,
+  "local_vs_full_removal_corr": 0.9936572313308716,
+  "linear_terms_90": 2.8266666666666667,
+  "active_clauses_mean": 19.906665802001953,
+  "clause_terms_90": 13.033333333333333,
+  "active_clause_len_mean": 7.579671382904053,
+  "local_acc_k10": 0.5603333475192388,
+  "local_acc_k25": 0.5702666475375493,
+  "local_acc_k50": 0.6226301884651184,
+  "global_importance_top10": [
+   [
+    "V1",
+    0.8692964911460876
+   ],
+   [
+    "V3",
+    0.7405800223350525
+   ],
+   [
+    "V4",
+    0.7139376401901245
+   ],
+   [
+    "V2",
+    0.713176965713501
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.11330409356725146,
+   0.16812865497076018,
+   0.11220760233918126,
+   0.16593567251461983
+  ],
+  "attribution_time": 1.0210793018341064
+ },
+ "wall_time": 2.7540080547332764,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T21:26:18"
+ }
+}

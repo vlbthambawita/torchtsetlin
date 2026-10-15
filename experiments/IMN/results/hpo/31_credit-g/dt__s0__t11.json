@@ -1,0 +1,119 @@
+{
+ "stage": "hpo",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "dt",
+ "seed": 0,
+ "tag": "t11",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "gini",
+  "max_depth": 5,
+  "min_samples_split": 3,
+  "max_leaf_nodes": 10,
+  "splitter": "best"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "de52a25be3e35754b3bdc85c93a9c79dcd91c45130f885ec8cfe0f9f7be0cff5"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8027513227513227,
+   "accuracy": 0.7833333333333333,
+   "log_loss": 0.47311926448212355
+  },
+  "valid": {
+   "auroc": 0.7457738095238096,
+   "accuracy": 0.73,
+   "log_loss": 0.5411087635829732
+  },
+  "test": {
+   "auroc": 0.7493452380952381,
+   "accuracy": 0.72,
+   "log_loss": 0.5363433829351686
+  }
+ },
+ "info": {
+  "impl": "sklearn.DecisionTree",
+  "params": {
+   "criterion": "gini",
+   "max_depth": 5,
+   "min_samples_split": 3,
+   "max_leaf_nodes": 10,
+   "splitter": "best"
+  },
+  "train_time": 0.002402067184448242,
+  "inference_time": 0.00027561187744140625
+ },
+ "explain": {
+  "n_explained": 200,
+  "global_importance_top10": [
+   [
+    "checking_status",
+    0.8159618973731995
+   ],
+   [
+    "credit_history",
+    0.6598606109619141
+   ],
+   [
+    "credit_amount",
+    0.3675672113895416
+   ],
+   [
+    "employment",
+    0.31020495295524597
+   ],
+   [
+    "duration",
+    0.19245095551013947
+   ],
+   [
+    "num_dependents",
+    0.0833885595202446
+   ],
+   [
+    "savings_status",
+    0.033390678465366364
+   ],
+   [
+    "residence_since",
+    0.0
+   ],
+   [
+    "age",
+    0.0
+   ],
+   [
+    "existing_credits",
+    0.0
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.0920833333333333,
+   0.3047619047619048,
+   0.3047619047619048,
+   0.3047619047619048,
+   0.24934523809523812
+  ],
+  "attribution_time": 0.02287125587463379
+ },
+ "wall_time": 0.03289794921875,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T18:51:58"
+ }
+}

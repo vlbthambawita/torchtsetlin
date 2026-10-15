@@ -1,0 +1,160 @@
+{
+ "stage": "hpo",
+ "dataset_id": 40984,
+ "dataset": "segment",
+ "arm": "tabresnet",
+ "seed": 0,
+ "tag": "t12",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 86,
+  "lr": 0.010597032209828645,
+  "batch_size": 128,
+  "weight_decay": 0.0016639071593494282,
+  "dropout": 0.2606981467311316
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 1386,
+  "n_valid": 462,
+  "n_test": 462,
+  "n_features": 17,
+  "n_classes": 7,
+  "fingerprint": "e788c886bc533cbca351eb387b35031b179e8f42ac5d45ba3cdf7a584fef4d42"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9979150572584915,
+   "accuracy": 0.963924963924964,
+   "log_loss": 0.11491062995341458
+  },
+  "valid": {
+   "auroc": 0.9973708950981679,
+   "accuracy": 0.9545454545454546,
+   "log_loss": 0.12444267020693657
+  },
+  "test": {
+   "auroc": 0.995168131531768,
+   "accuracy": 0.9632034632034632,
+   "log_loss": 0.13956662399503436
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 86,
+   "batch_size": 128,
+   "lr": 0.010597032209828645,
+   "weight_decay": 0.0016639071593494282,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.2606981467311316,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70535,
+  "train_time": 2.818161725997925,
+  "epochs": 86,
+  "steps": 946,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.9975263267368466,
+    "time": 0.03815436363220215
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.21185442663374401,
+    "time": 0.8970389366149902
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.193089259479297,
+    "time": 1.6682987213134766
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.13876739950665148,
+    "time": 2.468404769897461
+   },
+   {
+    "epoch": 86,
+    "train_loss": 0.137696192077056,
+    "time": 2.81816029548645
+   }
+  ],
+  "inference_time": 0.013512849807739258
+ },
+ "explain": {
+  "n_explained": 462,
+  "global_importance_top10": [
+   [
+    "region.centroid.row",
+    2.1773037910461426
+   ],
+   [
+    "exgreen.mean",
+    2.0810434818267822
+   ],
+   [
+    "exred.mean",
+    1.9552654027938843
+   ],
+   [
+    "hue.mean",
+    1.2057654857635498
+   ],
+   [
+    "rawred.mean",
+    0.8334058523178101
+   ],
+   [
+    "value.mean",
+    0.7735357880592346
+   ],
+   [
+    "saturation.mean",
+    0.7525867223739624
+   ],
+   [
+    "intensity.mean",
+    0.6991881728172302
+   ],
+   [
+    "rawgreen.mean",
+    0.6828068494796753
+   ],
+   [
+    "rawblue.mean",
+    0.6528702974319458
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.026843106388561022,
+   0.15791027154663517,
+   0.16525099479644945,
+   0.12051248414884785,
+   0.12038676811404081
+  ],
+  "attribution_time": 0.07003307342529297
+ },
+ "wall_time": 2.9320287704467773,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T18:47:45"
+ }
+}

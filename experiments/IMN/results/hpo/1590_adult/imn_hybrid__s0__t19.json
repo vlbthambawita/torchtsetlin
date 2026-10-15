@@ -1,0 +1,190 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "t19",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 56,
+  "lr": 1.3854610008015807e-05,
+  "batch_size": 64,
+  "weight_decay": 0.0066186316288010735,
+  "dropout": 0.3616381881990327,
+  "weight_norm": 0.04592465468759204,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9298162501206565,
+   "accuracy": 0.8736691236691236,
+   "log_loss": 0.28127559454562034
+  },
+  "valid": {
+   "auroc": 0.9118174515550606,
+   "accuracy": 0.8554611526256526,
+   "log_loss": 0.30974795096623875
+  },
+  "test": {
+   "auroc": 0.9121107228993193,
+   "accuracy": 0.8606817483877572,
+   "log_loss": 0.30948541891987313
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 56,
+   "batch_size": 64,
+   "lr": 1.3854610008015807e-05,
+   "weight_decay": 0.0066186316288010735,
+   "weight_norm": 0.04592465468759204,
+   "l1_mode": "active",
+   "dropout": 0.3616381881990327,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.060483723878860474,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 172835,
+  "train_time": 88.20199012756348,
+  "epochs": 56,
+  "steps": 25648,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3187850542384811,
+    "time": 1.6571455001831055
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.278006397226356,
+    "time": 39.328720808029175
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.27168179930086317,
+    "time": 78.69568228721619
+   },
+   {
+    "epoch": 56,
+    "train_loss": 0.27131651059187667,
+    "time": 88.20198845863342
+   }
+  ],
+  "inference_time": 0.03915047645568848
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.971411943435669,
+  "linear_terms_90": 7.48,
+  "active_clauses_mean": 45.1619987487793,
+  "clause_terms_90": 29.822,
+  "active_clause_len_mean": 4.512287139892578,
+  "local_acc_k10": 0.691000011563301,
+  "local_acc_k25": 0.7237999847531319,
+  "local_acc_k50": 0.7489999824762344,
+  "global_importance_top10": [
+   [
+    "occupation",
+    0.7057567834854126
+   ],
+   [
+    "age",
+    0.562323808670044
+   ],
+   [
+    "marital-status",
+    0.48676055669784546
+   ],
+   [
+    "relationship",
+    0.43831613659858704
+   ],
+   [
+    "education",
+    0.4054781496524811
+   ],
+   [
+    "sex",
+    0.36989688873291016
+   ],
+   [
+    "education-num",
+    0.31186622381210327
+   ],
+   [
+    "workclass",
+    0.26034706830978394
+   ],
+   [
+    "native-country",
+    0.24964956939220428
+   ],
+   [
+    "fnlwgt",
+    0.24771060049533844
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.010141577390809231,
+   0.02068491196855371,
+   0.03892923536397985,
+   0.12049492341230228,
+   0.12154314705268499
+  ],
+  "attribution_time": 1.4573783874511719
+ },
+ "wall_time": 89.76022362709045,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T19:47:10"
+ }
+}

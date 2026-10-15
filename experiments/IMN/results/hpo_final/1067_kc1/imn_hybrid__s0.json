@@ -1,0 +1,190 @@
+{
+ "stage": "hpo_final",
+ "dataset_id": 1067,
+ "dataset": "kc1",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 56,
+  "lr": 1.3854610008015807e-05,
+  "batch_size": 64,
+  "weight_decay": 0.0066186316288010735,
+  "dropout": 0.3616381881990327,
+  "weight_norm": 0.04592465468759204,
+  "l1_mode": "active"
+ },
+ "tm_overrides": {
+  "n_clauses": 200,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 1265,
+  "n_valid": 422,
+  "n_test": 422,
+  "n_features": 21,
+  "n_classes": 2,
+  "fingerprint": "6c7a90304ccfca016a9d619e308b2f32d25fe5f76c507733dc37f782286a6b29"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8766895439185964,
+   "accuracy": 0.8743083003952569,
+   "log_loss": 0.30475787939346605
+  },
+  "valid": {
+   "auroc": 0.8594483947425124,
+   "accuracy": 0.8601895734597157,
+   "log_loss": 0.32162630496969513
+  },
+  "test": {
+   "auroc": 0.8156000861883215,
+   "accuracy": 0.8601895734597157,
+   "log_loss": 0.3456528856527128
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 56,
+   "batch_size": 64,
+   "lr": 1.3854610008015807e-05,
+   "weight_decay": 0.0066186316288010735,
+   "weight_norm": 0.04592465468759204,
+   "l1_mode": "active",
+   "dropout": 0.3616381881990327,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "kc1_d1067_s0_8bc096a717",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 200,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 398,
+  "clause_len_mean": 10.100502014160156,
+  "train_clause_firing_rate": 0.05895882844924927,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 124324,
+  "train_time": 4.205111026763916,
+  "epochs": 56,
+  "steps": 1120,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.3243037933888643,
+    "time": 0.078643798828125
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.30284004590728064,
+    "time": 1.865401029586792
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2965465572747317,
+    "time": 3.748683214187622
+   },
+   {
+    "epoch": 56,
+    "train_loss": 0.2939400000063327,
+    "time": 4.205109596252441
+   }
+  ],
+  "inference_time": 0.014726400375366211
+ },
+ "explain": {
+  "n_explained": 422,
+  "local_vs_full_removal_corr": 0.9935985207557678,
+  "linear_terms_90": 14.639810426540285,
+  "active_clauses_mean": 22.850711822509766,
+  "clause_terms_90": 14.218009478672986,
+  "active_clause_len_mean": 10.044877052307129,
+  "local_acc_k10": 0.5032500016689301,
+  "local_acc_k25": 0.5036999981105328,
+  "local_acc_k50": 0.5162499848008156,
+  "global_importance_top10": [
+   [
+    "d",
+    0.6665496826171875
+   ],
+   [
+    "t",
+    0.5492116808891296
+   ],
+   [
+    "e",
+    0.47188928723335266
+   ],
+   [
+    "total_Op",
+    0.46535828709602356
+   ],
+   [
+    "lOCode",
+    0.4319310486316681
+   ],
+   [
+    "i",
+    0.37733563780784607
+   ],
+   [
+    "n",
+    0.3493657112121582
+   ],
+   [
+    "total_Opnd",
+    0.3216955065727234
+   ],
+   [
+    "b",
+    0.3124750852584839
+   ],
+   [
+    "loc",
+    0.30992090702056885
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.0033182503770738947,
+   0.05563456151691437,
+   0.1253178194354665,
+   0.11691445809092871,
+   0.11678517560870505
+  ],
+  "attribution_time": 1.4833571910858154
+ },
+ "wall_time": 5.744346380233765,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T00:13:50"
+ }
+}

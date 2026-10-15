@@ -1,0 +1,200 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tabresnet",
+ "seed": 0,
+ "tag": "t00",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 278,
+  "lr": 0.005827557175277154,
+  "batch_size": 512,
+  "weight_decay": 0.00038233545579163504,
+  "dropout": 0.20496473299974227
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9999897456360879,
+   "accuracy": 0.9980276134122288,
+   "log_loss": 0.03867660756962601
+  },
+  "valid": {
+   "auroc": 0.9539445918890159,
+   "accuracy": 0.8047337278106509,
+   "log_loss": 0.4822598486082109
+  },
+  "test": {
+   "auroc": 0.9539105902777778,
+   "accuracy": 0.8,
+   "log_loss": 0.4884424337410789
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 278,
+   "batch_size": 512,
+   "lr": 0.005827557175277154,
+   "weight_decay": 0.00038233545579163504,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.20496473299974227,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 70276,
+  "train_time": 0.9086368083953857,
+  "epochs": 278,
+  "steps": 278,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.439012050628662,
+    "time": 0.0042476654052734375
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.4424188733100891,
+    "time": 0.09009647369384766
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.31114375591278076,
+    "time": 0.18412995338439941
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.18814362585544586,
+    "time": 0.2609245777130127
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.1168784648180008,
+    "time": 0.3373260498046875
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.21681325137615204,
+    "time": 0.4196736812591553
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.08945191651582718,
+    "time": 0.5000033378601074
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.0858297049999237,
+    "time": 0.5811636447906494
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.08655408024787903,
+    "time": 0.6588962078094482
+   },
+   {
+    "epoch": 225,
+    "train_loss": 0.036347851157188416,
+    "time": 0.7384493350982666
+   },
+   {
+    "epoch": 250,
+    "train_loss": 0.028659023344516754,
+    "time": 0.8109674453735352
+   },
+   {
+    "epoch": 275,
+    "train_loss": 0.027521708980202675,
+    "time": 0.8994426727294922
+   },
+   {
+    "epoch": 278,
+    "train_loss": 0.04528133571147919,
+    "time": 0.9086353778839111
+   }
+  ],
+  "inference_time": 0.015134572982788086
+ },
+ "explain": {
+  "n_explained": 170,
+  "global_importance_top10": [
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    2.1520445346832275
+   ],
+   [
+    "HOLLOWS_RATIO",
+    2.0018699169158936
+   ],
+   [
+    "RADIUS_RATIO",
+    1.8323235511779785
+   ],
+   [
+    "ELONGATEDNESS",
+    1.785406470298767
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    1.4356244802474976
+   ],
+   [
+    "SCALED_RADIUS_OF_GYRATION",
+    1.391465425491333
+   ],
+   [
+    "KURTOSIS_ABOUT_MINOR",
+    1.3862688541412354
+   ],
+   [
+    "DISTANCE_CIRCULARITY",
+    1.3642404079437256
+   ],
+   [
+    "SCATTER_RATIO",
+    1.1065630912780762
+   ],
+   [
+    "PR.AXIS_ASPECT_RATIO",
+    1.092599630355835
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.06618121895465645,
+   0.15214294819763574,
+   0.17997240606615605,
+   0.17537213654401151,
+   0.24721097045315799
+  ],
+  "attribution_time": 0.07233357429504395
+ },
+ "wall_time": 1.0240111351013184,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:52:35"
+ }
+}

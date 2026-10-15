@@ -1,0 +1,186 @@
+{
+ "stage": "hpo",
+ "dataset_id": 54,
+ "dataset": "vehicle",
+ "arm": "tm_gated",
+ "seed": 0,
+ "tag": "t06",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 54,
+  "lr": 1.4137502377403162e-05,
+  "batch_size": 128,
+  "weight_decay": 0.0006770193777986392,
+  "dropout": 0.30915102833995334,
+  "weight_norm": 0.6433950219086301
+ },
+ "tm_overrides": {
+  "n_clauses": 800,
+  "T_ratio": 2.0,
+  "s": 12.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 507,
+  "n_valid": 169,
+  "n_test": 170,
+  "n_features": 18,
+  "n_classes": 4,
+  "fingerprint": "c3a7715fba12175b15707865b255c631ba38e361c87cab2a51a096e6768e9802"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9877100879656647,
+   "accuracy": 0.9408284023668639,
+   "log_loss": 0.5419403413468872
+  },
+  "valid": {
+   "auroc": 0.9200691963583834,
+   "accuracy": 0.727810650887574,
+   "log_loss": 0.7509422414833276
+  },
+  "test": {
+   "auroc": 0.9229365512959263,
+   "accuracy": 0.7411764705882353,
+   "log_loss": 0.7523780060021326
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 54,
+   "batch_size": 128,
+   "lr": 1.4137502377403162e-05,
+   "weight_decay": 0.0006770193777986392,
+   "weight_norm": 0.6433950219086301,
+   "l1_mode": "all",
+   "dropout": 0.30915102833995334,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "vehicle_d54_s0_69614bb6ea",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 800,
+   "T_ratio": 2.0,
+   "s": 12.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 3170,
+  "clause_len_mean": 23.938800811767578,
+  "train_clause_firing_rate": 0.09684169292449951,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 240996,
+  "train_time": 0.2794983386993408,
+  "epochs": 54,
+  "steps": 216,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 1.3845979847616463,
+    "time": 0.005549430847167969
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.5880572235090493,
+    "time": 0.1295921802520752
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.393468592117524,
+    "time": 0.26078176498413086
+   },
+   {
+    "epoch": 54,
+    "train_loss": 0.3900500011632193,
+    "time": 0.279496431350708
+   }
+  ],
+  "inference_time": 0.0030672550201416016
+ },
+ "explain": {
+  "n_explained": 170,
+  "local_vs_full_removal_corr": 0.8770961761474609,
+  "linear_terms_90": 10.894117647058824,
+  "local_acc_k10": 0.3942647104754167,
+  "local_acc_k25": 0.4179411653210135,
+  "local_acc_k50": 0.39289941472165724,
+  "global_importance_top10": [
+   [
+    "DISTANCE_CIRCULARITY",
+    0.06860184669494629
+   ],
+   [
+    "RADIUS_RATIO",
+    0.06835751980543137
+   ],
+   [
+    "ELONGATEDNESS",
+    0.06479571014642715
+   ],
+   [
+    "SCATTER_RATIO",
+    0.06353667378425598
+   ],
+   [
+    "PR.AXIS_RECTANGULARITY",
+    0.06255319714546204
+   ],
+   [
+    "SCALED_VARIANCE_MINOR",
+    0.06160383298993111
+   ],
+   [
+    "SCALED_VARIANCE_MAJOR",
+    0.059572409838438034
+   ],
+   [
+    "MAX.LENGTH_RECTANGULARITY",
+    0.05825364589691162
+   ],
+   [
+    "SKEWNESS_ABOUT_MAJOR",
+    0.052777525037527084
+   ],
+   [
+    "COMPACTNESS",
+    0.0524347648024559
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.0027674322205573088,
+   0.0049613277347652085,
+   0.008229275065212649,
+   0.018476571171883616,
+   0.02710449706543472
+  ],
+  "attribution_time": 1.7660541534423828
+ },
+ "wall_time": 2.0912625789642334,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T21:25:06"
+ }
+}

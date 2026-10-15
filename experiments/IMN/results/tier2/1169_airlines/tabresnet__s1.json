@@ -1,0 +1,132 @@
+{
+ "stage": "tier2",
+ "dataset_id": 1169,
+ "dataset": "airlines",
+ "arm": "tabresnet",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "max_steps": 50000
+ },
+ "tm_overrides": {
+  "epochs": 20,
+  "patience": 5
+ },
+ "data": {
+  "n_train": 323629,
+  "n_valid": 107877,
+  "n_test": 107877,
+  "n_features": 7,
+  "n_classes": 2,
+  "fingerprint": "17e12e31c1a3bb41614a6f497cdb95d27d50065ee454998ad3788484dfe27b05"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.676839290101614,
+   "accuracy": 0.6355919895930217,
+   "log_loss": 0.6356799579797937
+  },
+  "valid": {
+   "auroc": 0.6763774310957256,
+   "accuracy": 0.6345652919528723,
+   "log_loss": 0.6358375711275115
+  },
+  "test": {
+   "auroc": 0.6780959627816231,
+   "accuracy": 0.6342686578232617,
+   "log_loss": 0.6354505049872985
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 500,
+   "batch_size": 64,
+   "lr": 0.01,
+   "weight_decay": 0.01,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.25,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": 50000,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 68481,
+  "train_time": 133.5077085494995,
+  "epochs": 9,
+  "steps": 45513,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.6539577812590799,
+    "time": 14.31646180152893
+   },
+   {
+    "epoch": 9,
+    "train_loss": 0.6432344895694962,
+    "time": 133.50770688056946
+   }
+  ],
+  "inference_time": 0.23171424865722656
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "Airline",
+    0.7405191659927368
+   ],
+   [
+    "AirportFrom",
+    0.48423102498054504
+   ],
+   [
+    "DayOfWeek",
+    0.2957550287246704
+   ],
+   [
+    "AirportTo",
+    0.27837634086608887
+   ],
+   [
+    "Time",
+    0.256929486989975
+   ],
+   [
+    "Length",
+    0.03838157653808594
+   ],
+   [
+    "Flight",
+    0.024574190378189087
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.06443585734519852,
+   0.0834734749676056,
+   0.0847685529367822,
+   0.08791533248115702,
+   0.16804192303667198
+  ],
+  "attribution_time": 0.48981738090515137
+ },
+ "wall_time": 134.4192247390747,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-15T02:30:00"
+ }
+}

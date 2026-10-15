@@ -1,0 +1,200 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1464,
+ "dataset": "blood-transfusion",
+ "arm": "tabresnet",
+ "seed": 0,
+ "tag": "t02",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 404,
+  "lr": 0.049776909044717564,
+  "batch_size": 32,
+  "weight_decay": 0.043977865924352676,
+  "dropout": 0.26684558344769077
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 448,
+  "n_valid": 150,
+  "n_test": 150,
+  "n_features": 4,
+  "n_classes": 2,
+  "fingerprint": "79efb716894577451ae38cb7e8c6edb8ec0789887f3f3d28c34f9476ea3364df"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.7832947147743573,
+   "accuracy": 0.7633928571428571,
+   "log_loss": 0.48348478947022133
+  },
+  "valid": {
+   "auroc": 0.7119883040935672,
+   "accuracy": 0.76,
+   "log_loss": 0.5154817694869391
+  },
+  "test": {
+   "auroc": 0.7217348927875243,
+   "accuracy": 0.76,
+   "log_loss": 0.5039204839537874
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 404,
+   "batch_size": 32,
+   "lr": 0.049776909044717564,
+   "weight_decay": 0.043977865924352676,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.26684558344769077,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "n_params": 68097,
+  "train_time": 15.87199330329895,
+  "epochs": 404,
+  "steps": 5656,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.6192872460399356,
+    "time": 0.04319906234741211
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.5245351876531329,
+    "time": 1.032360315322876
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.500332406588963,
+    "time": 2.0204620361328125
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.5269162803888321,
+    "time": 3.0362930297851562
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.5278136347021375,
+    "time": 4.034691333770752
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.5155646247523171,
+    "time": 5.031558990478516
+   },
+   {
+    "epoch": 150,
+    "train_loss": 0.5146285827670779,
+    "time": 6.0311970710754395
+   },
+   {
+    "epoch": 175,
+    "train_loss": 0.48367857933044434,
+    "time": 7.007040977478027
+   },
+   {
+    "epoch": 200,
+    "train_loss": 0.5441102321658816,
+    "time": 7.971390724182129
+   },
+   {
+    "epoch": 225,
+    "train_loss": 0.5119566534246717,
+    "time": 8.995151042938232
+   },
+   {
+    "epoch": 250,
+    "train_loss": 0.5237319852624621,
+    "time": 9.916646003723145
+   },
+   {
+    "epoch": 275,
+    "train_loss": 0.5326649525335857,
+    "time": 10.795470714569092
+   },
+   {
+    "epoch": 300,
+    "train_loss": 0.5098262663398471,
+    "time": 11.76016902923584
+   },
+   {
+    "epoch": 325,
+    "train_loss": 0.5022638120821544,
+    "time": 12.746998310089111
+   },
+   {
+    "epoch": 350,
+    "train_loss": 0.5041638123137611,
+    "time": 13.703996658325195
+   },
+   {
+    "epoch": 375,
+    "train_loss": 0.48490982183388304,
+    "time": 14.65421986579895
+   },
+   {
+    "epoch": 400,
+    "train_loss": 0.48633106904370443,
+    "time": 15.705794334411621
+   },
+   {
+    "epoch": 404,
+    "train_loss": 0.48285183736256193,
+    "time": 15.871991872787476
+   }
+  ],
+  "inference_time": 0.014179706573486328
+ },
+ "explain": {
+  "n_explained": 150,
+  "global_importance_top10": [
+   [
+    "V1",
+    0.2693385183811188
+   ],
+   [
+    "V4",
+    0.2612141966819763
+   ],
+   [
+    "V2",
+    0.14168542623519897
+   ],
+   [
+    "V3",
+    0.1416240632534027
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.03606237816764135,
+   0.10830896686159841,
+   0.10830896686159841,
+   0.22173489278752434
+  ],
+  "attribution_time": 0.046326398849487305
+ },
+ "wall_time": 15.943272113800049,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:54:31"
+ }
+}

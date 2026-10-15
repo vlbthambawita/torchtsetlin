@@ -1,0 +1,191 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "tm_gated",
+ "seed": 0,
+ "tag": "t03",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 95,
+  "lr": 0.00015186623681411117,
+  "batch_size": 256,
+  "weight_decay": 0.01013047005313739,
+  "dropout": 0.43908775753799584,
+  "weight_norm": 0.024726701199791885
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9293864481017341,
+   "accuracy": 0.8747952497952498,
+   "log_loss": 0.28272880776289605
+  },
+  "valid": {
+   "auroc": 0.9112838732276621,
+   "accuracy": 0.8547446002661481,
+   "log_loss": 0.31145082490289805
+  },
+  "test": {
+   "auroc": 0.9119744823174459,
+   "accuracy": 0.8624219469751254,
+   "log_loss": 0.3099010673742177
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 95,
+   "batch_size": 256,
+   "lr": 0.00015186623681411117,
+   "weight_decay": 0.01013047005313739,
+   "weight_norm": 0.024726701199791885,
+   "l1_mode": "all",
+   "dropout": 0.43908775753799584,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "adult_d1590_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 5.071065902709961,
+  "train_clause_firing_rate": 0.060483723878860474,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 11835,
+  "train_time": 13.993937015533447,
+  "epochs": 95,
+  "steps": 10925,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.6595609099071533,
+    "time": 0.14710092544555664
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.29542980933169866,
+    "time": 3.7415552139282227
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.2885078080700227,
+    "time": 7.377192974090576
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.2843429898136859,
+    "time": 11.009088516235352
+   },
+   {
+    "epoch": 95,
+    "train_loss": 0.2834053790426111,
+    "time": 13.993934869766235
+   }
+  ],
+  "inference_time": 0.008981466293334961
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.5417585968971252,
+  "linear_terms_90": 7.674,
+  "local_acc_k10": 0.5097500017285347,
+  "local_acc_k25": 0.5151999965310097,
+  "local_acc_k50": 0.5203499963879585,
+  "global_importance_top10": [
+   [
+    "age",
+    0.41263240575790405
+   ],
+   [
+    "education-num",
+    0.3397116959095001
+   ],
+   [
+    "capital-gain",
+    0.13169518113136292
+   ],
+   [
+    "fnlwgt",
+    0.12694597244262695
+   ],
+   [
+    "hours-per-week",
+    0.12439416348934174
+   ],
+   [
+    "capital-loss",
+    0.0835193321108818
+   ],
+   [
+    "native-country",
+    0.06922877579927444
+   ],
+   [
+    "race",
+    0.06557882577180862
+   ],
+   [
+    "workclass",
+    0.06348355114459991
+   ],
+   [
+    "education",
+    0.05498016998171806
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.008666155778874196,
+   0.014652222747537968,
+   0.041514928502761284,
+   0.04118462999026462,
+   0.048864696352723835
+  ],
+  "attribution_time": 1.3526954650878906
+ },
+ "wall_time": 15.39850664138794,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T19:48:52"
+ }
+}

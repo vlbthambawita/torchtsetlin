@@ -1,0 +1,119 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "dt",
+ "seed": 0,
+ "tag": "t10",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "entropy",
+  "max_depth": 5,
+  "min_samples_split": 10,
+  "max_leaf_nodes": 24,
+  "splitter": "random"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8671759149601681,
+   "accuracy": 0.825006825006825,
+   "log_loss": 0.36937586235687453
+  },
+  "valid": {
+   "auroc": 0.8631055358341244,
+   "accuracy": 0.8196335346504248,
+   "log_loss": 0.3763963177388508
+  },
+  "test": {
+   "auroc": 0.862772638010213,
+   "accuracy": 0.8240352134302386,
+   "log_loss": 0.3747077093684146
+  }
+ },
+ "info": {
+  "impl": "sklearn.DecisionTree",
+  "params": {
+   "criterion": "entropy",
+   "max_depth": 5,
+   "min_samples_split": 10,
+   "max_leaf_nodes": 24,
+   "splitter": "random"
+  },
+  "train_time": 0.012226343154907227,
+  "inference_time": 0.0019354820251464844
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "marital-status",
+    0.9366190433502197
+   ],
+   [
+    "education",
+    0.6861672401428223
+   ],
+   [
+    "occupation",
+    0.682945191860199
+   ],
+   [
+    "age",
+    0.40920624136924744
+   ],
+   [
+    "relationship",
+    0.14815138280391693
+   ],
+   [
+    "hours-per-week",
+    0.07738295942544937
+   ],
+   [
+    "education-num",
+    0.05242571979761124
+   ],
+   [
+    "capital-loss",
+    0.008386642672121525
+   ],
+   [
+    "workclass",
+    0.0
+   ],
+   [
+    "capital-gain",
+    0.0
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.07302480798826827,
+   0.09982929348638792,
+   0.21628894584094405,
+   0.351865880097467,
+   0.351865880097467
+  ],
+  "attribution_time": 0.029030799865722656
+ },
+ "wall_time": 0.061990976333618164,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T16:45:30"
+ }
+}

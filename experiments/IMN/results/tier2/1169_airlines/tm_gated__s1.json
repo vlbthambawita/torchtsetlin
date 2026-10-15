@@ -1,0 +1,156 @@
+{
+ "stage": "tier2",
+ "dataset_id": 1169,
+ "dataset": "airlines",
+ "arm": "tm_gated",
+ "seed": 1,
+ "tag": "",
+ "status": "ok",
+ "nn_overrides": {
+  "max_steps": 50000
+ },
+ "tm_overrides": {
+  "epochs": 20,
+  "patience": 5
+ },
+ "data": {
+  "n_train": 323629,
+  "n_valid": 107877,
+  "n_test": 107877,
+  "n_features": 7,
+  "n_classes": 2,
+  "fingerprint": "17e12e31c1a3bb41614a6f497cdb95d27d50065ee454998ad3788484dfe27b05"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.6567517440539518,
+   "accuracy": 0.6300578749123225,
+   "log_loss": 0.6619972869204872
+  },
+  "valid": {
+   "auroc": 0.6507240307805247,
+   "accuracy": 0.6265932497195881,
+   "log_loss": 0.6666744763776697
+  },
+  "test": {
+   "auroc": 0.6501847834593486,
+   "accuracy": 0.6261668381582729,
+   "log_loss": 0.6672913348280936
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 500,
+   "batch_size": 64,
+   "lr": 0.01,
+   "weight_decay": 0.01,
+   "weight_norm": 0.1,
+   "l1_mode": "all",
+   "dropout": 0.25,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": 50000,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "airlines_d1169_s1_b2031324ec",
+  "tm_cfg": {
+   "n_bits": 10,
+   "n_clauses": 200,
+   "T_ratio": 0.5,
+   "s": 5.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 20,
+   "patience": 5,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 400,
+  "clause_len_mean": 13.122499465942383,
+  "train_clause_firing_rate": 0.16781817376613617,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 3208,
+  "train_time": 56.65432786941528,
+  "epochs": 9,
+  "steps": 45513,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.6500337615047571,
+    "time": 6.466600656509399
+   },
+   {
+    "epoch": 9,
+    "train_loss": 0.6645489407264418,
+    "time": 56.65432643890381
+   }
+  ],
+  "inference_time": 0.062223196029663086
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.3801255226135254,
+  "linear_terms_90": 4.93,
+  "local_acc_k10": 0.4972500006109476,
+  "local_acc_k25": 0.49839999809861185,
+  "local_acc_k50": 0.4997499978542328,
+  "global_importance_top10": [
+   [
+    "Time",
+    0.20126454532146454
+   ],
+   [
+    "Flight",
+    0.12347805500030518
+   ],
+   [
+    "Length",
+    0.11905866116285324
+   ],
+   [
+    "AirportTo",
+    0.06623366475105286
+   ],
+   [
+    "DayOfWeek",
+    0.06293188035488129
+   ],
+   [
+    "Airline",
+    0.06282662600278854
+   ],
+   [
+    "AirportFrom",
+    0.06142006814479828
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.029530262806512608,
+   0.03474022658697706,
+   0.04464710187529353,
+   0.02830161941965581,
+   0.033016650414478654
+  ],
+  "attribution_time": 1.5279052257537842
+ },
+ "wall_time": 58.47484993934631,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-15T02:30:12"
+ }
+}

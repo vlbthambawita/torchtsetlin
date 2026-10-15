@@ -1,0 +1,190 @@
+{
+ "stage": "hpo",
+ "dataset_id": 31,
+ "dataset": "credit-g",
+ "arm": "imn_hybrid",
+ "seed": 0,
+ "tag": "t07",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 68,
+  "lr": 1.6224876686567294e-05,
+  "batch_size": 128,
+  "weight_decay": 7.578620304777133e-05,
+  "dropout": 0.2653775937286625,
+  "weight_norm": 0.024729117690446598,
+  "l1_mode": "all"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 1.0,
+  "s": 3.0,
+  "n_bits": 20,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 600,
+  "n_valid": 200,
+  "n_test": 200,
+  "n_features": 20,
+  "n_classes": 2,
+  "fingerprint": "de52a25be3e35754b3bdc85c93a9c79dcd91c45130f885ec8cfe0f9f7be0cff5"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9338227513227514,
+   "accuracy": 0.8716666666666667,
+   "log_loss": 0.3611818222030025
+  },
+  "valid": {
+   "auroc": 0.8120238095238096,
+   "accuracy": 0.77,
+   "log_loss": 0.4686348025274485
+  },
+  "test": {
+   "auroc": 0.8415476190476191,
+   "accuracy": 0.79,
+   "log_loss": 0.4487309471707357
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 68,
+   "batch_size": 128,
+   "lr": 1.6224876686567294e-05,
+   "weight_decay": 7.578620304777133e-05,
+   "weight_norm": 0.024729117690446598,
+   "l1_mode": "all",
+   "dropout": 0.2653775937286625,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "credit-g_d31_s0_830800d4fb",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 1.0,
+   "s": 3.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 788,
+  "clause_len_mean": 7.978426456451416,
+  "train_clause_firing_rate": 0.22017554938793182,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 174377,
+  "train_time": 1.1121647357940674,
+  "epochs": 68,
+  "steps": 340,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.4636249562104543,
+    "time": 0.016498327255249023
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.3623007575670878,
+    "time": 0.3955671787261963
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.3067292058467865,
+    "time": 0.8210430145263672
+   },
+   {
+    "epoch": 68,
+    "train_loss": 0.29525009671847025,
+    "time": 1.1121633052825928
+   }
+  ],
+  "inference_time": 0.016207456588745117
+ },
+ "explain": {
+  "n_explained": 200,
+  "local_vs_full_removal_corr": 0.9786112904548645,
+  "linear_terms_90": 14.855,
+  "active_clauses_mean": 181.05999755859375,
+  "clause_terms_90": 109.975,
+  "active_clause_len_mean": 5.83917236328125,
+  "local_acc_k10": 0.6902500113844872,
+  "local_acc_k25": 0.6944999852776528,
+  "local_acc_k50": 0.6988499841094017,
+  "global_importance_top10": [
+   [
+    "checking_status",
+    0.8172997832298279
+   ],
+   [
+    "credit_history",
+    0.7151880860328674
+   ],
+   [
+    "other_payment_plans",
+    0.6070985198020935
+   ],
+   [
+    "other_parties",
+    0.5517029166221619
+   ],
+   [
+    "purpose",
+    0.4941917359828949
+   ],
+   [
+    "employment",
+    0.40595340728759766
+   ],
+   [
+    "personal_status",
+    0.39766383171081543
+   ],
+   [
+    "property_magnitude",
+    0.39511752128601074
+   ],
+   [
+    "job",
+    0.35334327816963196
+   ],
+   [
+    "duration",
+    0.30367085337638855
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.05476190476190479,
+   0.10726190476190489,
+   0.12666666666666682,
+   0.1495238095238095,
+   0.16880952380952385
+  ],
+  "attribution_time": 1.5456500053405762
+ },
+ "wall_time": 2.7142348289489746,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T21:21:54"
+ }
+}

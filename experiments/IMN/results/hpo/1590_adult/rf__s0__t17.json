@@ -1,0 +1,119 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "rf",
+ "seed": 0,
+ "tag": "t17",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "entropy",
+  "max_depth": 2,
+  "min_samples_split": 9,
+  "max_leaf_nodes": 18,
+  "n_estimators": 3644
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8958121118199976,
+   "accuracy": 0.823983073983074,
+   "log_loss": 0.38851590540165115
+  },
+  "valid": {
+   "auroc": 0.8918436874301324,
+   "accuracy": 0.8184051591769884,
+   "log_loss": 0.3911092913965451
+  },
+  "test": {
+   "auroc": 0.8948678857752514,
+   "accuracy": 0.8251612242808886,
+   "log_loss": 0.38939717999280077
+  }
+ },
+ "info": {
+  "impl": "sklearn.RandomForest",
+  "params": {
+   "criterion": "entropy",
+   "max_depth": 2,
+   "min_samples_split": 9,
+   "max_leaf_nodes": 18,
+   "n_estimators": 3644
+  },
+  "train_time": 11.521936416625977,
+  "inference_time": 3.906033515930176
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "relationship",
+    0.26056233048439026
+   ],
+   [
+    "marital-status",
+    0.22266551852226257
+   ],
+   [
+    "age",
+    0.10976703464984894
+   ],
+   [
+    "occupation",
+    0.10890349000692368
+   ],
+   [
+    "education",
+    0.09173078089952469
+   ],
+   [
+    "education-num",
+    0.08219704777002335
+   ],
+   [
+    "sex",
+    0.05079301446676254
+   ],
+   [
+    "capital-gain",
+    0.03506467491388321
+   ],
+   [
+    "hours-per-week",
+    0.03486361727118492
+   ],
+   [
+    "native-country",
+    0.009924524463713169
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   -0.003156009913387381,
+   0.05057547400153273,
+   0.06994912073309967,
+   0.07965187336843693,
+   0.07899378013106939
+  ],
+  "attribution_time": 6.848950624465942
+ },
+ "wall_time": 22.336829900741577,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T16:46:20"
+ }
+}

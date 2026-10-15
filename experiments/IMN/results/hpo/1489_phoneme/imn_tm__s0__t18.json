@@ -1,0 +1,184 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1489,
+ "dataset": "phoneme",
+ "arm": "imn_tm",
+ "seed": 0,
+ "tag": "t18",
+ "status": "ok",
+ "nn_overrides": {
+  "epochs": 134,
+  "lr": 4.6671809264918364e-05,
+  "batch_size": 128,
+  "weight_decay": 7.94540753508975e-05,
+  "dropout": 0.4125255996921827,
+  "weight_norm": 0.004059627314848826,
+  "l1_mode": "prior"
+ },
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 20,
+  "max_included_literals": null
+ },
+ "data": {
+  "n_train": 3242,
+  "n_valid": 1081,
+  "n_test": 1081,
+  "n_features": 5,
+  "n_classes": 2,
+  "fingerprint": "15fe29bbcabe1d332e5e2d509a7a229f95033b22dd511672333604111262be10"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.9874344060768411,
+   "accuracy": 0.945712523133868,
+   "log_loss": 0.1515493795991045
+  },
+  "valid": {
+   "auroc": 0.9519381637405653,
+   "accuracy": 0.8945420906567992,
+   "log_loss": 0.25367243658814737
+  },
+  "test": {
+   "auroc": 0.9500470708705634,
+   "accuracy": 0.879740980573543,
+   "log_loss": 0.25705575677857395
+  }
+ },
+ "info": {
+  "nn_cfg": {
+   "epochs": 134,
+   "batch_size": 128,
+   "lr": 4.6671809264918364e-05,
+   "weight_decay": 7.94540753508975e-05,
+   "weight_norm": 0.004059627314848826,
+   "l1_mode": "prior",
+   "dropout": 0.4125255996921827,
+   "width": 128,
+   "n_blocks": 2,
+   "restarts": 3,
+   "t_mult": 2,
+   "warmup_epochs": 5,
+   "weight_norm_linear": null,
+   "max_steps": null,
+   "tm_init_scale": 1.0,
+   "tm_init": true
+  },
+  "tm_key": "phoneme_d1489_s0_ed5c0c5165",
+  "tm_cfg": {
+   "n_bits": 20,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": null,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "basis": "tm",
+  "n_clauses_basis": 799,
+  "clause_len_mean": 6.828535556793213,
+  "train_clause_firing_rate": 0.04921752214431763,
+  "train_examples_no_active_clause": 0.0,
+  "n_params": 171296,
+  "train_time": 11.903300523757935,
+  "epochs": 134,
+  "steps": 3484,
+  "n_snapshots": 3,
+  "history": [
+   {
+    "epoch": 1,
+    "train_loss": 0.22971829433708849,
+    "time": 0.08833193778991699
+   },
+   {
+    "epoch": 25,
+    "train_loss": 0.18277894521222887,
+    "time": 2.303417444229126
+   },
+   {
+    "epoch": 50,
+    "train_loss": 0.15308486150415646,
+    "time": 4.480976104736328
+   },
+   {
+    "epoch": 75,
+    "train_loss": 0.14228667561504887,
+    "time": 6.751073837280273
+   },
+   {
+    "epoch": 100,
+    "train_loss": 0.12378109632120833,
+    "time": 9.02562952041626
+   },
+   {
+    "epoch": 125,
+    "train_loss": 0.11982444153936611,
+    "time": 11.128619909286499
+   },
+   {
+    "epoch": 134,
+    "train_loss": 0.1174548592448308,
+    "time": 11.90329909324646
+   }
+  ],
+  "inference_time": 0.015219688415527344
+ },
+ "explain": {
+  "n_explained": 500,
+  "local_vs_full_removal_corr": 0.9591777324676514,
+  "active_clauses_mean": 39.071998596191406,
+  "clause_terms_90": 26.248,
+  "active_clause_len_mean": 5.878697395324707,
+  "local_acc_k10": 0.7850000098347664,
+  "local_acc_k25": 0.816199976503849,
+  "local_acc_k50": 0.8400499776005745,
+  "global_importance_top10": [
+   [
+    "V1",
+    1.7720645666122437
+   ],
+   [
+    "V4",
+    1.5977873802185059
+   ],
+   [
+    "V2",
+    1.403165578842163
+   ],
+   [
+    "V3",
+    1.2818962335586548
+   ],
+   [
+    "V5",
+    1.1849557161331177
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09802715246007232,
+   0.12429600145341635,
+   0.16646984986869706,
+   0.21680264918162762,
+   0.4500470708705634
+  ],
+  "attribution_time": 1.6167478561401367
+ },
+ "wall_time": 13.576073408126831,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T20:51:24"
+ }
+}

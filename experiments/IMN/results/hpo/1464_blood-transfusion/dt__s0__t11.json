@@ -1,0 +1,94 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1464,
+ "dataset": "blood-transfusion",
+ "arm": "dt",
+ "seed": 0,
+ "tag": "t11",
+ "status": "ok",
+ "nn_overrides": {
+  "criterion": "entropy",
+  "max_depth": 16,
+  "min_samples_split": 7,
+  "max_leaf_nodes": 20,
+  "splitter": "best"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 448,
+  "n_valid": 150,
+  "n_test": 150,
+  "n_features": 4,
+  "n_classes": 2,
+  "fingerprint": "79efb716894577451ae38cb7e8c6edb8ec0789887f3f3d28c34f9476ea3364df"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8514702637095884,
+   "accuracy": 0.8482142857142857,
+   "log_loss": 0.3579074516369811
+  },
+  "valid": {
+   "auroc": 0.6645955165692008,
+   "accuracy": 0.7733333333333333,
+   "log_loss": 1.4331248939855132
+  },
+  "test": {
+   "auroc": 0.5847953216374269,
+   "accuracy": 0.7266666666666667,
+   "log_loss": 1.7960766499493812
+  }
+ },
+ "info": {
+  "impl": "sklearn.DecisionTree",
+  "params": {
+   "criterion": "entropy",
+   "max_depth": 16,
+   "min_samples_split": 7,
+   "max_leaf_nodes": 20,
+   "splitter": "best"
+  },
+  "train_time": 0.0011777877807617188,
+  "inference_time": 0.00027441978454589844
+ },
+ "explain": {
+  "n_explained": 150,
+  "global_importance_top10": [
+   [
+    "V1",
+    5.060035705566406
+   ],
+   [
+    "V2",
+    4.1036376953125
+   ],
+   [
+    "V4",
+    1.7968292236328125
+   ],
+   [
+    "V3",
+    0.09500233083963394
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.10964912280701744,
+   0.1410818713450292,
+   0.1410818713450292,
+   0.08479532163742687
+  ],
+  "attribution_time": 0.01833820343017578
+ },
+ "wall_time": 0.0272066593170166,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T18:54:44"
+ }
+}

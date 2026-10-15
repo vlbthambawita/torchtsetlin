@@ -1,0 +1,131 @@
+{
+ "stage": "hpo",
+ "dataset_id": 1590,
+ "dataset": "adult",
+ "arm": "tm",
+ "seed": 0,
+ "tag": "t16",
+ "status": "ok",
+ "nn_overrides": {},
+ "tm_overrides": {
+  "n_clauses": 400,
+  "T_ratio": 0.5,
+  "s": 20.0,
+  "n_bits": 5,
+  "max_included_literals": 32
+ },
+ "data": {
+  "n_train": 29304,
+  "n_valid": 9769,
+  "n_test": 9769,
+  "n_features": 14,
+  "n_classes": 2,
+  "fingerprint": "52dc1c043d934cd998f29c0a85636f29347354af42d8bd0f717e6a9861546ebd"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8908473108927415,
+   "accuracy": 0.8395440895440895,
+   "log_loss": 0.38202758527844966
+  },
+  "valid": {
+   "auroc": 0.8840557468588113,
+   "accuracy": 0.8265943289998976,
+   "log_loss": 0.394370627172174
+  },
+  "test": {
+   "auroc": 0.8854217282028596,
+   "accuracy": 0.8306889139113522,
+   "log_loss": 0.3918530295051503
+  }
+ },
+ "info": {
+  "tm_key": "adult_d1590_s0_bd44a9d76d",
+  "tm_cfg": {
+   "n_bits": 5,
+   "n_clauses": 400,
+   "T_ratio": 0.5,
+   "s": 20.0,
+   "weighted": true,
+   "n_states": 128,
+   "max_included_literals": 32,
+   "batch_size": 32,
+   "epochs": 60,
+   "patience": 15,
+   "prob_temperature": 1.0
+  },
+  "train_time": 73.11338567733765,
+  "best_epoch": 12,
+  "T": 200,
+  "n_bool": 56,
+  "n_clauses_raw": 800,
+  "n_clauses_basis": 800,
+  "clause_len_mean": 5.158750057220459,
+  "inference_time": 0.004605770111083984
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "occupation",
+    0.4937003254890442
+   ],
+   [
+    "relationship",
+    0.45840007066726685
+   ],
+   [
+    "marital-status",
+    0.30919986963272095
+   ],
+   [
+    "education",
+    0.2934199273586273
+   ],
+   [
+    "age",
+    0.21118992567062378
+   ],
+   [
+    "education-num",
+    0.1762000173330307
+   ],
+   [
+    "native-country",
+    0.1576000303030014
+   ],
+   [
+    "race",
+    0.13554997742176056
+   ],
+   [
+    "sex",
+    0.11852994561195374
+   ],
+   [
+    "hours-per-week",
+    0.09053000062704086
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.01518075217003556,
+   0.04247456986367537,
+   0.1437144167170592,
+   0.20697505732522503,
+   0.24773528092324493
+  ],
+  "attribution_time": 0.03583884239196777
+ },
+ "wall_time": 73.19769048690796,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3080",
+  "time": "2026-10-14T17:32:39"
+ }
+}

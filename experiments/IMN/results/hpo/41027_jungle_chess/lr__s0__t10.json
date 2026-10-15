@@ -1,0 +1,101 @@
+{
+ "stage": "hpo",
+ "dataset_id": 41027,
+ "dataset": "jungle_chess",
+ "arm": "lr",
+ "seed": 0,
+ "tag": "t10",
+ "status": "ok",
+ "nn_overrides": {
+  "C": 4.103771867726056,
+  "max_iter": 84,
+  "fit_intercept": true,
+  "penalty": "l2"
+ },
+ "tm_overrides": {},
+ "data": {
+  "n_train": 26891,
+  "n_valid": 8964,
+  "n_test": 8964,
+  "n_features": 6,
+  "n_classes": 3,
+  "fingerprint": "cbc43acf7200d1ffedcb13e8aeedefd96397fe20dce72c505d6e80eeba4ef16b"
+ },
+ "metrics": {
+  "train": {
+   "auroc": 0.8109445026904393,
+   "accuracy": 0.6782194786359749,
+   "log_loss": 0.7247622285915172
+  },
+  "valid": {
+   "auroc": 0.8094896253127057,
+   "accuracy": 0.6729138777331548,
+   "log_loss": 0.7236320688611372
+  },
+  "test": {
+   "auroc": 0.8090247828332094,
+   "accuracy": 0.676149040606872,
+   "log_loss": 0.7278081354472312
+  }
+ },
+ "info": {
+  "impl": "sklearn.LogisticRegression",
+  "params": {
+   "C": 4.103771867726056,
+   "max_iter": 84,
+   "fit_intercept": true,
+   "penalty": "l2"
+  },
+  "train_time": 0.02772688865661621,
+  "inference_time": 0.005764007568359375
+ },
+ "explain": {
+  "n_explained": 500,
+  "global_importance_top10": [
+   [
+    "white_piece0_rank",
+    0.3084636330604553
+   ],
+   [
+    "black_piece0_rank",
+    0.24437060952186584
+   ],
+   [
+    "black_piece0_strength",
+    0.09300339221954346
+   ],
+   [
+    "white_piece0_strength",
+    0.09209273010492325
+   ],
+   [
+    "black_piece0_file",
+    0.0019721153657883406
+   ],
+   [
+    "white_piece0_file",
+    0.0018295260379090905
+   ]
+  ],
+  "topk_removal_auroc_drop": [
+   0.09499489953463292,
+   0.23658095408927826,
+   0.2580928735562986,
+   0.31857288463643224,
+   0.3165343866920252
+  ],
+  "attribution_time": 0.06572771072387695
+ },
+ "wall_time": 0.13947844505310059,
+ "provenance": {
+  "git_rev": "06a2ce531dd27debff7dc7dce08fef8015f6b0ff",
+  "src_dirty": false,
+  "src_diff_sha": "e3b0c44298fc1c14",
+  "torchtsetlin": "0.3.1",
+  "torch": "2.10.0+cu128",
+  "python": "3.10.11",
+  "host": "mimir",
+  "gpu": "NVIDIA GeForce RTX 3090",
+  "time": "2026-10-14T18:07:34"
+ }
+}
