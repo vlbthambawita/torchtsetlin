@@ -108,7 +108,7 @@ def run_tm(S: TabularSplits, seed: int, device: str, tm_over: Optional[Dict], lo
     info = {"tm_key": key, "tm_cfg": cfg, "train_time": meta["train_time"], "best_epoch": meta["best_epoch"],
             "T": meta["T"], "n_bool": boo.n_bool, "n_clauses_raw": basis.n_raw_clauses,
             "n_clauses_basis": basis.K, "clause_len_mean": float(basis.lengths().float().mean()),
-            "inference_time": infer}
+            "inference_time": infer, "basis_obj": basis, "_tm": tm}
     return ArmResult(out, Explainable(full), info)
 
 
@@ -156,6 +156,9 @@ def run_neural(arm: str, S: TabularSplits, seed: int, device: str, nn_over: Opti
         z = train_nn.ensemble_forward(model, snaps, X[k], C[k])
         out[k] = train_nn.logits_to_proba(z)
     info["inference_time"] = time.time() - t1
+    info["_model"], info["_snaps"] = model, snaps  # for callers that re-bind explanations (mnist.py)
+    if basis is not None:
+        info["basis_obj"] = basis
 
     def clause_fn(Xq: Tensor) -> Tensor:
         return basis.evaluate(Xq)

@@ -18,10 +18,14 @@ from torch import Tensor
 
 
 class TabularBooleanizer:
-    def __init__(self, n_bits: int = 10):
+    def __init__(self, n_bits: int = 10, thresholds: Optional[List[float]] = None):
+        """``thresholds``: fixed cut points shared by every column (e.g. ``[0.3]`` for MNIST
+        intensities) instead of per-column quantiles; a cut is kept for a column only if the
+        training data has values on both sides of it."""
         if n_bits < 1:
             raise ValueError("n_bits must be >= 1")
         self.n_bits = int(n_bits)
+        self.thresholds = None if thresholds is None else [float(t) for t in thresholds]
         self.col: Optional[np.ndarray] = None  # (n_bool,) int: source column of each bit
         self.thr: Optional[np.ndarray] = None  # (n_bool,) float32 thresholds
         self._cache = {}
@@ -38,7 +42,9 @@ class TabularBooleanizer:
             u = np.unique(v)
             if len(u) <= 1:
                 continue
-            if len(u) <= self.n_bits + 1:
+            if self.thresholds is not None:
+                t = np.asarray([t for t in self.thresholds if u[0] < t <= u[-1]])
+            elif len(u) <= self.n_bits + 1:
                 t = (u[:-1] + u[1:]) / 2.0  # every cut between observed values
             else:
                 t = np.unique(np.quantile(v, q))
@@ -72,11 +78,12 @@ class TabularBooleanizer:
         return [f"{feature_names[c]}>={t:.3g}" for c, t in zip(self.col, self.thr)]
 
     def state(self) -> dict:
-        return {"n_bits": self.n_bits, "col": self.col.tolist(), "thr": self.thr.tolist()}
+        return {"n_bits": self.n_bits, "thresholds": self.thresholds, "col": self.col.tolist(),
+                "thr": self.thr.tolist()}
 
     @classmethod
     def from_state(cls, st: dict) -> TabularBooleanizer:
-        b = cls(st["n_bits"])
+        b = cls(st["n_bits"], st.get("thresholds"))
         b.col = np.asarray(st["col"], dtype=np.int64)
         b.thr = np.asarray(st["thr"], dtype=np.float32)
         return b

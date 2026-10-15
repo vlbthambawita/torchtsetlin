@@ -196,3 +196,35 @@ def test_oversized_model_is_recorded_as_skipped(tmp_path, monkeypatch):
     monkeypatch.setattr(run, "load_splits", lambda d, s: _toy(n=200))
     p = run.run_one("t", "x", "imn", 0, "cpu", {"epochs": 1}, {}, log=lambda *_: None)
     assert json.loads(p.read_text())["status"] == "skipped"
+
+
+# ------------------------------------------------------------------------- MNIST study
+def test_fixed_threshold_booleanizer_skips_constant_and_one_sided_columns():
+    X = np.array([[0.0, 0.0, 0.1], [0.0, 0.5, 0.2], [0.0, 1.0, 0.25]], dtype=np.float32)
+    boo = TabularBooleanizer(10, thresholds=[0.3]).fit(X)
+    assert boo.col.tolist() == [1] and boo.thr.tolist() == pytest.approx([0.3])
+    st = TabularBooleanizer.from_state(boo.state())
+    assert st.thresholds == [0.3] and torch.equal(st.transform(X), boo.transform(X))
+
+
+def test_clause_credit_sums_to_clause_logit(trained):
+    from experiments.IMN.code.mnist import clause_credit
+    S, tm, boo = trained
+    basis = basis_from_tm(tm, boo, S.n_classes)
+    X = torch.as_tensor(S.X_test[:50])
+    Wk = torch.randn(50, basis.K)
+    psi = clause_credit(basis, X, Wk)
+    assert torch.allclose(psi.sum(1), (basis.evaluate(X) * Wk).sum(1), atol=1e-4)
+
+
+def test_deletion_curves_start_at_the_prediction():
+    from experiments.IMN.code.mnist import FRACS, deletion
+    g = torch.Generator().manual_seed(0)
+    X = torch.rand(30, 12, generator=g) * (torch.rand(30, 12, generator=g) > 0.5)
+    Wl = torch.randn(12, 4, generator=g)
+    full = lambda x: x @ Wl  # noqa: E731
+    tgt = full(X).argmax(1)
+    cur, auc, ret, rauc = deletion(full, X, torch.randn(30, 12, generator=g), tgt)
+    assert ret[:, 0].min() == 1 and cur.shape == (30, len(FRACS))
+    # everything deleted -> all-zero input, same logits for every image
+    assert np.allclose(cur[:, -1], torch.softmax(full(torch.zeros(1, 12)), 1)[0, tgt].numpy())

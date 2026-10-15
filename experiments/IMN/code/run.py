@@ -120,6 +120,9 @@ def explain_block(res, S: D.TabularSplits, device: str, rows: np.ndarray, seed: 
 
 def run_one(stage: str, dataset: str, arm: str, seed: int, device: str, nn_over: dict, tm_over: dict,
             tag: str = "", force: bool = False, n_explain: int = 500, log=print) -> Path:
+    if dataset.startswith("mnist"):  # image study with its own explanation block (mnist/PLAN.md)
+        from .mnist import run_mnist_one
+        return run_mnist_one(stage, dataset, arm, seed, device, nn_over, tm_over, tag, force, n_explain, log)
     S = load_splits(dataset, seed)
     path = record_path(stage, S, arm, seed, tag)
     if path.exists() and not force:
@@ -141,7 +144,7 @@ def run_one(stage: str, dataset: str, arm: str, seed: int, device: str, nn_over:
         return path
     metrics = {k: classification_metrics(getattr(S, f"y_{k}"), p, S.n_classes) for k, p in res.proba.items()}
     xinfo = explain_block(res, S, device, rows, seed)
-    info = {k: v for k, v in res.info.items() if k != "basis_obj"}
+    info = {k: v for k, v in res.info.items() if k != "basis_obj" and not k.startswith("_")}
     rec = {"stage": stage, "dataset_id": S.dataset_id, "dataset": S.name, "arm": arm, "seed": seed, "tag": tag,
            "status": "ok", "nn_overrides": nn_over, "tm_overrides": tm_over,
            "data": {"n_train": len(S.X_train), "n_valid": len(S.X_valid), "n_test": len(S.X_test),

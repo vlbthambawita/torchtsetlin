@@ -63,7 +63,7 @@ def tm_scores(tm: tt.TsetlinMachine, xb: Tensor, temperature: float = 1.0) -> np
 def train_tm(splits: TabularSplits, cfg: Dict, seed: int, device: str, log=print):
     """Train a TM with validation-AUROC early stopping. Returns (tm, booleanizer, history)."""
     tt.seed_everything(seed)
-    boo = TabularBooleanizer(cfg["n_bits"]).fit(splits.X_train)
+    boo = TabularBooleanizer(cfg["n_bits"], cfg.get("thresholds")).fit(splits.X_train)
     dev = torch.device(device)
     xtr = boo.transform(torch.as_tensor(splits.X_train, device=dev))
     xva = boo.transform(torch.as_tensor(splits.X_valid, device=dev))
