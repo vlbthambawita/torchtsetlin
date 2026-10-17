@@ -1,15 +1,49 @@
-# Proposed torchtsetlin changes — NOT APPLIED
+# Proposed torchtsetlin changes
 
 Constraint C1: `src/torchtsetlin/**` is read-only for the duration of this programme. Everything
 this programme finds missing or wrong in the library is recorded here and applied only after the
 user's explicit manual confirmation, as separate reviewed work.
 
-`git diff --stat -- src/` is empty at every gate; see `AUDIT.md`.
+`git diff --stat -- src/` was empty at every gate of this programme; see `AUDIT.md`. The programme
+halted on 2026-09-22. The library has changed since, **outside** this programme: entries are
+re-checked against `src/` as of **2026-10-17 (0.3.1)** and each now carries a status.
+
+## Status (re-checked 2026-10-17 against 0.3.1)
+
+| ID | Gap | Status | Resolved by / what is left |
+|---|---|---|---|
+| LG-003 | Clause budget overshoots under batched conv feedback | **RESOLVED in 0.3.0** | `fb58305` hard cap (`functional._cap_new_inclusions`); conv-model regression test still missing |
+| LG-004 | Default chunk budget serialises large conv models | OPEN | — |
+| LG-005 | No public patch-level clause maps | **PARTIAL** | `c5deb95` added `patch_clause_outputs`; `include=` override and `grid()` accessor still missing |
+| LG-006 | No real-valued multiplicative clause weights | OPEN | — |
+| LG-007 | No dilation; one `patch_size` per model | OPEN | scope grew: `Conv3d*` (and possibly `Segmentation*`) need it too |
+| LG-008 | Missing Otsu / Canny / HOG / adaptive colour thermometer encoders | OPEN | — |
+| LG-009 | Approaches the library cannot express | OPEN (not proposed) | — |
+| LG-010 | Paper-configuration ambiguities | NOT A LIBRARY GAP | kept here only because `ARMS.md` cites it by ID |
+| LG-011 | Conv `_encode` override cannot wrap the parent's | OPEN | scope grew: `_Conv3dMixin._encode` duplicates the check |
+
+**Numbering** starts at LG-003. No LG-001 or LG-002 was ever filed in this file (checked against its
+git history); the first entry took its number from the `PLAN.md` §12 template. They are not missing.
+
+**Recommended order once C1 is lifted** — the first five are small and additive:
+
+1. LG-003: add the conv-model budget regression test.
+2. LG-004 (c): one-time warning when a batch is split into chunks.
+3. LG-005: `include=` override on the patch-map accessor, plus a public `grid()`.
+4. LG-011: split `_encode` into `_patch_features` + literal wrapper (2D and 3D).
+5. LG-007 (a): thread `dilation` through the conv mixins.
+
+LG-006, LG-008 and LG-009 are features rather than fixes and should wait for a measured need.
+
+**Stale cross-references (orchestrator's to fix):** `PLAN.md` §12 still uses LG-003's original
+"median 75" claim as its template example, and `CHARTER.md` silent-failure mode 2 describes the
+soft-cap overshoot. Both predate the 0.3.0 hard cap.
 
 Entry format:
 
 ```markdown
 ## LG-00N — <one-line symptom>
+- **Status**: OPEN | PARTIAL (<what is left>) | RESOLVED in <version> (<commit>)
 - **Symptom**:
 - **Reproduction**: `python code/repro/lgNNN.py` -> what it prints
 - **Cause**: (file:line)
@@ -22,7 +56,22 @@ Entry format:
 
 ---
 
-## LG-003 — Clause-size budget does not bind for conv models under batched feedback **at very small budgets only** (NARROWED 2026-09-20, ROUND-1)
+## LG-003 — Clause-size budget does not bind for conv models under batched feedback **at very small budgets only** (NARROWED 2026-09-20, ROUND-1; RESOLVED in 0.3.0)
+
+- **Status**: **RESOLVED in 0.3.0** (`fb58305`, 2026-10-01, GitHub issue #1), outside this
+  programme. `functional.apply_feedback` now calls `_cap_new_inclusions`
+  (`src/torchtsetlin/functional.py:272`): after each commit, a clause that would end above
+  `max_included_literals` keeps a uniformly random subset of its *newly* included literals and the
+  rest are reset to `N-1`. This is the "post-commit size projection" alternative below, **not** the
+  Type II gating that was proposed first; Type II is still ungated (`functional.py:260-261`).
+- **Still open**: the regression test. The budget is pinned for the flat classifier
+  (`tests/test_models.py::test_batched_classifier_respects_max_included_literals`) and for
+  segmentation (`tests/test_segmentation.py`), **not for a convolutional model** — which is where
+  the per-patch Type II event count made the overshoot possible.
+- **Every budget number in this programme was measured under the old soft cap** — the +9.46 pp
+  budget effect, the s=2 + budget-32 cell (48.31), the sequential-feedback control (+8.75 pp) and
+  the T0 cell (65.10% test). At budgets 16/32/64 the soft cap already bound, so the effects should
+  survive, but they must be re-run before any new result is compared against them.
 
 Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 
@@ -32,8 +81,14 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 > published recipe uses — **the budget holds at batch 50**, and a full-scale 30-epoch run at
 > budget 32 lands at median 33 against a cap of 32. Neither sequential feedback nor batch 5 is
 > required. The original claim, and `CHARTER.md` silent-failure mode 2 which repeats it, are too
-> strong and were steering the programme away from a mechanism that works and is worth **+7.7
-> percentage points** [MEASURED: ctm-small-budget32]. `CHARTER.md` is the orchestrator's to fix.
+> strong and were steering the programme away from a mechanism that works and is worth **+9.46
+> percentage points** (47.77 ± 0.32 vs 38.31 ± 1.05, 3 seeds, `T = 80`) [MEASURED:
+> ctm-small-budget32; DECISIONS.md]. The +7.7 pp first written here came from the earlier run with
+> an unreachable `T`, superseded by AUDIT A21. `CHARTER.md` is the orchestrator's to fix.
+>
+> The two clause-size figures come from different configurations: the **sweep** (2 epochs, small
+> config, `results/lg003_budget_sweep.json`) lands at median 20.0 for budget 32; the **full-scale
+> 30-epoch run** lands at median 33.
 
 - **Symptom** *(as originally filed, and true only at budget 8)*: `max_included_literals=8` on a
   convolutional model yields a median clause size above 8 at batch 50, at 8 at batch 5, and below
@@ -60,13 +115,20 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 - **Proposed fix (NOT APPLIED)**: gate Type II by the same `room` computation as Type Ia, behind a
   flag defaulting to current behaviour; alternatively expose a post-commit size projection.
 - **Affected**: `src/torchtsetlin/functional.py`, `src/torchtsetlin/models/base.py`.
-- **Test to add**: conv model, batch 50, budget 8 → median size ≤ 8. (Budgets 16/32/64 already
-  pass and should be pinned as a regression guard.)
+- **Test to add** (still missing after 0.3.0): conv model, batch 50, budget 8 → **max** size ≤ 8
+  (a hard cap now, so the maximum is the right assertion, not the median); repeat for 16/32/64 as a
+  regression guard.
 - **Risk**: changes the learning dynamics of every existing conv result; needs the benchmark suite
   re-run and `docs/benchmarks.md` regenerated. **Lower priority than originally filed** — the
   practical range works today.
 
 ## LG-004 — The default chunk budget silently serialises large convolutional models
+
+- **Status**: OPEN. Re-checked 2026-10-17: the default is still `max_chunk_elements=2**27`
+  (`src/torchtsetlin/models/base.py:92`) and its docstring (`base.py:65-66`) still describes it only
+  as a memory budget. The 3D models added since (`a3eba41`) block the patch axis when a single
+  example exceeds the budget (`conv.py::_Conv3dMixin._patch_block`), which addresses the
+  memory-bound volume case but not the 2D serialisation measured here.
 
 - **Symptom**: a convolutional model's throughput per clause degrades sharply with clause count,
   well before any memory pressure. Peak GPU memory stays around 1 GB across the whole measured
@@ -95,10 +157,12 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
   for this programme, so the harness exposes it (`--max-chunk-elements`), records it in `hp`, and
   **arms are only compared at equal `max_chunk_elements`** — a lower value is a pure slowdown and
   would make an otherwise identical arm look expensive.
-- **Proposed fix (NOT APPLIED)**: (a) document `max_chunk_elements` as a throughput/memory dial in
-  the conv models' docstrings and in `CLAUDE.md`; (b) scale the default with free device memory
-  (`torch.cuda.mem_get_info`) rather than fixing it at `2**27`; (c) emit a one-time warning when
-  `_chunk_size(xb) < xb.shape[0]`, so the serialisation is visible.
+- **Proposed fix (NOT APPLIED)**, in order of cost: (c) first — emit a one-time warning when
+  `_chunk_size(xb) < xb.shape[0]`, so the serialisation is visible; cheap and changes nothing
+  else. (a) document `max_chunk_elements` as a throughput/memory dial in the conv models'
+  docstrings and in `CLAUDE.md`. (b) last — scale the default with free device memory
+  (`torch.cuda.mem_get_info`) rather than fixing it at `2**27`; this is the one that changes
+  memory footprint and published throughput.
 - **Affected**: `src/torchtsetlin/models/base.py` (`_chunk_size`, the default),
   `src/torchtsetlin/models/conv.py` (`_chunk_elements_per_example`), `docs/`, `CLAUDE.md`.
 - **Test to add**: a conv model at `C=8000`, `10x10`, batch 50 reports `_chunk_size == 50` under a
@@ -108,6 +172,16 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 
 ## LG-005 — No public API for patch-level clause activation maps
 
+- **Status**: **PARTIAL.** `c5deb95` (2026-09-23, the day after this programme halted) added
+  `_ConvMixin.patch_clause_outputs(x, empty_value=None) -> (B, Py, Px, C)`
+  (`src/torchtsetlin/models/conv.py:206`); `Conv3d*` has the 3D equivalent. It differs from the
+  sketch below in two ways: the layout is `(B, Py, Px, C)`, not `(B, C, Py, Px)`, and `empty_value`
+  defaults to `self.training`, not `False` — call it under `model.eval()` or pass
+  `empty_value=False`. **Still missing**: the `include=` override (D-ORDER, below) and a public
+  `grid()` accessor.
+- **Action available now, within C1**: move `code/diagnostics.py` (`match_count_stats` ~225 and
+  `patch_firing_stats` ~516) from `model._prepare/_encode/_evaluate` onto `patch_clause_outputs`. `order_stats`
+  (~427) still needs the private path until `include=` exists.
 - **Symptom**: the `(B, P, C)` patch-match tensor is computed inside
   `_ConvMixin._evaluate` and discarded; the public surface exposes only the image-level
   `(B, C)` OR-pooled clause outputs (`evaluate_clauses`) and the vote sums (`forward`).
@@ -119,15 +193,28 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
   `model._prepare / _encode / _evaluate`. `code/diagnostics.py::patch_firing_stats` and
   `experiments/mctm/mctm.py::conv_clause_maps` are both doing this. Private-API use is recorded
   here rather than hidden, because a library change would break it silently.
-- **Proposed fix (NOT APPLIED)**: a public
-  `ConvTsetlinMachine.clause_maps(x, empty_value=False) -> (B, C, Py, Px)`, plus a public
-  `grid(H, W)` accessor. It is a thin wrapper over code that already exists.
-- **Affected**: `src/torchtsetlin/models/conv.py`, `docs/api/`.
-- **Test to add**: `clause_maps(x).any(dim=(2,3)) == evaluate_clauses(x)`.
+- **Third consumer — D-ORDER** (research-engineer, 2026-09-21; folded in from a separate
+  addendum): `code/diagnostics.py::order_stats` (THEORY.md 5.5.9) evaluates each clause's top-`k`
+  prefix — the `k` included literals with the deepest TA states — as a clause in its own right. It
+  must (1) reach the `(B, P, 2F)` patch literals via `model._prepare` / `model._encode`, and
+  (2) re-implement the patch OR (`matches.any(dim=1)`), because `_evaluate` evaluates against
+  `self.include` and there is no way to pass a different mask. `functional.clause_outputs(literals,
+  include, include_count, empty_value)` is public and takes any mask, but only after the caller has
+  re-derived `P`, reshaped to `(B*P, 2F)` and reproduced the OR — each a place where a library
+  change would break the diagnostic silently.
+- **Proposed fix (NOT APPLIED)** — originally `clause_maps(x, empty_value=False) -> (B, C, Py, Px)`
+  plus `grid(H, W)`; `patch_clause_outputs` now covers the first half. What is left: an optional
+  `include=None` argument on `patch_clause_outputs` (defaulting to `self.include`, with
+  `include_count` derived when passed), and a public `grid(H, W)`.
+- **Affected**: `src/torchtsetlin/models/conv.py` (2D and 3D mixins), `docs/api/`.
+- **Test to add**: `patch_clause_outputs(x, include=m).any(dim=(1,2))` equals a masked
+  `evaluate_clauses` for a mask `m` that is a strict subset of `model.include`, and equals
+  `evaluate_clauses(x)` for `m = model.include`.
 - **Risk**: none — additive.
 
 ## LG-006 — Real-valued multiplicative clause weights (the 2019 Weighted TM) are not expressible
 
+- **Status**: OPEN. Re-checked 2026-10-17; the cited lines are unchanged.
 - **Symptom**: `weighted=True` gives integer weights updated by `±1` per Type Ia / Type II event and
   clamped at `≥ 0`. The rule published as *the* Weighted Tsetlin Machine is multiplicative and
   real-valued: `w ← w·(1+γ)` on Type I, `w ← w/(1+γ)` on Type II, `w` initialised to 1.0, `γ` a
@@ -155,6 +242,8 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 
 ## LG-007 — No dilation, and one `patch_size` per model: the two cheapest receptive-field mechanisms are unreachable
 
+- **Status**: OPEN. Re-checked 2026-10-17: still no `dilation` anywhere in `models/conv.py`. Line
+  numbers below are from 2026-09-22; `_encode`'s `unfold` call is now at `conv.py:151-153`.
 - **Symptom**: a convolutional TM can only grow its clause receptive field by enlarging
   `patch_size`, which grows the automata budget **quadratically** (`THEORY.md` §6.2: `F = Z·k² +
   2(32−k)`; 3×3 → 16×16 is a 22.5× automata increase at fixed clause count). Two standard CNN
@@ -178,13 +267,19 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
   a `MultiScaleConvTsetlinMachine` that holds several `(patch_size, n_clauses)` groups over one
   `ta_state` is a larger change and should wait for a `[MEASURED]` result from the composite-style
   workaround first.
-- **Affected**: `src/torchtsetlin/models/conv.py`.
+- **Scope grew since filing**: `_Conv3dMixin` (added `a3eba41`) builds its windows with three
+  `Tensor.unfold` calls (`conv.py:557`) and needs dilation as a triple, threaded through its own
+  `_grid` / `conv_features`. `models/segmentation.py::_DenseMixin` should be checked for the same.
+- **Affected**: `src/torchtsetlin/models/conv.py`, possibly `src/torchtsetlin/models/segmentation.py`.
 - **Test to add**: `dilation=2, patch_size=3` on a 32×32 input gives `Py = Px = 28` and
   `conv_features` accounting that matches `unfold`'s output width.
 - **Risk**: additive; `dilation=1` is the current behaviour.
 
 ## LG-008 — The Booleanization registry is missing four of the seven encodings behind the TM state of the art
 
+- **Status**: OPEN. Re-checked 2026-10-17: `data/encoders.py` now also ships `PyramidEncoder`
+  (`encoders.py:385`), but none of the four encoders below. Line numbers for the two adaptive
+  encoders are now `encoders.py:269, 315`.
 - **Symptom**: the 82.8% TM Composite is built from seven image Booleanizations
   `[FACT: Grønningsæter et al. 2024, §III]`. `torchtsetlin.data.encoders` ships
   `AdaptiveThresholdEncoder` (gaussian **and** mean) and `ColorThermometerEncoder`
@@ -211,6 +306,8 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 
 ## LG-009 — Whole approaches that the library cannot express at all
 
+- **Status**: OPEN, no fix proposed.
+
 Grouped, because each would be a new model rather than a missing hook. Recorded so the report can
 say why these are absent rather than leaving it to inference.
 
@@ -235,6 +332,10 @@ say why these are absent rather than leaving it to inference.
 
 ## LG-010 — Paper-configuration ambiguities the library cannot resolve, recorded against ARMS.md A1–A4
 
+- **Status**: NOT A LIBRARY GAP. This belongs in `ARMS.md`/`DECISIONS.md`; it stays here only
+  because `ARMS.md` cites it as `[FACT: LG-010 A1–A4]` in its registry and ambiguity table, and
+  moving it would break those references. Do not add new paper-configuration questions here.
+
 Not a defect; filed here because `ARMS.md` asks P1 to settle these before any `GAP` verdict.
 
 - **A1 — "number of clauses": per class or total?**
@@ -244,8 +345,11 @@ Not a defect; filed here because `ARMS.md` asks P1 to settle these before any `G
   "8 000 weighted clauses **per class**" in §4 of the same paper. `[FACT: arXiv:2406.00704 Tables
   II–IV]` and `[FACT: arXiv:2507.14874 Table 16]` are unqualified. **Verdict**: the harness
   convention (`hp.n_clauses` = total) is right; but `ctm-vanilla` configured "as the 2019 paper" is
-  **80 000 total**, not 8 000, and the Toolbox/Composites numbers must be settled empirically
-  (`rounds/ROUND-1/tm-theorist.md`, measurement M0).
+  **80 000 total**, not 8 000. *(Update, superseding "settle empirically":)* the Toolbox reading
+  is also per class — confirmed in `[FACT: arXiv:2406.00704 §II-B]` and in the reference
+  implementation (`cair/tmu`, one clause bank per class), so its "2,000" is 20 000 total and its
+  "64,000" is 640 000 total. `ctm-vanilla-8k` remains useful as a measurement of the
+  unqualified reading, but it no longer decides the question.
 - **A2 — class-owned vs coalesced for `ctm-vanilla`**: **agreed, class-owned.**
   `[FACT: arXiv:1905.09688 §2–3]` the 2019 CTM convolves the 2018 multi-class TM with fixed
   per-clause polarity; clause sharing is a separate 2021 contribution `[FACT: arXiv:2108.07594]`.
@@ -276,47 +380,19 @@ because it is a composition limit that a future library change could remove chea
 - **Reproduction**: `python code/repro/skip_literals.py` — route A (channel concatenation, no
   subclass) works; route B (global skip literals) works only with `_encode` fully reimplemented;
   route C (`_encode` overridden without `conv_features`) fails loudly inside `clause_outputs`.
-- **Cause**: `src/torchtsetlin/models/conv.py:132-135` — the check is against the final
-  `self.n_features` rather than against `Z*kh*kw + position bits`.
+- **Status**: OPEN. Re-checked 2026-10-17.
+- **Cause**: `src/torchtsetlin/models/conv.py:157-160` (was `:132-135` when filed) — the check is
+  against the final `self.n_features` rather than against `Z*kh*kw + position bits`. The same
+  check is duplicated in `_Conv3dMixin._encode` (`conv.py:563-565`), added since.
 - **Impact here**: none to correctness and none to throughput — `_chunk_elements_per_example`
   reads `self.n_literals`, which is `2 * conv_features(input_shape)`, so the chunk budget stays
   correct in both routes ([MEASURED: `code/repro/skip_literals.py`] chunk 8/8 at batch 8 in both).
   Cost is ~10 duplicated lines per skip arm.
 - **Proposed fix (NOT APPLIED)**: split `_encode` into `_patch_features(xb) -> (B, P, F_base)` and
   a thin literal-forming wrapper, and move the assertion into the wrapper. Subclasses then
-  override `_patch_features` and compose cleanly.
-- **Affected**: `src/torchtsetlin/models/conv.py`.
+  override `_patch_features` and compose cleanly. Apply the same split to `_Conv3dMixin._encode`.
+- **Affected**: `src/torchtsetlin/models/conv.py` (2D and 3D mixins).
 - **Test to add**: a subclass appending `n_skip` global literals reports
   `n_literals == 2*(base + n_skip)` and trains.
 - **Risk**: none — a refactor behind an unchanged public surface.
 
----
-
-## LG-005 addendum — 2026-09-21, research-engineer: D-ORDER is a third private-API consumer
-
-No new gap; the same one, now load-bearing for a registered theory prediction.
-
-`code/diagnostics.py::order_stats` (**D-ORDER**, THEORY.md 5.5.9) evaluates each clause's
-*top-`k` prefix* — the `k` included literals with the deepest TA states — as a clause in its own
-right. To do that it must:
-
-1. reach the `(B, P, 2F)` patch literals via `model._prepare` / `model._encode` (private), and
-2. re-implement the patch OR (`matches.any(dim=1)`) that `_ConvMixin._evaluate` performs
-   internally, because `_evaluate` evaluates against `self.include` and there is no way to
-   evaluate against a *different* include mask.
-
-Step 2 is the new part, and it is what the LG-005 fix sketch does **not** currently cover.
-`functional.clause_outputs(literals, include, include_count, empty_value)` is public and takes an
-arbitrary mask, so the arithmetic is reachable — but only after the caller has re-derived `P`,
-reshaped `(B*P, 2F)`, and reproduced the OR. Every one of those is a place where a library change
-would break a diagnostic silently rather than loudly.
-
-**Fix sketch, extending LG-005's (NOT APPLIED)**: give the proposed
-`ConvTsetlinMachine.clause_maps(x, empty_value=False)` an optional `include=None` argument
-defaulting to `self.include`, with `include_count` derived when it is passed. Three lines, purely
-additive, and it turns two private-API consumers and one re-implementation into one public call.
-
-**Affected**: `src/torchtsetlin/models/conv.py`. **Risk**: none — additive.
-**Test to add**: `clause_maps(x, include=m).any(dim=(2,3))` equals a masked `evaluate_clauses`
-for a mask `m` that is a strict subset of `model.include`, and equals `evaluate_clauses(x)` for
-`m = model.include`.
