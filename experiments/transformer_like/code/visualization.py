@@ -69,10 +69,10 @@ def fig_architecture() -> str:
     box(b, 0.02, 0.62, 0.3, 0.12, "16 tokens: 7x7 pixels\n+ 6 position bits")
     box(b, 0.38, 0.74, 0.18, 0.1, "Query TM\n10 scores", fc="#dbf2e9")
     box(b, 0.38, 0.58, 0.18, 0.1, "Key TM\n10 scores", fc="#dbf2e9")
-    box(b, 0.62, 0.62, 0.36, 0.16, "normalise; softmax(q k^T / sqrt(10) t)\nmasked to active tokens", fc="#f9e3d9")
+    box(b, 0.62, 0.62, 0.36, 0.16, "normalise Q, K;\nsoftmax(q.k / (sqrt(10) t))\nover active tokens", fc="#f9e3d9")
     box(b, 0.62, 0.38, 0.36, 0.14, "context o_i = sum_j alpha_ij v_j\n(values = token bits)")
     box(b, 0.62, 0.16, 0.36, 0.12, "thresholds 0.25/0.5/0.75\n-> 2640 bits")
-    box(b, 0.02, 0.16, 0.48, 0.12, "head TM on [784 image bits ; 2640 context bits]", fc="#dce9f9")
+    box(b, 0.02, 0.16, 0.48, 0.12, "head TM on [784 image bits ;\n2640 context bits]", fc="#dce9f9")
     arrow(b, 0.17, 0.84, 0.17, 0.74); arrow(b, 0.32, 0.68, 0.38, 0.79); arrow(b, 0.32, 0.66, 0.38, 0.63)
     arrow(b, 0.56, 0.79, 0.62, 0.72); arrow(b, 0.56, 0.63, 0.62, 0.67); arrow(b, 0.8, 0.62, 0.8, 0.52)
     arrow(b, 0.8, 0.38, 0.8, 0.28); arrow(b, 0.62, 0.22, 0.5, 0.22); arrow(b, 0.1, 0.62, 0.1, 0.28)
@@ -112,7 +112,8 @@ def model_intermediates(model, u8: np.ndarray):
 def fig_attention(model, examples: List[Dict]) -> List[str]:
     out = []
     n = len(examples)
-    fig, axes = plt.subplots(1, n, figsize=(3.3 * n, 3.2))
+    fig, axes = plt.subplots(1, n, figsize=(3.6 * n, 3.2))
+    fig.subplots_adjust(wspace=0.45)
     for ax, ex in zip(np.atleast_1d(axes), examples):
         it = model_intermediates(model, ex["u8"])
         im = ax.imshow(it["alpha"], cmap=SEQ, vmin=0, vmax=1)
@@ -186,6 +187,7 @@ def fig_curves(histories: Dict[str, List[Dict]], extra_offsets: Dict[str, float]
 
 def fig_pareto(points: List[Dict]) -> str:
     fig, axes = plt.subplots(1, 2, figsize=(10, 3.6), sharey=True)
+    placed = {"bytes_mb": [], "latency_ms": []}
     for p in points:
         c = ARM_COLOR.get(p["arm"], INK2)
         for ax, key in zip(axes, ("bytes_mb", "latency_ms")):
@@ -193,8 +195,12 @@ def fig_pareto(points: List[Dict]) -> str:
                 continue
             ax.errorbar(p[key], p["acc"], yerr=p["sd"], fmt="o", ms=6, color=c, ecolor=c, elinewidth=1,
                         mec="white", mew=1.5)
-            ax.annotate(p["arm"], (p[key], p["acc"]), xytext=(4, 3), textcoords="offset points", fontsize=7, color=INK2)
-    axes[0].set_xscale("log"); axes[1].set_xscale("log")
+            # stagger labels of points that (nearly) coincide
+            near = sum(1 for x, y in placed[key] if abs(np.log(x / p[key])) < 0.15 and abs(y - p["acc"]) < 0.6)
+            placed[key].append((p[key], p["acc"]))
+            ax.annotate(p["arm"], (p[key], p["acc"]), xytext=(5, 3 - 10 * near), textcoords="offset points",
+                        fontsize=7, color=INK2)
+    axes[0].set_xscale("log")
     axes[0].set_xlabel("persistent automaton state (MB, int32 as stored)", fontsize=8, color=INK2)
     axes[1].set_xlabel("batch-1 latency, raw image to digit (ms, GPU)", fontsize=8, color=INK2)
     axes[0].set_ylabel("test accuracy (%), mean +/- SD over 5 seeds", fontsize=8, color=INK2)

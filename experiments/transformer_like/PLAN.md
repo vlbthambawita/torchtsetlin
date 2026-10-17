@@ -1,6 +1,7 @@
 # TM query-key attention on MNIST — experiment plan
 
-Status: **planned, not started.** Written 2026-10-16 against `torchtsetlin` 0.3.1, revision
+Status: **All phases done (2026-10-17).** Report: [report/REPORT.md](report/REPORT.md); deviations D1–D24 in
+[DECISIONS.md](DECISIONS.md). Written 2026-10-16 against `torchtsetlin` 0.3.1, revision
 `40f17e6` (`git diff --stat src/` empty). Specification under test:
 [tm-query-key-attention-mnist-implementation-plan.md](tm-query-key-attention-mnist-implementation-plan.md)
 (called *the spec* below; `§n` refers to its sections). The spec is frozen; this plan says how it is

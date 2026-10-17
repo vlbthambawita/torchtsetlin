@@ -85,3 +85,31 @@ Library revision at start: `40f17e68fbbf594851effe7bb93c885cdc51f363` (`torchtse
   run on the 5 final seeds (stage `secondary_s3`), reusing each seed's encoders. B0, B1 and B1-s7
   are shared with the primary (their grids already contained 0.25). Reported in its own section
   with the same decision rules; never merged with the primary verdicts.
+- **G6 passed (2026-10-16 21:0x).** `results/frozen_experiment.json` written and committed
+  (`5322fb0`, branch `transformer-like-qk-attention`) with an empty `test_access_log.jsonl`.
+  Primary N0: M=1000, s=3, T=M/2, temperature 0.5 (val 0.8573). B0-M M=4382, A2-M M=1964.
+  S3 N0: M=250, s=3, T/M=0.25, temperature 0.5 (val 0.9163); S3 B0-M M=1106, A2-M M=490.
+
+## 2026-10-17 — during the secondary runs
+
+- **G7 (primary part) passed 2026-10-16 23:53:** all 55 final jobs (5 encoder pairs + 50 trials)
+  completed with rc=0; each test pass logged.
+- **D23 S1 controls (plan addition, decided from S1 *validation* logs only, before any S1 test
+  record existed).** S1 weighted runs reach validation accuracy far above the unweighted primary
+  (B1 ≈ 0.988, N0 ≈ 0.965 after ~20 epochs). An N0-vs-B0 difference under weighting could not be
+  attributed to attention without the controls, so S1 adds weighted **A1, A2 and B0-M** at the
+  primary selected settings on the same seeds 23, 41, 59 (stage `secondary_s1`). Reported in the
+  S1 section only.
+- **D24 Post-hoc S1 interventions.** The three weighted N0 runs started before D23 enabled
+  interventions for S1, so `code/add_interventions.py` computed them from the saved checkpoints
+  (no retraining; the reloaded model reproduces the recorded test accuracy exactly, asserted).
+  Records carry `interventions_added_posthoc: true`; the test access is logged.
+- **S2 result (`results/secondary_s2/`).** B0 at its selected config on the 5k subset, 10 epochs:
+  batch-32 feedback 0.9096 vs sequential 0.9099 validation accuracy. D2's batch-32 choice does
+  not measurably change what the flat TM learns here.
+- **G7 passed (2026-10-17 ~04:50).** All planned records exist with `status = completed`: 50 final
+  (arm, seed), 35 S3, 18 S1 (9 + 9 by D23), 2 S2; 60 timing records (50 GPU + 10 CPU for seed 23),
+  run serially on the RTX 3090 after all training. No failed or incomplete run.
+- **G8 passed.** `report/REPORT.md` and figures regenerate from records with
+  `python -m experiments.transformer_like.code.cli report`; spec §21 checklist in the report.
+  65 tests pass; `git diff --stat HEAD -- src/` empty.

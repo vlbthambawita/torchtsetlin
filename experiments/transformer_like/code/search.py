@@ -295,10 +295,10 @@ def final_specs(fr: Dict) -> List[Dict]:
 def s1_specs(fr: Dict) -> List[Dict]:
     specs = []
     for seed in fr["s1_seeds"]:
-        for arm in ("B0", "B1", "N0"):
+        for arm in ("B0", "B1", "N0", "A1", "A2", "B0M"):  # A1/A2/B0M added by D23
             c = fr["configs"][arm]
             specs.append(trial_spec("secondary_s1", arm, seed, {**c["head"], "weighted": True}, c["temperature"],
-                                    test=True))
+                                    test=True, interventions=(arm == "N0")))
     return specs
 
 
