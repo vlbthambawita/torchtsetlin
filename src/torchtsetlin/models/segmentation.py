@@ -49,7 +49,9 @@ class _DenseMixin:
     The learning loop differs from the flat one in a single respect: the number of examples
     per image is ``P = Py * Px``, which is large, and committing the feedback of all of them
     at once degrades fidelity to the classical algorithm the same way a very large mini-batch
-    does. ``patches_per_commit`` bounds how many patches share one commit.
+    does. ``patches_per_commit`` bounds how many patches share one commit, and
+    ``pixel_order="shuffle"`` draws each commit's pixels at random from the whole image chunk
+    instead of in raster order, so one commit mixes pixels of different images.
     """
 
     patch_size: Tuple[int, int]
@@ -59,6 +61,7 @@ class _DenseMixin:
     padding: Tuple[int, int]
     input_shape: Optional[Tuple[int, int, int]]
     patches_per_commit: Optional[int]
+    pixel_order: str
     ignore_index: Optional[int]
     is_segmentation: bool = True
 
@@ -71,6 +74,7 @@ class _DenseMixin:
         input_shape: Optional[Tuple[int, int, int]],
         patches_per_commit: Optional[int],
         ignore_index: Optional[int],
+        pixel_order: str = "raster",
     ) -> None:
         self.patch_size = _pair(patch_size)
         self.stride = _pair(stride)
@@ -93,6 +97,9 @@ class _DenseMixin:
         if patches_per_commit is not None and int(patches_per_commit) < 1:
             raise ValueError("patches_per_commit must be >= 1 or None")
         self.patches_per_commit = None if patches_per_commit is None else int(patches_per_commit)
+        if pixel_order not in ("raster", "shuffle"):
+            raise ValueError("pixel_order must be 'raster' or 'shuffle'")
+        self.pixel_order = pixel_order
         self.ignore_index = None if ignore_index is None else int(ignore_index)
         if min(self.patch_size) < 1 or min(self.stride) < 1 or min(self.padding) < 0:
             raise ValueError("patch_size and stride must be positive, padding non-negative")
@@ -157,12 +164,29 @@ class _DenseMixin:
     def _chunk_elements_per_example(self, xb: Tensor) -> int:  # type: ignore[override]
         # Per image: the (P, 2F) literals and their complement, plus roughly eight (P, C)
         # intermediates (clause outputs, the feedback-probability draw, the Type I/II masks
-        # and the three float selection tensors of _accumulate_literals). With
-        # patches_per_commit set only the literals stay resident for the whole chunk, so this
-        # is a conservative bound — measured, the slack costs no throughput (a 128px batch
-        # runs within 1% of the relaxed budget) and it keeps the None case safe too.
+        # and the three float selection tensors of _accumulate_literals). This is the bound
+        # for forward() and for update() with patches_per_commit=None; a committed update
+        # budgets with _update_chunk_size instead.
         P = self._patches_per_example(xb)
         return P * (8 * self.n_clauses_total + 2 * self.n_literals)  # type: ignore[attr-defined]
+
+    def _update_chunk_size(self, xb: Tensor, per_commit: Optional[int]) -> int:
+        """Images per ``update`` chunk.
+
+        With ``per_commit`` set only the ``(P, 2F)`` literals (and their complement) stay
+        resident for the whole chunk; the ``(q, C)`` intermediates exist for one commit at a
+        time. Budgeting those per image (as :meth:`_chunk_elements_per_example` must for
+        ``forward``) held 128 px images with a few hundred clauses to one image per chunk, so
+        no commit could ever mix images (segmentation LIBRARY_GAPS LG-001).
+        """
+        if per_commit is None:
+            return self._chunk_size(xb)  # type: ignore[attr-defined]
+        P = self._patches_per_example(xb)
+        L = self.n_literals  # type: ignore[attr-defined]
+        per_image = max(1, P * 2 * L)
+        per_window = min(per_commit, P * xb.shape[0]) * (8 * self.n_clauses_total + 2 * L)  # type: ignore[attr-defined]
+        budget = self.max_chunk_elements - per_window  # type: ignore[attr-defined]
+        return max(1, min(xb.shape[0], budget // per_image))
 
     # ---- encoding -----------------------------------------------------------------
     def _position_bits_table(self, Py: int, Px: int, device: torch.device) -> Tensor:
@@ -254,7 +278,8 @@ class _DenseMixin:
         """One learning step on a batch of images.
 
         Images are chunked so the encoded literals respect ``max_chunk_elements``, and within
-        a chunk the feedback is committed every ``patches_per_commit`` patches.
+        a chunk the feedback is committed every ``patches_per_commit`` patches — in raster
+        order, or in a random order over the whole chunk with ``pixel_order="shuffle"``.
         ``feedback_mode="sequential"`` (or ``sequential=True``) is equivalent to
         ``patches_per_commit=1``: the exact classical algorithm, one pixel at a time.
 
@@ -274,16 +299,24 @@ class _DenseMixin:
                 else bool(sequential)
             )
             per_commit = 1 if seq else self.patches_per_commit
+            shuffle = self.pixel_order == "shuffle"
             votes_all = []
-            for sl in chunk_indices(B, self._chunk_size(xb)):  # type: ignore[attr-defined]
+            for sl in chunk_indices(B, self._update_chunk_size(xb, per_commit)):
                 literals = self._encode(xb[sl])
                 yy = y_t[sl].reshape(-1, *y_t.shape[2:])
                 n = literals.shape[0]
                 step = n if per_commit is None else min(n, per_commit)
+                order = torch.randperm(n, device=literals.device) if shuffle else None
+                chunk_votes = []
                 for ps in chunk_indices(n, step):
+                    idx = ps if order is None else order[ps]
                     acc = self._new_accumulator()  # type: ignore[attr-defined]
-                    votes_all.append(self._accumulate_literals(literals[ps], yy[ps], acc))  # type: ignore[attr-defined]
+                    chunk_votes.append(self._accumulate_literals(literals[idx], yy[idx], acc))  # type: ignore[attr-defined]
                     self._commit(acc)  # type: ignore[attr-defined]
+                votes = torch.cat(chunk_votes, dim=0)
+                if order is not None:  # back to row-major (image, patch) order
+                    votes = torch.empty_like(votes).index_copy_(0, order, votes)
+                votes_all.append(votes)
             return torch.cat(votes_all, dim=0)
 
     # ---- dense inference ----------------------------------------------------------
@@ -406,6 +439,8 @@ class _DenseMixin:
         ]
         if self.patches_per_commit is not None:
             parts.append(f"patches_per_commit={self.patches_per_commit}")
+        if self.pixel_order != "raster":
+            parts.append(f"pixel_order={self.pixel_order!r}")
         if self.ignore_index is not None:
             parts.append(f"ignore_index={self.ignore_index}")
         return ", ".join(parts)
@@ -434,6 +469,11 @@ class SegmentationTsetlinMachine(_DenseMixin, TsetlinMachine):
         patches_per_commit: commit accumulated feedback every this many pixels
             (default ``128``). ``None`` commits once per image chunk — faster, and less
             faithful to the classical algorithm the larger the images are.
+        pixel_order: ``"raster"`` (default) commits pixels in image-major raster order;
+            ``"shuffle"`` permutes all pixels of an image chunk first, so each commit mixes
+            pixels from different images and positions. With large commits this is markedly
+            better than raster order (segmentation experiments, H1); the chunk holds as many
+            images as ``max_chunk_elements`` allows for the encoded literals.
         ignore_index: label value that contributes no feedback and is excluded from metrics
             (the "void" class of CamVid / Cityscapes / Pascal VOC).
         class_feedback_p: optional ``(n_classes,)`` probability that a pixel of each class
@@ -470,11 +510,13 @@ class SegmentationTsetlinMachine(_DenseMixin, TsetlinMachine):
         input_shape: Optional[Tuple[int, int, int]] = None,
         patches_per_commit: Optional[int] = 128,
         ignore_index: Optional[int] = None,
+        pixel_order: str = "raster",
         class_feedback_p: Optional[Tensor] = None,
         **kwargs,
     ) -> None:
         self._init_dense(
-            patch_size, stride, padding, position_encoding, input_shape, patches_per_commit, ignore_index
+            patch_size, stride, padding, position_encoding, input_shape, patches_per_commit,
+            ignore_index, pixel_order,
         )
         n_features = self.dense_features(self.input_shape) if self.input_shape else None
         super().__init__(n_features, n_classes, n_clauses, T, s, **kwargs)
@@ -559,10 +601,12 @@ class CoalescedSegmentationTsetlinMachine(_DenseMixin, CoalescedTsetlinMachine):
         input_shape: Optional[Tuple[int, int, int]] = None,
         patches_per_commit: Optional[int] = 128,
         ignore_index: Optional[int] = None,
+        pixel_order: str = "raster",
         **kwargs,
     ) -> None:
         self._init_dense(
-            patch_size, stride, padding, position_encoding, input_shape, patches_per_commit, ignore_index
+            patch_size, stride, padding, position_encoding, input_shape, patches_per_commit,
+            ignore_index, pixel_order,
         )
         n_features = self.dense_features(self.input_shape) if self.input_shape else None
         super().__init__(n_features, n_outputs, n_clauses, T, s, **kwargs)

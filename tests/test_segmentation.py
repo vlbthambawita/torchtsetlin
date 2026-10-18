@@ -230,6 +230,53 @@ def test_patches_per_commit_changes_commit_count(device):
     assert calls["n"] == 2 * 64 // 16
 
 
+def test_committed_update_chunks_several_large_images():
+    """LG-001: the (q, C) commit intermediates must not be budgeted per image.
+
+    At 128 px with 600 clauses the forward bound holds one image per chunk; a committed
+    update only keeps the literals of the chunk resident, so the whole batch fits.
+    """
+    m = tt.SegmentationTsetlinMachine(2, 300, T=100, patch_size=3, input_shape=(1, 128, 128))
+    xb = torch.zeros(8, 1, 128, 128, dtype=torch.bool)
+    assert m._chunk_size(xb) == 1  # forward() still needs P*C per image
+    assert m._update_chunk_size(xb, 128) == 8
+    assert m._update_chunk_size(xb, None) == 1  # one commit per chunk: P*C is resident
+    m.max_chunk_elements = 2**20  # tiny budget: never below one image
+    assert m._update_chunk_size(xb, 128) == 1
+
+
+def test_shuffled_pixel_order_mixes_images_in_commits(device):
+    """pixel_order="shuffle" draws commits from the whole chunk, not one image at a time."""
+    m = tt.SegmentationTsetlinMachine(
+        4, 10, T=10, s=3.0, patch_size=3, patches_per_commit=16, input_shape=(1, 8, 8),
+        pixel_order="shuffle",
+    ).to(device)
+    seen = []
+    real = m._accumulate_literals
+    m._accumulate_literals = lambda lit, y, acc: (seen.append(y.clone()), real(lit, y, acc))[1]
+    x = torch.randint(0, 2, (4, 1, 8, 8), device=device).bool()
+    y = torch.arange(4, device=device).view(4, 1, 1).expand(4, 8, 8)  # label = image index
+    m.update(x, y)
+    assert len(seen) == 4 * 64 // 16
+    assert torch.equal(torch.cat(seen).sort().values, y.reshape(-1).sort().values)
+    assert any(len(w.unique()) > 1 for w in seen)
+    assert "pixel_order='shuffle'" in repr(m)
+
+
+def test_shuffled_update_returns_row_major_votes(device):
+    """Votes come back in (image, patch) order whatever order the pixels were fed in."""
+    kw = dict(patch_size=3, input_shape=(1, 6, 6), patches_per_commit=None)
+    m = tt.SegmentationTsetlinMachine(3, 20, T=10, s=3.0, pixel_order="shuffle", **kw).to(device)
+    x = torch.randint(0, 2, (3, 1, 6, 6), device=device).bool()
+    y = torch.randint(0, 3, (3, 6, 6), device=device)
+    m.update(x, y)  # move away from the all-empty initial state
+    m.train()
+    expected = m(x)
+    assert torch.equal(m.update(x, y), expected)  # one commit: votes all precede feedback
+    with pytest.raises(ValueError, match="pixel_order"):
+        tt.SegmentationTsetlinMachine(3, 20, T=10, pixel_order="random")
+
+
 def test_sequential_mode_commits_per_pixel(device):
     calls = {"n": 0}
     m = tt.SegmentationTsetlinMachine(
