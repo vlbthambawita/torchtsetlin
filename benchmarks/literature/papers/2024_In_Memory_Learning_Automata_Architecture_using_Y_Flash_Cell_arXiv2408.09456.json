@@ -1,0 +1,25 @@
+{
+  "paper_id": "2024_In_Memory_Learning_Automata_Architecture_using_Y_Flash_Cell_arXiv2408.09456",
+  "pdf": "source_documents/papers/05_hardware_vision_accelerators/2024_In_Memory_Learning_Automata_Architecture_using_Y_Flash_Cell_arXiv2408.09456.pdf",
+  "title": "In-Memory Learning Automata Architecture using Y-Flash Cell",
+  "authors": ["Omar Ghazal", "Tian Lan", "Shalman Ojukwu", "Komal Krishnamurthy", "Alex Yakovlev", "Rishad Shafik"],
+  "year": 2024,
+  "venue": "IEEE conference 2024 (arXiv preprint; IEEE ISBN 979-8-3315-0498-4/24)",
+  "arxiv_id": "2408.09456",
+  "doi": null,
+  "code_url": null,
+  "category": "hardware",
+  "tm_variants_tested": ["Vanilla TM"],
+  "new_feature": "Maps the full multi-state Tsetlin Automaton (not just its final action) onto the analog conductance of a single Y-Flash floating-gate memristor (180 nm CMOS), with 40 measured states (up to ~1000 with 10 us pulses), and uses an accumulating divergence counter (+-15 threshold) so the cell is only blind-written when accumulated TA state changes cross the threshold, enabling in-memory on-edge TM learning.",
+  "feature_type": "hardware",
+  "datasets": [
+    {"dataset_id": "xor", "name_in_paper": "XOR problem dataset", "task": "classification", "data_type": "synthetic-boolean", "n_classes": 2, "input_shape_or_features": null, "train_size": 5000, "val_size": null, "test_size": null, "split_as_reported": "training on 5000 data points; no test evaluation reported", "booleanization": "already Boolean", "download_url": null, "download_url_source": null, "notes": "Used only to demonstrate mapping of TA state trajectories (8 TAs shown) onto Y-Flash writes; whether it is the noisy XOR variant is not stated. TA has 2N = 300 states, decision boundary at 150."}
+  ],
+  "results": [
+    {"dataset_id": "xor", "model": "TA-on-Y-Flash mapping with divergence counter", "is_tm": true, "is_proposed": true, "metric": "write pulses to track TA trajectories", "value": 19, "unit": "pulses", "std_or_range": null, "split": "train", "config": "8 TAs shown, 5000 training points, DC threshold +-15, pulse width 0.5 ms, 2N=300 TA states", "source_location": "Sec. II-B / Fig. 5", "notes": "4 of 8 TAs reached include; max included TA conductance 2.33 uS, min excluded 23.2 nS."},
+    {"dataset_id": null, "model": "Y-Flash cell (180 nm CMOS)", "is_tm": false, "is_proposed": true, "metric": "read energy per pulse", "value": 9.14e-06, "unit": "nJ", "std_or_range": null, "split": null, "config": "read at 2 V, 5 ns pulse, 40 states; average power 1.83 uW", "source_location": "Table II", "notes": "Device-level metric, not dataset-specific."},
+    {"dataset_id": null, "model": "Y-Flash cell (180 nm CMOS)", "is_tm": false, "is_proposed": true, "metric": "program energy per pulse", "value": 139, "unit": "nJ", "std_or_range": null, "split": null, "config": "program at 5 V, 200 us pulse, 40 states; average power 695 uW", "source_location": "Table II", "notes": "Device-level metric."},
+    {"dataset_id": null, "model": "Y-Flash cell (180 nm CMOS)", "is_tm": false, "is_proposed": true, "metric": "erase energy per pulse", "value": 0.0016, "unit": "nJ", "std_or_range": null, "split": null, "config": "erase at 8 V, 200 us pulse, 32 states; average power 8e-3 uW", "source_location": "Table II", "notes": "Device-level metric."}
+  ],
+  "extraction_notes": "No classification accuracy, latency or throughput is reported; the paper is a device/mapping study. Device variability (C2C over 250 cycles: LCS 0.8-0.9 nS, HCS 1-1.08 uS; D2D over 100 devices: LCS mean 0.92 nS sd 0.047 nS, HCS mean 1.04 uS sd 0.027 uS; max program/erase time 8.6/11.2 ms) is summarised here rather than as results. Device-level energy results have dataset_id null. Table II confirmed from the PDF page render."
+}

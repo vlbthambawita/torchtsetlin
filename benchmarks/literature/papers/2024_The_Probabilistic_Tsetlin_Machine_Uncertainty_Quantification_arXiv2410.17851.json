@@ -1,0 +1,131 @@
+{
+  "paper_id": "2024_The_Probabilistic_Tsetlin_Machine_Uncertainty_Quantification_arXiv2410.17851",
+  "pdf": "source_documents/papers/01_foundations/2024_The_Probabilistic_Tsetlin_Machine_Uncertainty_Quantification_arXiv2410.17851.pdf",
+  "title": "The Probabilistic Tsetlin Machine: A Novel Approach to Uncertainty Quantification",
+  "authors": [
+    "K. Darshana Abeyrathna",
+    "Sara El Mekkaoui",
+    "Andreas Hafver",
+    "Christian Agrell"
+  ],
+  "year": 2024,
+  "venue": "8th International Conference on Advances in Artificial Intelligence 2024, ACM (author version on arXiv)",
+  "arxiv_id": "2410.17851",
+  "doi": "10.1145/3704137.3704143",
+  "code_url": null,
+  "category": "foundations",
+  "tm_variants_tested": [
+    "Probabilistic TM"
+  ],
+  "new_feature": "Probabilistic Tsetlin Machine (PTM): instead of a single TA state, each TA keeps a probability vector over its states, updated via transition-probability matrices derived from Type I/II feedback; at inference states are sampled (BNN-like) to give predictive mean, entropy and mutual information for uncertainty quantification.",
+  "feature_type": "uncertainty",
+  "datasets": [
+    {
+      "dataset_id": "noisy-xor",
+      "name_in_paper": "noisy-XOR (adapted)",
+      "task": "classification (illustration of steady-state probabilities)",
+      "data_type": "synthetic-boolean",
+      "n_classes": 2,
+      "input_shape_or_features": "2 Boolean features (redundant features removed)",
+      "train_size": null,
+      "val_size": null,
+      "test_size": null,
+      "split_as_reported": "not stated",
+      "booleanization": "already Boolean",
+      "download_url": null,
+      "download_url_source": null,
+      "notes": "variant of Granmo (2018) Noisy XOR with redundant features eliminated and 30% random inversion of outputs; PTM with 4 clauses; only qualitative SSP plots (Figs 1-2)"
+    },
+    {
+      "dataset_id": "synthetic-2d-binary",
+      "name_in_paper": "synthetic binary classification dataset",
+      "task": "binary classification / uncertainty quantification",
+      "data_type": "synthetic (tabular, 2 continuous features)",
+      "n_classes": 2,
+      "input_shape_or_features": "2 features (X1, X2)",
+      "train_size": 1000,
+      "val_size": null,
+      "test_size": 2000,
+      "split_as_reported": "1000 labeled training examples; 2000 unlabeled test points spread over a larger range than training data",
+      "booleanization": "not stated",
+      "download_url": null,
+      "download_url_source": null,
+      "notes": "generator not specified; only qualitative results (Fig. 3 predictive mean/entropy/std surfaces, 100 prediction samples)"
+    },
+    {
+      "dataset_id": "iris",
+      "name_in_paper": "Iris",
+      "task": "multiclass classification / uncertainty quantification",
+      "data_type": "tabular",
+      "n_classes": 3,
+      "input_shape_or_features": "4 features",
+      "train_size": null,
+      "val_size": null,
+      "test_size": null,
+      "split_as_reported": "80% train / 20% test",
+      "booleanization": "not stated",
+      "download_url": "https://archive.ics.uci.edu/dataset/53/iris",
+      "download_url_source": "well_known",
+      "notes": "Fig. 5 shows predictive entropy and mutual information histograms (qualitative)"
+    }
+  ],
+  "results": [
+    {
+      "dataset_id": "iris",
+      "model": "PTM (proposed)",
+      "is_tm": true,
+      "is_proposed": true,
+      "metric": "ECE",
+      "value": 0.0099,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": null,
+      "source_location": "Table 6",
+      "notes": "expected calibration error, lower is better; 20% test split"
+    },
+    {
+      "dataset_id": "iris",
+      "model": "Gaussian Process (GP)",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "ECE",
+      "value": 0.0063,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": null,
+      "source_location": "Table 6",
+      "notes": "expected calibration error, lower is better; 20% test split"
+    },
+    {
+      "dataset_id": "iris",
+      "model": "MLP with Monte Carlo dropout (MLP-MCd)",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "ECE",
+      "value": 0.01,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": null,
+      "source_location": "Table 6",
+      "notes": "expected calibration error, lower is better; 20% test split"
+    },
+    {
+      "dataset_id": "iris",
+      "model": "Random Forest (RF)",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "ECE",
+      "value": 0.0074,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": null,
+      "source_location": "Table 6",
+      "notes": "expected calibration error, lower is better; 20% test split"
+    }
+  ],
+  "extraction_notes": "Only one quantitative table (Table 6, ECE on Iris). Noisy-XOR and synthetic 2D results are qualitative figures only; no accuracy numbers reported. PTM hyper-parameters (clauses, T, s, states) not stated except m=4 clauses and 8 states (figure axes) for noisy-XOR. Iris dataset sizes not stated (150 samples well known)."
+}
