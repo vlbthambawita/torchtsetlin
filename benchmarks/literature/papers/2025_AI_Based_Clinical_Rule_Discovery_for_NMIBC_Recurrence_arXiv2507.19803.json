@@ -1,0 +1,142 @@
+{
+  "paper_id": "2025_AI_Based_Clinical_Rule_Discovery_for_NMIBC_Recurrence_arXiv2507.19803",
+  "pdf": "source_documents/papers/04_medical_clinical/2025_AI_Based_Clinical_Rule_Discovery_for_NMIBC_Recurrence_arXiv2507.19803.pdf",
+  "title": "AI-Based Clinical Rule Discovery for NMIBC Recurrence through Tsetlin Machines",
+  "authors": [
+    "Saram Abbas",
+    "Naeem Soomro",
+    "Rishad Shafik",
+    "Rakesh Heer",
+    "Kabita Adhikari"
+  ],
+  "year": 2025,
+  "venue": "arXiv preprint",
+  "arxiv_id": "2507.19803",
+  "doi": null,
+  "code_url": null,
+  "category": "medical_clinical",
+  "tm_variants_tested": [
+    "Vanilla TM"
+  ],
+  "new_feature": "Applies a vanilla TM to predict 3-year recurrence of non-muscle-invasive bladder cancer from tabular clinical data (PHOTO trial), with per-patient clause-activation heatmaps and clause-importance ranking for clinical rule discovery.",
+  "feature_type": "application",
+  "datasets": [
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "name_in_paper": "PHOTO trial dataset",
+      "task": "classification",
+      "data_type": "tabular",
+      "n_classes": 2,
+      "input_shape_or_features": "clinical features (tumour count, hospital stay, EQ-5D score, smoking status, surgeon grade, ...); exact count not stated",
+      "train_size": null,
+      "val_size": null,
+      "test_size": null,
+      "split_as_reported": "80:20 stratified train:test split of 330 patients (40% recurrence) (~264/66, not stated)",
+      "booleanization": "continuous features discretised at clinically meaningful cut-offs and thermometer-encoded; categoricals one-hot; Optuna tuned n_bins",
+      "download_url": null,
+      "download_url_source": null,
+      "notes": "Private clinical trial data (PHOTO trial, 22 UK NHS centres; 539 patients, 330 after exclusions); not public. Endpoint: recurrence within 3 years of TURBT."
+    }
+  ],
+  "results": [
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "Tsetlin Machine (PyTsetlinMachine)",
+      "is_tm": true,
+      "is_proposed": true,
+      "metric": "macro-precision",
+      "value": 0.83,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "80 clauses, T=38, s=4.0, 100 epochs (Optuna-tuned, 50 TPE trials)",
+      "source_location": "Sec. III-B text / Fig. 2",
+      "notes": "score on 0-1 scale"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "Tsetlin Machine (PyTsetlinMachine)",
+      "is_tm": true,
+      "is_proposed": true,
+      "metric": "macro-recall",
+      "value": 0.78,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "80 clauses, T=38, s=4.0, 100 epochs (Optuna-tuned, 50 TPE trials)",
+      "source_location": "Sec. III-B text / Fig. 2",
+      "notes": "score on 0-1 scale"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "Tsetlin Machine (PyTsetlinMachine)",
+      "is_tm": true,
+      "is_proposed": true,
+      "metric": "macro-F1",
+      "value": 0.8,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "80 clauses, T=38, s=4.0, 100 epochs (Optuna-tuned, 50 TPE trials)",
+      "source_location": "Sec. III-B text / Abstract",
+      "notes": "score on 0-1 scale"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "Tsetlin Machine (PyTsetlinMachine)",
+      "is_tm": true,
+      "is_proposed": true,
+      "metric": "accuracy",
+      "value": 80,
+      "unit": "%",
+      "std_or_range": null,
+      "split": "test",
+      "config": "80 clauses, T=38, s=4.0, 100 epochs (Optuna-tuned, 50 TPE trials)",
+      "source_location": "Fig. 3 / Sec. III-C text",
+      "notes": "approximate ('~80%' test accuracy stabilises); train ~98%"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "XGBoost",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "macro-F1",
+      "value": 0.78,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "n_estimators=50, max_depth=5, lr=0.1",
+      "source_location": "Abstract / Sec. IV",
+      "notes": "score on 0-1 scale"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "Logistic Regression (L2, class-weighted)",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "macro-F1",
+      "value": 0.6,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "L2, class weights",
+      "source_location": "Abstract / Sec. IV",
+      "notes": "score on 0-1 scale"
+    },
+    {
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "model": "EORTC risk tables",
+      "is_tm": false,
+      "is_proposed": false,
+      "metric": "macro-F1",
+      "value": 0.42,
+      "unit": null,
+      "std_or_range": null,
+      "split": "test",
+      "config": "published scoring logic",
+      "source_location": "Abstract / Sec. IV",
+      "notes": "score on 0-1 scale"
+    }
+  ],
+  "extraction_notes": "Numbers taken from the text; Fig. 2 bars visually disagree slightly with text (e.g. TM F1 bar ~0.77, EORTC F1 ~0.46). Fig. 2 caption says 'average across cross-validated folds' while methods describe a single 80:20 held-out split - split recorded as test. Precision/recall for baselines only shown as unlabelled bars, not extracted. Train/test sizes not stated (80:20 of 330 would be ~264/66)."
+}

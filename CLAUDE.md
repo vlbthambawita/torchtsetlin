@@ -138,6 +138,13 @@ MkDocs Material theme), `benchmarks/results/tables.md`, and regenerates `docs/cp
 whole — prose, figures and tables are derived from the records, so **do not hand-edit that page**.
 Figures skip suites that are missing from the results, so partial runs plot fine.
 
+`benchmarks/literature/` is the literature catalog: `papers/*.json` (one hand-checked record per
+paper in `source_documents/papers/`) is the source of truth, and `build_catalog.py` regenerates
+`datasets.json`, `results.csv`, `README.md` and the data behind the interactive
+`docs/literature.md` page (`docs/assets/literature/*.json`, read by `docs/javascripts/literature.js`).
+Edit the records and re-run the script; never hand-edit the generated files. The "best value"
+direction per metric comes from `_DIRECTION` in that script.
+
 Progress output: the driver exports `PYTHONUNBUFFERED=1` because it tees stdout into a log —
 without it Python block-buffers the pipe and a suite looks frozen for minutes. `bench_device.py`
 reports `[k/n] <config> (elapsed, eta)` per measured configuration through the module-level
