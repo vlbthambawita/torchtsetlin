@@ -2,8 +2,8 @@
 
 The cells follow ``whitepaper/sections/00-titlepage.tex`` exactly:
 ``v = mod(r*7 + c*5 + int(r*c/2), 9)``; ``v > 5.5`` is a solid cell, ``v > 3`` a 40%-opacity
-cell, anything else a 28%-opacity outline. The icon is its top-left 4x4 corner. Colours are the
-white paper's ``ttorange`` (#E8590C) from ``ttwhitepaper.sty``.
+cell, anything else a 28%-opacity outline. The icon is its top-left 4x4 corner. The favicon ground is the docs'
+primary terracotta (#A85D3E, docs/stylesheets/theme.css), a toned-down white-paper orange.
 
 Run:  python scripts/make_logo.py   (writes docs/assets/logo.svg and docs/assets/favicon.svg)
 """
@@ -11,7 +11,7 @@ Run:  python scripts/make_logo.py   (writes docs/assets/logo.svg and docs/assets
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "assets"
-ORANGE = "#E8590C"
+ORANGE = "#A85D3E"
 N = 4
 CELL, GAP, RX = 8.0, 2.0, 1.4
 
