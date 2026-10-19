@@ -4,8 +4,6 @@ Inputs:  benchmarks/literature/papers/*.json  (one record per paper, schema in R
 Outputs: benchmarks/literature/datasets.json  (one entry per dataset, with every paper that used it)
          benchmarks/literature/results.csv    (one row per reported number)
          benchmarks/literature/README.md      (generated; do not hand-edit)
-         docs/assets/literature/{results,datasets}.json  (data for the interactive docs page,
-                                                          docs/literature.md)
          benchmarks/literature/space/literature.db  (SQLite, served by the Hugging Face Space app
                                                      in space/app.py)
 
@@ -21,7 +19,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PAPERS = HERE / "papers"
-DOCS_DATA = HERE.parents[1] / "docs" / "assets" / "literature"
 
 # Spelling variants produced during extraction -> canonical slug.
 ALIASES = {
@@ -253,60 +250,6 @@ def paper_url(p):
     return None
 
 
-def write_docs_data(papers, catalog):
-    """Compact row-per-result and row-per-dataset JSON for the interactive docs tables."""
-    datasets = {e["dataset_id"]: e for e in catalog}
-    rows = []
-    for p in papers:
-        for r in p.get("results", []):
-            ds = datasets.get(r["dataset_id"]) or {}
-            rows.append({
-                "id": len(rows),
-                "dataset": r["dataset_id"] or "(no dataset)",
-                "data_type": ds.get("data_type"),
-                "metric": r.get("metric"),
-                "value": r.get("value"),
-                "unit": r.get("unit") or "",
-                "std": r.get("std_or_range"),
-                "split": r.get("split") or "",
-                "better": metric_direction(r.get("metric")),
-                "model": r.get("model"),
-                "is_tm": bool(r.get("is_tm")),
-                "is_proposed": bool(r.get("is_proposed")),
-                "config": r.get("config"),
-                "source": r.get("source_location"),
-                "notes": r.get("notes"),
-                "paper": p.get("title"),
-                "paper_id": p["paper_id"],
-                "paper_url": paper_url(p),
-                "year": p.get("year"),
-                "category": p.get("category"),
-                "feature_type": p.get("feature_type"),
-                "tm_variants": ", ".join(p.get("tm_variants_tested", [])),
-                "caution": p.get("caution"),
-                "extraction_notes": p.get("extraction_notes"),
-            })
-    ds_rows = []
-    for e in catalog:
-        sizes = sorted({" / ".join(md(u.get(k)) for k in SIZE_KEYS) for u in e["usages"]}
-                       - {"– / – / –"})
-        ds_rows.append({
-            "dataset": e["dataset_id"],
-            "data_type": e.get("data_type"),
-            "tasks": ", ".join(e["tasks"]),
-            "n_classes": e.get("n_classes"),
-            "input": e.get("input_shape_or_features"),
-            "sizes": "; ".join(sizes),
-            "n_papers": e["n_papers"],
-            "tm_variants": ", ".join(e["tm_variants"]),
-            "download_url": e.get("download_url"),
-            "papers": "; ".join(sorted({u["title"] or u["paper_id"] for u in e["usages"]})),
-        })
-    DOCS_DATA.mkdir(parents=True, exist_ok=True)
-    for name, data in (("results.json", rows), ("datasets.json", ds_rows)):
-        (DOCS_DATA / name).write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
-
-
 SCHEMA = """
 CREATE TABLE papers (
     paper_id TEXT PRIMARY KEY, title TEXT, authors TEXT, year INTEGER, venue TEXT,
@@ -388,7 +331,6 @@ def main():
     (HERE / "datasets.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
     write_results(papers, HERE / "results.csv")
     write_readme(papers, catalog, HERE / "README.md")
-    write_docs_data(papers, catalog)
     write_sqlite(papers, catalog, HERE / "space" / "literature.db")
     n = sum(len(p.get("results", [])) for p in papers)
     print(f"{len(papers)} papers, {len(catalog)} datasets, {n} results")
