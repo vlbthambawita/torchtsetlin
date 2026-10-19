@@ -1,0 +1,18 @@
+Title:
+torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines
+
+Authors:
+Vajira Thambawita
+
+Abstract:
+The Tsetlin machine learns propositional rules with teams of Tsetlin automata driven by reward and penalty instead of gradients, which makes its models interpretable by construction and cheap to evaluate. Its software has grown up outside the deep-learning ecosystem, as C and CUDA kernels behind scikit-learn-style wrappers. torchtsetlin expresses the whole family as ordinary torch.nn.Module objects: vanilla, weighted, coalesced, regression, convolutional over sequences, images and volumes, and dense per-pixel segmentation. The learnable state is a tensor of automaton counters. A model therefore moves across devices with .to(device), serialises with state_dict(), and learns from a mini-batch with one model.update(x, y) call. The central technical contribution is a batched formulation of Type I/II feedback in which per-example automaton transitions become event counts realised as binomial draws, so there is one commit per batch. On an RTX 3090 this reaches 2.2x10^5 training examples/s and up to 287x the same code on a 16-core CPU, while matching the sequential algorithm at moderate batch sizes. The package also ships an interactive, SQL-queryable catalog of 3,295 results on 128 datasets from 55 Tsetlin-machine papers.
+
+Comments:
+5 pages, 4 figures, 1 table. Software: https://github.com/vlbthambawita/torchtsetlin (version 0.3.2, MIT licence). Documentation: https://vajira.info/torchtsetlin/
+
+Suggested categories:
+Primary: cs.LG (Machine Learning)
+Cross-list: cs.MS (Mathematical Software), cs.AI (Artificial Intelligence)
+
+Source:
+torchtsetlin-arxiv.zip (rebuild with `make arxiv`); top-level file main.tex, compiler pdfLaTeX.
