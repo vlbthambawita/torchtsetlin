@@ -1,0 +1,84 @@
+\section{An interactive review of the literature}
+\label{sec:literature}
+
+Choosing hyper-parameters, datasets and baselines for a Tsetlin machine experiment means
+reading the literature for numbers it rarely tabulates in one place. The package therefore
+ships a catalog of every dataset and every reported number from \litNpapers\ Tsetlin-machine
+papers published between \litYearMin\ and \litYearMax. The papers span the foundational
+variants, image classification, segmentation, medical and clinical applications, hardware
+accelerators, generative and sequence models, and privacy-preserving learning. The catalog
+covers both the methods each paper proposed and the baselines it compared against.
+
+\begin{center}
+\small\sffamily\sloppy
+\captionof{table}{What the literature catalog records.}
+\label{tab:literature}
+\begin{tabularx}{\linewidth}{@{}L{2.5cm}R{1.4cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Table} & \thead{Rows} & \thead{One row per\ldots}\\
+\ttmidrule
+\code{papers} & \litNpapers & paper: venue, arXiv/DOI, code, the Tsetlin-machine variants tested,
+  the feature it introduces, and a caution flag where a reported number has a specific
+  reliability problem (\litNflagged\ papers)\\
+\code{datasets} & \litNdatasets & dataset: data type, task, classes, input shape, download link
+  (\litNdownload\ public, each one checked) and the variants that used it\\
+\code{dataset\_usages} & \litNusages & (paper, dataset) pair: the train\slash val\slash test sizes, the
+  split exactly as reported, and how the inputs were Booleanized\\
+\code{results} & \litNresults & reported number: model, metric (\litNmetrics\ distinct), value,
+  unit, split, configuration, and the table or figure it came from; \litNtm\ for
+  Tsetlin-machine models, \litNbaseline\ for baselines\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\subsection{How it was built}
+
+Each paper has one JSON record in \code{benchmarks/literature/papers/}, and those records are
+the source of truth. Numbers were transcribed from the paper's tables and text. Where an
+extracted table was garbled, they were checked against the rendered PDF page. Values that
+appear only in plots were left out rather than estimated. Dataset names are unified to one
+identifier (\code{kmnist} and \code{kuzushiji-mnist} are the same dataset), and a field a paper
+does not state stays empty. \code{build\_catalog.py} turns the records into the SQLite file
+\code{docs/assets/literature/literature.db} (\litDbKiB~KiB) and a flat CSV.
+
+\subsection{Using it}
+
+The documentation's \emph{Literature results} page opens the database in the browser with
+\code{sql.js}, so filtering, grouping and ranking run as SQL on the reader's machine, with no
+server. Its tabs are the results themselves, a best-per-dataset leaderboard, the datasets with
+their download links and per-paper splits, the papers, and a SQL console. Within any grouping
+the page stars the best value. Values are compared only when they share the metric, unit and
+split, and a metric's direction decides what counts as best: higher for accuracy, $F_1$ or
+throughput, lower for error, latency, energy or area. The same database backs a Hugging Face
+Space\footnote{\url{https://huggingface.co/spaces/vlbthambawita/TsetlinMachines}}, and the
+file can be opened with any SQLite client:
+
+\begin{lstlisting}[style=ttshell,basicstyle=\ttfamily\scriptsize\color{ttink}]
+SELECT p.year, p.title, r.model, MAX(r.value) AS accuracy
+FROM results r JOIN papers p USING (paper_id)
+WHERE r.dataset_id = 'cifar-10' AND r.metric = 'accuracy' AND r.is_tm = 1
+GROUP BY r.paper_id ORDER BY accuracy DESC;
+\end{lstlisting}
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-literature}}
+\caption{The literature catalog. \emph{Left:} the datasets used by the most papers.
+  \emph{Right:} the best test accuracy reported for a Tsetlin-machine model next to the best
+  non-TM baseline reported in the same body of papers. Flagged papers and federated
+  (per-client) accuracies are excluded. The baselines are those TM papers chose to compare
+  against, not the state of the art in each field.}
+\label{fig:literature}
+\end{figure}
+
+Figure~\ref{fig:literature} shows what the catalog makes easy to see. Tsetlin machines are
+ahead of the baselines they are reported against on Fashion-MNIST and Reuters~R8, close on
+MNIST and Kuzushiji-MNIST, and behind on CIFAR-10 and IMDb.
+
+\begin{ttcallout}[Reading the numbers]
+Every value is \emph{as reported by its authors}; none was reproduced for the catalog. Papers
+differ in splits, Booleanization, clause budgets and epochs. Some report the peak test
+accuracy over training, and results measured before 0.3.0 made the clause budget a hard cap
+are not directly comparable with \ttlibname runs. Every row carries its configuration, source
+location and notes, and the page shows them on click.
+\end{ttcallout}

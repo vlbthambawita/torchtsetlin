@@ -1,0 +1,331 @@
+% =====================================================================================
+%  torchtsetlin — five-page summary report (the document to cite)
+%  Build:  make summary      (pdflatex x2)
+%  Shares ttwhitepaper.sty, figures/ and data/ with the white paper (main.tex).
+% =====================================================================================
+\documentclass[10.5pt,a4paper]{article}
+
+\usepackage[
+  a4paper,
+  top=22mm, bottom=22mm, left=22mm, right=22mm,
+  headheight=14pt, headsep=8mm, footskip=10mm
+]{geometry}
+
+\usepackage{ttwhitepaper}
+\usepackage[
+  colorlinks=true, linkcolor=ttrust, citecolor=ttrust, urlcolor=ttrust,
+  pdftitle={torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines},
+  pdfauthor={Vajira Thambawita},
+  pdfsubject={Technical report},
+  pdfkeywords={Tsetlin machine, PyTorch, GPU, interpretable machine learning, propositional logic}
+]{hyperref}
+
+\newcommand{\ttversion}{0.3.2}
+\newcommand{\ttdate}{19 October 2026}
+\input{data/lit-stats}
+
+\begin{document}
+\thispagestyle{ttplain}
+
+% ------------------------------------------------------------------ header band
+\begin{tikzpicture}[remember picture, overlay]
+  \fill[ttorange] (current page.north west) rectangle ($(current page.north east)+(0,-4.3cm)$);
+  \fill[ttdeep] ($(current page.north west)+(0,-4.3cm)$) rectangle ($(current page.north east)+(0,-4.45cm)$);
+  \begin{scope}[shift={($(current page.north east)+(-3.55cm,-0.95cm)$)}, scale=0.42,
+                every node/.style={inner sep=0pt}]
+    \foreach \r in {0,...,4}{
+      \foreach \c in {0,...,6}{
+        \pgfmathsetmacro{\v}{mod(\r*7+\c*5+int(\r*\c/2),9)}
+        \ifdim \v pt > 5.5pt
+          \fill[white, rounded corners=0.4pt] (\c,-\r) rectangle ++(0.8,0.8);
+        \else
+          \ifdim \v pt > 3.0pt
+            \fill[white, opacity=0.40, rounded corners=0.4pt] (\c,-\r) rectangle ++(0.8,0.8);
+          \else
+            \draw[white, opacity=0.28, line width=0.5pt, rounded corners=0.4pt] (\c,-\r) rectangle ++(0.8,0.8);
+          \fi
+        \fi}}
+  \end{scope}
+  % Header text at fixed positions inside the band, so nothing can collide.
+  \node[anchor=north west, inner sep=0pt, text=white, font=\sffamily\scriptsize\bfseries]
+    at ($(current page.north west)+(2.2cm,-0.95cm)$)
+    {TECHNICAL REPORT \ \textbar\ \ {\color{ttsand}\mdseries Software version \ttversion\ \ \textbar\ \ \ttdate}};
+  \node[anchor=north west, inner sep=0pt, text=white, font=\sffamily\bfseries\fontsize{24}{28}\selectfont]
+    at ($(current page.north west)+(2.2cm,-1.55cm)$) {torchtsetlin};
+  \node[anchor=north west, inner sep=0pt, text=white, font=\sffamily\large]
+    at ($(current page.north west)+(2.2cm,-2.6cm)$) {GPU-native, PyTorch-idiomatic Tsetlin machines};
+  \node[anchor=north west, inner sep=0pt, text=white, font=\sffamily\small]
+    at ($(current page.north west)+(2.2cm,-3.4cm)$)
+    {\textbf{Vajira Thambawita}\ \ {\color{ttsand}Simula Metropolitan Center for Digital Engineering, Oslo, Norway\ \textbar\ \texttt{vajira@simula.no}}};
+\end{tikzpicture}
+\vspace*{2.55cm}
+
+\begin{tikzpicture}
+  \node[inner sep=0pt] (abs) {\begin{minipage}{0.955\linewidth}\small
+    {\sffamily\bfseries\color{ttorange}Abstract.}\enspace
+    The Tsetlin machine learns propositional rules with teams of Tsetlin automata driven by
+    reward and penalty instead of gradients, which makes its models interpretable by
+    construction and cheap to evaluate. Its software has grown up outside the deep-learning
+    ecosystem, as C and CUDA kernels behind scikit-learn-style wrappers. \ttlibname expresses
+    the whole family as ordinary \code{torch.nn.Module} objects: vanilla, weighted, coalesced,
+    regression, convolutional over sequences, images and volumes, and dense per-pixel
+    segmentation. The learnable state is a tensor of automaton counters. A model therefore
+    moves across devices with \code{.to(device)}, serialises with \code{state\_dict()}, and
+    learns from a mini-batch with one \code{model.update(x, y)} call. The central technical
+    contribution is a batched formulation of Type~I\slash II feedback in which per-example
+    automaton transitions become event counts realised as binomial draws, so there is one
+    commit per batch. On an RTX~3090 this reaches $2.2\times10^{5}$ training examples\slash s
+    and up to $287\times$ the same code on a 16-core CPU, while matching the sequential
+    algorithm at moderate batch sizes. The package also ships an interactive, SQL-queryable
+    catalog of \litNresults\ results on \litNdatasets\ datasets from \litNpapers\
+    Tsetlin-machine papers.
+  \end{minipage}};
+  \begin{scope}[on background layer]
+    \draw[ttorange!35, line width=0.8pt, rounded corners=4pt, fill=ttsand]
+      ($(abs.north west)+(-0.8em,0.7em)$) rectangle ($(abs.south east)+(0.8em,-0.7em)$);
+  \end{scope}
+\end{tikzpicture}
+
+\section{Statement of need}
+
+A Tsetlin machine~\ttcite{1} represents each class with conjunctive clauses over Boolean
+literals and their negations. A clause such as \code{IF x0 AND NOT x1} votes for or against a
+class, and the vote count is the prediction. Its learned state is a matrix of small integers,
+one Tsetlin automaton per (clause, literal) pair, updated by counting reward and penalty
+events. The model is legible and its inference is bit-level cheap. That is why the family has
+grown convolutional~\ttcite{2}, weighted~\ttcite{3}, coalesced~\ttcite{4} and regression
+variants, and is used in clinical decision support and in hardware accelerators.
+
+The reference software does not fit a modern research workflow. Each variant is a separate C
+or CUDA kernel behind a scikit-learn-style class~\ttcite{9}. Models do not move between devices
+like the rest of a PyTorch stack, they do not consume a \code{DataLoader} or serialise like
+other models, and extending one means writing a kernel. \ttlibname starts from the opposite
+end: if the automaton counters are a \code{torch} buffer, every variant is a few tensor
+operations, and the PyTorch ecosystem~\ttcite{7} comes for free.
+
+\section{Design}
+
+\paragraph{State as tensors.} The automata live in an integer buffer \code{ta\_state} of shape
+$(C, 2F)$; a literal is included when its counter crosses the action boundary $N$. The buffers
+are not parameters (there are no gradients), so \code{to()}, \code{state\_dict()} and
+\code{load\_state\_dict()} work unchanged. Learning is \code{update(x, y)}, the analogue of
+\code{loss.backward(); optimizer.step()}. It returns the pre-update vote sums, so a trainer
+logs batch metrics without a second forward pass.
+
+\paragraph{One mechanism, many input structures.} Concrete models supply only an output layer
+and a feedback policy through hooks on a shared base class. A different input structure
+overrides the encoding, the clause evaluation and the feedback counts. Convolution over 1-D
+sequences, 2-D images and 3-D volumes is one mixin; a clause fires if it matches any patch,
+with thermometer-encoded position literals. Dense segmentation is a flat machine with one
+example per pixel. Neither re-implements learning.
+
+\paragraph{Batched feedback.} Classically, every example triggers a stochastic pass over all
+$C\times 2F$ automata. For a batch of $B$ examples, \ttlibname instead forms the Type~I and
+Type~II selection matrices $S_{\mathrm{I}}, S_{\mathrm{II}} \in \{0,1\}^{B\times C}$ and the
+literal matrix $L \in \{0,1\}^{B\times 2F}$, and counts the events with two matrix products:
+\begin{equation*}
+  n^{\text{true}} = S_{\mathrm{I}}^{\!\top} L,\qquad
+  n^{\text{false}} = S_{\mathrm{I}}^{\!\top} (1-L),\qquad
+  n^{\text{II}} = S_{\mathrm{II}}^{\!\top} (1-L),
+\end{equation*}
+plus a column sum $n^{\text{Ib}}$ for non-firing clauses. The transition is then drawn in
+closed form,
+\begin{equation*}
+  \Delta = \mathrm{Bin}\!\left(n^{\text{true}}, p_{\text{mem}}\right)
+  - \mathrm{Bin}\!\left(n^{\text{false}} + n^{\text{Ib}}, \tfrac{1}{s}\right)
+  + \min\!\left(n^{\text{II}}, N-\theta\right),
+\end{equation*}
+and committed once (Figure~\ref{fig:s-batched}). At $B=1$ this is the classical algorithm
+term by term. For $B>1$ it approximates it the way mini-batch SGD approximates SGD, and
+\code{feedback\_mode="sequential"} keeps the exact per-example path. A clause-size budget is
+a hard cap~\ttcite{6}: newly included literals beyond it are reverted at commit.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{0.92\linewidth}{!}{\input{figures/fig-batched}}
+\caption{The sequential algorithm (A) makes one stochastic $(C,2F)$ pass per example. The
+  batched algorithm (B) accumulates the same events as counts and realises them in one
+  binomial draw per batch, so the cost of an update is almost independent of $B$.}
+\label{fig:s-batched}
+\end{figure}
+
+\begin{center}
+\small\sffamily\sloppy
+\captionof{table}{What ships in \ttlibname\ \ttversion.}
+\label{tab:s-glance}
+\begin{tabularx}{\linewidth}{@{}L{2.3cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Models} & \clsname{TsetlinMachine} (optional integer clause weights), \clsname{CoalescedTsetlinMachine}
+  (shared clause pool, multi-class or multi-label), \clsname{RegressionTsetlinMachine}; convolutional
+  1-D, 2-D and 3-D variants of each; \clsname{SegmentationTsetlinMachine} and its coalesced form\\
+\ttmidrule
+\thead{Learning} & vote margin $T$, specificity $s$, memory depth $N$, boosted true-positive
+  feedback, hard clause-size budget, drop-clause\slash drop-literal, focused negative sampling,
+  batched or exact sequential feedback\\
+\ttmidrule
+\thead{Workflow} & Booleanization encoders (thermometer, one-hot, bit-plane, adaptive
+  threshold, colour thermometer, hypervector); a Keras-style \clsname{Trainer} with callbacks;
+  classification, regression and segmentation metrics; rule extraction and closed-form
+  global\slash local importance~\ttcite{5}; plots\\
+\ttmidrule
+\thead{Footprint} & pure Python on PyTorch $\ge$ 2.0 and NumPy; no compiler, CUDA toolkit or C
+  extension; Python 3.9--3.12; MIT licence\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+\section{Usage}
+
+Learning is a loop over \code{update}, or a Keras-style \clsname{Trainer} with callbacks. On
+Noisy XOR with 40\% label noise, the model recovers the generating rule and prints it:
+
+\begin{lstlisting}[style=ttpython]
+import torchtsetlin as tt
+
+x_train, y_train = tt.data.make_noisy_xor(5000, noise=0.4)    # Boolean features, int labels
+x_test,  y_test  = tt.data.make_noisy_xor(2000, noise=0.0, seed=1)
+model = tt.TsetlinMachine(n_features=12, n_classes=2, n_clauses=20, T=15, s=3.9).to("cuda")
+
+trainer = tt.Trainer(model, batch_size=10, callbacks=[tt.EarlyStopping(patience=20)])
+trainer.fit((x_train, y_train), epochs=100, val_data=(x_test, y_test))
+print(trainer.evaluate((x_test, y_test)))      # {'accuracy': 0.99}
+print(model.rules()[:2])                       # ['IF x0 AND NOT x1 THEN 1', 'IF x1 AND NOT x0 THEN 1']
+\end{lstlisting}
+
+Images, sequences and volumes use the convolutional classes with a \code{patch\_size}.
+Continuous columns pass through a thermometer encoder whose feature names flow into the
+rules, so a rule reads \code{worst perimeter>=105.9} rather than \code{x37}.
+\code{model.eval()} matters: an empty clause votes while learning and abstains when
+predicting.
+
+\section{Performance}
+
+An \code{update()} call touches every automaton, so its cost depends on the size of the
+machine far more than on the batch. On an RTX~3090, a 784-feature machine with 500 clauses per
+class trains at 427 examples\slash s at batch~1 and 220{,}028 at batch~4096
+(Figure~\ref{fig:s-bench}). At batch~256 it runs at 87{,}869 examples\slash s against 406 on a
+16-core CPU, a factor of $216\times$, and inference reaches $1.06\times10^{6}$ examples\slash
+s. The advantage grows with the model, up to $287\times$ for the clause budgets the
+image literature uses: a 113-second MNIST epoch becomes a 1.5-second one.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-batch}
+\caption{Throughput against batch size, GPU and CPU, for a 784-feature, 500-clause-per-class
+  machine (log--log). The dashed line is a 12-feature, 10-clause machine: less work than a
+  kernel launch, so the GPU only draws level at batch 1024.}
+\label{fig:s-bench}
+\end{figure}
+
+Batching costs little accuracy when the batch is moderate. On Noisy XOR, the benchmark of the
+original paper, batches up to about 50 land in the same accuracy band as the exact sequential
+algorithm, and batch 200 degrades clearly (Figure~\ref{fig:s-fidelity}).
+
+\begin{figure}[htbp]
+\centering
+\input{figures/fig-bench-fidelity}
+\caption{Noisy XOR test accuracy against batch size, 3 seeds; batch 1 is the exact sequential
+  algorithm.}
+\label{fig:s-fidelity}
+\end{figure}
+
+\noindent The library therefore recommends batches of 16--64
+for flat models and 8--32 for convolutional ones. Every number above comes from the benchmark
+driver in the repository, which regenerates the documentation's CPU-versus-GPU page from its
+own records, so it can be re-run on other hardware with one command.
+
+\section{An interactive review of the literature}
+
+The package ships a catalog of every dataset and reported number in \litNpapers\
+Tsetlin-machine papers (\litYearMin--\litYearMax): \litNdatasets\ datasets, \litNusages\
+dataset usages with the splits as reported, and \litNresults\ results, covering both the
+proposed models and their baselines. One JSON record per paper is the source of truth. It is
+compiled into a \litDbKiB~KiB SQLite database, which the documentation opens in the browser
+with \code{sql.js}. Readers filter, group and rank results there, see the best value per
+group, compare the best Tsetlin-machine result with the best baseline per dataset, and run
+their own SQL. Values are ranked only within the same metric, unit and split, and a metric's
+direction decides what counts as best. Papers with a known reliability problem carry a
+caution flag (\litNflagged\ papers). Figure~\ref{fig:s-literature} shows two of its views.
+
+\begin{figure}[htbp]
+\centering
+\resizebox{\linewidth}{!}{\input{figures/fig-literature}}
+\caption{From the literature catalog. \emph{Left:} the datasets used by the most papers.
+  \emph{Right:} the best reported Tsetlin-machine test accuracy next to the best non-TM
+  baseline reported in the same papers, excluding flagged papers and federated per-client
+  accuracies. All values are as reported by their authors, not reproduced.}
+\label{fig:s-literature}
+\end{figure}
+
+\section{Limitations}
+
+\paragraph{Batched feedback is an approximation.} The default path trades some fidelity for
+throughput, and the characterisation is empirical: there is no proof that the batched update
+converges to the fixed point of the sequential one. The exact algorithm is one argument away.
+
+\paragraph{Dense tensors, not bit-packed kernels.} Literals are floats in a matrix product, not
+bits in a machine word, and clause sparsity is not exploited by indexing. On a small machine
+on a CPU, the reference C implementations are faster; the advantage of \ttlibname appears with
+model size and a GPU.
+
+\paragraph{Coverage of the literature.} Graph Tsetlin machines, TM composites~\ttcite{8}, contracting
+machines with absorbing automata and several other recent variants are not implemented yet.
+Training is single-device and single-process.
+
+\section{Availability and citation}
+
+\begin{center}
+\small\sffamily\sloppy
+\begin{tabularx}{\linewidth}{@{}L{2.6cm}>{\raggedright\arraybackslash}X@{}}
+\ttoprule
+\thead{Install} & \code{pip install torchtsetlin} \ (version \ttversion, \ttdate)\\
+\thead{Source} & \url{https://github.com/vlbthambawita/torchtsetlin} (MIT licence)\\
+\thead{Documentation} & \url{https://vajira.info/torchtsetlin/}, including the literature
+  catalog and the generated benchmark pages\\
+\thead{Quality gates} & \code{ruff} and the full test suite on Python 3.9, 3.11 and 3.12 in CI;
+  releases via PyPI Trusted Publishing after a clean-environment smoke import\\
+\ttbotrule
+\end{tabularx}
+\end{center}
+
+If you use \ttlibname, please cite this report, together with the Tsetlin-machine papers whose
+algorithms you rely on:
+
+\begin{lstlisting}[style=ttshell,basicstyle=\ttfamily\scriptsize\color{ttink}]
+@techreport{thambawita2026torchtsetlin,
+  author      = {Thambawita, Vajira},
+  title       = {torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines},
+  institution = {Simula Metropolitan Center for Digital Engineering},
+  type        = {Technical report},
+  year        = {2026},
+  note        = {Software version 0.3.2},
+  url         = {https://github.com/vlbthambawita/torchtsetlin}
+}
+\end{lstlisting}
+
+\section*{References}
+{\small\sloppy
+\setlength{\parskip}{0.15em}
+\begin{list}{\textcolor{ttorange}{[\arabic{ttrefcnt}]}}%
+  {\usecounter{ttrefcnt}\setlength{\leftmargin}{2.1em}\setlength{\labelwidth}{1.7em}%
+   \setlength{\labelsep}{0.4em}\setlength{\itemsep}{0.15em}\setlength{\topsep}{0.3em}}
+\item O.-C. Granmo. \emph{The Tsetlin Machine --- A Game Theoretic Bandit Driven Approach to
+  Optimal Pattern Recognition with Propositional Logic}. arXiv:1804.01508, 2018.
+\item O.-C. Granmo, S. Glimsdal, L. Jiao, M. Goodwin, C. W. Omlin, G. T. Berge.
+  \emph{The Convolutional Tsetlin Machine}. arXiv:1905.09688, 2019.
+\item A. Phoulady, O.-C. Granmo, S. R. Gorji, H. A. Phoulady. \emph{The Weighted Tsetlin
+  Machine: Compressed Representations with Weighted Clauses}. arXiv:1911.12607, 2019.
+\item S. Glimsdal, O.-C. Granmo. \emph{Coalesced Multi-Output Tsetlin Machines with Clause
+  Sharing}. arXiv:2108.07594, 2021.
+\item C. D. Blakely, O.-C. Granmo. \emph{Closed-Form Expressions for Global and Local
+  Interpretation of Tsetlin Machines}. arXiv:2007.13885, 2020.
+\item K. D. Abeyrathna et al. \emph{Building Concise Logical Patterns by Constraining Tsetlin
+  Machine Clause Size}. IJCAI 2023, arXiv:2301.08190.
+\item A. Paszke et al. \emph{PyTorch: An Imperative Style, High-Performance Deep Learning
+  Library}. NeurIPS 2019.
+\item O.-C. Granmo. \emph{TMComposites: Plug-and-Play Collaboration Between Specialized
+  Tsetlin Machines}. arXiv:2309.04801, 2023.
+\item Centre for Artificial Intelligence Research (CAIR). \emph{TMU: the Tsetlin Machine
+  Unified library}. \url{https://github.com/cair/tmu}.
+\end{list}}
+\end{document}

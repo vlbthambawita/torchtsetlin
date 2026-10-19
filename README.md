@@ -133,15 +133,20 @@ details and references.
 
 ## Citation
 
-If you use torchtsetlin in research, please cite the Tsetlin machine papers whose algorithms
-you rely on (see the documentation) and this package:
+If you use torchtsetlin in research, please cite the five-page technical report, together with
+the Tsetlin machine papers whose algorithms you rely on (see the documentation). The PDF and
+other formats are at <https://vajira.info/torchtsetlin/cite/>, and GitHub's
+"Cite this repository" button reads `CITATION.cff`.
 
 ```bibtex
-@software{torchtsetlin,
-  author = {Thambawita, Vajira},
-  title  = {torchtsetlin: GPU-enabled, PyTorch-native Tsetlin machines},
-  year   = {2026},
-  url    = {https://github.com/vlbthambawita/torchtsetlin}
+@techreport{thambawita2026torchtsetlin,
+  author      = {Thambawita, Vajira},
+  title       = {torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines},
+  institution = {Simula Metropolitan Center for Digital Engineering},
+  type        = {Technical report},
+  year        = {2026},
+  note        = {Software version 0.3.2},
+  url         = {https://github.com/vlbthambawita/torchtsetlin}
 }
 ```
 

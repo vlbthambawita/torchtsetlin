@@ -1,0 +1,45 @@
+% Figure: the literature catalog. Data: data/lit-top.csv and data/lit-best.csv, both written by
+% data/regen_literature.py from docs/assets/literature/literature.db.
+\pgfplotstableread[col sep=comma]{data/lit-top.csv}\littop
+\pgfplotstableread[col sep=comma]{data/lit-best.csv}\litbest
+\begin{tikzpicture}
+\begin{axis}[
+    ttaxis,
+    name=top,
+    width=0.47\linewidth, height=6.4cm,
+    xbar, bar width=6pt,
+    xmin=0,
+    xlabel={papers using the dataset},
+    ytick=data, y dir=reverse,
+    yticklabels from table={\littop}{dataset},
+    yticklabel style={font=\ttfamily\scriptsize, color=ttink},
+    ymajorgrids=false,
+    enlarge y limits=0.06,
+    nodes near coords,
+    nodes near coords style={font=\sffamily\tiny, color=ttdeep},
+    title={Most-used datasets},
+  ]
+  \addplot[ttbar] table[x=papers, y expr=\coordindex] {\littop};
+\end{axis}
+\begin{axis}[
+    ttaxis,
+    at={($(top.east)+(1.9cm,0)$)}, anchor=west,
+    width=0.53\linewidth, height=6.4cm,
+    ybar, bar width=6.5pt,
+    ymin=75, ymax=101,
+    ylabel={best reported test accuracy (\%)},
+    xtick=data,
+    xticklabels from table={\litbest}{dataset},
+    xticklabel style={font=\sffamily\scriptsize, color=ttink, rotate=35, anchor=north east},
+    xmajorgrids=false,
+    enlarge x limits=0.1,
+    legend style={at={(0.5,1.02)}, anchor=south, legend columns=2},
+    title={TM vs.\ the baselines TM papers report},
+    title style={yshift=13pt},
+  ]
+  \addplot[ttbar] table[x expr=\coordindex, y=tm] {\litbest};
+  \addlegendentry{best TM model}
+  \addplot[ttbarcpu] table[x expr=\coordindex, y=baseline] {\litbest};
+  \addlegendentry{best non-TM baseline}
+\end{axis}
+\end{tikzpicture}

@@ -4,12 +4,15 @@ LaTeX source for **_torchtsetlin: A GPU-native, PyTorch-idiomatic framework for 
 machines_** — an orange-themed white paper with TikZ diagrams and pgfplots charts drawn from
 the repository's own benchmark records.
 
-Built PDF: [`main.pdf`](main.pdf) (~39 pages, A4). Describes version 0.3.1.
+Built PDFs: [`main.pdf`](main.pdf), the white paper (~41 pages, A4), and
+[`summary.pdf`](summary.pdf), the five-page technical report to cite. Both describe version
+0.3.2 and share the theme, figures and data files.
 
 ## Build
 
 ```bash
 make              # two pdflatex passes (needed for the ToC and cross-references)
+make summary      # the five-page report, summary.pdf
 make watch        # rebuild on save, via latexmk -pvc
 make clean        # remove .aux/.log/.toc, keep the PDF
 ```
@@ -49,7 +52,9 @@ ttwhitepaper.sty      the theme — palette, headings, callouts, listing style,
 sections/             one file per section, 00 (title page) to 12 (references)
 figures/              TikZ diagrams and pgfplots charts, \input by the sections
 data/                 benchmark CSVs the charts read, plus regen.py which rebuilds
-                      them from ../benchmarks/results/cpu_vs_gpu.json
+                      them from ../benchmarks/results/cpu_vs_gpu.json, and
+                      regen_literature.py, which writes lit-*.csv and lit-stats.tex
+                      from ../docs/assets/literature/literature.db
 references.bib        BibTeX form of the reference list
 ```
 
