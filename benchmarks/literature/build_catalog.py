@@ -6,6 +6,8 @@ Outputs: benchmarks/literature/datasets.json  (one entry per dataset, with every
          benchmarks/literature/README.md      (generated; do not hand-edit)
          docs/assets/literature/{results,datasets}.json  (data for the interactive docs page,
                                                           docs/literature.md)
+         benchmarks/literature/space/literature.db  (SQLite, served by the Hugging Face Space app
+                                                     in space/app.py)
 
 Run:  python benchmarks/literature/build_catalog.py
 """
@@ -13,6 +15,7 @@ Run:  python benchmarks/literature/build_catalog.py
 import csv
 import json
 import re
+import sqlite3
 from collections import defaultdict
 from pathlib import Path
 
@@ -304,6 +307,81 @@ def write_docs_data(papers, catalog):
         (DOCS_DATA / name).write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")))
 
 
+SCHEMA = """
+CREATE TABLE papers (
+    paper_id TEXT PRIMARY KEY, title TEXT, authors TEXT, year INTEGER, venue TEXT,
+    arxiv_id TEXT, doi TEXT, url TEXT, code_url TEXT, category TEXT, feature_type TEXT,
+    tm_variants TEXT, new_feature TEXT, caution TEXT, extraction_notes TEXT, pdf TEXT
+);
+CREATE TABLE datasets (
+    dataset_id TEXT PRIMARY KEY, data_type TEXT, tasks TEXT, n_classes INTEGER,
+    input_shape_or_features TEXT, download_url TEXT, download_url_source TEXT,
+    n_papers INTEGER, tm_variants TEXT, names_in_papers TEXT
+);
+CREATE TABLE dataset_usages (
+    paper_id TEXT REFERENCES papers(paper_id), dataset_id TEXT REFERENCES datasets(dataset_id),
+    name_in_paper TEXT, task TEXT, train_size INTEGER, val_size INTEGER, test_size INTEGER,
+    split_as_reported TEXT, booleanization TEXT, notes TEXT
+);
+CREATE TABLE results (
+    id INTEGER PRIMARY KEY, paper_id TEXT REFERENCES papers(paper_id),
+    dataset_id TEXT REFERENCES datasets(dataset_id), model TEXT, is_tm INTEGER,
+    is_proposed INTEGER, metric TEXT, value REAL, unit TEXT, std_or_range TEXT, split TEXT,
+    better TEXT, config TEXT, source_location TEXT, notes TEXT
+);
+CREATE INDEX results_dataset ON results(dataset_id);
+CREATE INDEX results_metric ON results(metric);
+CREATE INDEX results_paper ON results(paper_id);
+CREATE INDEX usages_dataset ON dataset_usages(dataset_id);
+"""
+
+
+def _int(v):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def write_sqlite(papers, catalog, path):
+    """The whole catalog as one SQLite file (rebuilt from scratch each run)."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.unlink(missing_ok=True)
+    con = sqlite3.connect(path)
+    con.executescript(SCHEMA)
+    con.executemany(
+        "INSERT INTO papers VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [(p["paper_id"], p.get("title"), "; ".join(p.get("authors") or []), p.get("year"),
+          p.get("venue"), p.get("arxiv_id"), p.get("doi"), paper_url(p), p.get("code_url"),
+          p.get("category"), p.get("feature_type"), ", ".join(p.get("tm_variants_tested", [])),
+          p.get("new_feature"), p.get("caution"), p.get("extraction_notes"), p.get("pdf"))
+         for p in papers])
+    con.executemany(
+        "INSERT INTO datasets VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [(e["dataset_id"], e.get("data_type"), ", ".join(e["tasks"]), _int(e.get("n_classes")),
+          e.get("input_shape_or_features"), e.get("download_url"), e.get("download_url_source"),
+          e["n_papers"], ", ".join(e["tm_variants"]), "; ".join(e["names_in_papers"]))
+         for e in catalog])
+    con.executemany(
+        "INSERT INTO dataset_usages VALUES (?,?,?,?,?,?,?,?,?,?)",
+        [(p["paper_id"], d["dataset_id"], d.get("name_in_paper"), d.get("task"),
+          _int(d.get("train_size")), _int(d.get("val_size")), _int(d.get("test_size")),
+          d.get("split_as_reported"), d.get("booleanization"), d.get("notes"))
+         for p in papers for d in p.get("datasets", []) if d["dataset_id"]])
+    rows = [r for p in papers for r in p.get("results", [])]
+    pids = [p["paper_id"] for p in papers for _ in p.get("results", [])]
+    con.executemany(
+        "INSERT INTO results VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        [(i, pid, r["dataset_id"], r.get("model"), int(bool(r.get("is_tm"))),
+          int(bool(r.get("is_proposed"))), r.get("metric"), r.get("value"), r.get("unit") or "",
+          r.get("std_or_range"), r.get("split") or "", metric_direction(r.get("metric")),
+          r.get("config"), r.get("source_location"), r.get("notes"))
+         for i, (pid, r) in enumerate(zip(pids, rows))])
+    con.commit()
+    con.execute("VACUUM")
+    con.close()
+
+
 def main():
     papers = load_papers()
     catalog = build_datasets(papers)
@@ -311,6 +389,7 @@ def main():
     write_results(papers, HERE / "results.csv")
     write_readme(papers, catalog, HERE / "README.md")
     write_docs_data(papers, catalog)
+    write_sqlite(papers, catalog, HERE / "space" / "literature.db")
     n = sum(len(p.get("results", [])) for p in papers)
     print(f"{len(papers)} papers, {len(catalog)} datasets, {n} results")
 

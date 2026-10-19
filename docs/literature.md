@@ -10,6 +10,11 @@ Every dataset and every reported number from the 55 Tsetlin-machine papers in
 `source_documents/papers/`: the proposed models *and* the baselines each paper compared against.
 The numbers are **as reported by the authors, not reproduced here**.
 
+!!! tip "Faster explorer with SQL: [Tsetlin Machine literature explorer on Hugging Face](https://huggingface.co/spaces/vlbthambawita/TsetlinMachines)"
+    The same data as a server-side SQLite database. Filtering and ranking run as SQL, and only the
+    shown rows are sent to the browser. It also has a best-per-dataset leaderboard (best overall
+    value and best TM value), dataset and paper tables, and a read-only SQL console.
+
 <div class="lit-controls" markdown="0">
   <div class="lit-fields">
   <label>Group by

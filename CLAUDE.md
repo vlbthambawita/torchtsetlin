@@ -144,6 +144,10 @@ paper in `source_documents/papers/`) is the source of truth, and `build_catalog.
 `docs/literature.md` page (`docs/assets/literature/*.json`, read by `docs/javascripts/literature.js`).
 Edit the records and re-run the script; never hand-edit the generated files. The "best value"
 direction per metric comes from `_DIRECTION` in that script.
+It also builds `benchmarks/literature/space/literature.db` (git-ignored) for the Gradio app in
+`space/app.py`, deployed as the HF Space `vlbthambawita/TsetlinMachines` (upload command in
+`space/README.md`). That Space runs on ZeroGPU and cannot be moved to CPU on this account, so
+`app.py` keeps an unused `@spaces.GPU` placeholder or the Space fails at startup.
 
 Progress output: the driver exports `PYTHONUNBUFFERED=1` because it tees stdout into a log —
 without it Python block-buffers the pipe and a suite looks frozen for minutes. `bench_device.py`
