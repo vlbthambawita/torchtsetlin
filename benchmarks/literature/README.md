@@ -3159,7 +3159,7 @@ Caveats: numbers are as *reported by the authors* (not reproduced), splits and B
 |---|---|---|---|---|---|
 | `cifar-10` | Convolutional TM (s=20) **(proposed)** | accuracy | 65% | test | Sec. 3.2.1 text |
 | `cifar-10` | Convolutional TM (s=1.2) | accuracy | 63% | test | Sec. 3.2.1 text |
-| `cifar-10` | Convolutional TM (s=20), predictions with normalized probability score >= 0.6 **(proposed)** | accuracy | 93.2% | test | Sec. 3.2.2 text / Fig. 7 |
+| `cifar-10` | Convolutional TM (s=20), predictions with normalized probability score >= 0.6 **(proposed)** | selective accuracy (confident predictions only) | 93.2% | test | Sec. 3.2.2 text / Fig. 7 |
 | `cifar-10` | Convolutional TM (s=20) **(proposed)** | training time per epoch | 5 min | train | Sec. 3.2.1 text |
 | `cifar-10` | TM Composites (cited, Grønningsæter et al. 2024) | accuracy | 82.8% | test | Sec. 3.2 text |
 
