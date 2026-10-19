@@ -24,15 +24,16 @@ import os
 from html import escape
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
+# Accent and panel colours follow the white paper (whitepaper/ttwhitepaper.sty: ttrust, ttcream).
 THEMES: Dict[str, Dict[str, str]] = {
     "light": dict(
         fg="#1f2328",
         muted="#646b78",
         line="#cfd3db",
-        panel="#f6f4fb",
+        panel="#fffaf4",
         panel2="#eceef2",
-        accent="#5e35b1",
-        accent_soft="#e6def6",
+        accent="#c2410c",
+        accent_soft="#fbdcc8",
         pos="#2e7d32",
         pos_soft="#d9eed9",
         neg="#c62828",
@@ -46,11 +47,11 @@ THEMES: Dict[str, Dict[str, str]] = {
     "dark": dict(
         fg="#e4e6eb",
         muted="#a0a7b4",
-        line="#4a505e",
-        panel="#272b37",
-        panel2="#2f3442",
-        accent="#b39ddb",
-        accent_soft="#3b3253",
+        line="#544a42",
+        panel="#2b2622",
+        panel2="#342e29",
+        accent="#ff9a5c",
+        accent_soft="#4a2a17",
         pos="#74c378",
         pos_soft="#20402a",
         neg="#f07878",
@@ -59,7 +60,7 @@ THEMES: Dict[str, Dict[str, str]] = {
         amber_soft="#4a3a16",
         blue="#86b7f7",
         blue_soft="#1e3352",
-        on_accent="#1b1530",
+        on_accent="#2a1307",
     ),
 }
 
