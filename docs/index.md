@@ -2,6 +2,9 @@
 
 **GPU-enabled, PyTorch-native Tsetlin machines.**
 
+!!! release "Latest release: torchtsetlin %%version%%"
+    `pip install torchtsetlin==%%version%%`. See the [changelog](changelog.md) for what's new.
+
 `torchtsetlin` implements the Tsetlin machine family — the propositional-logic learning
 algorithm introduced by Ole-Christoffer Granmo — as ordinary `torch.nn.Module` objects. The
 automata states live in tensors, so a model moves between CPU and GPU with `.to(device)`, is

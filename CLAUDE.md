@@ -113,7 +113,8 @@ do not reuse them after the call.
   (`make_shapes`, `make_2d_noisy_xor`) accuracy oscillates 0.5–0.9 with it on and hits 1.0 with it off;
   MNIST is fine with it on. Check this flag before suspecting the feedback code.
 - **Version lives in two places** — `pyproject.toml` and `src/torchtsetlin/__init__.py`; `tests/test_package.py`
-  asserts they agree and that every subpackage ships. `.gitignore` rules that could match package
+  asserts they agree and that every subpackage ships. The docs read it from `__init__.py` through
+  `scripts/mkdocs_hooks.py` (release banner, `%%version%%` in pages), so never type it into the docs. `.gitignore` rules that could match package
   directories must stay anchored to the repo root (`/data/`, not `data/`) — an unanchored rule excluded
   `src/torchtsetlin/data` from the 0.1.0 wheel.
 - **Ruff config targets py39**: `UP006/UP007/UP035/UP045` are ignored on purpose so `typing.Optional`/`List`

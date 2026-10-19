@@ -23,3 +23,23 @@
   --md-accent-fg-color--transparent: rgba(245, 159, 0, 0.12);
   --md-typeset-a-color: #F59F00;                 /* amber links read well on the dark ground */
 }
+
+/* Release banner (overrides/main.html). */
+.md-banner { background-color: var(--md-primary-fg-color--dark); color: #fff; }
+.md-banner .tt-release { color: #fff; }
+.md-banner .tt-release:hover { color: #F59F00; text-decoration: underline; }
+
+/* "release" admonition (docs/index.md) in the white paper's orange, with a tag icon. */
+:root {
+  --md-admonition-icon--release: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 7A1.5 1.5 0 0 1 4 5.5 1.5 1.5 0 0 1 5.5 4 1.5 1.5 0 0 1 7 5.5 1.5 1.5 0 0 1 5.5 7m15.91 4.58-9-9C12.05 2.22 11.55 2 11 2H4c-1.11 0-2 .89-2 2v7c0 .55.22 1.05.59 1.41l8.99 9c.37.36.87.59 1.42.59s1.05-.23 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.56-.23-1.06-.59-1.42"/></svg>');
+}
+.md-typeset .admonition.release,
+.md-typeset details.release { border-color: #E8590C; }
+.md-typeset .release > .admonition-title,
+.md-typeset .release > summary { background-color: rgba(232, 89, 12, 0.1); }
+.md-typeset .release > .admonition-title::before,
+.md-typeset .release > summary::before {
+  background-color: #E8590C;
+  -webkit-mask-image: var(--md-admonition-icon--release);
+  mask-image: var(--md-admonition-icon--release);
+}

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.2 (2026-10-19)
+
+**A segmentation memory fix, and documentation for the Tsetlin-machine literature.** There are no
+API changes, and every non-segmentation model behaves exactly as in 0.3.1.
+
+- **Segmentation: committed updates are budgeted per commit window** (LG-001). With
+  `patches_per_commit` set, the chunk budget now counts only the `(P, 2L)` literals per image plus
+  one commit window, rather than every intermediate per image. Before, 128-px images with a few
+  hundred clauses were processed one image per chunk, so a commit could never mix pixels from
+  different images. `forward()` and `patches_per_commit=None` keep the per-image bound.
+- **Segmentation: opt-in `pixel_order="shuffle"`** permutes a chunk's pixels before committing.
+  Returned votes stay in row-major `(image, patch)` order. The default is unchanged.
+- **Docs: new *Benchmarks → Literature results* page.** It lists every dataset and reported result
+  from 55 Tsetlin-machine papers (128 datasets, 3,295 numbers). Filtering, grouping and
+  best-per-group ranking run as SQL in the browser over a SQLite catalog. The page also has a
+  best-per-dataset leaderboard, dataset and paper tables, and a SQL console. The catalog's source
+  of truth is `benchmarks/literature/papers/*.json`, rebuilt by
+  `benchmarks/literature/build_catalog.py`. The same data is served by a
+  [Hugging Face Space](https://huggingface.co/spaces/vlbthambawita/TsetlinMachines).
+- **Docs:** the changelog page renders again; it was missing the `pymdownx.snippets` extension.
+  The site now uses the white paper's orange palette, with an automata-grid logo and favicon
+  (`scripts/make_logo.py`). The concept figures are recoloured to match, and the current release
+  is shown site-wide.
+
 ## 0.3.1 (2026-10-12)
 
 **3D convolution.** Clauses can now slide through volumes: MRI/CT stacks, or frame
