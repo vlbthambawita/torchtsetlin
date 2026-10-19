@@ -4,8 +4,9 @@ Inputs:  benchmarks/literature/papers/*.json  (one record per paper, schema in R
 Outputs: benchmarks/literature/datasets.json  (one entry per dataset, with every paper that used it)
          benchmarks/literature/results.csv    (one row per reported number)
          benchmarks/literature/README.md      (generated; do not hand-edit)
-         benchmarks/literature/space/literature.db  (SQLite, served by the Hugging Face Space app
-                                                     in space/app.py)
+         docs/assets/literature/literature.db  (SQLite, queried in the browser by the docs page
+                                                docs/literature.md via sql.js)
+         benchmarks/literature/space/literature.db  (copy for the Hugging Face Space app)
 
 Run:  python benchmarks/literature/build_catalog.py
 """
@@ -13,12 +14,14 @@ Run:  python benchmarks/literature/build_catalog.py
 import csv
 import json
 import re
+import shutil
 import sqlite3
 from collections import defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PAPERS = HERE / "papers"
+DOCS_DB = HERE.parents[1] / "docs" / "assets" / "literature" / "literature.db"
 
 # Spelling variants produced during extraction -> canonical slug.
 ALIASES = {
@@ -331,7 +334,8 @@ def main():
     (HERE / "datasets.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
     write_results(papers, HERE / "results.csv")
     write_readme(papers, catalog, HERE / "README.md")
-    write_sqlite(papers, catalog, HERE / "space" / "literature.db")
+    write_sqlite(papers, catalog, DOCS_DB)
+    shutil.copyfile(DOCS_DB, HERE / "space" / "literature.db")
     n = sum(len(p.get("results", [])) for p in papers)
     print(f"{len(papers)} papers, {len(catalog)} datasets, {n} results")
 

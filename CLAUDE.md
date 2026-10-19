@@ -140,13 +140,16 @@ Figures skip suites that are missing from the results, so partial runs plot fine
 
 `benchmarks/literature/` is the literature catalog: `papers/*.json` (one hand-checked record per
 paper in `source_documents/papers/`) is the source of truth, and `build_catalog.py` regenerates
-`datasets.json`, `results.csv`, `README.md` and `space/literature.db` (git-ignored). Edit the
-records and re-run the script; never hand-edit the generated files. The "best value" direction
-per metric comes from `_DIRECTION` in that script. `space/app.py` is the Gradio app over the
-database, deployed as the HF Space `vlbthambawita/TsetlinMachines`, which the docs link to
-directly (nav "Literature results"); upload command in `space/README.md`. That Space runs on
-ZeroGPU and cannot be moved to CPU on this account, so `app.py` keeps an unused `@spaces.GPU`
-placeholder or the Space fails at startup.
+`datasets.json`, `results.csv`, `README.md` and the SQLite database `docs/assets/literature/literature.db`
+(committed; a git-ignored copy goes to `space/`). Edit the records and re-run the script; never
+hand-edit the generated files. The "best value" direction per metric comes from `_DIRECTION` in
+that script. `docs/literature.md` queries the database in the browser with sql.js
+(`docs/javascripts/literature.js`). Keep ranking queries on narrow columns and join the long
+text only for the drawn page: dragging `notes`/`config` through the window functions made every
+regroup about 3× slower. The same database also backs the Gradio app in `space/app.py`, deployed
+as the HF Space `vlbthambawita/TsetlinMachines`. That Space runs on ZeroGPU and cannot be moved
+to CPU on this account, so `app.py` keeps an unused `@spaces.GPU` placeholder or the Space fails
+at startup.
 
 Progress output: the driver exports `PYTHONUNBUFFERED=1` because it tees stdout into a log —
 without it Python block-buffers the pipe and a suite looks frozen for minutes. `bench_device.py`

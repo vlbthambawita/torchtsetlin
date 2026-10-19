@@ -11,10 +11,10 @@ count, the model zoo, and where the time inside one `update()` goes — lives on
 **[CPU vs GPU](cpu-vs-gpu.md)**. That page is generated end to end by
 `benchmarks/run_benchmarks.sh`, so you can replace its numbers with your own hardware's.
 
-For what the *papers* report, see the **[Tsetlin Machine literature explorer](https://huggingface.co/spaces/vlbthambawita/TsetlinMachines)** on
-Hugging Face. It covers every dataset and reported result from 55 Tsetlin-machine papers, with
-filtering, the best value per dataset or other grouping, the best TM result per dataset, and
-read-only SQL. The data lives in `benchmarks/literature/` in this repository.
+For what the *papers* report, see **[Literature results](literature.md)**. It covers every
+dataset and reported result from 55 Tsetlin-machine papers, with filtering, the best value per
+dataset or other grouping, the best TM result per dataset, and an in-browser SQL console over the
+SQLite catalog.
 
 ## MNIST (`pixel > 0.3`, 60 000 training images)
 
