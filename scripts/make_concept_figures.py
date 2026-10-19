@@ -24,7 +24,7 @@ import os
 from html import escape
 from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
-# Accent and panel colours follow the docs theme (docs/stylesheets/theme.css): muted terracotta, cream.
+# Accent and panel colours follow the docs theme (docs/stylesheets/theme.css): hue 22 around #FA772A.
 THEMES: Dict[str, Dict[str, str]] = {
     "light": dict(
         fg="#1f2328",
@@ -32,8 +32,8 @@ THEMES: Dict[str, Dict[str, str]] = {
         line="#cfd3db",
         panel="#fffaf4",
         panel2="#eceef2",
-        accent="#9a4b2c",
-        accent_soft="#f1dccf",
+        accent="#ae4609",
+        accent_soft="#fde0ce",
         pos="#2e7d32",
         pos_soft="#d9eed9",
         neg="#c62828",
@@ -50,8 +50,8 @@ THEMES: Dict[str, Dict[str, str]] = {
         line="#544a42",
         panel="#2b2622",
         panel2="#342e29",
-        accent="#e0ae7e",
-        accent_soft="#43302a",
+        accent="#ffa060",
+        accent_soft="#4a2a17",
         pos="#74c378",
         pos_soft="#20402a",
         neg="#f07878",
@@ -60,7 +60,7 @@ THEMES: Dict[str, Dict[str, str]] = {
         amber_soft="#4a3a16",
         blue="#86b7f7",
         blue_soft="#1e3352",
-        on_accent="#2a1307",
+        on_accent="#2b1608",
     ),
 }
 

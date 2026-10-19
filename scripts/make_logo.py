@@ -3,7 +3,7 @@
 The cells follow ``whitepaper/sections/00-titlepage.tex`` exactly:
 ``v = mod(r*7 + c*5 + int(r*c/2), 9)``; ``v > 5.5`` is a solid cell, ``v > 3`` a 40%-opacity
 cell, anything else a 28%-opacity outline. The icon is its top-left 4x4 corner. The favicon ground is the docs'
-primary terracotta (#A85D3E, docs/stylesheets/theme.css), a toned-down white-paper orange.
+primary (#FA772A, docs/stylesheets/theme.css); the cells use the header text colour (#2B1608).
 
 Run:  python scripts/make_logo.py   (writes docs/assets/logo.svg and docs/assets/favicon.svg)
 """
@@ -11,7 +11,8 @@ Run:  python scripts/make_logo.py   (writes docs/assets/logo.svg and docs/assets
 from pathlib import Path
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "assets"
-ORANGE = "#A85D3E"
+ORANGE = "#FA772A"
+INK = "#2B1608"          # header text colour: dark cells read on the light orange
 N = 4
 CELL, GAP, RX = 8.0, 2.0, 1.4
 
@@ -38,13 +39,13 @@ def cells(colour):
 def main():
     side = N * CELL + (N - 1) * GAP                      # 38
     logo = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {side:g} {side:g}" '
-            f'role="img" aria-label="torchtsetlin">\n  {cells("#FFFFFF")}\n</svg>\n')
+            f'role="img" aria-label="torchtsetlin">\n  {cells(INK)}\n</svg>\n')
     pad = 7.0
     full = side + 2 * pad
     favicon = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {full:g} {full:g}" '
                f'role="img" aria-label="torchtsetlin">\n'
                f'  <rect width="{full:g}" height="{full:g}" rx="9" fill="{ORANGE}"/>\n'
-               f'  <g transform="translate({pad:g} {pad:g})">\n  {cells("#FFFFFF")}\n  </g>\n</svg>\n')
+               f'  <g transform="translate({pad:g} {pad:g})">\n  {cells(INK)}\n  </g>\n</svg>\n')
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "logo.svg").write_text(logo)
     (OUT / "favicon.svg").write_text(favicon)
