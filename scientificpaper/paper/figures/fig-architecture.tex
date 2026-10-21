@@ -1,0 +1,39 @@
+% Architecture figure, cut from the 4-page draft for space; \input it to restore.
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[font=\scriptsize, node distance=2mm and 2.5mm,
+  box/.style={draw, rounded corners=2pt, align=center, minimum height=5mm, inner sep=2pt, fill=white},
+  layer/.style={draw=gray!60, rounded corners=3pt, fill=gray!8, inner sep=3pt},
+  arr/.style={-{Stealth[length=3pt]}, thick, gray!70!black},
+  lbl/.style={anchor=east, gray!70!black, font=\scriptsize\itshape}]
+  \node[box] (enc) {encoders (\code{data})};
+  \node[box, right=of enc] (trn) {\code{Trainer} + callbacks};
+  \node[box, right=of trn] (met) {\code{metrics}};
+  \node[box, right=of met] (int) {rules, importance (\code{interpret})};
+  \node[box, right=of int] (viz) {plots (\code{viz})};
+  \node[box, below=5mm of trn, xshift=6mm] (flat) {\code{TsetlinMachine}, \code{Coalesced\ldots}, \code{Regression\ldots}};
+  \node[box, right=4mm of flat] (mix) {\code{\_ConvMixin}, \code{\_Conv3dMixin}, \code{\_DenseMixin}};
+  \node[box, below=5mm of flat, xshift=6mm] (base)
+    {\code{TsetlinMachineBase.update}: \code{\_encode} $\to$ \code{\_evaluate} $\to$ \code{\_votes}\\
+     $\to$ \code{\_select\_feedback} $\to$ \code{\_feedback\_counts} $\to$ commit};
+  \node[box, right=4mm of base] (fun)
+    {\code{functional}: literals, clause outputs,\\vote sums, event counts, \code{apply\_feedback}};
+  \begin{scope}[on background layer]
+    \node[layer, fit=(enc)(viz)] (L4) {};
+    \node[layer, fit=(flat)(mix)] (L3) {};
+    \node[layer, fit=(base)] (L2) {};
+    \node[layer, fit=(fun)] (L1) {};
+  \end{scope}
+  \node[lbl] at ([xshift=-1mm]L4.west) {workflow};
+  \node[lbl] at ([xshift=-1mm]L3.west) {models};
+  \node[lbl] at ([xshift=-1mm]L2.west) {base};
+  \node[anchor=north, gray!70!black, font=\scriptsize\itshape] at (L1.south) {maths};
+  \draw[arr] (L4.south -| flat) -- (flat);
+  \draw[arr] (mix) -- (flat);
+  \draw[arr] (L3.south -| base) -- (base);
+  \draw[arr] (L2) -- (L1);
+\end{tikzpicture}
+\caption{Architecture of \lib: models supply hooks, mixins supply input structure, and all
+  learning maths is stateless in \code{functional}.}
+\label{fig:arch}
+\end{figure}

@@ -1,0 +1,193 @@
+\documentclass[twoside,11pt]{article}
+
+% JMLR Machine Learning Open Source Software (MLOSS) track:
+% at most 4 pages of description, plus references.
+% STRUCTURE DRAFT: grey bullets = planned content, red [brackets] = placeholders.
+
+\usepackage{jmlr2e}
+\usepackage{lastpage}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\newcommand{\ph}[1]{\textcolor{red}{\textbf{[#1]}}}
+\newenvironment{plan}{\begin{itemize}\color{gray}\small}{\end{itemize}}
+\newcommand{\budget}[1]{\marginpar{\tiny\color{blue}#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\lib}{\textsf{torchtsetlin}}
+
+% {volume}{year}{pages}{submitted}{published}{paper id}{authors}
+\jmlrheading{XX}{2026}{1-\pageref{LastPage}}{MM/26}{MM/YY}{YY-NNNN}{Vajira Thambawita}
+\ShortHeadings{torchtsetlin: Tsetlin Machines in PyTorch}{Thambawita}
+\firstpageno{1}
+
+\begin{document}
+
+\title{torchtsetlin: GPU-Native Tsetlin Machines as PyTorch Modules}
+
+\author{\name Vajira Thambawita \email vajira@simula.no \\
+       \addr Simula Metropolitan Center for Digital Engineering\\
+       Oslo, Norway
+       % \AND \name \ph{co-authors?}
+       }
+
+\editor{TBD}
+
+\maketitle
+
+\begin{abstract}%
+\budget{$\le$200 words}
+\begin{plan}
+  \item What a Tsetlin machine (TM) is: propositional clauses learned by Tsetlin automata, no gradients, interpretable.
+  \item The problem: current TM software consists of C/CUDA kernels behind scikit-learn wrappers, outside the PyTorch ecosystem.
+  \item What \lib\ is: every TM variant as an \code{nn.Module} whose state is a tensor buffer, so \code{.to(device)}, \code{state\_dict}, and \code{DataLoader} all work.
+  \item Technical contribution: batched Type~I/II feedback as event counts plus binomial draws, with one commit per mini-batch.
+  \item Headline numbers: \ph{$2.2\times10^5$ ex/s on RTX 3090; up to $287\times$ vs 16-core CPU; sequential fidelity at batch $\le$50}.
+  \item Availability: MIT licence, \ph{URL}, PyPI, docs, tests, CI.
+\end{plan}
+\end{abstract}
+
+\begin{keywords}
+  Tsetlin machine, interpretable machine learning, propositional logic, PyTorch, GPU
+\end{keywords}
+
+% ---------------------------------------------------------------------------
+\section{Introduction}
+\label{sec:intro}
+\budget{$\approx$0.6 p}
+\begin{plan}
+  \item TM in two sentences: conjunctive clauses over literals; vote sum; automaton counters updated by reward and penalty \citep{granmo2018tsetlin,tsetlin1961}.
+  \item The family: convolutional \citep{granmo2019convolutional}, weighted \citep{phoulady2019weighted}, coalesced \citep{glimsdal2021coalesced}, regression \citep{abeyrathna2020regression}, clause budget \citep{abeyrathna2023clausesize}, drop clause \citep{sharma2023dropclause}.
+  \item Applications that motivate a research-grade tool: \ph{medical (e.g.\ \citealp{berge2018medical}), hardware \citep{wheeldon2020asynchronous}, cardiac MRI use case?}.
+  \item Statement of need: four structural gaps in existing software (no shared tensor abstraction; device is chosen by package; data path leaves the framework; extending means writing a kernel).
+  \item Contributions, as a list of 3--4 bullets: (i)~TMs as PyTorch modules; (ii)~batched feedback; (iii)~one hook-based mechanism for all input structures; (iv)~an end-to-end workflow (encoders, trainer, interpretation).
+\end{plan}
+
+% ---------------------------------------------------------------------------
+\section{Design}
+\label{sec:design}
+\budget{$\approx$1.1 p}
+
+\subsection{State as tensors}
+\begin{plan}
+  \item \code{ta\_state} is an integer buffer of shape $(C, 2F)$; a literal is included iff its counter is $\ge N$. Buffers, not parameters.
+  \item Consequences: \code{.to()}, \code{state\_dict()}, lazy \code{n\_features=None} initialisation (in the style of \code{LazyLinear}), \code{train()}/\code{eval()} semantics for empty clauses.
+  \item \code{update(x, y)} is the analogue of \code{loss.backward(); optimizer.step()} and returns the pre-update vote sums.
+\end{plan}
+
+\subsection{Layered architecture}
+\begin{plan}
+  \item Four layers: \code{functional} (stateless maths) $\rightarrow$ \code{TsetlinMachineBase} (learning loop) $\rightarrow$ concrete models (output layer plus feedback policy hooks) $\rightarrow$ workflow (\code{train}, \code{metrics}, \code{interpret}, \code{viz}, \code{data}).
+  \item Input-structure mixins: \code{\_ConvMixin} (1-D/2-D), \code{\_Conv3dMixin}, and \code{\_DenseMixin} (segmentation folds patches into the batch). None of them re-implements learning.
+  \item Figure~\ref{fig:arch}: the architecture and \code{update} pipeline (adapted from the white-paper TikZ figure).
+\end{plan}
+
+\begin{figure}[t]
+  \centering
+  \ph{Figure 1: layered architecture + update pipeline (\_encode $\to$ \_evaluate $\to$ \_votes $\to$ \_select\_feedback $\to$ \_feedback\_counts $\to$ commit)}
+  \caption{\ph{caption}}
+  \label{fig:arch}
+\end{figure}
+
+\subsection{Batched feedback}
+\begin{plan}
+  \item Selection matrices $S_{\mathrm{I}}, S_{\mathrm{II}} \in \{0,1\}^{B\times C}$ and literal matrix $L$; event counts as matrix products ($n^{\text{true}}, n^{\text{false}}, n^{\text{Ib}}, n^{\text{II}}$).
+  \item Closed-form transition: $\Delta = \mathrm{Bin}(n^{\text{true}}, p_{\text{mem}}) - \mathrm{Bin}(n^{\text{false}}+n^{\text{Ib}}, 1/s) + \min(n^{\text{II}}, \cdot)$, with one commit per batch.
+  \item Exact at $B=1$; an approximation for $B>1$, analogous to mini-batch SGD; \code{feedback\_mode="sequential"} keeps the exact path.
+  \item The hard clause-size budget is enforced at commit (reverting new inclusions beyond the cap).
+  \item The random-patch draw for convolution happens in the feedback step, so prediction uses no RNG.
+\end{plan}
+
+% ---------------------------------------------------------------------------
+\section{Functionality and Usage}
+\label{sec:usage}
+\budget{$\approx$0.7 p}
+\begin{plan}
+  \item Table~\ref{tab:features}: what ships (models, learning options, workflow, footprint).
+  \item Listing~\ref{lst:xor}: Noisy XOR in about 8 lines, with \code{Trainer} and \code{EarlyStopping}, printing the recovered rules.
+  \item Interpretability: \code{model.rules()} with encoder feature names; closed-form global and local importance \citep{blakely2020closedform}.
+  \item Booleanization encoders: thermometer, one-hot, bit-plane, adaptive threshold, colour, hypervector \citep{halenka2024hypervectors}.
+  \item One sentence on the bundled literature catalog (\ph{$n$ papers, $n$ results, SQL in the browser}) as a community resource.
+\end{plan}
+
+\begin{table}[t]
+  \centering\small
+  \caption{\ph{What ships in \lib\ \ph{version}.}}
+  \label{tab:features}
+  \begin{tabular}{@{}ll@{}}
+    \toprule
+    Models    & \ph{flat / coalesced / regression; Conv1d/2d/3d variants; segmentation} \\
+    Learning  & \ph{$T$, $s$, $N$, boosting, clause budget, drop clause/literal, batched vs.\ sequential} \\
+    Workflow  & \ph{encoders, Trainer + callbacks, metrics, rules, importance, plots} \\
+    Footprint & \ph{pure Python on PyTorch $\ge$2.0; no compiler/CUDA toolkit; Python 3.9--3.12} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{lstlisting}[language=Python, basicstyle=\ttfamily\footnotesize, caption={\ph{Noisy XOR example}}, label={lst:xor}]
+# [PLACEHOLDER: 8-10 line example from the README / summary report]
+\end{lstlisting}
+
+% ---------------------------------------------------------------------------
+\section{Comparison with Existing Software}
+\label{sec:comparison}
+\budget{$\approx$0.6 p}
+\begin{plan}
+  \item Packages: \code{pyTsetlinMachine}, \code{PyTsetlinMachineCUDA}, \code{tmu}, \code{green-tsetlin}, \ph{others: Julia / Rust ports?}.
+  \item Table~\ref{tab:compare}, feature matrix: variants covered, CPU/GPU from one class, tensor/\code{state\_dict} interop, \code{DataLoader}, extend without C/CUDA, interpretation tools, tests/CI/docs.
+  \item \textbf{Head-to-head run time and memory} on matched configurations (MLOSS review criterion): \ph{measurements needed vs.\ tmu and PyTsetlinMachineCUDA on MNIST / Noisy XOR}.
+  \item An honest framing: the reference packages remain the semantic ground truth; \lib\ trades some kernel speed for ecosystem fit and extensibility.
+\end{plan}
+
+\begin{table}[t]
+  \centering\small
+  \caption{\ph{Feature and performance comparison with existing TM software.}}
+  \label{tab:compare}
+  \ph{feature matrix + throughput/memory columns}
+\end{table}
+
+% ---------------------------------------------------------------------------
+\section{Performance and Fidelity}
+\label{sec:performance}
+\budget{$\approx$0.6 p}
+\begin{plan}
+  \item Setup: \ph{RTX 3090 vs.\ 16-core CPU, same code}; 784 features, 500 clauses per class.
+  \item Throughput against batch size (Figure~\ref{fig:bench}a): \ph{427 ex/s at $B{=}1$ $\rightarrow$ 220\,028 ex/s at $B{=}4096$; $216\times$ at $B{=}256$; up to $287\times$}.
+  \item Fidelity (Figure~\ref{fig:bench}b): Noisy XOR accuracy against batch size; batch $\le$50 matches sequential, and 200 degrades.
+  \item Recommended batch sizes (16--64 flat, 8--32 convolutional); all numbers regenerated by \code{benchmarks/run\_benchmarks.sh}.
+  \item \ph{Optional: MNIST / CIFAR-10 accuracy versus published TM results to show correctness at scale.}
+\end{plan}
+
+\begin{figure}[t]
+  \centering
+  \ph{Figure 2: (a) throughput vs.\ batch, GPU vs.\ CPU, log--log; (b) Noisy XOR accuracy vs.\ batch, 3 seeds}
+  \caption{\ph{caption}}
+  \label{fig:bench}
+\end{figure}
+
+% ---------------------------------------------------------------------------
+\section{Software Quality and Community}
+\label{sec:quality}
+\budget{$\approx$0.3 p}
+\begin{plan}
+  \item Tests: \ph{$n$ tests}, parametrised over CPU and CUDA; behavioural pins (empty-clause semantics, RNG-free prediction, Conv3d$\equiv$Conv2d at $D{=}1$); \textbf{coverage \ph{\%}}.
+  \item CI: ruff and pytest on Python 3.9/3.11/3.12 \ph{+ macOS/Windows?}; Trusted Publishing to PyPI on tags; the wheel is smoke-tested in a clean venv.
+  \item Documentation: MkDocs site with concepts, guides, examples, and an API reference generated from docstrings; extension guide for new variants.
+  \item Openness: MIT licence, public issue tracker, contribution guide \ph{CONTRIBUTING.md?}, \code{CITATION.cff}.
+\end{plan}
+
+% ---------------------------------------------------------------------------
+\section{Conclusion}
+\label{sec:conclusion}
+\budget{$\approx$0.15 p}
+\begin{plan}
+  \item Summary in two sentences, plus a roadmap: \ph{e.g.\ graph TMs, sparse clause banks, hybrid TM--neural pipelines}.
+  \item Availability: \url{https://github.com/vlbthambawita/torchtsetlin}, \url{https://vajira.info/torchtsetlin/}, \code{pip install torchtsetlin}.
+\end{plan}
+
+\acks{\ph{Funding: grant numbers; competing interests: none.}}
+
+\bibliography{references}
+
+\end{document}
