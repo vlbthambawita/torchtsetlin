@@ -1,0 +1,71 @@
+% Figure: the Tsetlin machine at a glance.
+% Worked example, x = (x0, x1, x2, x3) = (1, 0, 1, 1); literals [x, not x] = 1 0 1 1 | 0 1 0 0.
+%   C1 (+) = x0 AND NOT x1 -> 1      C2 (+) = x2 AND x3 -> 1
+%   C3 (-) = x1 AND x3     -> 0      C4 (-) = NOT x0 AND x2 -> 0      v = 1 + 1 - 0 - 0 = 2
+\begin{tikzpicture}[font=\scriptsize, x=1cm, y=1cm,
+  cell/.style={draw=gray!55, minimum width=0.34cm, minimum height=0.36cm, inner sep=0pt, anchor=center},
+  inc/.style={cell, fill=blue!65!black, text=white},
+  exc/.style={cell, fill=gray!10},
+  lit/.style={cell, draw=gray!70, fill=white, font=\tiny},
+  lit1/.style={cell, draw=gray!70, fill=orange!35, font=\tiny},
+  cbox/.style={draw, rounded corners=1.5pt, minimum height=0.32cm, inner sep=1.5pt, anchor=west, fill=white},
+  arr/.style={-{Stealth[length=3.5pt]}, thick, gray!70!black},
+  hdr/.style={font=\scriptsize\bfseries, anchor=south, align=center},
+  side/.style={anchor=east, align=right, font=\scriptsize}]
+
+  % ---- literals of the input --------------------------------------------------------
+  \node[hdr] at (1.19,2.0) {input $x=(1,0,1,1)$ and negations};
+  \foreach \k/\l in {0/x_0,1/x_1,2/x_2,3/x_3,4/\bar x_0,5/\bar x_1,6/\bar x_2,7/\bar x_3}{
+    \node[font=\tiny] at (\k*0.34,1.8) {$\l$};
+  }
+  \foreach \v [count=\k from 0] in {1,0,1,1,0,1,0,0}{
+    \ifnum\v=1 \node[lit1] at (\k*0.34,1.45) {1}; \else \node[lit] at (\k*0.34,1.45) {0}; \fi
+  }
+  \node[side] at (-0.3,1.45) {literals};
+
+  % ---- one Tsetlin automaton per (clause, literal) ------------------------------------
+  \foreach \row/\incl in {0/{0,5}, 1/{2,3}, 2/{1,3}, 3/{2,4}}{
+    \pgfmathsetmacro{\yy}{0.85-\row*0.45}
+    \foreach \k in {0,...,7}{
+      \def\isin{0}
+      \foreach \i in \incl {\ifnum\i=\k \xdef\isin{1}\fi}
+      \ifnum\isin=1 \node[inc] at (\k*0.34,\yy) {}; \else \node[exc] at (\k*0.34,\yy) {}; \fi
+    }
+  }
+  \node[side] at (-0.3,0.62) {automata\\(\code{ta\_state})};
+  \node[side, font=\tiny] at (-0.3,-0.25)
+    {\tikz\node[inc, minimum width=0.18cm, minimum height=0.18cm]{}; include\\[1pt]
+     \tikz\node[exc, minimum width=0.18cm, minimum height=0.18cm]{}; exclude};
+
+  % ---- clauses ------------------------------------------------------------------------
+  \node[hdr] at (4.05,1.05) {clauses: AND of\\included literals};
+  \foreach \row/\txt/\pol/\out in {0/{x_0 \wedge \bar x_1}/+/1, 1/{x_2 \wedge x_3}/+/1,
+                                   2/{x_1 \wedge x_3}/-/0, 3/{\bar x_0 \wedge x_2}/-/0}{
+    \pgfmathsetmacro{\yy}{0.85-\row*0.45}
+    \node[cbox, text width=1.75cm] (c\row) at (3.0,\yy)
+      {$C_{\the\numexpr\row+1\relax}^{\pol}$: $\txt$};
+    \draw[gray!50, densely dotted] (2.55,\yy) -- (c\row.west);
+    \ifnum\out=1
+      \node[circle, draw=orange!80!black, fill=orange!35, inner sep=1.1pt, font=\tiny] (o\row) at (5.35,\yy) {1};
+    \else
+      \node[circle, draw=gray!60, fill=white, inner sep=1.1pt, font=\tiny] (o\row) at (5.35,\yy) {0};
+    \fi
+    \draw[gray!60] (c\row.east) -- (o\row);
+  }
+
+  % ---- signed vote and prediction ------------------------------------------------------
+  \node[hdr] at (7.2,1.05) {signed vote};
+  \node[cbox, align=center] (v) at (6.0,0.175)
+    {\mbox{$v = \sum_j C^{+}_j - \sum_j C^{-}_j$}\\[2pt] $= 1 + 1 - 0 - 0 = 2$};
+  \foreach \row in {0,...,3}{ \draw[arr, thin] (o\row) -- (v.west); }
+  \node[cbox, align=center, fill=blue!8] (p) at (9.5,0.175)
+    {$\hat y = \arg\max_c v_c$\\[2pt] \tiny one $v$ per class};
+  \node[hdr] at (p.north |- 0,1.05) {prediction};
+  \draw[arr] (v.east) -- (p.west);
+
+  % ---- learning: feedback to the automata ----------------------------------------------
+  \draw[arr, blue!65!black, rounded corners=4pt] (p.south) |- (1.19,-0.9) -- (1.19,-0.64);
+  \node[font=\tiny, text=blue!65!black, anchor=north, align=center] at (5.9,-0.95)
+    {learning: Type~I and Type~II feedback, chosen with a probability set by $v$ and the margin $T$,\\
+     moves each automaton one step by reward or penalty (no gradients)};
+\end{tikzpicture}

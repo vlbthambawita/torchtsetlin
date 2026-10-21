@@ -76,16 +76,22 @@ algorithm at moderate batch sizes. The package is pure Python, MIT-licensed and 
 \label{sec:intro}
 
 A Tsetlin machine~\citep[TM;][]{granmo2018tsetlin} represents each class by conjunctive
-clauses over Boolean features and their negations. A clause such as $x_0 \wedge \neg x_1$ votes
-for or against its class, and the largest vote sum wins. Each (clause, literal) pair is a
-Tsetlin automaton~\citep{tsetlin1961,narendra1989learning}, a small counter that decides
-whether the literal is included. Learning is stochastic reward and penalty (Type~I and Type~II feedback) instead of gradients,
-so the model is a readable rule set~\citep{rudin2019stop} and inference is bitwise, suited to
+clauses over Boolean features and their negations (Figure~\ref{fig:tm}). Each (clause, literal) pair is a Tsetlin
+automaton~\citep{tsetlin1961,narendra1989learning}, a counter that decides whether the literal
+is included, and learning is reward and penalty instead of gradients, so the model is a readable rule set~\citep{rudin2019stop} and inference is bitwise, suited to
 low-power hardware~\citep{wheeldon2020asynchronous,maheshwari2023redress,tsetlinkws2025}.
 The family now includes convolutional~\citep{granmo2019convolutional},
 weighted~\citep{phoulady2019weighted}, regression~\citep{abeyrathna2020regression} and coalesced
 machines~\citep{glimsdal2021coalesced}, with regularisers such as clause-size
 budgets~\citep{abeyrathna2023clausesize} and drop clause~\citep{sharma2023dropclause}.
+
+\begin{figure}[t]
+\centering
+\input{figures/fig-tm-overview}
+\caption{A Tsetlin machine at a glance: each row of automata defines a clause, matching
+  clauses vote with their polarity, and feedback moves the automata.}
+\label{fig:tm}
+\end{figure}
 
 The reference software implements each variant as a C or CUDA kernel behind a
 \code{fit}/\code{predict} interface~\citep{software_pytsetlinmachine,
@@ -103,8 +109,8 @@ convolutional and dense inputs, and an end-to-end workflow from Booleanisation t
 \label{sec:design}
 
 \paragraph{State as tensors.}
-A machine with $C$ clauses over $F$ features holds an integer buffer \code{ta\_state} of shape
-$(C, 2F)$; literal $k$ is included in clause $j$ when its counter reaches the memory depth $N$.
+A machine with $C$ clauses over $F$ features holds the automata of Figure~\ref{fig:tm} as an
+integer buffer \code{ta\_state} of shape $(C, 2F)$, with memory depth $N$.
 The counters are buffers, not parameters, so \code{to()}, \code{state\_dict()} and lazy shape
 inference (as in \code{LazyLinear}) work unchanged. Learning is \code{update(x, y)}, the analogue
 of \code{loss.backward(); optimizer.step()}, which returns the pre-update vote sums for logging;
@@ -158,14 +164,11 @@ Listing~\ref{lst:xor} shows the complete workflow on Noisy XOR~\citep{granmo2018
 40\% label noise the machine recovers and prints the generating rule. Version \ph{0.3.x} ships
 \code{TsetlinMachine} (optional clause weights~\citep{phoulady2019weighted}),
 \code{CoalescedTsetlinMachine} (multi-class or multi-label) and \code{RegressionTsetlinMachine},
-convolutional 1-D, 2-D and 3-D variants of each, and dense segmentation machines. Options include
-drop clause and drop literal and focused negative sampling. Thermometer,
-one-hot, bit-plane, adaptive-threshold, colour, hypervector~\citep{halenka2024hypervectors} and
-pyramid encoders are \code{nn.Module}s that run on the model's device and carry feature names
+convolutional 1-D, 2-D and 3-D variants of each, and dense segmentation machines. Booleanisation
+encoders (thermometer, hypervector~\citep{halenka2024hypervectors} and others) are \code{nn.Module}s that run on the model's device and carry feature names
 into the rules (\code{worst\_perimeter>=105.9} rather than \code{x37}). A \code{Trainer} with
 callbacks accepts tensors and \code{DataLoader}s, and the interpretation tools extract rules
-and global, local and per-pixel importance~\citep{blakely2020closedform}. The package is pure Python on PyTorch $\ge 2.0$ and
-NumPy, with no compiler or CUDA toolkit, for Python 3.9--3.12.
+and global, local and per-pixel importance~\citep{blakely2020closedform}. The package is pure Python (PyTorch $\ge 2.0$, NumPy).
 
 \begin{lstlisting}[style=py, float=t, caption={Training, evaluating and reading a Tsetlin machine on Noisy XOR.}, label={lst:xor}]
 import torchtsetlin as tt
@@ -196,8 +199,8 @@ workloads for device portability, interoperability and extensibility in Python.
 \centering\footnotesize
 \setlength{\tabcolsep}{3.5pt}
 \caption{Comparison with TM software, latest PyPI releases \ph{as of submission} (\cmark\ yes,
-  \pmark\ partial, \xmark\ no; red: not yet verified or measured). Bottom: \res{MNIST, 2000
-  clauses, batch 256; hardware}.}
+  \pmark\ partial, \xmark\ no; red: not yet verified or measured). Bottom: MNIST~\citep{lecun1998mnist},
+  \res{2000 clauses, batch 256; hardware}.}
 \label{tab:compare}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
@@ -223,15 +226,14 @@ MNIST test accuracy (\%)          & \res{0.0} & \res{0.0} & \res{0.0}  & \res{0.
 \section{Performance and Fidelity}
 \label{sec:performance}
 
-Batching amortises the cost of an \code{update}, which touches every automaton. For a 784-feature machine with \res{500} clauses per
-class (Figure~\ref{fig:bench}a), GPU throughput grows from \res{$a$} examples/s at $B=1$ to
+For a 784-feature machine with \res{500} clauses per class (Figure~\ref{fig:bench}a), GPU
+throughput grows from \res{$a$} examples/s at $B=1$ to
 \res{$b$} at $B=4096$; at $B=256$ the same code runs \res{$c\times$} faster on an \ph{RTX~3090}
 than on a \ph{16-core CPU}, up to \res{$e\times$} for the clause counts of the image literature.
 Batching is an approximation, so Figure~\ref{fig:bench}b measures its cost: on Noisy XOR,
 batches up to about \res{50} stay in the accuracy band of the exact sequential algorithm and
 batch \res{200} degrades, which motivates the recommended \res{16--64} (flat) and \res{8--32}
-(convolutional). Accuracy matches published TM results (\res{MNIST $x$\%, Fashion-MNIST $y$\%,
-CIFAR-10 $z$\%}; \citealp{lecun1998mnist,xiao2017fashion,krizhevsky2009cifar}). One command, \code{benchmarks/run\_benchmarks.sh},
+(convolutional). One command, \code{benchmarks/run\_benchmarks.sh},
 reproduces every number and figure on other hardware.
 
 \begin{figure}[t]
@@ -268,9 +270,8 @@ reproduces every number and figure on other hardware.
   \node[red!70, rotate=20, font=\bfseries, opacity=0.5] at (rel axis cs:0.45,0.4) {DUMMY DATA};
 \end{axis}
 \end{tikzpicture}
-\caption{(a) Training throughput, same code on GPU and CPU (784 features, \res{500} clauses
-  per class; dashed: 12 features, 10 clauses). (b) Noisy XOR accuracy, mean\,$\pm$\,s.d.\ over
-  \res{3} seeds; $B=1$ is the exact sequential algorithm.}
+\caption{(a) Throughput, same code on GPU and CPU. (b) Noisy XOR accuracy over \res{3} seeds;
+  $B=1$ is the exact sequential algorithm.}
 \label{fig:bench}
 \end{figure}
 
@@ -279,11 +280,10 @@ reproduces every number and figure on other hardware.
 \label{sec:quality}
 
 The suite has \res{$n$} tests with \res{$p$\%} line coverage; device-dependent tests run on the
-CPU and on CUDA when present. Beyond the maths, it pins behaviour that breaks silently,
-such as empty-clause semantics, the hard clause budget under batched commits, RNG-free
-convolutional prediction and the bit-identical reduction of a depth-1 3-D model to the 2-D one. Continuous
+CPU and on CUDA when present. It also pins behaviour that breaks silently, such as
+empty-clause semantics and the hard clause budget under batched commits. Continuous
 integration lints and tests on Python 3.9, 3.11 and 3.12 \ph{on Linux, macOS and Windows};
-tagged releases go to PyPI by Trusted Publishing. The
+releases go to PyPI by Trusted Publishing. The
 documentation\footnote{\url{https://vajira.info/torchtsetlin/}} offers guides, examples, an API
 reference, and an SQL-queryable catalogue of \res{$r$} results on
 \res{$d$} datasets from \res{$m$} TM papers. Development is open on GitHub
