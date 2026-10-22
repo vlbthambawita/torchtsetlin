@@ -108,7 +108,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
 
     def predict_proba(self, x, method: str = "linear", temperature: float = 1.0) -> Tensor:
         """Probabilities: per-output ``(1 + v/T)/2`` (multi-label) or normalised over classes."""
-        votes = self.forward(x)
+        votes = self.forward(x).clamp(-self.T, self.T)  # probabilities live on [-T, T]
         p = 0.5 * (1.0 + votes / self.T)
         if self.multi_label:
             return p

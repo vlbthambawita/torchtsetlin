@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased
+
+- **New `budget_mode="soft"` option** for `max_included_literals` (MC-2). It follows the
+  reference implementation's rule (tmu): the budget only gates Type Ia, so a clause can
+  overshoot it and is then pruned by Type Ib until it shrinks back.
+  - The default stays `"hard"`, which also reverts inclusions beyond the cap.
+  - The hard cap never lets a clause exceed the budget, so its Type Ia -> Type Ib switch never
+    fires and clause contents freeze at exactly the budget.
+  - Effect on the TM Composites 3x3 colour-thermometer specialist (CIFAR-10, batch 50): hard,
+    about 51% at epoch 20; soft, 59-60%, matching tmu (`experiments/multi_convtm/LIBRARY_GAPS.md`).
+- **Classifier predictions no longer clamp vote sums** (MC-1). Learning still clamps each class
+  sum to `[-T, T]`, because the feedback probability is defined on it. `forward()` and
+  `predict()` used the clamped sum too, so every class that reached `+T` tied for the argmax,
+  and ties went to the lowest class index. `forward()` now returns the raw class sums, as the
+  reference implementations do.
+  - Measured on the TM Composites CIFAR-10 specialists, the clamp had cost 0.6-3.9 pp of
+    test accuracy (`experiments/multi_convtm/REPORT.md`).
+  - `predict_proba()` and `confidence()` still clamp, so the probabilities they return are
+    unchanged.
+  - `RegressionTsetlinMachine` keeps the clamp (new class attribute
+    `clamp_prediction_votes = True`), because its output is the clamped sum rescaled to the
+    target range.
+  - This is a behaviour change: a classifier whose class sums exceed `T` predicts differently
+    from 0.3.2, almost always better.
+
 ## 0.3.2 (2026-10-19)
 
 **A segmentation memory fix, and documentation for the Tsetlin-machine literature.** There are no

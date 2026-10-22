@@ -52,7 +52,7 @@ class TsetlinMachineBase(nn.Module):
         max_included_literals: optional cap on the number of included literals per clause
             (clause size constraint). Oversized clauses only receive forgetting feedback
             until they shrink back, and no update can grow a clause past the cap, including
-            under ``feedback_mode="batch"``.
+            under ``feedback_mode="batch"`` (see ``budget_mode``).
         drop_clause_p: probability of dropping a clause during learning (a Tsetlin machine
             analogue of dropout). The mask is resampled on every :meth:`update` call, or once
             per epoch if ``drop_granularity="epoch"`` (call :meth:`resample_dropout`).
@@ -68,6 +68,9 @@ class TsetlinMachineBase(nn.Module):
             applies it once (fast, mini-batch style). ``"sequential"`` applies the feedback
             example by example, re-evaluating the clauses in between — the exact classical
             algorithm, at the cost of one small step per example.
+        budget_mode: how ``max_included_literals`` is enforced. ``"hard"`` (default) also reverts
+            new inclusions beyond the cap. ``"soft"`` is the reference implementation's rule (tmu):
+            the cap only gates Type Ia, so a clause can overshoot it and is then pruned by Type Ib.
     """
 
     ta_state: Tensor
@@ -91,6 +94,7 @@ class TsetlinMachineBase(nn.Module):
         compute_dtype: torch.dtype = torch.float32,
         max_chunk_elements: int = 2**27,
         feedback_mode: str = "batch",
+        budget_mode: str = "hard",
     ) -> None:
         super().__init__()
         if n_clauses_total <= 0:
@@ -107,6 +111,8 @@ class TsetlinMachineBase(nn.Module):
             raise ValueError("drop_granularity must be 'batch' or 'epoch'")
         if feedback_mode not in ("batch", "sequential"):
             raise ValueError("feedback_mode must be 'batch' or 'sequential'")
+        if budget_mode not in ("hard", "soft"):
+            raise ValueError("budget_mode must be 'hard' or 'soft'")
         self.n_features: Optional[int] = None
         self.n_clauses_total = int(n_clauses_total)
         self.n_states = int(n_states)
@@ -121,6 +127,7 @@ class TsetlinMachineBase(nn.Module):
         self.compute_dtype = compute_dtype
         self.max_chunk_elements = int(max_chunk_elements)
         self.feedback_mode = feedback_mode
+        self.budget_mode = budget_mode
         self.feature_names: Optional[List[str]] = None
         self._clause_active: Optional[Tensor] = None
         self._literal_active: Optional[Tensor] = None
@@ -269,15 +276,22 @@ class TsetlinMachineBase(nn.Module):
     def _coerce_targets(self, y, n: int, device: torch.device) -> Tensor:  # pragma: no cover
         raise NotImplementedError
 
+    #: Whether ``forward()`` clamps vote sums to the vote margin. Learning always uses the
+    #: clamped sum (the feedback probability is defined on it), but a classifier's prediction
+    #: should not: every class saturating at ``+T`` ties for the argmax. Regression keeps the
+    #: clamp because its output is the clamped sum rescaled to the target range.
+    clamp_prediction_votes: bool = False
+
     def forward(self, x) -> Tensor:
         """Vote sums ``(B, n_outputs)``. Uses prediction semantics for empty clauses when the
-        module is in ``eval()`` mode."""
+        module is in ``eval()`` mode. The sums are *not* clamped to ``[-T, T]`` (unless the
+        model sets ``clamp_prediction_votes``), as in the reference implementations."""
         with torch.no_grad():
             xb = self._prepare(x)
             votes = []
             for sl in chunk_indices(xb.shape[0], self._chunk_size(xb)):
                 out, _ = self._evaluate(self._encode(xb[sl]), empty_value=self.training)
-                votes.append(self._votes(out))
+                votes.append(self._votes(out, clamp=self.clamp_prediction_votes))
             return torch.cat(votes, dim=0)
 
     # ------------------------------------------------------------------ learning loop
@@ -371,6 +385,7 @@ class TsetlinMachineBase(nn.Module):
             max_included_literals=self.max_included_literals,
             include_count=self.include_count,
             literal_active=self._literal_active,
+            budget_mode=self.budget_mode,
         )
         self._commit_weights(acc)
         self._refresh_include()
@@ -471,6 +486,8 @@ class TsetlinMachineBase(nn.Module):
         ]
         if self.max_included_literals is not None:
             parts.append(f"max_included_literals={self.max_included_literals}")
+            if self.budget_mode != "hard":
+                parts.append(f"budget_mode={self.budget_mode!r}")
         if self.drop_clause_p:
             parts.append(f"drop_clause_p={self.drop_clause_p}")
         if self.drop_literal_p:
