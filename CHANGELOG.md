@@ -1,6 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 (2026-10-22)
+
+**Training now matches the reference implementation (tmu) on the TM Composites benchmark.**
+Reproducing *TMComposites* (Granmo, 2023) on CIFAR-10 turned up two library gaps. Both are fixed
+here. With 0.4.0, torchtsetlin reproduces 8 of the 9 rows of the paper's Table 2, against 1 of 9
+with 0.3.2 (`experiments/multi_convtm/REPORT.md`). Two behaviour changes, so check results you
+compare against 0.3.x:
 
 - **Behaviour change: the clause budget is soft again by default** (`budget_mode="soft"`, MC-2).
   `max_included_literals` now follows the reference implementation (tmu): the budget only gates
