@@ -73,6 +73,8 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
             raise RuntimeError("Target range unknown: pass y_range or call update() first.")
 
     # ------------------------------------------------------------------ output layer
+    clamp_prediction_votes = True  # the output is the clamped vote sum rescaled to [y_min, y_max]
+
     def _votes(self, clause_out: Tensor, clamp: bool = True) -> Tensor:
         w = self.weights.to(torch.float32) if self.weighted else None
         c = clause_out.to(torch.float32)

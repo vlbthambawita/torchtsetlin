@@ -201,6 +201,7 @@ def apply_feedback(
     include_count: Optional[Tensor] = None,
     literal_active: Optional[Tensor] = None,
     generator: Optional[torch.Generator] = None,
+    budget_mode: str = "hard",
 ) -> Tensor:
     """Turn aggregated feedback counts into Tsetlin automata transitions (in place).
 
@@ -225,6 +226,10 @@ def apply_feedback(
         literal_active: optional ``(2F,)`` 0/1 mask; inactive literals receive no feedback
             (literal dropout).
         generator: optional RNG.
+        budget_mode: ``"hard"`` (default) also reverts new inclusions beyond the budget, so a
+            clause never ends a call above ``b``. ``"soft"`` is the reference implementation's
+            rule (tmu): the budget only gates Type Ia, so a clause may overshoot ``b`` and is then
+            pruned by Type Ib until it shrinks back.
 
     Returns:
         The updated ``state`` tensor (same object).
@@ -267,6 +272,9 @@ def apply_feedback(
         state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
         return state
 
+    if budget_mode == "soft":
+        state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
+        return state
     was_included = state >= N
     state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
     _cap_new_inclusions(state, was_included, N, int(max_included_literals), generator)

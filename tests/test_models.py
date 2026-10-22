@@ -367,3 +367,66 @@ def test_batched_classifier_respects_max_included_literals(device):
         for i in range(0, 2000, 50):
             m.update(x[i:i + 50], y[i:i + 50])
     assert int(m.include_count.max()) <= 6
+
+
+def _trained_small_T(device, cls=None, **kw):
+    """A classifier with T far below its vote capacity, so class sums saturate."""
+    cls = cls or tt.TsetlinMachine
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(1000, noise=0.1)
+    m = cls(n_features=12, n_classes=2, n_clauses=40, T=2, s=3.9, **kw).to(device)
+    for _ in range(5):
+        for i in range(0, 1000, 25):
+            m.update(x[i:i + 25].to(device), y[i:i + 25].to(device))
+    m.eval()
+    return m, x.to(device), y.to(device)
+
+
+def test_prediction_votes_are_not_clamped(device):
+    # Learning clamps the vote sum to [-T, T]; prediction must not (MC-1): with every winning
+    # class saturated at +T, the argmax would be decided by class index instead of by the vote.
+    m, x, _ = _trained_small_T(device)
+    votes = m(x)
+    assert float(votes.abs().max()) > m.T
+    with torch.no_grad():
+        xb = m._prepare(x)
+        out, _ = m._evaluate(m._encode(xb), empty_value=False)
+        clamped = m._votes(out, clamp=True)
+    assert torch.equal(votes.clamp(-m.T, m.T), clamped)
+    assert torch.equal(m.predict(x), votes.argmax(dim=1))
+
+
+def test_predict_proba_and_confidence_still_use_the_vote_margin(device):
+    m, x, _ = _trained_small_T(device)
+    v = m(x).clamp(-m.T, m.T)
+    p = 0.5 * (1.0 + v / m.T)
+    assert torch.allclose(m.predict_proba(x), p / p.sum(dim=1, keepdim=True).clamp_min(1e-12))
+    assert float(m.confidence(x).max()) <= 1.0
+
+
+def test_coalesced_prediction_votes_are_not_clamped(device):
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(1000, noise=0.1)
+    m = tt.CoalescedTsetlinMachine(n_features=12, n_outputs=2, n_clauses=40, T=2, s=3.9).to(device)
+    for _ in range(5):
+        for i in range(0, 1000, 25):
+            m.update(x[i:i + 25].to(device), y[i:i + 25].to(device))
+    m.eval()
+    votes = m(x.to(device))
+    assert float(votes.abs().max()) > m.T
+    probs = m.predict_proba(x.to(device))
+    assert float(probs.min()) >= 0.0
+
+
+def test_regression_prediction_stays_in_range(device):
+    torch.manual_seed(0)
+    x = torch.randint(0, 2, (500, 8))
+    y = x[:, :3].sum(dim=1).float()
+    m = tt.RegressionTsetlinMachine(n_features=8, n_clauses=40, T=5, s=3.0, y_range=(0.0, 3.0)).to(device)
+    for _ in range(3):
+        m.update(x.to(device), y.to(device))
+    m.eval()
+    votes = m(x.to(device))
+    assert float(votes.min()) >= 0.0 and float(votes.max()) <= m.T
+    pred = m.predict(x.to(device))
+    assert float(pred.min()) >= 0.0 and float(pred.max()) <= 3.0

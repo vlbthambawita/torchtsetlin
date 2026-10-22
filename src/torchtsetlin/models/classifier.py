@@ -130,7 +130,7 @@ class TsetlinMachine(TsetlinMachineBase):
         ``method="linear"`` uses the calibrated score of Abeyrathna et al.,
         ``p_k ∝ (1 + v_k/T)/2``; ``method="softmax"`` applies a softmax to ``v/T``.
         """
-        votes = self.forward(x)
+        votes = self.forward(x).clamp(-self.T, self.T)  # probabilities live on [-T, T]
         if method == "softmax":
             return F.predict_proba_from_votes(votes, self.T, temperature)
         p = 0.5 * (1.0 + votes / self.T)

@@ -141,3 +141,34 @@ def test_confidence_and_proba():
     assert torch.allclose(conf, torch.tensor([1.0, 0.5]))
     p = F.predict_proba_from_votes(votes, 10)
     assert torch.allclose(p.sum(1), torch.ones(2))
+
+
+def test_soft_budget_allows_overshoot_then_prunes():
+    import torchtsetlin.functional as F
+    N, C, L, b = 4, 1, 8, 2
+    # One clause at the budget (2 included); 4 excluded True literals one step below the boundary.
+    base = torch.full((C, L), N - 1, dtype=torch.int32)
+    base[0, :2] = N + 1
+    def step(mode, include_count):
+        st = base.clone()
+        n_true = torch.zeros(C, L)
+        n_true[0, :6] = 1.0                       # one Type Ia event on literals 0-5 (all True)
+        F.apply_feedback(st, n_true, torch.zeros(C, L), torch.zeros(C), torch.zeros(C, L),
+                         n_states=N, s=1e9, boost_true_positive=True, max_included_literals=b,
+                         include_count=include_count, budget_mode=mode)
+        return int((st >= N).sum())
+    count = torch.tensor([2])
+    assert step("hard", count) == b              # new inclusions reverted at the cap
+    assert step("soft", count) == 6              # tmu rule: Ia allowed at <= b, overshoots
+    # An oversized clause gets no Type Ia under either mode: its events turn into Type Ib.
+    assert step("soft", torch.tensor([3])) == 2
+
+
+def test_budget_mode_validated():
+    import pytest
+
+    import torchtsetlin as tt
+    with pytest.raises(ValueError):
+        tt.TsetlinMachine(4, 2, 10, 5, budget_mode="medium")
+    m = tt.TsetlinMachine(4, 2, 10, 5, max_included_literals=3, budget_mode="soft")
+    assert "budget_mode='soft'" in repr(m)
