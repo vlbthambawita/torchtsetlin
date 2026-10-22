@@ -8,7 +8,7 @@
 | `n_states` | memory depth `N` per action | 50–128 (256 states); deeper = slower forgetting |
 | `boost_true_positive` | deterministic memorisation of True literals | `True` |
 | `weighted` | integer clause weights | `True` for images, often `False` for tiny problems |
-| `max_included_literals` | clause size budget | 8–32 for concise rules |
+| `max_included_literals` | clause size budget (soft by default; `budget_mode`) | 8–32 for concise rules |
 | `drop_clause_p` | fraction of clauses dropped per batch/epoch | 0.25 (images) – 0.75 (text) |
 | `focused_negative_sampling` | pick confusable negative classes | `True` for many classes |
 | `feedback_mode` | `"batch"` or `"sequential"` | `"batch"` with batch size 8–64 |

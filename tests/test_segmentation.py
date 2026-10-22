@@ -205,9 +205,11 @@ def test_class_feedback_p_moves_with_the_model(device):
 
 
 def test_segmentation_respects_max_included_literals(device):
-    """Regression (issue #1): the clause-size budget must hold under batched dense feedback."""
+    """Regression (issue #1): under budget_mode="hard" the clause-size budget must hold under
+    batched dense feedback."""
     m = tt.SegmentationTsetlinMachine(
-        3, 60, T=20, s=10.0, patch_size=3, input_shape=(3, 16, 16), max_included_literals=6
+        3, 60, T=20, s=10.0, patch_size=3, input_shape=(3, 16, 16), max_included_literals=6,
+        budget_mode="hard",
     ).to(device)
     x = torch.rand(20, 3, 16, 16, device=device) > 0.5
     y = torch.randint(0, 3, (20, 16, 16), device=device)

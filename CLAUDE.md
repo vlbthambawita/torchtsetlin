@@ -97,10 +97,14 @@ do not reuse them after the call.
   Noisy XOR, 200 degrades noticeably (see `docs/benchmarks.md`). `"sequential"` (or `update(..., sequential=True)`)
   is the exact per-example algorithm. Aggregating *all* events is deliberate: thinning Type II/Ia events per
   clause was tried and made learning much worse.
-- **`max_included_literals` (clause budget) is a hard cap** since 0.3.0: oversized matching clauses get
-  their Type Ia turned into Type Ib, *and* `functional.apply_feedback` reverts newly included literals
-  beyond the budget (`_cap_new_inclusions`), because a batched commit could otherwise overshoot it.
-  Results measured before 2026-10-01 used the old soft cap and are not directly comparable.
+- **`max_included_literals` (clause budget) is soft by default** (`budget_mode="soft"`, tmu's rule).
+  A matching clause above the budget gets its Type Ia turned into Type Ib (forgetting), so a clause
+  may overshoot the budget and is then pruned. History: before 2026-10-01 the budget was soft. In
+  0.3.x (issue #1) it was a hard cap that also reverted new inclusions beyond the budget
+  (`_cap_new_inclusions`, still available as `budget_mode="hard"`). With the hard cap no clause ever
+  exceeds the budget, so the Type Ib switch never fires and clauses freeze at exactly the budget:
+  -10 pp on the CIFAR-10 thermometer CTMs (gap MC-2, `experiments/multi_convtm/LIBRARY_GAPS.md`).
+  Results measured with a 0.3.x budget are not directly comparable.
 - **The convolutional random patch is drawn in `_feedback_counts`, not `_evaluate`.** `_evaluate`
   returns the whole `(B, P, C)` match tensor as its feedback context and nothing else; drawing
   there instead costs a `(B, P, C)` `rand` + `argmax` on *every* forward pass (~5x slower

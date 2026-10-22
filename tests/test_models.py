@@ -359,10 +359,10 @@ def test_parameters_warns():
 
 
 def test_batched_classifier_respects_max_included_literals(device):
-    """Regression (issue #1): the budget held only under sequential feedback before."""
+    """Regression (issue #1): under budget_mode="hard" the budget holds for batched feedback."""
     x = torch.rand(2000, 40, device=device) > 0.5
     y = (x[:, 0] ^ x[:, 1]).long()
-    m = tt.TsetlinMachine(40, 2, 100, T=15, s=10.0, max_included_literals=6).to(device)
+    m = tt.TsetlinMachine(40, 2, 100, T=15, s=10.0, max_included_literals=6, budget_mode="hard").to(device)
     for _ in range(3):
         for i in range(0, 2000, 50):
             m.update(x[i:i + 50], y[i:i + 50])

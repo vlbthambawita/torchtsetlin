@@ -33,8 +33,9 @@ reproduction, the impact on this programme and a fix sketch. Nothing here was ap
 
 ## MC-2: The hard clause budget disables the budget's own Type Ia -> Type Ib switch
 
-- **Status**: OPEN (found 2026-10-21). An opt-in fix, `budget_mode="soft"`, has been added to the
-  library (default unchanged); changing the default is a decision for the maintainer.
+- **Status**: FIXED. Found 2026-10-21. `budget_mode="soft"` was added as an option, then made
+  the library default on 2026-10-22 with the user's approval (PROPOSAL.md Step 2).
+  `budget_mode="hard"` restores the 0.3.x behaviour.
 - **Symptom**: with `max_included_literals=32`, the 3x3 / 4x4 colour-thermometer and HoG
   specialists plateau 7-12 pp below the paper and below the authors' own code (tmu), which
   reproduces Table 2 on this machine (`results/tmu_*_run0.json`).

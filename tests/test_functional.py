@@ -105,7 +105,8 @@ def test_apply_feedback_literal_active_and_clause_size():
 
 
 def test_apply_feedback_budget_is_a_hard_limit(device):
-    """Regression (issue #1): aggregated events must not carry a clause past the budget."""
+    """Regression (issue #1): under budget_mode="hard", aggregated events must not carry a
+    clause past the budget."""
     N, b = 4, 3
     state = torch.full((5, 10), N - 1, dtype=torch.int32, device=device)
     state[1, :2] = N  # 2 included -> room for 1 more
@@ -115,7 +116,7 @@ def test_apply_feedback_budget_is_a_hard_limit(device):
     F.apply_feedback(
         state, torch.zeros(5, 10, device=device), torch.zeros(5, 10, device=device),
         torch.zeros(5, device=device), n2, n_states=N, s=1e9, max_included_literals=b,
-        include_count=before.clone(),
+        include_count=before.clone(), budget_mode="hard",
     )
     after = (state >= N).sum(1)
     assert after.tolist() == [3, 3, 5, 3, 3]
@@ -129,7 +130,7 @@ def test_apply_feedback_budget_is_a_hard_limit(device):
         F.apply_feedback(
             st, torch.zeros(1, 10, device=device), torch.zeros(1, 10, device=device),
             torch.zeros(1, device=device), torch.full((1, 10), 5.0, device=device),
-            n_states=N, s=1e9, max_included_literals=b,
+            n_states=N, s=1e9, max_included_literals=b, budget_mode="hard",
         )
         picks.add(tuple((st[0] >= N).nonzero().squeeze(1).tolist()))
     assert len(picks) > 1
@@ -164,11 +165,19 @@ def test_soft_budget_allows_overshoot_then_prunes():
     assert step("soft", torch.tensor([3])) == 2
 
 
+def test_soft_budget_is_the_default():
+    import inspect
+
+    import torchtsetlin as tt
+    assert tt.TsetlinMachine(4, 2, 10, 5, max_included_literals=3).budget_mode == "soft"
+    assert inspect.signature(F.apply_feedback).parameters["budget_mode"].default == "soft"
+
+
 def test_budget_mode_validated():
     import pytest
 
     import torchtsetlin as tt
     with pytest.raises(ValueError):
         tt.TsetlinMachine(4, 2, 10, 5, budget_mode="medium")
-    m = tt.TsetlinMachine(4, 2, 10, 5, max_included_literals=3, budget_mode="soft")
-    assert "budget_mode='soft'" in repr(m)
+    m = tt.TsetlinMachine(4, 2, 10, 5, max_included_literals=3, budget_mode="hard")
+    assert "budget_mode='hard'" in repr(m)  # only the non-default mode is printed

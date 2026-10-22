@@ -15,7 +15,7 @@ Evidence comes from `REPORT.md` (sections 6-8) and the records in `results/`. Ea
 
 On a single specialist (3x3 colour thermometers, seed 0, epoch 20): tmu 59.8%, torchtsetlin soft budget 59.1%, hard budget 51.4%. Time per epoch on the same specialist: tmu 629 s, torchtsetlin 85 s. Both ran on shared GPUs, so treat the ratio as indicative.
 
-## Step 1. Unclamped prediction votes (MC-1) — **applied, awaiting commit approval**
+## Step 1. Unclamped prediction votes (MC-1) — **applied and committed**
 
 - **Change**: `forward()` and `predict()` return raw class sums. `predict_proba`/`confidence` clamp explicitly. Regression keeps the clamp (`clamp_prediction_votes = True`).
 - **Evidence**: the clamp cost 0.6-3.9 pp on the four specialists (`REPORT.md` section 4); tmu does not clamp.
@@ -24,7 +24,7 @@ On a single specialist (3x3 colour thermometers, seed 0, epoch 20): tmu 59.8%, t
 - **Validation**: `pytest -q`.
 - **Effort**: done.
 
-## Step 2. Make the soft clause budget the default (MC-2) — **proposed**
+## Step 2. Make the soft clause budget the default (MC-2) — **applied 2026-10-22**
 
 - **Change**: `budget_mode` default `"hard"` -> `"soft"`. The budget then only gates Type Ia (`include_count <= b`), as in tmu. A clause may overshoot and is pruned by Type Ib. Also: CHANGELOG, `docs/concepts/hyperparameters.md` (budget section), the repository `CLAUDE.md` note on the hard cap, and a 0.4.0 release (behaviour change).
 - **Evidence**:
@@ -77,8 +77,8 @@ On a single specialist (3x3 colour thermometers, seed 0, epoch 20): tmu 59.8%, t
 
 | Step | Decision needed | Status |
 |---|---|---|
-| 1 | commit the applied MC-1 fix | applied |
-| 2 | soft budget as default (0.4.0) | proposed, evidence in hand |
+| 1 | commit the applied MC-1 fix | done |
+| 2 | soft budget as default (0.4.0) | applied (release pending) |
 | 3 | measure, then maybe add `budget_ceiling` | proposed experiment |
 | 4 | `weight_min` option | proposed experiment |
 | 5 | batch-size guidance / faster sequential path | proposed experiment |

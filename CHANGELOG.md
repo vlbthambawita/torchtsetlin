@@ -2,14 +2,18 @@
 
 ## Unreleased
 
-- **New `budget_mode="soft"` option** for `max_included_literals` (MC-2). It follows the
-  reference implementation's rule (tmu): the budget only gates Type Ia, so a clause can
-  overshoot it and is then pruned by Type Ib until it shrinks back.
-  - The default stays `"hard"`, which also reverts inclusions beyond the cap.
-  - The hard cap never lets a clause exceed the budget, so its Type Ia -> Type Ib switch never
-    fires and clause contents freeze at exactly the budget.
-  - Effect on the TM Composites 3x3 colour-thermometer specialist (CIFAR-10, batch 50): hard,
-    about 51% at epoch 20; soft, 59-60%, matching tmu (`experiments/multi_convtm/LIBRARY_GAPS.md`).
+- **Behaviour change: the clause budget is soft again by default** (`budget_mode="soft"`, MC-2).
+  `max_included_literals` now follows the reference implementation (tmu): the budget only gates
+  Type Ia, so a clause may overshoot it and is then pruned by Type Ib until it shrinks back.
+  - **Why**: the 0.3.x hard cap reverted every inclusion beyond the budget, so no clause ever
+    exceeded it and the Type Ia -> Type Ib switch never fired. Clauses froze at exactly the budget.
+  - **Effect** on the TM Composites CIFAR-10 reproduction (batch 50, 3 seeds): the 3x3 / 4x4
+    colour-thermometer specialists go from about 51% to 61.5-61.7%, matching tmu. The
+    four-specialist composite goes from 68.6% to 73.3% (`experiments/multi_convtm/REPORT.md`).
+  - **Compatibility**: `budget_mode="hard"` restores 0.3.x. Every model trained with
+    `max_included_literals` learns differently, so results measured with 0.3.x and a budget are not
+    directly comparable. Experiments in `experiments/` that recorded results under 0.3.x pass no
+    `budget_mode`, so re-running them now uses the soft rule.
 - **Classifier predictions no longer clamp vote sums** (MC-1). Learning still clamps each class
   sum to `[-T, T]`, because the feedback probability is defined on it. `forward()` and
   `predict()` used the clamped sum too, so every class that reached `+T` tied for the argmax,

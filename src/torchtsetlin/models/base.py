@@ -49,10 +49,9 @@ class TsetlinMachineBase(nn.Module):
             Larger ``s`` -> more literals per clause (more specific patterns).
         boost_true_positive: memorize True literals of matching clauses with probability 1
             instead of ``(s-1)/s`` (the default in the reference implementations).
-        max_included_literals: optional cap on the number of included literals per clause
-            (clause size constraint). Oversized clauses only receive forgetting feedback
-            until they shrink back, and no update can grow a clause past the cap, including
-            under ``feedback_mode="batch"`` (see ``budget_mode``).
+        max_included_literals: optional budget on the number of included literals per clause
+            (clause size constraint). A matching clause above the budget receives only
+            forgetting (Type Ib) feedback until it shrinks back (see ``budget_mode``).
         drop_clause_p: probability of dropping a clause during learning (a Tsetlin machine
             analogue of dropout). The mask is resampled on every :meth:`update` call, or once
             per epoch if ``drop_granularity="epoch"`` (call :meth:`resample_dropout`).
@@ -68,9 +67,12 @@ class TsetlinMachineBase(nn.Module):
             applies it once (fast, mini-batch style). ``"sequential"`` applies the feedback
             example by example, re-evaluating the clauses in between — the exact classical
             algorithm, at the cost of one small step per example.
-        budget_mode: how ``max_included_literals`` is enforced. ``"hard"`` (default) also reverts
-            new inclusions beyond the cap. ``"soft"`` is the reference implementation's rule (tmu):
-            the cap only gates Type Ia, so a clause can overshoot it and is then pruned by Type Ib.
+        budget_mode: how ``max_included_literals`` is enforced. ``"soft"`` (default) is the
+            reference implementation's rule (tmu): the budget only gates Type Ia, so a clause can
+            overshoot it and is then pruned by Type Ib, which keeps clause contents changing.
+            ``"hard"`` (the 0.3.x default) also reverts every inclusion beyond the budget. A
+            clause then never exceeds it, so the Type Ib switch never fires and clauses freeze
+            at exactly the budget, which cost 10-11 pp on CIFAR-10 colour-thermometer models.
     """
 
     ta_state: Tensor
@@ -94,7 +96,7 @@ class TsetlinMachineBase(nn.Module):
         compute_dtype: torch.dtype = torch.float32,
         max_chunk_elements: int = 2**27,
         feedback_mode: str = "batch",
-        budget_mode: str = "hard",
+        budget_mode: str = "soft",
     ) -> None:
         super().__init__()
         if n_clauses_total <= 0:
@@ -486,7 +488,7 @@ class TsetlinMachineBase(nn.Module):
         ]
         if self.max_included_literals is not None:
             parts.append(f"max_included_literals={self.max_included_literals}")
-            if self.budget_mode != "hard":
+            if self.budget_mode != "soft":
                 parts.append(f"budget_mode={self.budget_mode!r}")
         if self.drop_clause_p:
             parts.append(f"drop_clause_p={self.drop_clause_p}")

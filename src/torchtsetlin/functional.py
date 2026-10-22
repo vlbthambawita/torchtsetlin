@@ -201,7 +201,7 @@ def apply_feedback(
     include_count: Optional[Tensor] = None,
     literal_active: Optional[Tensor] = None,
     generator: Optional[torch.Generator] = None,
-    budget_mode: str = "hard",
+    budget_mode: str = "soft",
 ) -> Tensor:
     """Turn aggregated feedback counts into Tsetlin automata transitions (in place).
 
@@ -219,17 +219,17 @@ def apply_feedback(
             clauses is deterministic (probability 1) instead of ``(s-1)/s``.
         max_included_literals: clause size budget ``b``. A matching clause that includes more
             than ``b`` literals gets no Type Ia feedback; all its Type I events act as Type Ib
-            (forgetting) until it shrinks back (Abeyrathna et al., 2023). The budget is also a
-            hard limit on growth: no clause ends a call with more than ``b`` literals unless it
-            started with more, however many events were aggregated into the call.
+            (forgetting) until it shrinks back (Abeyrathna et al., 2023). Under
+            ``budget_mode="hard"`` the budget is also a hard limit on growth.
         include_count: ``(C,)`` included literals per clause (needed for the constraint).
         literal_active: optional ``(2F,)`` 0/1 mask; inactive literals receive no feedback
             (literal dropout).
         generator: optional RNG.
-        budget_mode: ``"hard"`` (default) also reverts new inclusions beyond the budget, so a
-            clause never ends a call above ``b``. ``"soft"`` is the reference implementation's
-            rule (tmu): the budget only gates Type Ia, so a clause may overshoot ``b`` and is then
-            pruned by Type Ib until it shrinks back.
+        budget_mode: ``"soft"`` (default) is the reference implementation's rule (tmu): the
+            budget only gates Type Ia, so a clause may overshoot ``b`` and is then pruned by
+            Type Ib until it shrinks back. ``"hard"`` also reverts new inclusions beyond the
+            budget, so a clause never ends a call above ``b``, however many events were
+            aggregated into it.
 
     Returns:
         The updated ``state`` tensor (same object).

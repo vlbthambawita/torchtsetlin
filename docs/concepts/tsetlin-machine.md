@@ -112,8 +112,13 @@ clauses.
   too high, with probability proportional to the error.
 * **Convolutional TM** — see [Convolution](convolution.md).
 * **Clause size constraint** (`max_included_literals`): clauses above the budget receive
-  only forgetting feedback until they shrink (Abeyrathna et al., 2023). The budget is a hard
-  limit: a batched commit never grows a clause past it, however many events it aggregates.
+  only forgetting feedback until they shrink (Abeyrathna et al., 2023). By default
+  (`budget_mode="soft"`, the reference implementation's rule) a clause may overshoot the
+  budget and is then pruned, which keeps its contents changing. `budget_mode="hard"` also
+  reverts every inclusion beyond the budget. With that, no clause ever exceeds it, the pruning
+  never triggers, and clauses freeze at exactly the budget. On the TM Composites CIFAR-10
+  colour-thermometer specialists that cost 10-11 pp
+  (`experiments/multi_convtm/REPORT.md`).
 * **Drop clause / drop literal** (`drop_clause_p`, `drop_literal_p`): randomly excluded
   clauses neither vote nor learn for one batch or epoch (Sharma et al., 2023).
 * **Focused negative sampling**: choose the negative class proportionally to its current

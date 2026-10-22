@@ -40,8 +40,9 @@ def build_model(cfg, n_features, input_shape, max_chunk_elements, feedback_mode=
                 max_included_literals=MAX_INCLUDED_LITERALS, budget_mode="hard"):
     common = dict(weighted=cfg["weighted"], max_included_literals=max_included_literals,
                   feedback_mode=feedback_mode, max_chunk_elements=max_chunk_elements)
-    if budget_mode != "hard":            # keyword exists from the soft-budget change on
-        common["budget_mode"] = budget_mode
+    # Always explicit: the library default changed from "hard" (0.3.x) to "soft", and the
+    # original reproduction records are "hard".
+    common["budget_mode"] = budget_mode
     if cfg["model"] == "conv":
         # TMU's convolution appends thermometer-encoded patch coordinates; so does this.
         return tt.ConvTsetlinMachine(10, cfg["n_clauses"], cfg["T"], cfg["s"],

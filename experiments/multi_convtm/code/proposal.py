@@ -78,7 +78,7 @@ def main():
          f"Time per epoch on the same specialist: tmu {f(s_tmu, 0)} s, torchtsetlin {f(s_ttl, 0)} s. "
          "Both ran on shared GPUs, so treat the ratio as indicative.", ""]
 
-    L += ["## Step 1. Unclamped prediction votes (MC-1) — **applied, awaiting commit approval**", "",
+    L += ["## Step 1. Unclamped prediction votes (MC-1) — **applied and committed**", "",
           "- **Change**: `forward()` and `predict()` return raw class sums. `predict_proba`/`confidence` "
           "clamp explicitly. Regression keeps the clamp (`clamp_prediction_votes = True`).",
           "- **Evidence**: the clamp cost 0.6-3.9 pp on the four specialists (`REPORT.md` section 4); tmu does not clamp.",
@@ -86,7 +86,7 @@ def main():
           "- **Tests**: 4 new tests in `tests/test_models.py`; the full suite passes.",
           "- **Validation**: `pytest -q`.", "- **Effort**: done.", ""]
 
-    L += ["## Step 2. Make the soft clause budget the default (MC-2) — **proposed**", "",
+    L += ["## Step 2. Make the soft clause budget the default (MC-2) — **applied 2026-10-22**", "",
           "- **Change**: `budget_mode` default `\"hard\"` -> `\"soft\"`. The budget then only gates Type Ia "
           "(`include_count <= b`), as in tmu. A clause may overshoot and is pruned by Type Ib. Also: "
           "CHANGELOG, `docs/concepts/hyperparameters.md` (budget section), the repository `CLAUDE.md` "
@@ -170,8 +170,8 @@ def main():
 
     L += ["## Approval checklist", "",
           "| Step | Decision needed | Status |", "|---|---|---|",
-          "| 1 | commit the applied MC-1 fix | applied |",
-          "| 2 | soft budget as default (0.4.0) | proposed, evidence in hand |",
+          "| 1 | commit the applied MC-1 fix | done |",
+          "| 2 | soft budget as default (0.4.0) | applied (release pending) |",
           "| 3 | measure, then maybe add `budget_ceiling` | proposed experiment |",
           "| 4 | `weight_min` option | proposed experiment |",
           "| 5 | batch-size guidance / faster sequential path | proposed experiment |",
