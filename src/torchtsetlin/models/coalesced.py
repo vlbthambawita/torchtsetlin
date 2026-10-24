@@ -143,7 +143,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
             return type_i, type_ii, aux
 
         y_neg = F.sample_negative_classes(
-            y, self.n_outputs, votes=votes, focused=self.focused_negative_sampling
+            y, self.n_outputs, votes=votes, focused=self.focused_negative_sampling, T=self.T
         )
         ar = torch.arange(B, device=dev)
         p_tgt = F.feedback_probabilities(votes[ar, y], self.T, target=True)

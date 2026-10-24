@@ -105,6 +105,11 @@ do not reuse them after the call.
   exceeds the budget, so the Type Ib switch never fires and clauses freeze at exactly the budget:
   -10 pp on the CIFAR-10 thermometer CTMs (gap MC-2, `experiments/multi_convtm/LIBRARY_GAPS.md`).
   Results measured with a 0.3.x budget are not directly comparable.
+- **Weights, regression feedback and focused sampling follow the reference libraries since
+  2026-10-22** (G1/G3/G4 in `experiments/paper_experiments/LIBRARY_GAPS.md`): clause weights floor at
+  1 (was 0), the regression feedback probability is `(err/T)**2` (was `|err|/T`), and focused
+  negative sampling weights a class by `(T + clip(v, -T, T)) / 2T` (was `v - min(v) + 1`). Results
+  measured before that date on weighted, regression or focused-sampling models are not directly comparable.
 - **The convolutional random patch is drawn in `_feedback_counts`, not `_evaluate`.** `_evaluate`
   returns the whole `(B, P, C)` match tensor as its feedback context and nothing else; drawing
   there instead costs a `(B, P, C)` `rand` + `argmax` on *every* forward pass (~5x slower

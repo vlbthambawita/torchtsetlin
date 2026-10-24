@@ -35,7 +35,8 @@ class TsetlinMachine(TsetlinMachineBase):
         T: vote margin (threshold). Larger ``T`` makes more clauses cooperate per class.
         s: specificity.
         weighted: learn an integer weight per clause (Integer-Weighted TM). Weights start
-            at 1, grow with Type Ia feedback and shrink with Type II feedback (min 0).
+            at 1, grow with Type Ia feedback and shrink with Type II feedback (min 1, as in
+            pyTsetlinMachine and tmu).
         focused_negative_sampling: sample the negative class proportionally to how strongly
             it currently votes, instead of uniformly.
         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`
@@ -147,7 +148,7 @@ class TsetlinMachine(TsetlinMachineBase):
         B = votes.shape[0]
         dev = votes.device
         y_neg = F.sample_negative_classes(
-            y, self.n_classes, votes=votes, focused=self.focused_negative_sampling
+            y, self.n_classes, votes=votes, focused=self.focused_negative_sampling, T=self.T
         )
         ar = torch.arange(B, device=dev)
         p_tgt = F.feedback_probabilities(votes[ar, y], self.T, target=True)
@@ -184,7 +185,7 @@ class TsetlinMachine(TsetlinMachineBase):
 
     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
         if self.weighted and "dw" in acc.extra:
-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=0)
+            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
 
     # ------------------------------------------------------------------ interpretation
     def clause_info(self, clause: int, feature_names: Optional[Sequence[str]] = None) -> Dict:

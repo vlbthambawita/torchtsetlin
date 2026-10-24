@@ -128,18 +128,23 @@ def sample_negative_classes(
     votes: Optional[Tensor] = None,
     focused: bool = False,
     generator: Optional[torch.Generator] = None,
+    T: Optional[float] = None,
 ) -> Tensor:
     """Sample one negative (non-target) class per example.
 
-    With ``focused=True`` ("focused negative sampling") classes are sampled with
-    probability proportional to how strongly they currently vote, i.e. the classes the
-    machine confuses with the target are corrected first. Otherwise sampling is uniform.
+    With ``focused=True`` ("focused negative sampling") a non-target class ``k`` is sampled
+    with probability proportional to its negative-feedback probability
+    ``(T + clip(v_k, -T, T)) / 2T``, as in tmu and green-tsetlin, so the classes the machine
+    confuses with the target are corrected first. This needs the vote margin ``T``.
+    Otherwise sampling is uniform.
     """
     if n_classes < 2:
         raise ValueError("Need at least two classes to sample a negative class.")
     if focused and votes is not None:
-        w = votes.detach().to(torch.float32)
-        w = w - w.min(dim=1, keepdim=True).values + 1.0  # strictly positive
+        if T is None:
+            raise ValueError("focused negative sampling needs the vote margin T.")
+        w = feedback_probabilities(votes.detach().to(torch.float32), T, target=False)
+        w = w + 1e-16  # as green-tsetlin: a class at -T keeps a tiny chance
         w = w.scatter(1, y.view(-1, 1), 0.0)  # never the target itself
         return torch.multinomial(w, 1, generator=generator).squeeze(1)
     offset = torch.randint(1, n_classes, (y.shape[0],), device=y.device, generator=generator)

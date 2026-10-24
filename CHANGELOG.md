@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+Three gaps against the reference implementations, found by the cross-library benchmark
+(`experiments/paper_experiments/LIBRARY_GAPS.md`, G1, G3 and G4). All three change what a model
+learns, so results measured with 0.4.0 on the affected models are not directly comparable.
+
+- **Behaviour change: clause weights floor at 1, not 0** (G1). `TsetlinMachine(weighted=True)`
+  and `RegressionTsetlinMachine(weighted=True)` used to let Type II drive a weight to 0, which
+  silences the clause. pyTsetlinMachine and tmu keep every weight at least 1.
+- **Behaviour change: regression feedback probability is the squared error** (G3),
+  `((v* - v)/T)**2`, as in pyTsetlinMachine, pyTsetlinMachineParallel and tmu. It was `|v* - v|/T`.
+- **Behaviour change: focused negative sampling uses the reference rule** (G4). A non-target class
+  is drawn with probability proportional to `(T + clip(v_k, -T, T)) / 2T`, as in tmu and
+  green-tsetlin. It was proportional to `v_k - min(v) + 1`. `functional.sample_negative_classes`
+  takes a new `T` argument and raises without it when `focused=True`.
+
 ## 0.4.0 (2026-10-22)
 
 **Training now matches the reference implementation (tmu) on the TM Composites benchmark.**

@@ -430,3 +430,30 @@ def test_regression_prediction_stays_in_range(device):
     assert float(votes.min()) >= 0.0 and float(votes.max()) <= m.T
     pred = m.predict(x.to(device))
     assert float(pred.min()) >= 0.0 and float(pred.max()) <= 3.0
+
+
+def test_clause_weights_never_drop_below_one(device):
+    # Reference implementations (pyTsetlinMachine, tmu) keep integer clause weights >= 1.
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(2000, noise=0.4, device=device)
+    clf = tt.TsetlinMachine(n_features=12, n_classes=2, n_clauses=20, T=15, s=3.9,
+                            weighted=True).to(device)
+    reg = tt.RegressionTsetlinMachine(n_features=12, n_clauses=20, T=15, s=3.9, weighted=True,
+                                      y_range=(0.0, 1.0)).to(device)
+    for _ in range(20):
+        clf.update(x, y)
+        reg.update(x, y.float())
+    assert int(clf.weights.min()) >= 1
+    assert int(reg.weights.min()) >= 1
+
+
+def test_regression_feedback_probability_is_squared_error():
+    # pyTsetlinMachine / tmu: feedback with probability ((v* - v) / T)**2.
+    torch.manual_seed(0)
+    m = tt.RegressionTsetlinMachine(n_features=4, n_clauses=20_000, T=10, s=3.9, y_range=(0.0, 1.0))
+    votes = torch.tensor([[2.0], [8.0]])
+    y = torch.tensor([0.7, 0.3])  # v* = 7 and 3: errors +0.5 (Type I) and -0.5 (Type II)
+    type_i, type_ii, _ = m._select_feedback(votes, y, None)
+    assert abs(type_i[0].float().mean().item() - 0.25) < 0.02
+    assert abs(type_ii[1].float().mean().item() - 0.25) < 0.02
+    assert not bool(type_i[1].any()) and not bool(type_ii[0].any())

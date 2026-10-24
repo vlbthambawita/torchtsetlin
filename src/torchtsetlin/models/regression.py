@@ -22,8 +22,10 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
     ``y_hat = y_min + (v / T) * (y_max - y_min)``.
 
     Learning: with the target expressed in vote units ``v* = T (y - y_min)/(y_max - y_min)``,
-    every clause receives Type I feedback with probability ``(v* - v)/T`` when the prediction
-    is too low, and Type II feedback with probability ``(v - v*)/T`` when it is too high.
+    every clause receives Type I feedback with probability ``((v* - v)/T)**2`` when the
+    prediction is too low, and Type II feedback with probability ``((v - v*)/T)**2`` when it is
+    too high. The squared error is the rule of the reference implementations
+    (pyTsetlinMachine, pyTsetlinMachineParallel and tmu).
 
     Args:
         n_features: Boolean feature count (``None`` = lazy).
@@ -32,7 +34,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
         s: specificity.
         y_range: ``(y_min, y_max)`` of the targets. If ``None`` it is inferred from the first
             training batch (a warning is issued); prefer to pass it explicitly.
-        weighted: learn integer clause weights (Type Ia ``+1``, Type II ``-1``, min 0).
+        weighted: learn integer clause weights (Type Ia ``+1``, Type II ``-1``, min 1).
         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`.
     """
 
@@ -119,7 +121,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
         v = votes.squeeze(1)
         v_star = self.targets_to_votes(y)
         err = (v_star - v) / self.T  # >0: too low -> Type I ; <0: too high -> Type II
-        p = err.abs().clamp(max=1.0)
+        p = err.square().clamp(max=1.0)
         sel = torch.rand(B, self.n_clauses, device=votes.device) < p.unsqueeze(1)
         low = (err > 0).unsqueeze(1)
         return sel & low, sel & ~low, None
@@ -134,7 +136,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
 
     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
         if self.weighted and "dw" in acc.extra:
-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=0)
+            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
 
     def rules(self, feature_names: Optional[Sequence[str]] = None, skip_empty: bool = True) -> List[str]:
         """``IF ... THEN +w`` rules: each matching clause adds ``w * (y_max - y_min) / T``."""

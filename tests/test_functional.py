@@ -1,3 +1,4 @@
+import pytest
 import torch
 
 from torchtsetlin import functional as F
@@ -47,8 +48,22 @@ def test_sample_negative_classes_never_target():
     q = F.sample_negative_classes(y, 5)
     assert bool((q != y).all())
     votes = torch.randn(1000, 5)
-    q2 = F.sample_negative_classes(y, 5, votes=votes, focused=True)
+    q2 = F.sample_negative_classes(y, 5, votes=votes, focused=True, T=3.0)
     assert bool((q2 != y).all())
+
+
+def test_focused_negative_sampling_follows_reference_rule():
+    # tmu / green-tsetlin: P(k) proportional to (T + clip(v_k, -T, T)) / 2T, target excluded.
+    torch.manual_seed(0)
+    n, T = 200_000, 10.0
+    y = torch.zeros(n, dtype=torch.long)
+    votes = torch.tensor([[5.0, 30.0, 0.0, -10.0]]).expand(n, 4)  # class 1 clipped to T
+    q = F.sample_negative_classes(y, 4, votes=votes, focused=True, T=T)
+    freq = torch.bincount(q, minlength=4).float() / n
+    expected = torch.tensor([0.0, 1.0, 0.5, 0.0]) / 1.5
+    assert torch.allclose(freq, expected, atol=0.005)
+    with pytest.raises(ValueError):
+        F.sample_negative_classes(y, 4, votes=votes, focused=True)
 
 
 def test_type_i_and_ii_counts():
@@ -174,8 +189,6 @@ def test_soft_budget_is_the_default():
 
 
 def test_budget_mode_validated():
-    import pytest
-
     import torchtsetlin as tt
     with pytest.raises(ValueError):
         tt.TsetlinMachine(4, 2, 10, 5, budget_mode="medium")
