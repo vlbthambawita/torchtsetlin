@@ -18,7 +18,10 @@ Conventions
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple
+import math
+import os
+import warnings
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple
 
 import torch
 from torch import Tensor
@@ -30,6 +33,10 @@ __all__ = [
     "vote_sums",
     "feedback_probabilities",
     "sample_negative_classes",
+    "sample_forget_events",
+    "apply_feedback_rows",
+    "commit_single_example",
+    "set_compile",
     "type_i_counts",
     "type_ii_counts",
     "apply_feedback",
@@ -62,6 +69,9 @@ def clause_violations(literals: Tensor, include: Tensor) -> Tensor:
         ``(B, C)`` floating tensor; a clause matches an example iff its entry is ``0``.
     """
     # (1 - literals) marks False literals; a False literal that is included violates the AND.
+    if literals.dim() == 2 and literals.device.type == "cpu":
+        # clause-major (C, 2F) @ (2F, B) is ~2x faster than (B, 2F) @ (2F, C) on the CPU
+        return torch.matmul(include, (1.0 - literals).transpose(0, 1)).transpose(0, 1).contiguous()
     return torch.matmul(1.0 - literals, include.transpose(0, 1))
 
 
@@ -182,12 +192,160 @@ def type_ii_counts(literals: Tensor, sel_fire: Tensor) -> Tensor:
     return torch.matmul(sel_fire.transpose(0, 1), 1.0 - literals)
 
 
+# --------------------------------------------------------------------------------------
+# Compiled kernels (torch.compile)
+# --------------------------------------------------------------------------------------
+# The update samples millions of small binomials per batch. Eager CPU RNG is single-threaded
+# and `torch.binomial` is slow, so on the CPU (and for single examples on CUDA) the hot loops
+# are written as elementwise inverse-CDF kernels that torch.compile fuses, drawing the
+# uniforms inside the kernel. Every compiled path has an eager twin that is used when the work
+# is small (compiling costs seconds), when an explicit generator is passed (compiled RNG is
+# seeded from the default generator only), when disabled, or when compilation fails.
+_COMPILE: Dict[str, Any] = {"enabled": os.environ.get("TORCHTSETLIN_COMPILE", "1") != "0"}
+_KERNELS: Dict[Callable, Callable] = {}
+_FAILED: set = set()
+#: Tensor elements below which the eager code paths are used.
+COMPILE_MIN_ELEMENTS = 1 << 18
+# The inverse-CDF kernels read one fixed-shape table (every new shape would recompile them):
+# counts up to _TABLE_N - 1 events, the first _TABLE_K CDF columns. A draw beyond the table
+# is resampled exactly from the tail; if that would be common, the eager sampler is used.
+_TABLE_N = 64
+_TABLE_K = 32
+_TABLE_TAIL = 1e-3
+_CDF_CACHE: Dict[float, Tensor] = {}
+
+
+def set_compile(enabled: bool) -> None:
+    """Enable or disable the ``torch.compile`` kernels of the update (default: enabled, or
+    the environment variable ``TORCHTSETLIN_COMPILE=0`` to disable). The compiled and eager
+    paths draw from the same distributions but consume random numbers differently, so a seeded
+    run reproduces only under the same setting."""
+    _COMPILE["enabled"] = bool(enabled)
+
+
+def _compile_wanted(numel: int, generator: Optional[torch.Generator] = None) -> bool:
+    return bool(_COMPILE["enabled"]) and generator is None and numel >= COMPILE_MIN_ELEMENTS
+
+
+def _run_compiled(fn: Callable, *args):
+    """``torch.compile(fn)(*args)``, or ``None`` if compilation is unavailable (no C++
+    compiler or Triton, unsupported Python, code dynamo cannot trace, ...). A failure warns
+    once and disables ``fn`` for the rest of the process; the caller then takes its eager
+    path."""
+    if not _COMPILE["enabled"] or fn in _FAILED:
+        return None
+    try:
+        k = _KERNELS.get(fn)
+        if k is None:
+            # Kernels whose sizes change every update are compiled shape-generic up front;
+            # the default would recompile for each new size before going dynamic.
+            k = _KERNELS[fn] = torch.compile(fn, dynamic=True if fn in _DYNAMIC else None)
+        return k(*args)
+    except Exception as err:  # pragma: no cover - depends on the toolchain
+        _FAILED.add(fn)
+        warnings.warn(
+            f"torch.compile failed for {fn.__qualname__} ({type(err).__name__}: {err}); "
+            "torchtsetlin uses the eager code path. Set TORCHTSETLIN_COMPILE=0 to skip the attempt.",
+            RuntimeWarning,
+            stacklevel=3,
+        )
+        return None
+
+
+def _binomial_cdf(p: float) -> Tensor:
+    """``(_TABLE_N, _TABLE_N)`` float64 table ``P(Binomial(n, p) <= k)``, exactly ``2.0``
+    where ``k >= n`` (so that a uniform ``u < 1`` never passes it)."""
+    tab = _CDF_CACHE.get(float(p))
+    if tab is None:
+        n = torch.arange(_TABLE_N, dtype=torch.float64).unsqueeze(1)
+        k = torch.arange(_TABLE_N, dtype=torch.float64)
+        log_pmf = (torch.lgamma(n + 1) - torch.lgamma(k + 1) - torch.lgamma((n - k).clamp(min=0) + 1)
+                   + k * math.log(p) + (n - k) * math.log1p(-p))
+        cdf = torch.where(k <= n, log_pmf.exp(), torch.zeros(())).cumsum(1)
+        tab = _CDF_CACHE[float(p)] = cdf.masked_fill_(k >= n, 2.0)
+    return tab
+
+
+def _table_fits(p: float, n_max: int) -> bool:
+    """Whether counts up to ``n_max`` can use the kernel table: within its rows, and draws
+    beyond its columns (resampled from the exact tail) are rare."""
+    if n_max >= _TABLE_N:
+        return False
+    return n_max < _TABLE_K or 1.0 - float(_binomial_cdf(p)[n_max, _TABLE_K - 1]) < _TABLE_TAIL
+
+
+def _thresholds(p: float, device: torch.device) -> Tensor:
+    """The kernel table: float32 ``(_TABLE_N, _TABLE_K)``."""
+    return _binomial_cdf(p)[:, :_TABLE_K].to(dtype=torch.float32, device=device)
+
+
+def _icdf_count(u: Tensor, thr: Tensor) -> Tensor:
+    """``#{k : u >= thr[..., k]}``, unrolled over the (small, fixed) table width."""
+    out = (u >= thr[..., 0]).to(u.dtype)
+    for k in range(1, thr.shape[-1]):
+        out = out + (u >= thr[..., k]).to(u.dtype)
+    return out
+
+
+def _binomial_kernel(count: Tensor, thr: Tensor) -> Tensor:
+    u = torch.rand(count.shape, dtype=thr.dtype, device=count.device)
+    return _icdf_count(u, thr[count.long()]).to(count.dtype)
+
+
+def _forget_rows_kernel(sub: Tensor, n: Tensor, thr: Tensor, active: Optional[Tensor], N: int):
+    u = torch.rand(sub.shape, dtype=thr.dtype, device=sub.device)
+    dec = _icdf_count(u, thr[n.long()])  # (R, L) from per-row counts (R, 1)
+    if active is not None:
+        dec = dec * active
+    old = sub.to(torch.int32)
+    new = (old - dec.to(torch.int32)).clamp(min=0)
+    return new.to(sub.dtype), (old >= N) & (new < N)
+
+
+_DYNAMIC = {_binomial_kernel, _forget_rows_kernel}
+
+
+def _tail_extra(n: Tensor, p: float) -> Tensor:
+    """Exact ``X - K`` for ``X ~ Binomial(n, p)`` conditioned on ``X >= K = _TABLE_K``."""
+    K = _TABLE_K
+    cdf = _binomial_cdf(p).to(n.device)[n.long()]  # (M, _TABLE_N)
+    lo = cdf[:, K - 1]
+    v = lo + torch.rand(n.shape, dtype=torch.float64, device=n.device) * (1.0 - lo)
+    return (v.unsqueeze(1) >= cdf).sum(1).to(n.dtype) - K
+
+
+def _binomial_compiled(count: Tensor, p: float) -> Optional[Tensor]:
+    """``Binomial(count, p)`` by a compiled inverse-CDF kernel (``0 < p <= 0.5``), or
+    ``None`` when the counts are too large for the table (the caller then samples eagerly)."""
+    n_max = int(count.max()) if count.numel() else 0
+    if n_max == 0:
+        return torch.zeros_like(count)
+    if not _table_fits(p, n_max):
+        return None
+    out = _run_compiled(_binomial_kernel, count, _thresholds(p, count.device))
+    if out is None:
+        return None
+    K = _TABLE_K
+    if n_max > K:  # rare draws beyond the table: resample them from the exact tail
+        hit = ((out == K) & (count > K)).nonzero(as_tuple=True)
+        if hit[0].numel():
+            out[hit] += _tail_extra(count[hit], p)
+    return out
+
+
 def _binomial(count: Tensor, p: float, generator: Optional[torch.Generator] = None) -> Tensor:
     """Binomial samples with a scalar probability (``count`` is a floating tensor)."""
     if p >= 1.0:
         return count
     if p <= 0.0:
         return torch.zeros_like(count)
+    if count.device.type == "cpu" and _compile_wanted(count.numel(), generator):
+        out = _binomial_compiled(count, p) if p <= 0.5 else None
+        if p > 0.5:
+            rest = _binomial_compiled(count, 1.0 - p)
+            out = None if rest is None else count - rest
+        if out is not None:
+            return out
     prob = torch.full((1,) * count.dim(), float(p), dtype=count.dtype, device=count.device)
     return torch.binomial(count, prob.expand_as(count), generator=generator)
 
@@ -267,24 +425,305 @@ def apply_feedback(
     # Type II – deterministically push excluded False literals towards inclusion. Each event
     # moves the automaton one step, but never beyond the include boundary (as in the
     # sequential algorithm, where the clause stops matching once the literal is included).
-    room = torch.sub(N, state).clamp_(min=0)
+    room = torch.sub(N, state.to(torch.int32)).clamp_(min=0)
     inc2 = torch.minimum(n2, room.to(n2.dtype), out=n2)
 
     delta = inc.sub_(dec).add_(inc2)
     if literal_active is not None:
         delta.mul_(literal_active.to(delta.dtype).unsqueeze(0))
-    if max_included_literals is None:
-        state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
-        return state
-
-    if budget_mode == "soft":
-        state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
-        return state
-    was_included = state >= N
-    state.add_(delta.to(state.dtype)).clamp_(0, 2 * N - 1)
-    _cap_new_inclusions(state, was_included, N, int(max_included_literals), generator)
+    # Add in int32 and clamp before casting back, so that narrow state dtypes (uint8, int16)
+    # never see a negative or overflowing intermediate.
+    # The new state is formed in the (floating) delta buffer and clamped before it is written
+    # back, so narrow state dtypes (uint8, int16) never see a negative or overflowing value.
+    # All values are small integers, exactly representable in the compute dtype.
+    hard = max_included_literals is not None and budget_mode != "soft"
+    was_included = state >= N if hard else None
+    new = delta.add_(state).clamp_(0, 2 * N - 1)
+    if hard:
+        _cap_new_inclusions(new, was_included, N, int(max_included_literals), generator)
+    state.copy_(new)
     return state
 
+
+def sample_forget_events(
+    counts: Tensor, n_literals: int, p: float, generator: Optional[torch.Generator] = None
+) -> Tuple[Tensor, Tensor]:
+    """Sparse exact draw of per-literal forgetting for row-broadcast event counts.
+
+    Row ``c`` holds ``counts[c]`` Bernoulli(``p``) trials for each of its ``n_literals``
+    literals (Type Ib feedback applies the same count to every literal of a clause). Every
+    literal therefore needs a ``Binomial(counts[c], p)`` decrement. Instead of one draw per
+    literal, the successes of each row's ``counts[c] * n_literals`` trials are generated by
+    geometric gaps, so the work scales with the number of successes. Trial ``t`` of row ``c``
+    belongs to literal ``t // counts[c]``.
+
+    Args:
+        counts: ``(C,)`` non-negative integer-valued counts (any numeric dtype).
+        n_literals: literals per row ``L``.
+        p: success probability, ``0 < p <= 0.5`` (the gaps are long only for small ``p``).
+        generator: optional RNG.
+
+    Returns:
+        ``(pos, cnt)``: sorted unique flat positions ``c * L + l`` with at least one success
+        and the number of successes at each (``int64``).
+    """
+    dev = counts.device
+    L = int(n_literals)
+    rows = (counts > 0).nonzero().squeeze(1)
+    empty = torch.zeros(0, dtype=torch.long, device=dev)
+    if rows.numel() == 0 or p <= 0.0:
+        return empty, empty
+    n = counts[rows].round().long()
+    trials = n * L
+    log_q = math.log1p(-float(p))
+    mu = trials.double() * float(p)
+    # Enough gaps per row that running out is rare; rows that do run out continue below.
+    k = (mu + 6.0 * mu.sqrt() + 8.0).ceil().long()
+    starts = torch.zeros_like(trials)  # first unexamined trial of each row
+    pos_parts, todo = [], torch.arange(rows.numel(), device=dev)
+    while todo.numel():
+        kk = k[todo]
+        row_of = torch.repeat_interleave(torch.arange(todo.numel(), device=dev), kk)
+        u = torch.rand(row_of.numel(), device=dev, generator=generator, dtype=torch.float64)
+        step = (torch.log(u) / log_q).floor_().long().add_(1)  # trials up to the next success
+        csum = step.cumsum(0)
+        seg_end = kk.cumsum(0) - 1
+        seg_base = csum[seg_end] - kk.new_zeros(kk.shape).index_add_(0, row_of, step)
+        t = csum - seg_base[row_of] - 1 + starts[todo][row_of]
+        lim = trials[todo][row_of]
+        ok = t < lim
+        pos_parts.append(rows[todo][row_of][ok] * L + t[ok] // n[todo][row_of][ok])
+        last = t[seg_end]
+        more = last < trials[todo] - 1
+        starts[todo] = last + 1
+        todo = todo[more]
+        if todo.numel():
+            k[todo] = k[todo] * 2
+    pos = pos_parts[0] if len(pos_parts) == 1 else torch.sort(torch.cat(pos_parts)).values
+    if pos.numel() == 0:
+        return empty, empty
+    return torch.unique_consecutive(pos, return_counts=True)
+
+
+def apply_feedback_rows(
+    state: Tensor,
+    n_true: Tensor,
+    n_false: Tensor,
+    n_ib: Tensor,
+    n2: Tensor,
+    rows: Tensor,
+    *,
+    n_states: int,
+    s: float,
+    boost_true_positive: bool = True,
+    max_included_literals: Optional[int] = None,
+    include_count: Optional[Tensor] = None,
+    literal_active: Optional[Tensor] = None,
+    generator: Optional[torch.Generator] = None,
+    budget_mode: str = "soft",
+) -> Optional[Tuple[Tensor, Tensor]]:
+    """:func:`apply_feedback` for count tensors that are zero outside ``rows``.
+
+    Type Ia and Type II counts only exist for clauses that matched and were selected, a small
+    fraction of all clauses. Those rows are updated as a dense slab; the Type Ib forgetting of
+    every other clause is drawn sparsely with :func:`sample_forget_events`. The transitions
+    follow the same distribution as :func:`apply_feedback`. The count tensors are read, not
+    modified.
+
+    Args:
+        rows: ``(C,)`` bool mask of the clauses with Type Ia or Type II counts. The other
+            arguments are as in :func:`apply_feedback`.
+
+    Returns:
+        ``(slab_rows, other_pos)``: the clause indices updated as a dense slab and the flat
+        positions changed elsewhere, so that cached include masks can be refreshed
+        incrementally. ``None`` when the dense path was used (refresh everything).
+    """
+    N = int(n_states)
+    p_forget = 1.0 / float(s)
+    if p_forget > 0.5:  # forgetting is not sparse; the dense update is as fast
+        apply_feedback(state, n_true.clone(), n_false.clone(), n_ib.clone(), n2.clone(),
+                       n_states=N, s=s, boost_true_positive=boost_true_positive,
+                       max_included_literals=max_included_literals, include_count=include_count,
+                       literal_active=literal_active, generator=generator,
+                       budget_mode=budget_mode)
+        return None
+    p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
+    C, L = state.shape
+    idx = rows.nonzero().squeeze(1)
+    nt, nf, n2s = n_true[idx], n_false[idx], n2[idx]
+    nib = n_ib.clone()
+    if max_included_literals is not None and idx.numel():
+        if include_count is None:
+            include_count = (state >= N).sum(dim=1)
+        over = include_count[idx] > int(max_included_literals)
+        if bool(over.any()):
+            # Every Type Ia event of an oversized clause becomes a Type Ib event.
+            nib.index_add_(0, idx[over], (nt[over, 0] + nf[over, 0]).to(nib.dtype))
+            keep = (~over).to(nt.dtype).unsqueeze(1)
+            nt.mul_(keep)
+            nf.mul_(keep)
+
+    # Type Ib forgetting of the clauses outside the slab: one compiled dense pass over their
+    # rows on the CPU, else an exact sparse draw of the forget events.
+    other = None
+    if state.device.type == "cpu" and _COMPILE["enabled"] and generator is None:
+        ib_rows = ((nib > 0) & ~rows).nonzero().squeeze(1)
+        if _compile_wanted(ib_rows.numel() * L):
+            other = _forget_rows(state, ib_rows, nib[ib_rows], p_forget, literal_active, N)
+    if other is None:
+        pos, cnt = sample_forget_events(nib, L, p_forget, generator)
+        if literal_active is not None and pos.numel():
+            alive = literal_active.reshape(-1)[pos % L] > 0
+            pos, cnt = pos[alive], cnt[alive]
+        slab_of = torch.full((C,), -1, dtype=torch.long, device=state.device)
+        slab_of[idx] = torch.arange(idx.numel(), device=state.device)
+        s_i = slab_of[pos // L]
+        in_slab = s_i >= 0
+
+    if idx.numel():
+        inc = _binomial(nt, p_mem, generator)
+        if other is not None:  # the slab's Type Ib events are part of its dense draw
+            dec = _binomial(nf + nib[idx].unsqueeze(1), p_forget, generator)
+        else:
+            dec = _binomial(nf, p_forget, generator)
+            if bool(in_slab.any()):
+                dec.view(-1).index_add_(0, s_i[in_slab] * L + pos[in_slab] % L,
+                                        cnt[in_slab].to(dec.dtype))
+        sub = state[idx].to(torch.int32)
+        room = torch.sub(N, sub).clamp_(min=0)
+        inc2 = torch.minimum(n2s, room.to(n2s.dtype))
+        delta = inc.sub_(dec).add_(inc2)
+        if literal_active is not None:
+            delta.mul_(literal_active.to(delta.dtype).unsqueeze(0))
+        was_included = sub >= N
+        sub.add_(delta.to(torch.int32)).clamp_(0, 2 * N - 1)
+        if max_included_literals is not None and budget_mode != "soft":
+            _cap_new_inclusions(sub, was_included, N, int(max_included_literals), generator)
+        state[idx] = sub.to(state.dtype)
+
+    if other is not None:
+        return idx, other
+    other = pos[~in_slab]
+    if other.numel():
+        flat = state.view(-1)
+        vals = flat[other].to(torch.int32).sub_(cnt[~in_slab].to(torch.int32)).clamp_(min=0)
+        flat[other] = vals.to(state.dtype)
+    return idx, other
+
+
+def _forget_rows(
+    state: Tensor, rows: Tensor, n: Tensor, p: float, literal_active: Optional[Tensor], N: int
+) -> Optional[Tensor]:
+    """Type Ib forgetting of whole clauses ``rows`` (``n[i]`` events for every literal of
+    row ``i``) by the compiled kernel, in place. Returns the flat positions whose include bit
+    changed, or ``None`` (nothing modified) if the compiled kernel cannot be used."""
+    L = state.shape[1]
+    empty = torch.zeros(0, dtype=torch.long, device=state.device)
+    n_max = int(n.max()) if n.numel() else 0
+    if n_max == 0:
+        return empty
+    if not _table_fits(p, n_max):
+        return None
+    thr = _thresholds(p, state.device)
+    K = _TABLE_K
+    active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
+    sub = state[rows]
+    out = _run_compiled(_forget_rows_kernel, sub, n.unsqueeze(1), thr, active, N)
+    if out is None:
+        return None
+    new, crossed = out
+    if n_max > K:  # rare draws beyond the table: resample them from the exact tail
+        tail = (n > K).nonzero().squeeze(1)
+        old_t, new_t = sub[tail].to(torch.int32), new[tail].to(torch.int32)
+        hit = ((old_t - new_t) == K) & (new_t > 0)  # exactly K decrements, not clamped
+        r, c = hit.nonzero(as_tuple=True)
+        if r.numel():
+            extra = _tail_extra(n[tail][r], p).to(torch.int32)
+            new_t[r, c] = (new_t[r, c] - extra).clamp_(min=0)
+            new[tail] = new_t.to(new.dtype)
+            crossed[tail] = (old_t >= N) & (new_t < N)
+    state[rows] = new
+    r, c = crossed.nonzero(as_tuple=True)
+    return rows[r] * L + c
+
+
+def _single_example_kernel(
+    state: Tensor, include: Tensor, literals: Tensor, fire_i: Tensor, nofire_i: Tensor,
+    fire_ii: Tensor, include_count: Tensor, active: Optional[Tensor], N: int, p_mem: float,
+    p_forget: float, budget: int,
+) -> Tensor:
+    lit = literals.unsqueeze(0)
+    neg = 1.0 - lit
+    fi = fire_i.unsqueeze(1)
+    nib = nofire_i.unsqueeze(1)
+    if budget >= 0:  # an oversized matching clause gets Type Ib instead of Type Ia
+        over = (include_count > budget).unsqueeze(1).to(fi.dtype)
+        nib = nib + fi * over
+        fi = fi * (1.0 - over)
+    old = state.to(torch.float32)
+    inc = fi * lit
+    if p_mem < 1.0:
+        inc = inc * (torch.rand(state.shape, device=state.device) < p_mem).to(inc.dtype)
+    # fire and no-fire are exclusive, so every count is 0 or 1 and the binomials are Bernoulli
+    dec = (fi * neg + nib) * (torch.rand(state.shape, device=state.device) < p_forget).to(inc.dtype)
+    inc2 = torch.minimum(fire_ii.unsqueeze(1) * neg, (N - old).clamp(min=0))
+    delta = inc - dec + inc2
+    if active is not None:
+        delta = delta * active
+    new = (old + delta).clamp(0, 2 * N - 1)
+    included = new >= N
+    state.copy_(new.to(state.dtype))
+    include.copy_(included.to(include.dtype))
+    return included.sum(dim=1).to(include_count.dtype)
+
+
+def commit_single_example(
+    state: Tensor,
+    include: Tensor,
+    include_count: Tensor,
+    literals: Tensor,
+    fire_i: Tensor,
+    nofire_i: Tensor,
+    fire_ii: Tensor,
+    *,
+    n_states: int,
+    s: float,
+    boost_true_positive: bool = True,
+    max_included_literals: Optional[int] = None,
+    literal_active: Optional[Tensor] = None,
+) -> Optional[Tensor]:
+    """The feedback of **one** example, applied by a single fused ``torch.compile`` kernel.
+
+    Equivalent in distribution to accumulating the example's counts (the outer products of
+    ``fire_i`` / ``nofire_i`` / ``fire_ii`` with the literals) and calling
+    :func:`apply_feedback` with the soft budget, but without materialising any ``(C, 2F)``
+    count tensor and without host synchronisation. Used by sequential mode on CUDA.
+
+    Args:
+        state: ``(C, 2F)`` TA states, updated in place.
+        include: ``(C, 2F)`` cached include mask, updated in place.
+        include_count: ``(C,)`` included literals per clause *before* the update.
+        literals: ``(2F,)`` 0/1 literals of the example.
+        fire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ia feedback.
+        nofire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ib feedback.
+        fire_ii: ``(C,)`` 0/1 mask of the clauses that get Type II feedback.
+        n_states: as in :func:`apply_feedback`.
+        s: as in :func:`apply_feedback`.
+        boost_true_positive: as in :func:`apply_feedback`.
+        max_included_literals: as in :func:`apply_feedback` (soft budget).
+        literal_active: as in :func:`apply_feedback`.
+
+    Returns:
+        The new ``(C,)`` include counts, or ``None`` when the compiled kernel is unavailable
+        (nothing has been modified; the caller falls back to :func:`apply_feedback_rows`).
+    """
+    N = int(n_states)
+    p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
+    budget = -1 if max_included_literals is None else int(max_included_literals)
+    active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
+    return _run_compiled(_single_example_kernel, state, include, literals, fire_i, nofire_i,
+                         fire_ii, include_count, active, N, p_mem, 1.0 / float(s), budget)
 
 def _cap_new_inclusions(
     state: Tensor,

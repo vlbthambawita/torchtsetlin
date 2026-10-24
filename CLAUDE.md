@@ -110,6 +110,29 @@ do not reuse them after the call.
   1 (was 0), the regression feedback probability is `(err/T)**2` (was `|err|/T`), and focused
   negative sampling weights a class by `(T + clip(v, -T, T)) / 2T` (was `v - min(v) + 1`). Results
   measured before that date on weighted, regression or focused-sampling models are not directly comparable.
+- **Two commit paths since 2026-10-24.** CPU updates and sequential mode use the row-sparse
+  `F.apply_feedback_rows` (counts only in `acc.rows`, Type Ib drawn sparsely, include caches
+  refreshed incrementally via `_refresh_include_at`); batched GPU updates keep the dense
+  `F.apply_feedback`. Anything that writes Type Ia/II counts must only touch rows marked in
+  `acc.rows` (`_accumulate_literals` marks every selected matching clause). The count buffers are
+  reused across updates (`_new_accumulator`), so never keep a reference to them after `_commit`.
+  `tests/test_models.py::test_include_caches_track_the_automata` pins the cache refresh.
+- **`torch.compile` kernels since 2026-10-24** (`functional.py`, "Compiled kernels"). The CPU
+  row-sparse commit runs Type Ib forgetting (`_forget_rows`) and its binomials
+  (`_binomial_compiled`) as inverse-CDF kernels with in-kernel RNG; sequential mode on CUDA
+  commits each example of a flat model with `F.commit_single_example` (recorded as factors in
+  `acc.single` by the base `_feedback_counts`) and compiles `_accumulate_literals`. Every
+  compiled path has an eager twin, taken below `F.COMPILE_MIN_ELEMENTS`, with an explicit
+  `generator=`, under `TORCHTSETLIN_COMPILE=0` / `F.set_compile(False)`, or when compilation
+  fails (`_run_compiled` returns `None`; warn once per function). Keep kernel input shapes
+  stable: the inverse-CDF table is one fixed `(_TABLE_N, _TABLE_K)` shape because every new
+  shape recompiles (and after 8 recompiles dynamo silently runs eager); the row-count kernels
+  are `dynamic=True` (`_DYNAMIC`); with `dynamic=False` the 32-wide unrolled compare compiled
+  to a 13x slower kernel. Inductor's CPU `rand` does not scale with threads; it is the floor of
+  the CPU commit. Tests use the `compiled` fixture (`tests/conftest.py`) to force these paths
+  on tiny inputs.
+- **`ta_state` is `uint8` by default** (`state_dtype=None`, 2N-1 <= 255). Python-int arithmetic on
+  it wraps silently (`state - N`); cast first. The commits form the new state in a wider buffer.
 - **The convolutional random patch is drawn in `_feedback_counts`, not `_evaluate`.** `_evaluate`
   returns the whole `(B, P, C)` match tensor as its feedback context and nothing else; drawing
   there instead costs a `(B, P, C)` `rand` + `argmax` on *every* forward pass (~5x slower

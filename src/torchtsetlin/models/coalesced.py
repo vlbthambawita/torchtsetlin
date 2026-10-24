@@ -39,6 +39,8 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
         s: specificity.
         multi_label: interpret ``y`` as a ``(B, n_outputs)`` binary matrix and predict
             ``v_i > 0`` per output.
+        max_weight: optional bound on the magnitude of the signed clause weights
+            (``None``: unbounded).
         negative_scale: multiplier of the Type II probability for negative outputs in
             multi-label mode (the ``q`` hyper-parameter of the multi-task CTM literature).
         focused_negative_sampling: multi-class only; bias the negative class towards strongly
@@ -58,6 +60,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
         *,
         multi_label: bool = False,
         negative_scale: float = 1.0,
+        max_weight: Optional[int] = None,
         focused_negative_sampling: bool = False,
         **kwargs,
     ) -> None:
@@ -70,6 +73,9 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
         self.T = float(T)
         self.multi_label = bool(multi_label)
         self.negative_scale = float(negative_scale)
+        if max_weight is not None and int(max_weight) < 1:
+            raise ValueError("max_weight must be >= 1")
+        self.max_weight = None if max_weight is None else int(max_weight)
         self.focused_negative_sampling = bool(focused_negative_sampling)
         super().__init__(n_features, self.n_clauses, s=s, **kwargs)
         w = torch.randint(0, 2, (self.n_clauses, self.n_outputs), dtype=torch.int32) * 2 - 1
@@ -181,6 +187,8 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
         if "dw" in acc.extra:
             self.weights.add_(acc.extra["dw"].to(self.weights.dtype))
+            if self.max_weight is not None:
+                self.weights.clamp_(-self.max_weight, self.max_weight)
 
     # ------------------------------------------------------------------ interpretation
     def rules(

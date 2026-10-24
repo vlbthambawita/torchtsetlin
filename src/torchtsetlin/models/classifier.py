@@ -37,6 +37,8 @@ class TsetlinMachine(TsetlinMachineBase):
         weighted: learn an integer weight per clause (Integer-Weighted TM). Weights start
             at 1, grow with Type Ia feedback and shrink with Type II feedback (min 1, as in
             pyTsetlinMachine and tmu).
+        max_weight: optional upper bound on the clause weights (PyTsetlinMachineCUDA stores
+            them as ``uint8``, so its weights stop at 255). ``None``: unbounded.
         focused_negative_sampling: sample the negative class proportionally to how strongly
             it currently votes, instead of uniformly.
         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`
@@ -66,6 +68,7 @@ class TsetlinMachine(TsetlinMachineBase):
         s: float = 10.0,
         *,
         weighted: bool = False,
+        max_weight: Optional[int] = None,
         focused_negative_sampling: bool = False,
         **kwargs,
     ) -> None:
@@ -79,6 +82,9 @@ class TsetlinMachine(TsetlinMachineBase):
         self.n_clauses = int(n_clauses)
         self.T = float(T)
         self.weighted = bool(weighted)
+        if max_weight is not None and int(max_weight) < 1:
+            raise ValueError("max_weight must be >= 1")
+        self.max_weight = None if max_weight is None else int(max_weight)
         self.focused_negative_sampling = bool(focused_negative_sampling)
         super().__init__(n_features, self.n_classes * self.n_clauses, s=s, **kwargs)
 
@@ -185,7 +191,7 @@ class TsetlinMachine(TsetlinMachineBase):
 
     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
         if self.weighted and "dw" in acc.extra:
-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
+            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1, max=self.max_weight)
 
     # ------------------------------------------------------------------ interpretation
     def clause_info(self, clause: int, feature_names: Optional[Sequence[str]] = None) -> Dict:

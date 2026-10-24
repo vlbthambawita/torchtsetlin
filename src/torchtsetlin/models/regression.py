@@ -35,6 +35,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
         y_range: ``(y_min, y_max)`` of the targets. If ``None`` it is inferred from the first
             training batch (a warning is issued); prefer to pass it explicitly.
         weighted: learn integer clause weights (Type Ia ``+1``, Type II ``-1``, min 1).
+        max_weight: optional upper bound on the clause weights (``None``: unbounded).
         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`.
     """
 
@@ -49,6 +50,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
         *,
         y_range: Optional[Tuple[float, float]] = None,
         weighted: bool = False,
+        max_weight: Optional[int] = None,
         **kwargs,
     ) -> None:
         if T <= 0:
@@ -56,6 +58,9 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
         self.n_clauses = int(n_clauses)
         self.T = float(T)
         self.weighted = bool(weighted)
+        if max_weight is not None and int(max_weight) < 1:
+            raise ValueError("max_weight must be >= 1")
+        self.max_weight = None if max_weight is None else int(max_weight)
         self.y_min: Optional[float] = None
         self.y_max: Optional[float] = None
         if y_range is not None:
@@ -136,7 +141,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
 
     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
         if self.weighted and "dw" in acc.extra:
-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
+            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1, max=self.max_weight)
 
     def rules(self, feature_names: Optional[Sequence[str]] = None, skip_empty: bool = True) -> List[str]:
         """``IF ... THEN +w`` rules: each matching clause adds ``w * (y_max - y_min) / T``."""

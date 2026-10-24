@@ -15,6 +15,38 @@ learns, so results measured with 0.4.0 on the affected models are not directly c
   is drawn with probability proportional to `(T + clip(v_k, -T, T)) / 2T`, as in tmu and
   green-tsetlin. It was proportional to `v_k - min(v) + 1`. `functional.sample_negative_classes`
   takes a new `T` argument and raises without it when `focused=True`.
+- **Behaviour change: automaton states are 8-bit by default** (G6). `state_dtype=None` picks
+  `uint8` when `2 * n_states - 1 <= 255` (the default `n_states=128`), else `int16` / `int32`,
+  so a model and its checkpoint are 4x smaller, the same 8 bits per automaton the reference
+  implementations use. Commits form the new state in a wider buffer, so narrow dtypes cannot
+  wrap. Checkpoints saved with int32 states load unchanged. Cast before doing arithmetic on
+  `ta_state` yourself (`model.ta_state.long() - N`).
+- **Faster CPU training and sequential mode** (G8, G9). On the CPU and in sequential mode the
+  commit is row-sparse (`functional.apply_feedback_rows`): Type Ia / Type II counts are kept only
+  for the clauses that matched and were selected, Type Ib forgetting is drawn by geometric gaps
+  (`functional.sample_forget_events`, exact), and the include caches are refreshed only where the
+  state changed. The count buffers are reused between updates. Same distribution as before.
+  MNIST-sized model (20k clauses, batch 32): CPU 2.2x faster with 16 threads (and it now scales
+  with threads, 2.7x from 1 to 16), GPU sequential mode 2.8x faster. Batched GPU training keeps
+  the dense commit and is unchanged.
+- **`torch.compile` kernels for the update** (G8, G9). On the CPU, Type Ib forgetting and the
+  binomial draws of the row-sparse commit run as exact inverse-CDF kernels with the random
+  numbers drawn inside the kernel, and clause evaluation is computed clause-major. In sequential
+  mode on CUDA, flat models (`TsetlinMachine`, `CoalescedTsetlinMachine`,
+  `RegressionTsetlinMachine`) commit each example with one fused kernel
+  (`functional.commit_single_example`). MNIST-sized model, one epoch from initialisation: CPU
+  batch 32 with 16 threads 1,259 s -> 91 s, GPU sequential mode 406 s -> 36 s (including
+  compilation). The compiled paths are used only for large enough work, never with an explicit
+  `generator=`, and fall back to the eager code (with one warning) where `torch.compile` does not
+  work. `functional.set_compile(False)` or `TORCHTSETLIN_COMPILE=0` turns them off. Compiled and
+  eager runs consume random numbers differently, so a seeded run reproduces only under the same
+  setting. The first update of a session pays the compilation (seconds; cached on disk).
+- `max_weight` caps clause weights (G2): `TsetlinMachine`, `RegressionTsetlinMachine` and
+  (on the magnitude) `CoalescedTsetlinMachine`.
+- `clamp_prediction_votes` is now a constructor argument (G7), for pyTsetlinMachine's clamped
+  argmax.
+- Documented (G5): a clause over the literal budget still gets its weight updated, as in tmu;
+  pyTsetlinMachine skips that increment.
 
 ## 0.4.0 (2026-10-22)
 

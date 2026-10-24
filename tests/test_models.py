@@ -457,3 +457,139 @@ def test_regression_feedback_probability_is_squared_error():
     assert abs(type_i[0].float().mean().item() - 0.25) < 0.02
     assert abs(type_ii[1].float().mean().item() - 0.25) < 0.02
     assert not bool(type_i[1].any()) and not bool(type_ii[0].any())
+
+
+@pytest.mark.parametrize("mode", ["batch", "sequential"])
+def test_include_caches_track_the_automata(device, mode):
+    # the sparse commit refreshes include / include_count incrementally; they must always
+    # equal a full recomputation from ta_state
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(400, noise=0.2, device=device)
+    for m in (tt.TsetlinMachine(12, 2, 10, 15, 3.9, feedback_mode=mode, max_included_literals=3),
+              tt.CoalescedTsetlinMachine(12, 2, 20, 15, 3.9, feedback_mode=mode),
+              tt.ConvTsetlinMachine(2, 10, 15, 3.9, patch_size=2, input_shape=(1, 3, 4),
+                                    feedback_mode=mode)):
+        m = m.to(device)
+        xin = x.view(-1, 1, 3, 4) if isinstance(m, tt.ConvTsetlinMachine) else x
+        for i in range(0, 400, 50):
+            m.update(xin[i:i + 50], y[i:i + 50])
+            inc = m.ta_state >= m.n_states
+            assert torch.equal(m.include, inc.to(m.include.dtype))
+            assert torch.equal(m.include_count, inc.sum(dim=1).to(m.include_count.dtype))
+
+
+def test_accumulator_reuse_recovers_after_a_failed_update(device):
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(200, device=device)
+    a = tt.TsetlinMachine(12, 2, 10, 15, 3.9).to(device)
+    b = tt.TsetlinMachine(12, 2, 10, 15, 3.9).to(device)
+    b.load_state_dict(a.state_dict())
+    torch.manual_seed(1)
+    a.update(x[:50], y[:50])
+    torch.manual_seed(1)
+    b.update(x[:50], y[:50])
+    assert torch.equal(a.ta_state, b.ta_state)
+    real = a._feedback_counts
+
+    def boom(*args):
+        real(*args)  # counts land in the reused buffers, then the update fails
+        raise RuntimeError("boom")
+
+    a._feedback_counts = boom
+    with pytest.raises(RuntimeError):
+        a.update(x[50:100], y[50:100])
+    del a._feedback_counts
+    torch.manual_seed(5)
+    a.update(x[100:150], y[100:150])
+    torch.manual_seed(5)
+    b.update(x[100:150], y[100:150])
+    assert torch.equal(a.ta_state, b.ta_state)
+
+
+def test_max_weight_caps_clause_weights(device):
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(2000, noise=0.0, device=device)
+    clf = tt.TsetlinMachine(12, 2, 10, 15, 3.9, weighted=True, max_weight=3).to(device)
+    co = tt.CoalescedTsetlinMachine(12, 2, 20, 15, 3.9, max_weight=2).to(device)
+    for _ in range(10):
+        for i in range(0, 2000, 50):  # one 2000-example batch learns nothing (batch fidelity)
+            clf.update(x[i:i + 50], y[i:i + 50])
+            co.update(x[i:i + 50], y[i:i + 50])
+    assert 1 <= int(clf.weights.min()) and int(clf.weights.max()) <= 3
+    assert int(clf.weights.max()) == 3  # the cap is reached on clean XOR
+    assert int(co.weights.abs().max()) <= 2
+    with pytest.raises(ValueError):
+        tt.TsetlinMachine(12, 2, 10, 15, 3.9, weighted=True, max_weight=0)
+
+
+def test_clamp_prediction_votes_constructor_flag(device):
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(500, device=device)
+    m = tt.TsetlinMachine(12, 2, 10, 2, 3.9, clamp_prediction_votes=True).to(device)
+    for _ in range(5):
+        m.update(x, y)
+    m.eval()
+    assert float(m(x).abs().max()) <= 2.0
+    assert tt.TsetlinMachine.clamp_prediction_votes is False  # class default untouched
+    assert tt.TsetlinMachine(12, 2, 10, 2, 3.9).clamp_prediction_votes is False
+
+
+def test_default_state_dtype_is_8_bit(device):
+    m = tt.TsetlinMachine(12, 2, 10, 15, 3.9).to(device)
+    assert m.ta_state.dtype == torch.uint8
+    assert tt.TsetlinMachine(12, 2, 10, 15, 3.9, n_states=1000).ta_state.dtype == torch.int16
+    # an int32 checkpoint (0.4.0 and earlier) loads into the 8-bit model unchanged
+    old = tt.TsetlinMachine(12, 2, 10, 15, 3.9, state_dtype=torch.int32).to(device)
+    x, y = tt.data.make_noisy_xor(500, device=device)
+    old.update(x, y)
+    m.load_state_dict(old.state_dict())
+    assert torch.equal(m.ta_state.long(), old.ta_state.long())
+    assert torch.equal(m.include, old.include)
+
+
+def test_learns_noisy_xor_with_compiled_cpu_kernels(compiled):
+    # G8: the CPU commit through the torch.compile kernels learns and keeps the caches exact
+    m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, max_included_literals=6)
+    acc = _train_xor(m, torch.device("cpu"), epochs=40, bs=10)
+    assert compiled._forget_rows_kernel in compiled._KERNELS
+    assert acc > 0.85, acc
+    inc = m.ta_state >= m.n_states
+    assert torch.equal(m.include, inc.to(m.include.dtype))
+    assert torch.equal(m.include_count, inc.sum(dim=1).to(m.include_count.dtype))
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="fused sequential mode is CUDA-only")
+def test_fused_sequential_mode_learns_and_tracks_caches(compiled, monkeypatch):
+    # G9: sequential mode on CUDA commits each example with one fused kernel
+    dev = torch.device("cuda")
+    calls = []
+    real = compiled.commit_single_example
+    monkeypatch.setattr(compiled, "commit_single_example",
+                        lambda *a, **k: calls.append(1) or real(*a, **k))
+    torch.manual_seed(0)
+    m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, feedback_mode="sequential",
+                          weighted=True, max_included_literals=6).to(dev)
+    assert m._fuse_single_examples()
+    acc = _train_xor(m, dev, epochs=10, bs=100, n=1000)
+    assert acc > 0.8, acc
+    assert len(calls) == 10 * 1000
+    ml = tt.CoalescedTsetlinMachine(12, 2, 60, T=20, s=3.9, multi_label=True, n_states=50,
+                                    feedback_mode="sequential").to(dev)
+    xm = torch.randint(0, 2, (2000, 12), device=dev).bool()
+    ym = torch.stack([xm[:, 0] ^ xm[:, 1], xm[:, 2] ^ xm[:, 3]], dim=1)
+    for _ in range(5):
+        ml.update(xm, ym)
+    ml.eval()
+    assert float((ml.predict(xm) == ym).float().mean()) > 0.9
+    for model in (m, ml):
+        inc = model.ta_state >= model.n_states
+        assert torch.equal(model.include, inc.to(model.include.dtype))
+        assert torch.equal(model.include_count, inc.sum(dim=1).to(model.include_count.dtype))
+    x = torch.randint(0, 2, (500, 6)).bool().to(dev)
+    y = x[:, :3].float().sum(1) / 3
+    r = tt.RegressionTsetlinMachine(6, 100, T=50, s=3.0, y_range=(0, 1), n_states=50,
+                                    feedback_mode="sequential").to(dev)
+    for _ in range(4):
+        r.update(x, y)
+    r.eval()
+    assert float((r.predict(x) - y).abs().mean()) < 0.15
