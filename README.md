@@ -1,7 +1,7 @@
-# torchtsetlin
+# torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem
 
-**GPU-enabled, PyTorch-native Tsetlin machines** — models, data preparation, training,
-evaluation, interpretation and visualisation in one package.
+Models, data preparation, training, evaluation, interpretation and visualisation in one
+package, GPU-enabled and PyTorch-native.
 
 [![PyPI](https://img.shields.io/pypi/v/torchtsetlin)](https://pypi.org/project/torchtsetlin/)
 [![Python](https://img.shields.io/pypi/pyversions/torchtsetlin)](https://pypi.org/project/torchtsetlin/)
