@@ -1,0 +1,122 @@
+diff --git a/src/torchtsetlin/functional.py b/src/torchtsetlin/functional.py
+index c916cb0..2f1f31e 100644
+--- a/src/torchtsetlin/functional.py
++++ b/src/torchtsetlin/functional.py
+@@ -128,18 +128,23 @@ def sample_negative_classes(
+     votes: Optional[Tensor] = None,
+     focused: bool = False,
+     generator: Optional[torch.Generator] = None,
++    T: Optional[float] = None,
+ ) -> Tensor:
+     """Sample one negative (non-target) class per example.
+ 
+-    With ``focused=True`` ("focused negative sampling") classes are sampled with
+-    probability proportional to how strongly they currently vote, i.e. the classes the
+-    machine confuses with the target are corrected first. Otherwise sampling is uniform.
++    With ``focused=True`` ("focused negative sampling") a non-target class ``k`` is sampled
++    with probability proportional to its negative-feedback probability
++    ``(T + clip(v_k, -T, T)) / 2T``, as in tmu and green-tsetlin, so the classes the machine
++    confuses with the target are corrected first. This needs the vote margin ``T``.
++    Otherwise sampling is uniform.
+     """
+     if n_classes < 2:
+         raise ValueError("Need at least two classes to sample a negative class.")
+     if focused and votes is not None:
+-        w = votes.detach().to(torch.float32)
+-        w = w - w.min(dim=1, keepdim=True).values + 1.0  # strictly positive
++        if T is None:
++            raise ValueError("focused negative sampling needs the vote margin T.")
++        w = feedback_probabilities(votes.detach().to(torch.float32), T, target=False)
++        w = w + 1e-16  # as green-tsetlin: a class at -T keeps a tiny chance
+         w = w.scatter(1, y.view(-1, 1), 0.0)  # never the target itself
+         return torch.multinomial(w, 1, generator=generator).squeeze(1)
+     offset = torch.randint(1, n_classes, (y.shape[0],), device=y.device, generator=generator)
+diff --git a/src/torchtsetlin/models/classifier.py b/src/torchtsetlin/models/classifier.py
+index 03a99f0..6dc8fa1 100644
+--- a/src/torchtsetlin/models/classifier.py
++++ b/src/torchtsetlin/models/classifier.py
+@@ -35,7 +35,8 @@ class TsetlinMachine(TsetlinMachineBase):
+         T: vote margin (threshold). Larger ``T`` makes more clauses cooperate per class.
+         s: specificity.
+         weighted: learn an integer weight per clause (Integer-Weighted TM). Weights start
+-            at 1, grow with Type Ia feedback and shrink with Type II feedback (min 0).
++            at 1, grow with Type Ia feedback and shrink with Type II feedback (min 1, as in
++            pyTsetlinMachine and tmu).
+         focused_negative_sampling: sample the negative class proportionally to how strongly
+             it currently votes, instead of uniformly.
+         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`
+@@ -147,7 +148,7 @@ class TsetlinMachine(TsetlinMachineBase):
+         B = votes.shape[0]
+         dev = votes.device
+         y_neg = F.sample_negative_classes(
+-            y, self.n_classes, votes=votes, focused=self.focused_negative_sampling
++            y, self.n_classes, votes=votes, focused=self.focused_negative_sampling, T=self.T
+         )
+         ar = torch.arange(B, device=dev)
+         p_tgt = F.feedback_probabilities(votes[ar, y], self.T, target=True)
+@@ -184,7 +185,7 @@ class TsetlinMachine(TsetlinMachineBase):
+ 
+     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
+         if self.weighted and "dw" in acc.extra:
+-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=0)
++            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
+ 
+     # ------------------------------------------------------------------ interpretation
+     def clause_info(self, clause: int, feature_names: Optional[Sequence[str]] = None) -> Dict:
+diff --git a/src/torchtsetlin/models/coalesced.py b/src/torchtsetlin/models/coalesced.py
+index 8b5275a..5484c3d 100644
+--- a/src/torchtsetlin/models/coalesced.py
++++ b/src/torchtsetlin/models/coalesced.py
+@@ -143,7 +143,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
+             return type_i, type_ii, aux
+ 
+         y_neg = F.sample_negative_classes(
+-            y, self.n_outputs, votes=votes, focused=self.focused_negative_sampling
++            y, self.n_outputs, votes=votes, focused=self.focused_negative_sampling, T=self.T
+         )
+         ar = torch.arange(B, device=dev)
+         p_tgt = F.feedback_probabilities(votes[ar, y], self.T, target=True)
+diff --git a/src/torchtsetlin/models/regression.py b/src/torchtsetlin/models/regression.py
+index c7b0533..ec3206e 100644
+--- a/src/torchtsetlin/models/regression.py
++++ b/src/torchtsetlin/models/regression.py
+@@ -22,8 +22,10 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
+     ``y_hat = y_min + (v / T) * (y_max - y_min)``.
+ 
+     Learning: with the target expressed in vote units ``v* = T (y - y_min)/(y_max - y_min)``,
+-    every clause receives Type I feedback with probability ``(v* - v)/T`` when the prediction
+-    is too low, and Type II feedback with probability ``(v - v*)/T`` when it is too high.
++    every clause receives Type I feedback with probability ``((v* - v)/T)**2`` when the
++    prediction is too low, and Type II feedback with probability ``((v - v*)/T)**2`` when it is
++    too high. The squared error is the rule of the reference implementations
++    (pyTsetlinMachine, pyTsetlinMachineParallel and tmu).
+ 
+     Args:
+         n_features: Boolean feature count (``None`` = lazy).
+@@ -32,7 +34,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
+         s: specificity.
+         y_range: ``(y_min, y_max)`` of the targets. If ``None`` it is inferred from the first
+             training batch (a warning is issued); prefer to pass it explicitly.
+-        weighted: learn integer clause weights (Type Ia ``+1``, Type II ``-1``, min 0).
++        weighted: learn integer clause weights (Type Ia ``+1``, Type II ``-1``, min 1).
+         **kwargs (Any): forwarded to :class:`~torchtsetlin.models.TsetlinMachineBase`.
+     """
+ 
+@@ -119,7 +121,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
+         v = votes.squeeze(1)
+         v_star = self.targets_to_votes(y)
+         err = (v_star - v) / self.T  # >0: too low -> Type I ; <0: too high -> Type II
+-        p = err.abs().clamp(max=1.0)
++        p = err.square().clamp(max=1.0)
+         sel = torch.rand(B, self.n_clauses, device=votes.device) < p.unsqueeze(1)
+         low = (err > 0).unsqueeze(1)
+         return sel & low, sel & ~low, None
+@@ -134,7 +136,7 @@ class RegressionTsetlinMachine(TsetlinMachineBase):
+ 
+     def _commit_weights(self, acc: FeedbackAccumulator) -> None:
+         if self.weighted and "dw" in acc.extra:
+-            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=0)
++            self.weights.add_(acc.extra["dw"].to(self.weights.dtype)).clamp_(min=1)
+ 
+     def rules(self, feature_names: Optional[Sequence[str]] = None, skip_empty: bool = True) -> List[str]:
+         """``IF ... THEN +w`` rules: each matching clause adds ``w * (y_max - y_min) / T``."""
