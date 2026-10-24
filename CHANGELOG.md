@@ -1,10 +1,13 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-10-24)
 
-Three gaps against the reference implementations, found by the cross-library benchmark
-(`experiments/paper_experiments/LIBRARY_GAPS.md`, G1, G3 and G4). All three change what a model
-learns, so results measured with 0.4.0 on the affected models are not directly comparable.
+**Learning follows the reference implementations, and training is much faster.** A
+configuration audit against pyTsetlinMachine, pyTsetlinMachineParallel, PyTsetlinMachineCUDA,
+tmu and green-tsetlin (`experiments/paper_experiments/LIBRARY_GAPS.md`) found nine gaps; eight
+are closed here, and CPU training is the one still open (14x faster, but still slower than
+pyTsetlinMachine on one core). G1, G3 and G4 change what a model learns, so results measured
+with 0.4.0 on weighted, regression or focused-sampling models are not directly comparable.
 
 - **Behaviour change: clause weights floor at 1, not 0** (G1). `TsetlinMachine(weighted=True)`
   and `RegressionTsetlinMachine(weighted=True)` used to let Type II drive a weight to 0, which
