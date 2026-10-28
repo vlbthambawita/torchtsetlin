@@ -47,6 +47,84 @@ Still open after round 2: CPU training remains slower than pyTsetlinMachine (G8;
 ~970 s/epoch vs 354 s); tt-seq on the GPU is launch-bound for tiny models (~0.5 ms per example
 regardless of size); conv on the GPU trails pyTM-CUDA (15.5 vs 9.5 s/epoch on B7).
 
+## Round 3 (2026-10-28): low-level kernel audit of 0.5.1 (CUDA / PyTorch)
+
+Requested by the user after the 0.5.1 release: find what is left at kernel level. Measured on the
+**RTX 3080** (GPU 1, CPU cores 24–27) so that the GPU timing run on the 3090 was not disturbed;
+3080 bandwidth 760 GB/s (3090: 936), so absolute times are ~20% above the 3090's. Scripts:
+`code/kernel_audit/` (`deep.py` anatomy per update, `syncs.py` sync sites, `proto_*.py` /
+`kvar.py` / `graph_seq.py` prototypes, `coldstart.py`). Every prototype checks exactness
+against the current path where that applies. **Status (2026-10-28, same day): all ten fixed in
+the working tree** at the user's request ("correct these all GAPs"), which lifted the 2026-10-24
+"compile first, no hand-written kernels" decision for these items; see the outcome table at the
+end of this section.
+
+**Where an update's time goes (0.5.1, per `update()`):**
+
+| Shape | Wall | GPU busy | Kernels | Host syncs | Dominant cost |
+|---|---|---|---|---|---|
+| B4 flat, 31M automata, batch 32 | 6.8 ms | ~3.6 ms | 85 | 6 | fp32 count tensors: 3 GEMMs write 375 MB, the commit reads them, a zero pass rewrites them (~1.6 GB of traffic; floor 0.125 GB) |
+| B9 flat, 200M automata, batch 32 | 20 ms | ~20 ms | 93 | 6 | same, 6.4× larger; 2.4 GB of count buffers (peak GPU 3.4 GB vs pyTM-CUDA 2.1 GB) |
+| B7 conv, 5.4M automata, batch 16 | 7.2 ms | ~3.6 ms | 148 | 8 | evaluation GEMM (compute-bound, ~80% of fp16 peak), then `== 0` and `any` over the materialised (B, P, C) tensor, `nonzero` syncs for the patch draw |
+| B1 flat, 480 automata, batch 32 | 1.37 ms | 0.20 ms | 95 | 4 | launches and host syncs (85% of wall) |
+| B1 / B2 sequential, per example | 0.54 / 0.78 ms | ~0.03 ms | 22 / 36 | ~0 | launch-bound: ~22 kernels per example |
+| B7 conv prediction, 10k images | 1.72 s | | | | (B, P, C) GEMM output + `== 0` + `any`, chunks of 18 images |
+
+| ID | Gap | Evidence (3080) | Fix | Needs |
+|---|---|---|---|---|
+| G15 | **Count tensors are fp32 and three-fold.** `n_true`, `n_false`, `n2` are (C, 2F) fp32, written by `addmm_`, read by `commit_dense`, then zeroed: 12 B per automaton, ~13× the floor (state r/w + include write). | `proto_flat.py`: old path 6.0 ms (B4, b32), 4.6 ms (b100), 24.2 ms (B9 shape) | Counts in **fp16** (exact: ≤ B ≤ 2048 per chunk; GEMM on tensor cores); **no `n_false`** (= Type Ia count per clause − `n_true`, derived in-kernel); **`mm` writes, no zero pass** (accumulate only across chunks). | torch + compile only |
+| G16 | **`commit_dense` fuses the `include_count` row sum**, which inductor schedules as a reduction kernel at half the speed. | `kvar.py`: 2.14 ms with the row sum, 1.00 ms without (31M automata) | Compute `include_count` from the fp16 include in a separate reduction (~0.08 ms). With G15: B4 commit+counts 6.0 → ~1.3 ms (~4.6×), B9 ~2.5–3× | torch + compile only |
+| G17 | The bisection sampler costs ~0.5 ms of the 1.0 ms kernel (log2(width) dependent table gathers per automaton, also where the count is 0). | `kvar.py`: rand-only 0.53 ms vs bisect 1.0 ms | Skip the search for zero counts with masked loads (most automata get no event), or a 2-level lookup; only a hand-written Triton kernel controls this | Triton |
+| G18 | **Host syncs in every update** (blocks the CPU from queueing ahead, and makes CUDA-graph capture impossible): label range checks `bool((y < 0).any())` (`classifier.py:125`, `coalesced.py:104`, 2/update), `p_class[ar, y] = …` advanced-index assignment (`classifier.py:172,174`, 2), the CDF table copied host→device on every commit (`functional.py:316`, 1), `int(events.max())` for the table width (`functional.py:891`, 1), conv `nonzero` for the patch draw (`conv.py:209`, 4). | `syncs.py` | `torch._assert_async` (or check on the host before the transfer); `scatter_`; cache the table per device; a static event bound from the batch size; dense patch draw (G20) | torch only |
+| G19 | **Small models and sequential mode are launch-bound** (B1 batch: GPU busy 0.20 of 1.37 ms; sequential: ~22 launches, 0.54 ms per example). pyTM-CUDA runs B1 at 0.014 s/epoch, tt-seq at 2.8 s. | `deep.py`; `graph_seq.py`: **CUDA-graph replay of 64 sequential steps: 545 → 25 µs per example (22×)**, learns (B1 0.955 after 20 epochs) | CUDA-graph capture of K sequential steps (and of whole batched updates for small models). Prerequisites: G18 (no syncs) and in-place buffer management (`_refresh_include` / `reset_parameters` re-allocate tensors, which a captured graph would keep writing). Verify RNG advances per replay (distribution test) | torch only |
+| G20 | **Conv evaluation materialises (B, P, C)** in fp16, then bool, then reduces over P; the training draw needs `nonzero` + gathers. | `proto_conv.py` / `proto_conv2.py`, one B7 prediction chunk (18 images): current 1.32 s/10k; fused fp16 0.98 (1.3×); **fused int8 0.50 (2.6×); fused bit-packed 0.43 (3.1×)**, all exact, untuned | One Triton kernel per (example, clause tile): violation GEMM over patch blocks, OR in registers, and for training the random matching patch per (example, clause) by keeping the max of `U * match` (independent keys for Type Ia / II). Removes the (B, P, C) tensors and the `nonzero` syncs | Triton |
+| G21 | Include cache is 16 bits per automaton on CUDA (fp16) next to the 8-bit state; references keep 1 bit. | B9: 400 MB include cache | Bit-packed include (32 literals per int32) written by the commit kernel; used by G20's kernel | Triton (pack in the commit epilogue) |
+| G22 | Even with G15/G16 the flat commit moves fp16 counts through memory; the floor (no count tensors) is 0.165 ms for B4 vs ~1.3 ms after Phase 1. | `proto_flat.py` floor line | One Triton kernel per (clause, literal) tile: the B-length dot products of the count GEMMs in registers, then sampling and the state/include update; counts never touch HBM | Triton |
+| G23 | Compile start-up per process: first update 5.2 s cold, 2.1 s warm (inductor FX cache on). B3 (100 splits) and B10 (25 splits) pay it once per process. | `coldstart.py` | Keep the cache warm across processes (default dir); optionally `torch.compiler` cache artifacts shipped with the package | config |
+| G24 (minor) | Conv literals built in fp32 (`unfold` of a float copy, `cat` with `1 - x`) and cast to fp16 for evaluation | `deep.py` (im2col + cat ~0.2 ms of B7) | Build fp16 / int8 literals directly on CUDA | torch only |
+
+Not worth changing: the flat evaluation GEMM (≤ 0.1 ms even for B9, already fp16 on tensor
+cores); RNG (Philox in-kernel costs ~0.1 ms per 31M draws).
+
+### Plan
+
+| Phase | Gaps | Approach | Expected (from the prototypes) | Effort / risk |
+|---|---|---|---|---|
+| 1 | G15, G16, G18, G24 | torch + `torch.compile` only (keeps the 2026-10-24 decision) | flat GPU update ~3–4× faster (B4 b32 ≈ 1.2–1.5 ms on the 3090, B9 ≈ 2.5–3×); peak GPU memory of B9 −1.6 GB; syncs 6 → 0–1 | ~1 day; distribution tests exist (`test_commit_dense_matches_apply_feedback`) and extend directly |
+| 2 | G19 | CUDA graphs for sequential mode (opt-in first, then default on CUDA when the shapes are static), and for batched updates of small models | sequential ≈ 20× (B1 2.8 → ~0.13 s/epoch; B2 ≈ 15×) | ~1–2 days; must prove RNG freshness per replay and in-place buffers |
+| 3 | G20, G21, G22, G17 | hand-written **Triton** kernels with the current compiled/eager paths as fall-back and as the exactness reference in tests | conv evaluation 2.6–3.1× (B7 training est. 15.5 → ~7–9 s/epoch, pyTM-CUDA 9.5; prediction 1.7 → ~0.6 s), flat commit at the bandwidth floor (B4 ≈ 0.3 ms) | ~1 week; **needs the user to lift the "compile first, no hand-written kernels" decision of 2026-10-24** |
+| — | G23 | inductor cache hygiene | −3 s per process | trivial |
+
+Any of these changes tt's speed (not what it learns), so tt rows measured with 0.5.1 would be
+re-run after a release; the PyTsetlinMachineCUDA and tmu rows are unaffected.
+
+### Outcome (implemented 2026-10-28; same GPU, RTX 3080, ms per `update()`, 0.5.1 → now)
+
+Code: `src/torchtsetlin/_triton.py` (new), `models/base.py`, `models/conv.py`, `functional.py`,
+`models/classifier.py`, `models/coalesced.py`, `utils.py`; tests `tests/test_triton.py` (+ updates
+in `test_models.py`, `test_functional.py`); 253 tests pass on CPU + CUDA. Comparison script:
+`code/kernel_audit/cmp_versions.sh` (0.5.1 from a worktree of tag `v0.5.1`).
+
+| ID | Fix as implemented | Result |
+|---|---|---|
+| G15, G16, G22 | **Events mode + fused Triton commit** (`_triton.fused_commit`): a single-chunk CUDA update records `(literals, sel_i, sel_ii, patch_i, patch_ii)`; one kernel computes the counts per (clause, literal) tile (tensor-core dot over the batch for flat models; gather of each clause's patch for conv), samples, writes state + fp16 include + bit-packed include + include counts (atomics). No count buffer is allocated. The compiled `commit_dense` (fall-back) no longer fuses the row sum. | B4 b32 4.67 → 1.11, b100 5.05 → 1.68; B9 20.7 → 6.6 |
+| G17 | Sampler: inverse CDF walked arithmetically for the first 8 steps (no memory traffic), table bisection only for draws past 8, both skipped for whole tiles that do not need them; Philox draws shared by 4 automata. | commit kernel 1.84 → 0.68 ms on the 3090 (31M automata) |
+| G18 | Device-side label assert (`utils.class_targets`), `scatter_`/`gather` in feedback selection, CDF tables cached per device, table width from the batch size. | host syncs per update 4–8 → 0 (`test_updates_never_synchronise_with_the_host`) |
+| G19 | CUDA graphs: `update()` shapes are captured on third use (sequential: 64-example blocks), keyed on buffer addresses + scalar hyper-parameters; graphs own their accumulator. | B1 batch 1.39 → 0.28; B1 seq 550 → 32.6 (per 1000 examples); B2 seq 788 → 65; replays bit-identical to eager (4 seeds × 4 configs) |
+| G20, G21, G24 | `_triton.conv_eval`: bit-packed literals and includes, OR over patches in registers, hashed keys for the random matching patch (Type Ia / II independent, uniform: `test_conv_patch_draws_are_uniform_and_independent`); fp16 conv literals; bit-packed include kept fresh by the commit kernel. | B7 b16 5.04 → 1.53, b100 22.7 → 7.6; B7 prediction 1726 → 369 ms per 10k |
+| G23 | Batched CUDA path no longer uses `torch.compile` (Triton kernels cache on disk). | first update 5.2 s → 2.2 s cold, 2.1 → 0.7 s warm |
+
+Learning is unchanged in distribution: kernel-level distribution tests (flat and conv, boost /
+budget / dropout / s < 2) and end-to-end accuracies (B2 conv batch: 0.992 Triton vs 0.993 eager,
+4 seeds; Noisy XOR trainer: 0.721 vs 0.718, 8 seeds). GPU smoke (all 32 tt-cuda cells) in
+`results/smoke/`, 0.5.1 tt smoke records moved to `results/smoke_v0.5.1_tt/`.
+
+Still open: the fp16 include cache is kept next to the bit-packed one (2 bytes per automaton, used
+by the flat evaluation GEMM and the fall-backs); updates that need more than one chunk (e.g.
+`update()` with > ~1500 MNIST examples, or segmentation commits) use the compiled fp32-count path;
+sequential mode still costs ~30 µs per example (B1: 0.15 s/epoch vs pyTM-CUDA 0.014 s, which keeps a whole epoch in one kernel);
+CPU paths are unchanged (G8).
+
 ## Defects in the other libraries (not ours; recorded because they affect the protocol)
 
 | Library | Defect | Handling |
