@@ -29,17 +29,21 @@ class FeedbackAccumulator:
         #: record a single example as factors for :func:`F.commit_single_example` (see
         #: :meth:`TsetlinMachineBase._feedback_counts`) instead of writing the counts
         self.fuse = False
-        self.single: Optional[Tuple[Tensor, Tensor, Tensor, Tensor]] = None
+        #: ``(literals, literals_ii, fire_i, nofire_i, fire_ii)`` of that example
+        self.single: Optional[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]] = None
         self.extra: Dict[str, Tensor] = {}
 
     def matches(self, n_clauses: int, n_literals: int, device: torch.device, dtype: torch.dtype) -> bool:
         return (tuple(self.n_true.shape) == (n_clauses, n_literals) and self.n_true.device == device
                 and self.n_true.dtype == dtype)
 
-    def reset(self) -> None:
-        """Zero the counts for reuse; only the rows that can be non-zero are touched."""
+    def reset(self, counts_clear: bool = False) -> None:
+        """Zero the counts for reuse; only the rows that can be non-zero are touched.
+        ``counts_clear``: the commit already zeroed ``n_true``, ``n_false`` and ``n2``."""
         if self.single is not None:  # the counts were never written
             self.single = None
+        elif counts_clear:
+            pass
         elif not self.sparse:
             for t in (self.n_true, self.n_false, self.n2):
                 t.zero_()
@@ -96,7 +100,10 @@ class TsetlinMachineBase(nn.Module):
             smallest safe one: ``uint8`` when ``2 * n_states - 1 <= 255`` (8 bits per automaton,
             as in the reference implementations), else ``int16`` or ``int32``. Cast before
             doing arithmetic on ``ta_state`` yourself (``model.ta_state.long() - N``).
-        compute_dtype: floating dtype used for matmul-based clause evaluation.
+        compute_dtype: floating dtype of the literals and feedback counts. On CUDA, clauses
+            are evaluated in ``float16`` regardless: the evaluation only tests whether a count
+            of violated literals is zero, which half precision decides exactly (a sum of
+            non-negative integers never rounds to zero).
         max_chunk_elements: memory budget (in tensor elements) for the largest intermediate
             tensor of an update; batches are processed in chunks that respect it.
         feedback_mode: ``"batch"`` accumulates the feedback of all examples in a batch and
@@ -232,11 +239,24 @@ class TsetlinMachineBase(nn.Module):
         if self.is_initialized:
             self._initialize_state(int(self.n_features), self.ta_state.device)  # type: ignore[arg-type]
 
+    def _include_dtype(self) -> torch.dtype:
+        """dtype of the cached include mask, the operand of clause evaluation: ``float16`` on
+        CUDA (exact for the zero test, and the matmul runs on tensor cores), else
+        ``compute_dtype``."""
+        return torch.float16 if self.ta_state.device.type == "cuda" else self.compute_dtype
+
     def _refresh_include(self) -> None:
         """Recompute the cached include mask after the automata changed."""
         inc = self.ta_state >= self.n_states
-        self.include = inc.to(self.compute_dtype)
+        self.include = inc.to(self._include_dtype())
         self.include_count = inc.sum(dim=1)
+
+    def _apply(self, fn, recurse: bool = True):  # type: ignore[override]
+        # .to(device) keeps buffer dtypes; re-derive the include cache for the new device.
+        out = super()._apply(fn, recurse)
+        if self.is_initialized and self.include.dtype != self._include_dtype():
+            self._refresh_include()
+        return out
 
     def _refresh_include_at(self, rows: Tensor, pos: Tensor) -> None:
         """Refresh the include caches where :func:`F.apply_feedback_rows` changed the state:
@@ -388,7 +408,7 @@ class TsetlinMachineBase(nn.Module):
             seq = self.feedback_mode == "sequential" if sequential is None else bool(sequential)
             votes_all = []
             if seq:
-                fuse = self._fuse_single_examples()
+                fuse = self._fuse_single_examples(B)
                 for i in range(B):
                     acc = self._new_accumulator(sparse=True, fuse=fuse)
                     if fuse:
@@ -434,15 +454,17 @@ class TsetlinMachineBase(nn.Module):
         acc.fuse = bool(fuse)
         return acc
 
-    def _fuse_single_examples(self) -> bool:
+    def _fuse_single_examples(self, n_examples: int = 1) -> bool:
         """Whether sequential mode commits each example with the fused compiled kernel: on
         CUDA, where the row-sparse commit is dominated by kernel launches and host syncs (on
         the CPU the row-sparse commit is cheaper than any dense pass), and not under the hard
-        budget, which the kernel does not implement."""
+        budget, which the kernel does not implement. The compile cost is paid once, so the
+        threshold is on the work of the whole call (``n_examples`` steps), not of one step:
+        a small model trained example by example is exactly where launches dominate."""
         return (self.ta_state.device.type == "cuda"
-                and type(self)._feedback_counts is TsetlinMachineBase._feedback_counts
+                and getattr(type(self)._feedback_counts, "_records_single", False)
                 and (self.max_included_literals is None or self.budget_mode == "soft")
-                and F._compile_wanted(self.ta_state.numel()))
+                and F._compile_wanted(self.ta_state.numel() * max(1, int(n_examples))))
 
     def _accumulate_one(self, xb: Tensor, y_t: Tensor, acc: FeedbackAccumulator) -> Tensor:
         """:meth:`_accumulate_chunk` for one example of fused sequential mode, through
@@ -486,11 +508,12 @@ class TsetlinMachineBase(nn.Module):
     def _commit(self, acc: FeedbackAccumulator) -> None:
         """Apply accumulated feedback to the automata (and weights) and refresh caches."""
         if acc.single is not None:
+            lit, lit_ii, fire_i, nofire_i, fire_ii = acc.single
             count = F.commit_single_example(
-                self.ta_state, self.include, self.include_count, *acc.single,
+                self.ta_state, self.include, self.include_count, lit, fire_i, nofire_i, fire_ii,
                 n_states=self.n_states, s=self.s, boost_true_positive=self.boost_true_positive,
                 max_included_literals=self.max_included_literals,
-                literal_active=self._literal_active,
+                literal_active=self._literal_active, literals_ii=lit_ii,
             )
             if count is not None:
                 self.include_count = count
@@ -499,6 +522,22 @@ class TsetlinMachineBase(nn.Module):
                 self.__dict__["_acc_dirty"] = False
                 return
             self._write_single_counts(acc)  # no compiled kernel: commit the counts instead
+        if (not acc.sparse and acc.single is None and self.ta_state.device.type == "cuda"
+                and (self.max_included_literals is None or self.budget_mode == "soft")):
+            # one fused pass: sample, update the state, refresh the include cache, zero counts
+            count = F.commit_dense(
+                self.ta_state, self.include, self.include_count, acc.n_true, acc.n_false,
+                acc.n_ib, acc.n2, n_states=self.n_states, s=self.s,
+                boost_true_positive=self.boost_true_positive,
+                max_included_literals=self.max_included_literals,
+                literal_active=self._literal_active,
+            )
+            if count is not None:
+                self.include_count = count
+                self._commit_weights(acc)
+                acc.reset(counts_clear=True)
+                self.__dict__["_acc_dirty"] = False
+                return
         if acc.sparse:
             changed = F.apply_feedback_rows(
                 self.ta_state, acc.n_true, acc.n_false, acc.n_ib, acc.n2, acc.rows,
@@ -543,7 +582,7 @@ class TsetlinMachineBase(nn.Module):
         """Accumulate feedback event counts for a chunk (flat models: matmuls over the
         clauses that matched and were selected; usually a small fraction of all clauses)."""
         if acc.fuse and literals.shape[0] == 1:
-            acc.single = (literals[0], sel_fire_i[0], sel_nofire_i[0], sel_fire_ii[0])
+            acc.single = (literals[0], literals[0], sel_fire_i[0], sel_nofire_i[0], sel_fire_ii[0])
             return
         acc.n_ib += sel_nofire_i.sum(dim=0)
         neg_lit = 1.0 - literals
@@ -561,13 +600,20 @@ class TsetlinMachineBase(nn.Module):
         acc.n_false.index_add_(0, idx, sel_i @ neg_lit)
         acc.n2.index_add_(0, idx, sel_fire_ii[:, idx].transpose(0, 1) @ neg_lit)
 
+    _feedback_counts._records_single = True  # type: ignore[attr-defined]
+
     def _write_single_counts(self, acc: FeedbackAccumulator) -> None:
         """Turn the factors recorded for :func:`F.commit_single_example` into counts."""
-        literals, fire_i, nofire_i, fire_ii = acc.single  # type: ignore[misc]
+        lit, lit_ii, fire_i, nofire_i, fire_ii = acc.single  # type: ignore[misc]
         acc.single = None
         acc.fuse = False
-        self._feedback_counts(literals.unsqueeze(0), None, fire_i.unsqueeze(0),
-                              nofire_i.unsqueeze(0), fire_ii.unsqueeze(0), acc)
+        lit = lit if lit.dim() == 2 else lit.unsqueeze(0)  # (1 or C, 2F)
+        lit_ii = lit_ii if lit_ii.dim() == 2 else lit_ii.unsqueeze(0)
+        fi = fire_i.unsqueeze(1)
+        acc.n_true += fi * lit
+        acc.n_false += fi * (1.0 - lit)
+        acc.n2 += fire_ii.unsqueeze(1) * (1.0 - lit_ii)
+        acc.n_ib += nofire_i
 
     # ------------------------------------------------------------------ dropout masks
     def resample_dropout(self) -> None:

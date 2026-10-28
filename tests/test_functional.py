@@ -376,3 +376,105 @@ def test_set_compile_disables_the_kernels(compiled):
         assert not F._compile_wanted(10**9)
     finally:
         F.set_compile(True)
+
+
+cuda_only = pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA-only kernel")
+
+
+@cuda_only
+def test_clause_outputs_in_half_precision_are_exact():
+    # the models evaluate clauses in float16 on CUDA: only `violations == 0` is used, and a
+    # sum of non-negative integers never rounds to zero, even far beyond float16's 2048
+    dev = torch.device("cuda")
+    g = torch.Generator(device=dev).manual_seed(0)
+    for L in (24, 1568, 20000):
+        lit = (torch.rand(300, L, device=dev, generator=g) < 0.5).float()
+        inc = (torch.rand(200, L, device=dev, generator=g) < 3.0 / L).float()
+        inc[:20] = 0  # empty clauses
+        # clauses of a few literals that are all True for one example: it must match
+        inc[40:60] = lit[40:60] * (torch.rand(20, L, device=dev, generator=g) < 0.01)
+        ref = F.clause_outputs(lit, inc, empty_value=True)
+        half = F.clause_outputs(lit, inc.half(), empty_value=True)
+        assert torch.equal(ref, half)
+        assert bool(ref.any()) and not bool(ref.all())
+
+
+@cuda_only
+@pytest.mark.parametrize("flip", [False, True])
+def test_bisection_binomial_matches_the_pmf(compiled, flip):
+    # the dense GPU commit draws Binomial(n, q) by bisection over the CDF table (n - X for p > 1/2)
+    dev = torch.device("cuda")
+    for q in (0.1, 0.35):
+        thr = F._wide_thresholds(q, dev)
+        for n in (1, 7, 100, 255):
+            draws = F._bisect_binomial(torch.full((200_000,), float(n), device=dev), thr, flip)
+            _assert_matches_pmf(draws.cpu(), n, 1 - q if flip else q)
+
+
+@cuda_only
+@pytest.mark.parametrize("boost,budget,dropout,s", [(True, None, False, 4.0), (False, 3, True, 4.0),
+                                                    (False, None, False, 1.5)])
+def test_commit_dense_matches_apply_feedback(compiled, boost, budget, dropout, s):
+    # the fused dense GPU commit against the eager update, with counts of a batch of ~100
+    dev = torch.device("cuda")
+    N, C, L, reps = 16, 24, 20, 400
+    g = torch.Generator(device=dev).manual_seed(4)
+    state0 = torch.randint(N - 5, N + 5, (C, L), device=dev, dtype=torch.uint8, generator=g)
+    n_ia = torch.randint(0, 60, (C, 1), device=dev, generator=g).float()
+    nt = torch.floor(torch.rand(C, L, device=dev, generator=g) * (n_ia + 1))
+    nf = n_ia - nt
+    nib = torch.randint(0, 40, (C,), device=dev, generator=g).float()
+    n2 = torch.randint(0, 3, (C, L), device=dev, generator=g).float()
+    active = (torch.rand(L, device=dev, generator=g) < 0.8).float() if dropout else None
+    kw = dict(n_states=N, s=s, boost_true_positive=boost, max_included_literals=budget,
+              literal_active=active)
+    inc_count = (state0 >= N).sum(1)
+    da, db = [], []
+    for _ in range(reps):
+        a, b = state0.clone(), state0.clone()
+        F.apply_feedback(a, nt.clone(), nf.clone(), nib.clone(), n2.clone(), include_count=inc_count,
+                         generator=g, **kw)
+        include = torch.zeros(C, L, device=dev, dtype=torch.float16)
+        cts = nt.clone(), nf.clone(), nib.clone(), n2.clone()
+        count = F.commit_dense(b, include, inc_count, *cts, **kw)
+        assert count is not None
+        assert torch.equal(include, (b >= N).half()) and torch.equal(count, (b >= N).sum(1))
+        assert not cts[0].any() and not cts[1].any() and not cts[3].any()  # zeroed for reuse
+        da.append((a.int() - state0.int()).float())
+        db.append((b.int() - state0.int()).float())
+    assert F._dense_commit_kernel in F._KERNELS
+    da, db = torch.stack(da), torch.stack(db)
+    se = ((da.var(0) + db.var(0)) / reps).sqrt().clamp(min=1e-3)
+    assert ((da.mean(0) - db.mean(0)).abs() / se).max().item() < 5.0  # per automaton
+    assert abs(da.mean().item() - db.mean().item()) < 0.05
+    assert abs(da.var(0).mean().item() - db.var(0).mean().item()) < 0.1 * da.var(0).mean().item() + 0.02
+
+
+@cuda_only
+def test_commit_dense_declines_counts_beyond_its_table(compiled):
+    dev = torch.device("cuda")
+    state = torch.full((4, 6), 10, dtype=torch.uint8, device=dev)
+    nib = torch.full((4,), float(F._WIDE_TABLE_N), device=dev)
+    z = torch.zeros(4, 6, device=dev)
+    out = F.commit_dense(state.clone(), z.half(), torch.zeros(4, dtype=torch.long, device=dev),
+                         z.clone(), z.clone(), nib, z.clone(), n_states=16, s=4.0)
+    assert out is None
+
+
+def test_compiled_cpu_kernels_bisect_counts_beyond_the_narrow_table(compiled):
+    # batch 100 with s=3 aggregates counts past the 64 x 32 table; the CPU kernels then
+    # bisect the wide table instead of falling back to the slow eager samplers
+    for p, n in ((1 / 3, 100), (0.1, 200)):
+        draws = F._binomial(torch.full((100_000,), float(n)), p)
+        _assert_matches_pmf(draws, n, p)
+    assert F._bisect_kernel in F._KERNELS
+    N, L, p = 64, 40, 1 / 3
+    n = torch.tensor([90.0, 150.0]).repeat_interleave(3000)
+    rows = torch.arange(n.numel())
+    state = torch.full((n.numel(), L), 250, dtype=torch.uint8)
+    old = state.clone()
+    pos = F._forget_rows(state, rows, n, p, None, N)
+    assert pos is not None and F._forget_rows_bisect_kernel in F._KERNELS
+    dec = old.int() - state.int()
+    for v in (90, 150):
+        _assert_matches_pmf(dec[n == v], v, p)

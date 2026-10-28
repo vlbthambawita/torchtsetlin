@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.5.1 (2026-10-28)
+
+**Faster GPU training, and two CPU slow paths removed** (gaps G10-G14 of the cross-library
+benchmark, `experiments/paper_experiments/LIBRARY_GAPS.md`). Learning is unchanged in
+distribution; clause evaluation on CUDA is bit-identical. Times are per `update()` on an RTX 3090
+/ Ryzen 9 3950X after warm-up, MNIST-sized models (20k clauses).
+
+- **Fused dense commit on CUDA** (G10). A batched GPU update applies its feedback with one
+  `torch.compile` kernel (`functional.commit_dense`) that draws the binomials inside the kernel
+  (inverse CDF by bisection over a fixed table), writes the state and the include cache, and
+  zeroes the counts for reuse, instead of ~20 full passes over the automata. Flat MNIST: batch 32
+  7.2 -> 3.9 ms, batch 100 7.6 -> 4.1 ms. Hard budgets and counts above 255 per automaton keep the
+  eager commit.
+- **Clauses are evaluated in float16 on CUDA** (G11). The include cache is `float16` on CUDA
+  (tensor-core matmul). The evaluation only tests whether a count of violated literals is zero,
+  which half precision decides exactly, so clause outputs, votes and every random draw are
+  unchanged. `compute_dtype` still sets the literals and the feedback counts; the CPU keeps it.
+- **Convolutional batches are no longer split into tiny chunks** (G12). The chunk size counted
+  the worst-case random-patch draw (every clause selected for every example), which split a
+  batch of 16 MNIST images into 4 chunks. It now follows the largest real intermediate, the
+  `(P, C)` evaluation block, and the patch draw is bounded separately by blocks of events
+  (`_event_block`). With G10/G11, conv MNIST batch 16: 9.6 -> 4.1 ms on CUDA.
+- **Sequential mode on CUDA: small models and convolutional models use the fused kernel** (G13).
+  Whether to compile is decided on the work of the whole `update()` call, not one step, and
+  `ConvTsetlinMachine` records each example's per-clause random matching patch for
+  `functional.commit_single_example`, which now accepts `(C, 2F)` literals (and `literals_ii`).
+  Noisy XOR: 3.1 -> 0.55 ms per example; 2-D Noisy XOR (conv): 3.6 -> 0.73 ms.
+- **CPU: two slow paths removed** (G14). Clause-major evaluation is used only for up to 256 rows:
+  for the thousands of patch rows of a convolutional batch it was 3x slower (conv MNIST batch 16,
+  16 threads: 619 -> 258 ms per update). Counts beyond the CPU kernels' 64 x 32 table (large
+  batches, small `s`) now bisect the wide table instead of falling back to the eager geometric
+  sampler (coalesced MNIST, 2000 clauses, s=3, batch 100: 2047 -> 110 ms).
+
 ## 0.5.0 (2026-10-24)
 
 **Learning follows the reference implementations, and training is much faster.** A

@@ -130,11 +130,21 @@ class _ConvMixin:
         return Py * Px
 
     def _chunk_elements_per_example(self, xb: Tensor) -> int:  # type: ignore[override]
-        # The (B, P, C) match tensor plus, per feedback kind, the (n_sel <= B*C, P) patch
-        # draw, and the worst-case gathered literal rows (B*C, 2F).
+        # The largest per-example intermediate is the (P, C) block of clause evaluation, next
+        # to the example's (P, 2F) literals. The patch draw and the gathered literal rows of
+        # :meth:`_feedback_counts` scale with the number of feedback events, not with B*C,
+        # and are bounded separately (:meth:`_event_block`). Counting their worst case here
+        # (every clause selected for every example) split a batch of 16 MNIST images into 4
+        # chunks and made a GPU update ~2.5x slower.
         P = self._patches_per_example(xb)
         C = self.n_clauses_total  # type: ignore[attr-defined]
-        return 3 * P * C + 2 * C * self.n_literals + P * self.n_literals  # type: ignore[attr-defined]
+        return P * C + P * self.n_literals  # type: ignore[attr-defined]
+
+    def _event_block(self, P: int) -> int:
+        """Feedback events whose random patch is drawn together: the ``(n, P)`` draw and the
+        ``(n, 2F)`` gathered literal rows stay within ``max_chunk_elements``."""
+        L = self.n_literals  # type: ignore[attr-defined]
+        return max(1, self.max_chunk_elements // (2 * P + 2 * L))  # type: ignore[attr-defined]
 
     def _position_bits(self, Py: int, Px: int, device: torch.device) -> Tensor:
         """``(P, (Py-1)+(Px-1))`` thermometer bits for every patch position (row-major)."""
@@ -181,25 +191,37 @@ class _ConvMixin:
         acc: FeedbackAccumulator,
     ) -> None:
         matches: Tensor = ctx
-        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no patch features
         B, P, L = literals.shape
+        if acc.fuse and B == 1:
+            # Fused sequential mode (F.commit_single_example): the random matching patch of
+            # every clause, drawn independently for Type Ia and Type II, as (C, 2F) literal
+            # rows; the fire masks select which of them count. Dense, so it compiles.
+            m = matches[0].transpose(0, 1)  # (C, P)
+            p_i = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1)
+            p_ii = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1)
+            acc.single = (literals[0, p_i], literals[0, p_ii], sel_fire_i[0], sel_nofire_i[0],
+                          sel_fire_ii[0])
+            return
+        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no patch features
         flat = literals.reshape(B * P, L)
+        E = self._event_block(P)
         for sel, kind in ((sel_fire_i, "i"), (sel_fire_ii, "ii")):
             nz = torch.nonzero(sel, as_tuple=True)
-            if nz[0].numel() == 0:
-                continue
-            b_idx, j_idx = nz
-            # One uniformly random *matching* patch per feedback event. The draws are
-            # independent per event (and so between Type Ia and Type II), because a coalesced
-            # clause can receive both in the same update.
-            cand = matches[b_idx, :, j_idx]  # (n_sel, P)
-            p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
-            rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
-            if kind == "i":
-                acc.n_true.index_add_(0, j_idx, rows)
-                acc.n_false.index_add_(0, j_idx, 1.0 - rows)
-            else:
-                acc.n2.index_add_(0, j_idx, 1.0 - rows)
+            for ev in chunk_indices(nz[0].numel(), E):
+                b_idx, j_idx = nz[0][ev], nz[1][ev]
+                # One uniformly random *matching* patch per feedback event. The draws are
+                # independent per event (and so between Type Ia and Type II), because a
+                # coalesced clause can receive both in the same update.
+                cand = matches[b_idx, :, j_idx]  # (n_sel, P)
+                p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
+                rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
+                if kind == "i":
+                    acc.n_true.index_add_(0, j_idx, rows)
+                    acc.n_false.index_add_(0, j_idx, 1.0 - rows)
+                else:
+                    acc.n2.index_add_(0, j_idx, 1.0 - rows)
+
+    _feedback_counts._records_single = True  # type: ignore[attr-defined]
 
     # ---- dense introspection ------------------------------------------------------
     @torch.no_grad()

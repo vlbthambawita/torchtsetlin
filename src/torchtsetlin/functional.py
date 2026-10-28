@@ -36,6 +36,7 @@ __all__ = [
     "sample_forget_events",
     "apply_feedback_rows",
     "commit_single_example",
+    "commit_dense",
     "set_compile",
     "type_i_counts",
     "type_ii_counts",
@@ -69,8 +70,13 @@ def clause_violations(literals: Tensor, include: Tensor) -> Tensor:
         ``(B, C)`` floating tensor; a clause matches an example iff its entry is ``0``.
     """
     # (1 - literals) marks False literals; a False literal that is included violates the AND.
-    if literals.dim() == 2 and literals.device.type == "cpu":
-        # clause-major (C, 2F) @ (2F, B) is ~2x faster than (B, 2F) @ (2F, C) on the CPU
+    # The literals follow the dtype of ``include`` (the models keep it in float16 on CUDA).
+    if literals.dtype != include.dtype:
+        literals = literals.to(include.dtype)
+    if literals.dim() == 2 and literals.device.type == "cpu" and literals.shape[0] <= 256:
+        # clause-major (C, 2F) @ (2F, B) is up to ~2x faster than (B, 2F) @ (2F, C) on the CPU
+        # for a few rows (flat mini-batches), but ~3x slower for the thousands of patch rows of
+        # a convolutional batch (B=16 MNIST images: 582 vs 187 ms on 16 threads)
         return torch.matmul(include, (1.0 - literals).transpose(0, 1)).transpose(0, 1).contiguous()
     return torch.matmul(1.0 - literals, include.transpose(0, 1))
 
@@ -287,6 +293,46 @@ def _icdf_count(u: Tensor, thr: Tensor) -> Tensor:
     return out
 
 
+# A batched update aggregates up to one Type I event per example into an automaton, so the
+# dense GPU commit (and the CPU kernels, for large batches or small s) needs counts beyond the
+# narrow table. It searches one fixed square table
+# (counts up to _WIDE_TABLE_N - 1, every CDF column) by bisection: log2(_WIDE_TABLE_N) gathers per
+# automaton instead of an unrolled compare per column, and no tail to resample.
+_WIDE_TABLE_N = 256
+_WIDE_CDF_CACHE: Dict[float, Tensor] = {}
+
+
+def _wide_thresholds(p: float, device: torch.device) -> Tensor:
+    """Flattened float32 ``P(Binomial(n, p) <= k)`` for ``n, k < _WIDE_TABLE_N`` (``2.0`` where
+    ``k >= n``)."""
+    tab = _WIDE_CDF_CACHE.get(float(p))
+    if tab is None:
+        n = torch.arange(_WIDE_TABLE_N, dtype=torch.float64).unsqueeze(1)
+        k = torch.arange(_WIDE_TABLE_N, dtype=torch.float64)
+        log_pmf = (torch.lgamma(n + 1) - torch.lgamma(k + 1) - torch.lgamma((n - k).clamp(min=0) + 1)
+                   + k * math.log(p) + (n - k) * math.log1p(-p))
+        cdf = torch.where(k <= n, log_pmf.exp(), torch.zeros(())).cumsum(1)
+        tab = _WIDE_CDF_CACHE[float(p)] = cdf.masked_fill_(k >= n, 2.0).reshape(-1)
+    return tab.to(dtype=torch.float32, device=device)
+
+
+def _bisect_binomial(n: Tensor, thr: Tensor, flip: bool, width: int = _WIDE_TABLE_N) -> Tensor:
+    """``Binomial(n, q)`` from the flattened :func:`_wide_thresholds` table of ``q``:
+    ``#{k : u >= cdf[n, k]}`` by bisection over the non-decreasing row, searching the first
+    ``width`` (a power of two ``> n``) columns. ``flip`` returns ``n - X`` instead, i.e.
+    ``Binomial(n, 1 - q)``."""
+    u = torch.rand(n.shape, dtype=thr.dtype, device=n.device)
+    base = n.long() * _WIDE_TABLE_N
+    lo = torch.zeros(n.shape, dtype=torch.long, device=n.device)
+    step = width // 2
+    while step:
+        cand = lo + step
+        lo = torch.where(u >= thr[base + cand - 1], cand, lo)
+        step //= 2
+    out = lo.to(n.dtype)
+    return n - out if flip else out
+
+
 def _binomial_kernel(count: Tensor, thr: Tensor) -> Tensor:
     u = torch.rand(count.shape, dtype=thr.dtype, device=count.device)
     return _icdf_count(u, thr[count.long()]).to(count.dtype)
@@ -302,7 +348,26 @@ def _forget_rows_kernel(sub: Tensor, n: Tensor, thr: Tensor, active: Optional[Te
     return new.to(sub.dtype), (old >= N) & (new < N)
 
 
-_DYNAMIC = {_binomial_kernel, _forget_rows_kernel}
+def _bisect_kernel(count: Tensor, thr: Tensor, width: int) -> Tensor:
+    return _bisect_binomial(count, thr, False, width)
+
+
+def _forget_rows_bisect_kernel(sub: Tensor, n: Tensor, thr: Tensor, active: Optional[Tensor], N: int,
+                               width: int):
+    dec = _bisect_binomial(n.expand(sub.shape), thr, False, width)  # (R, L) from (R, 1)
+    if active is not None:
+        dec = dec * active
+    old = sub.to(torch.int32)
+    new = (old - dec.to(torch.int32)).clamp(min=0)
+    return new.to(sub.dtype), (old >= N) & (new < N)
+
+
+def _bisect_width(n_max: int) -> int:
+    """Bisection steps for counts up to ``n_max`` (a few distinct widths, each compiled once)."""
+    return max(16, 1 << int(n_max).bit_length())
+
+
+_DYNAMIC = {_binomial_kernel, _forget_rows_kernel, _bisect_kernel, _forget_rows_bisect_kernel}
 
 
 def _tail_extra(n: Tensor, p: float) -> Tensor:
@@ -321,7 +386,11 @@ def _binomial_compiled(count: Tensor, p: float) -> Optional[Tensor]:
     if n_max == 0:
         return torch.zeros_like(count)
     if not _table_fits(p, n_max):
-        return None
+        # counts beyond the narrow table (large batches, small s): bisect the wide one
+        if n_max >= _WIDE_TABLE_N:
+            return None
+        return _run_compiled(_bisect_kernel, count, _wide_thresholds(p, count.device),
+                             _bisect_width(n_max))
     out = _run_compiled(_binomial_kernel, count, _thresholds(p, count.device))
     if out is None:
         return None
@@ -623,13 +692,20 @@ def _forget_rows(
     n_max = int(n.max()) if n.numel() else 0
     if n_max == 0:
         return empty
-    if not _table_fits(p, n_max):
-        return None
-    thr = _thresholds(p, state.device)
-    K = _TABLE_K
     active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
     sub = state[rows]
-    out = _run_compiled(_forget_rows_kernel, sub, n.unsqueeze(1), thr, active, N)
+    K = _TABLE_K
+    if not _table_fits(p, n_max):
+        # counts beyond the narrow table (large batches, small s): bisect the wide one, which
+        # covers every count it holds, so there is no tail to resample
+        if n_max >= _WIDE_TABLE_N:
+            return None
+        out = _run_compiled(_forget_rows_bisect_kernel, sub, n.unsqueeze(1),
+                            _wide_thresholds(p, state.device), active, N, _bisect_width(n_max))
+        K = _WIDE_TABLE_N
+    else:
+        out = _run_compiled(_forget_rows_kernel, sub, n.unsqueeze(1), _thresholds(p, state.device),
+                            active, N)
     if out is None:
         return None
     new, crossed = out
@@ -649,11 +725,12 @@ def _forget_rows(
 
 
 def _single_example_kernel(
-    state: Tensor, include: Tensor, literals: Tensor, fire_i: Tensor, nofire_i: Tensor,
-    fire_ii: Tensor, include_count: Tensor, active: Optional[Tensor], N: int, p_mem: float,
-    p_forget: float, budget: int,
+    state: Tensor, include: Tensor, lit: Tensor, lit_ii: Tensor, fire_i: Tensor,
+    nofire_i: Tensor, fire_ii: Tensor, include_count: Tensor, active: Optional[Tensor], N: int,
+    p_mem: float, p_forget: float, budget: int,
 ) -> Tensor:
-    lit = literals.unsqueeze(0)
+    # lit / lit_ii: (1, 2F) for a flat model, (C, 2F) when every clause is updated from its
+    # own literals (the random matching patch of a convolutional model)
     neg = 1.0 - lit
     fi = fire_i.unsqueeze(1)
     nib = nofire_i.unsqueeze(1)
@@ -667,7 +744,7 @@ def _single_example_kernel(
         inc = inc * (torch.rand(state.shape, device=state.device) < p_mem).to(inc.dtype)
     # fire and no-fire are exclusive, so every count is 0 or 1 and the binomials are Bernoulli
     dec = (fi * neg + nib) * (torch.rand(state.shape, device=state.device) < p_forget).to(inc.dtype)
-    inc2 = torch.minimum(fire_ii.unsqueeze(1) * neg, (N - old).clamp(min=0))
+    inc2 = torch.minimum(fire_ii.unsqueeze(1) * (1.0 - lit_ii), (N - old).clamp(min=0))
     delta = inc - dec + inc2
     if active is not None:
         delta = delta * active
@@ -692,6 +769,7 @@ def commit_single_example(
     boost_true_positive: bool = True,
     max_included_literals: Optional[int] = None,
     literal_active: Optional[Tensor] = None,
+    literals_ii: Optional[Tensor] = None,
 ) -> Optional[Tensor]:
     """The feedback of **one** example, applied by a single fused ``torch.compile`` kernel.
 
@@ -704,7 +782,8 @@ def commit_single_example(
         state: ``(C, 2F)`` TA states, updated in place.
         include: ``(C, 2F)`` cached include mask, updated in place.
         include_count: ``(C,)`` included literals per clause *before* the update.
-        literals: ``(2F,)`` 0/1 literals of the example.
+        literals: ``(2F,)`` 0/1 literals of the example, or ``(C, 2F)`` literals per clause
+            (a convolutional model updates each clause from its own random matching patch).
         fire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ia feedback.
         nofire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ib feedback.
         fire_ii: ``(C,)`` 0/1 mask of the clauses that get Type II feedback.
@@ -713,17 +792,122 @@ def commit_single_example(
         boost_true_positive: as in :func:`apply_feedback`.
         max_included_literals: as in :func:`apply_feedback` (soft budget).
         literal_active: as in :func:`apply_feedback`.
+        literals_ii: literals of the Type II events, shaped like ``literals``; defaults to
+            ``literals`` (a convolutional model draws the patch of each kind independently).
 
     Returns:
         The new ``(C,)`` include counts, or ``None`` when the compiled kernel is unavailable
         (nothing has been modified; the caller falls back to :func:`apply_feedback_rows`).
     """
+    lit = literals if literals.dim() == 2 else literals.unsqueeze(0)
+    lit_ii = lit if literals_ii is None else (
+        literals_ii if literals_ii.dim() == 2 else literals_ii.unsqueeze(0))
     N = int(n_states)
     p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
     budget = -1 if max_included_literals is None else int(max_included_literals)
     active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
-    return _run_compiled(_single_example_kernel, state, include, literals, fire_i, nofire_i,
+    return _run_compiled(_single_example_kernel, state, include, lit, lit_ii, fire_i, nofire_i,
                          fire_ii, include_count, active, N, p_mem, 1.0 / float(s), budget)
+
+
+def _dense_commit_kernel(
+    state: Tensor, include: Tensor, include_count: Tensor, n_true: Tensor, n_false: Tensor,
+    n_ib: Tensor, n2: Tensor, thr_mem: Optional[Tensor], thr_forget: Optional[Tensor],
+    active: Optional[Tensor], N: int, mem_flip: bool, forget_flip: bool, budget: int, width: int,
+) -> Tensor:
+    nt, nf, nib = n_true, n_false, n_ib.unsqueeze(1)
+    if budget >= 0:  # an oversized matching clause gets Type Ib instead of Type Ia
+        over = (include_count > budget).unsqueeze(1).to(nt.dtype)
+        nib = nib + (nt[:, :1] + nf[:, :1]) * over
+        nt = nt * (1.0 - over)
+        nf = nf * (1.0 - over)
+    inc = nt if thr_mem is None else _bisect_binomial(nt, thr_mem, mem_flip, width)
+    nf = nf + nib
+    dec = nf if thr_forget is None else _bisect_binomial(nf, thr_forget, forget_flip, width)
+    old = state.to(torch.float32)
+    inc2 = torch.minimum(n2, (N - old).clamp(min=0))
+    delta = inc - dec + inc2
+    if active is not None:
+        delta = delta * active
+    new = (old + delta).clamp(0, 2 * N - 1)
+    included = new >= N
+    state.copy_(new.to(state.dtype))
+    include.copy_(included.to(include.dtype))
+    n_true.zero_()
+    n_false.zero_()
+    n2.zero_()
+    return included.sum(dim=1).to(include_count.dtype)
+
+
+def commit_dense(
+    state: Tensor,
+    include: Tensor,
+    include_count: Tensor,
+    n_true: Tensor,
+    n_false: Tensor,
+    n_ib: Tensor,
+    n2: Tensor,
+    *,
+    n_states: int,
+    s: float,
+    boost_true_positive: bool = True,
+    max_included_literals: Optional[int] = None,
+    literal_active: Optional[Tensor] = None,
+) -> Optional[Tensor]:
+    """:func:`apply_feedback` (soft budget) as one fused ``torch.compile`` kernel that also
+    refreshes the include cache.
+
+    The binomials are drawn inside the kernel by inverse-CDF lookup, so the update reads the
+    counts and the state once and writes the state, the include mask and zeroed counts once,
+    instead of the ~20 full passes of the eager update. Used by batched updates on CUDA.
+
+    Args:
+        state: ``(C, 2F)`` TA states, updated in place.
+        include: ``(C, 2F)`` cached include mask, updated in place.
+        include_count: ``(C,)`` included literals per clause *before* the update.
+        n_true: as in :func:`apply_feedback`; zeroed on return (as are ``n_false`` and
+            ``n2``; ``n_ib`` is left as it was).
+        n_false: as in :func:`apply_feedback`.
+        n_ib: as in :func:`apply_feedback`.
+        n2: as in :func:`apply_feedback`.
+        n_states: as in :func:`apply_feedback`.
+        s: as in :func:`apply_feedback`.
+        boost_true_positive: as in :func:`apply_feedback`.
+        max_included_literals: as in :func:`apply_feedback` (soft budget).
+        literal_active: as in :func:`apply_feedback`.
+
+    Returns:
+        The new ``(C,)`` include counts, or ``None`` (nothing modified) when the kernel cannot
+        be used: compilation disabled or failed, or more than ``_WIDE_TABLE_N - 1`` events
+        aggregated into one automaton. The caller then takes the eager path.
+    """
+    p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
+    if (not _compile_wanted(state.numel()) or _dense_commit_kernel in _FAILED
+            or p_mem <= 0.0):
+        return None
+    # Type Ia events per clause are n_true + n_false of any one literal; with Type Ib they
+    # bound every count that is sampled.
+    events = n_true[:, 0] + n_false[:, 0] + n_ib
+    most = int(events.max())
+    if most >= _WIDE_TABLE_N:
+        return None
+    width = _bisect_width(most)
+    N = int(n_states)
+    dev = state.device
+
+    def table(p: float) -> Tuple[Optional[Tensor], bool]:
+        if p >= 1.0:
+            return None, False
+        q = min(p, 1.0 - p)
+        return _wide_thresholds(q, dev), p > 0.5
+
+    thr_mem, mem_flip = table(p_mem)
+    thr_forget, forget_flip = table(1.0 / float(s))
+    budget = -1 if max_included_literals is None else int(max_included_literals)
+    active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
+    return _run_compiled(_dense_commit_kernel, state, include, include_count, n_true, n_false,
+                         n_ib, n2, thr_mem, thr_forget, active, N, mem_flip, forget_flip, budget,
+                         width)
 
 def _cap_new_inclusions(
     state: Tensor,
@@ -838,3 +1022,6 @@ def thermometer_cast(votes: Tensor, levels: Sequence[float]) -> Tensor:
     if votes.dim() == 2:
         return (votes.unsqueeze(2) >= lv.view(1, 1, -1)).reshape(votes.shape[0], -1)
     raise ValueError("thermometer_cast expects (B, K, H, W) or (B, K)")
+
+
+_DYNAMIC.add(_dense_commit_kernel)  # model sizes differ between models; compile shape-generic

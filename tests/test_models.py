@@ -593,3 +593,61 @@ def test_fused_sequential_mode_learns_and_tracks_caches(compiled, monkeypatch):
         r.update(x, y)
     r.eval()
     assert float((r.predict(x) - y).abs().mean()) < 0.15
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA-only include dtype")
+def test_cuda_include_cache_is_half_precision_and_predicts_like_cpu():
+    torch.manual_seed(0)
+    x, y = tt.data.make_noisy_xor(1000, noise=0.1)
+    for m in (tt.TsetlinMachine(12, 2, 20, 15, 3.9),
+              tt.ConvTsetlinMachine(2, 10, 15, 3.9, patch_size=2, input_shape=(1, 3, 4))):
+        xin = x.view(-1, 1, 3, 4) if isinstance(m, tt.ConvTsetlinMachine) else x
+        for i in range(0, 1000, 50):
+            m.update(xin[i:i + 50], y[i:i + 50])
+        m.eval()
+        ref = m(xin)
+        assert m.include.dtype == m.compute_dtype
+        m.cuda()
+        assert m.include.dtype == torch.float16
+        assert torch.equal(m(xin.cuda()).cpu(), ref)
+        m.cpu()
+        assert m.include.dtype == m.compute_dtype
+
+
+def test_conv_batch_is_evaluated_in_one_chunk():
+    # the chunk size follows the largest real intermediate (the (P, C) block); counting the
+    # worst-case patch draw split a batch of 16 MNIST images into 4 chunks
+    m = tt.ConvTsetlinMachine(10, 2000, 5000, 5.0, patch_size=10, input_shape=(1, 28, 28))
+    xb = torch.zeros(16, 1, 28, 28, dtype=torch.bool)
+    assert m._chunk_size(xb) == 16
+    assert m._event_block(361) * (2 * 361 + 2 * m.n_literals) <= m.max_chunk_elements
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="fused commits are CUDA-only")
+def test_fused_cuda_commits_learn_and_track_caches(compiled, monkeypatch):
+    # batched updates on CUDA commit through F.commit_dense; sequential conv models through
+    # F.commit_single_example with one literal row per clause
+    dev = torch.device("cuda")
+    dense, single = [], []
+    real_dense, real_single = compiled.commit_dense, compiled.commit_single_example
+    monkeypatch.setattr(compiled, "commit_dense", lambda *a, **k: dense.append(1) or real_dense(*a, **k))
+    monkeypatch.setattr(compiled, "commit_single_example",
+                        lambda *a, **k: single.append(1) or real_single(*a, **k))
+    torch.manual_seed(0)
+    m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, max_included_literals=6).to(dev)
+    acc = _train_xor(m, dev, epochs=40, bs=10)  # eager and fused: ~0.93 over 6 seeds
+    assert acc > 0.85, acc
+    assert dense
+    x, y = tt.data.make_2d_noisy_xor(2000, device=dev)
+    c = tt.ConvTsetlinMachine(2, 20, 30, 3.9, patch_size=2, position_encoding=False,
+                              input_shape=tuple(x.shape[1:]), feedback_mode="sequential").to(dev)
+    assert c._fuse_single_examples(len(x))
+    for _ in range(10):
+        c.update(x, y)
+    assert len(single) == 10 * len(x)
+    c.eval()
+    assert float((c.predict(x) == y).float().mean()) > 0.9
+    for model in (m, c):
+        inc = model.ta_state >= model.n_states
+        assert torch.equal(model.include, inc.to(model.include.dtype))
+        assert torch.equal(model.include_count, inc.sum(dim=1).to(model.include_count.dtype))

@@ -11,6 +11,10 @@ count, the model zoo, and where the time inside one `update()` goes — lives on
 **[CPU vs GPU](cpu-vs-gpu.md)**. That page is generated end to end by
 `benchmarks/run_benchmarks.sh`, so you can replace its numbers with your own hardware's.
 
+How torchtsetlin is compared with the other Tsetlin-machine libraries (pyTsetlinMachine and its
+parallel and CUDA variants, tmu, green-tsetlin) — data, training, testing and what is measured —
+is set out in the **[benchmarking guideline](guides/benchmarking.md)**.
+
 For what the *papers* report, see **[Literature results](literature.md)**. It covers every
 dataset and reported result from 55 Tsetlin-machine papers, with filtering, the best value per
 dataset or other grouping, the best TM result per dataset, and an in-browser SQL console over the
