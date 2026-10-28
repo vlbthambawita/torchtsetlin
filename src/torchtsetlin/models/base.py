@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
 import warnings
+from collections import OrderedDict
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import torch
 from torch import Tensor, nn
 
+from .. import _triton
 from .. import functional as F
 from ..utils import as_bool_tensor, chunk_indices
 
@@ -15,13 +18,21 @@ __all__ = ["TsetlinMachineBase", "FeedbackAccumulator"]
 
 
 class FeedbackAccumulator:
-    """Running sums of feedback events for one :meth:`TsetlinMachineBase.update` call."""
+    """Running sums of feedback events for one :meth:`TsetlinMachineBase.update` call.
+
+    The ``(C, 2F)`` count buffers ``n_true``, ``n_false`` and ``n2`` are allocated on first use:
+    a batched CUDA update in *events* mode never writes them (it records the events and
+    :func:`torchtsetlin._triton.fused_commit` computes the counts inside the commit kernel).
+    """
 
     def __init__(self, n_clauses: int, n_literals: int, device: torch.device, dtype: torch.dtype):
-        self.n_true = torch.zeros(n_clauses, n_literals, device=device, dtype=dtype)
-        self.n_false = torch.zeros(n_clauses, n_literals, device=device, dtype=dtype)
+        self.shape = (int(n_clauses), int(n_literals))
+        self.device = device
+        self.dtype = dtype
+        self._counts: Optional[Tuple[Tensor, Tensor, Tensor]] = None
         self.n_ib = torch.zeros(n_clauses, device=device, dtype=dtype)
-        self.n2 = torch.zeros(n_clauses, n_literals, device=device, dtype=dtype)
+        #: Type Ia events per clause (events mode; the other modes keep them in n_true + n_false)
+        self.n_ia = torch.zeros(n_clauses, device=device, dtype=dtype)
         #: clauses with Type Ia or Type II counts (all other rows of the counts are zero)
         self.rows = torch.zeros(n_clauses, dtype=torch.bool, device=device)
         #: commit with the row-sparse update instead of the dense one
@@ -31,28 +42,54 @@ class FeedbackAccumulator:
         self.fuse = False
         #: ``(literals, literals_ii, fire_i, nofire_i, fire_ii)`` of that example
         self.single: Optional[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]] = None
+        #: events mode: record ``(literals, sel_i, sel_ii, patch_i, patch_ii)`` of the update's
+        #: single chunk in ``events`` instead of writing counts
+        self.record_events = False
+        self.events: Optional[Tuple[Tensor, Tensor, Tensor, Optional[Tensor], Optional[Tensor]]] = None
+        #: examples accumulated since the last commit (a bound on every count)
+        self.n_examples = 0
         self.extra: Dict[str, Tensor] = {}
 
+    def _alloc(self) -> Tuple[Tensor, Tensor, Tensor]:
+        if self._counts is None:
+            self._counts = tuple(torch.zeros(self.shape, device=self.device, dtype=self.dtype)
+                                 for _ in range(3))  # type: ignore[assignment]
+        return self._counts  # type: ignore[return-value]
+
+    @property
+    def n_true(self) -> Tensor:
+        return self._alloc()[0]
+
+    @property
+    def n_false(self) -> Tensor:
+        return self._alloc()[1]
+
+    @property
+    def n2(self) -> Tensor:
+        return self._alloc()[2]
+
     def matches(self, n_clauses: int, n_literals: int, device: torch.device, dtype: torch.dtype) -> bool:
-        return (tuple(self.n_true.shape) == (n_clauses, n_literals) and self.n_true.device == device
-                and self.n_true.dtype == dtype)
+        return self.shape == (n_clauses, n_literals) and self.device == device and self.dtype == dtype
 
     def reset(self, counts_clear: bool = False) -> None:
         """Zero the counts for reuse; only the rows that can be non-zero are touched.
         ``counts_clear``: the commit already zeroed ``n_true``, ``n_false`` and ``n2``."""
         if self.single is not None:  # the counts were never written
             self.single = None
-        elif counts_clear:
+        elif counts_clear or self._counts is None:
             pass
         elif not self.sparse:
-            for t in (self.n_true, self.n_false, self.n2):
+            for t in self._counts:
                 t.zero_()
         else:
             idx = self.rows.nonzero().squeeze(1)
             if idx.numel():
-                for t in (self.n_true, self.n_false, self.n2):
+                for t in self._counts:
                     t.index_fill_(0, idx, 0.0)
+        self.events = None
+        self.n_examples = 0
         self.n_ib.zero_()
+        self.n_ia.zero_()
         self.rows.zero_()
         self.extra = {}
 
@@ -247,6 +284,7 @@ class TsetlinMachineBase(nn.Module):
 
     def _refresh_include(self) -> None:
         """Recompute the cached include mask after the automata changed."""
+        self.__dict__["_bits_fresh"] = False
         inc = self.ta_state >= self.n_states
         self.include = inc.to(self._include_dtype())
         self.include_count = inc.sum(dim=1)
@@ -312,6 +350,12 @@ class TsetlinMachineBase(nn.Module):
         """Examples per chunk so that the intermediates fit ``max_chunk_elements``."""
         per_example = max(1, self._chunk_elements_per_example(xb))
         return max(1, min(xb.shape[0], self.max_chunk_elements // per_example))
+
+    def _events_chunk_size(self, xb: Tensor) -> int:
+        """Examples one events-mode update can hold in a single chunk (see
+        :meth:`_events_eligible`); models whose learning-time evaluation is lighter than the
+        prediction-time one override it."""
+        return self._chunk_size(xb)
 
     # ------------------------------------------------------------------ clause evaluation
     def _evaluate(self, literals: Tensor, empty_value: bool) -> Tuple[Tensor, Any]:
@@ -406,22 +450,138 @@ class TsetlinMachineBase(nn.Module):
             if self.drop_granularity == "batch":
                 self.resample_dropout()
             seq = self.feedback_mode == "sequential" if sequential is None else bool(sequential)
-            votes_all = []
-            if seq:
-                fuse = self._fuse_single_examples(B)
-                for i in range(B):
-                    acc = self._new_accumulator(sparse=True, fuse=fuse)
-                    if fuse:
-                        votes_all.append(self._accumulate_one(xb[i : i + 1], y_t[i : i + 1], acc))
-                    else:
-                        votes_all.append(self._accumulate_chunk(xb[i : i + 1], y_t[i : i + 1], acc))
-                    self._commit(acc)
-            else:
-                acc = self._new_accumulator()
-                for sl in chunk_indices(B, self._chunk_size(xb)):
-                    votes_all.append(self._accumulate_chunk(xb[sl], y_t[sl], acc))
+            # sequential mode: whether to fuse is decided on the work of the whole call
+            fuse = seq and self._fuse_single_examples(B)
+            if self._graphs_ok(seq, xb, fuse):
+                return self._graphed_update(xb, y_t, seq, fuse)
+            return self._update_block(xb, y_t, seq, fuse)
+
+    def _update_block(self, xb: Tensor, y_t: Tensor, seq: bool, fuse: bool = False) -> Tensor:
+        """The body of :meth:`update` for coerced inputs (what a CUDA graph captures)."""
+        B = xb.shape[0]
+        votes_all = []
+        if seq:
+            for i in range(B):
+                acc = self._new_accumulator(sparse=True, fuse=fuse)
+                if fuse:
+                    votes_all.append(self._accumulate_one(xb[i : i + 1], y_t[i : i + 1], acc))
+                else:
+                    votes_all.append(self._accumulate_chunk(xb[i : i + 1], y_t[i : i + 1], acc))
                 self._commit(acc)
-            return torch.cat(votes_all, dim=0)
+        else:
+            events = self._events_eligible(B) and B <= self._events_chunk_size(xb)
+            chunks = [slice(0, B)] if events else list(chunk_indices(B, self._chunk_size(xb)))
+            acc = self._new_accumulator(events=events)
+            for sl in chunks:
+                votes_all.append(self._accumulate_chunk(xb[sl], y_t[sl], acc))
+            self._commit(acc)
+        return torch.cat(votes_all, dim=0)
+
+    # ------------------------------------------------------------------ CUDA graphs
+    #: Capture updates as CUDA graphs on CUDA when the whole update runs without host syncs
+    #: (Triton available, no dropout): sequential mode in blocks of ``_GRAPH_STEPS`` examples,
+    #: batched mode one update per batch shape. Replaying a graph removes the per-kernel launch
+    #: cost that dominates small models and sequential mode. ``TORCHTSETLIN_CUDA_GRAPHS=0`` or
+    #: ``model.cuda_graphs = False`` turns it off.
+    cuda_graphs: bool = True
+    _GRAPH_STEPS = 64
+    _GRAPH_CACHE = 4
+
+    def _graphs_ok(self, seq: bool, xb: Tensor, fuse: bool) -> bool:
+        if not (self.cuda_graphs and os.environ.get("TORCHTSETLIN_CUDA_GRAPHS", "1") != "0"):
+            return False
+        if (self.ta_state.device.type != "cuda" or self.drop_clause_p > 0.0
+                or self.drop_literal_p > 0.0 or torch.compiler.is_compiling()
+                or torch.cuda.is_current_stream_capturing()
+                or not _triton.available(self.ta_state.device)):
+            return False
+        B = xb.shape[0]
+        if seq:
+            return B > 1 and fuse
+        return self._events_eligible(B) and B <= self._events_chunk_size(xb)
+
+    def _graph_key(self, seq: bool, xb: Tensor, y_t: Tensor) -> tuple:
+        """Everything a captured update depends on: shapes, the addresses of the buffers it
+        reads and writes, and the scalar hyper-parameters (Python constants in the graph)."""
+        bufs = tuple((k, b.data_ptr(), tuple(b.shape), b.dtype) for k, b in self._buffers.items()
+                     if b is not None)
+        scal = tuple(sorted((k, v) for k, v in vars(self).items() if not k.startswith("_")
+                            and isinstance(v, (bool, int, float, str, type(None)))))
+        bits = self.__dict__.get("_include_bits")
+        return (seq, tuple(xb.shape), xb.dtype, tuple(y_t.shape), y_t.dtype, bufs, scal,
+                None if bits is None else bits.data_ptr())
+
+    def _graphed_update(self, xb: Tensor, y_t: Tensor, seq: bool, fuse: bool) -> Tensor:
+        """:meth:`update` through cached CUDA graphs. A new graph key runs eagerly twice (the
+        first run compiles; the second is watched for host syncs, which a graph cannot hold),
+        is captured on its third use, and replayed from then on."""
+        cache: OrderedDict[tuple, Any] = self.__dict__.setdefault("_graphs", OrderedDict())
+        step = self._GRAPH_STEPS if seq else xb.shape[0]
+        outs = []
+        for start in range(0, xb.shape[0], step):
+            xs, ys = xb[start:start + step], y_t[start:start + step]
+            key = self._graph_key(seq, xs, ys)
+            entry = cache.get(key)
+            if entry is None:  # first run: compile everything
+                cache[key] = "watch"
+                outs.append(self._update_block(xs, ys, seq, fuse))
+            elif entry == "watch":
+                v, clean = self._watched_block(xs, ys, seq, fuse)
+                cache[key] = "capture" if clean else "eager"
+                outs.append(v)
+            elif entry == "eager":
+                outs.append(self._update_block(xs, ys, seq, fuse))
+            else:
+                if entry == "capture":
+                    entry = self._capture_block(xs, ys, seq, fuse)
+                    cache[key] = "eager" if entry is None else entry
+                    if entry is None:
+                        outs.append(self._update_block(xs, ys, seq, fuse))
+                        continue
+                graph, gx, gy, votes, _acc = entry
+                gx.copy_(xs)
+                gy.copy_(ys)
+                graph.replay()
+                outs.append(votes.clone())
+            cache.move_to_end(key)
+            while len(cache) > self._GRAPH_CACHE:
+                cache.popitem(last=False)
+        return torch.cat(outs, dim=0)
+
+    def _watched_block(self, xs: Tensor, ys: Tensor, seq: bool, fuse: bool) -> Tuple[Tensor, bool]:
+        """Run one block eagerly with PyTorch's sync detector on; returns (votes, sync-free)."""
+        prev = torch.cuda.get_sync_debug_mode()
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            torch.cuda.set_sync_debug_mode("warn")
+            try:
+                votes = self._update_block(xs, ys, seq, fuse)
+            finally:
+                torch.cuda.set_sync_debug_mode(prev)
+        # (not just "synchroniz": the mode's own one-time notice mentions "synchronizing")
+        clean = not any("called a synchronizing CUDA operation" in str(w.message) for w in caught)
+        return votes, clean
+
+    def _capture_block(self, xs: Tensor, ys: Tensor, seq: bool, fuse: bool):
+        """Capture one block as a CUDA graph (nothing runs yet); ``None`` if capture fails.
+        The graph owns its accumulator, so nothing it writes can be freed under it."""
+        gx, gy = xs.clone(), ys.clone()
+        saved = self.__dict__.get("_acc_cache")
+        acc = FeedbackAccumulator(self.n_clauses_total, self.n_literals, self.ta_state.device,
+                                  self.compute_dtype)
+        self.__dict__["_acc_cache"] = acc
+        graph = torch.cuda.CUDAGraph()
+        try:
+            with torch.cuda.graph(graph):
+                votes = self._update_block(gx, gy, seq, fuse)
+        except Exception as err:  # pragma: no cover - depends on the CUDA stack
+            warnings.warn(f"CUDA graph capture failed ({type(err).__name__}: {err}); "
+                          "torchtsetlin runs this update shape eagerly.", RuntimeWarning, stacklevel=4)
+            return None
+        finally:
+            self.__dict__["_acc_cache"] = saved
+            self.__dict__["_acc_dirty"] = False
+        return graph, gx, gy, votes, acc
 
     def train(self, mode: bool = True) -> TsetlinMachineBase:
         """As :meth:`torch.nn.Module.train`; switching to ``eval()`` also releases the count
@@ -430,11 +590,13 @@ class TsetlinMachineBase(nn.Module):
             self.__dict__.pop("_acc_cache", None)
         return super().train(mode)
 
-    def _new_accumulator(self, sparse: Optional[bool] = None, fuse: bool = False) -> FeedbackAccumulator:
+    def _new_accumulator(self, sparse: Optional[bool] = None, fuse: bool = False,
+                         events: bool = False) -> FeedbackAccumulator:
         """A zeroed accumulator. The dense count buffers are reused between updates (only
         the rows an update touched are cleared), so sequential mode does not allocate three
         ``(C, 2F)`` tensors per example. ``fuse`` lets a single example be committed by
-        :func:`F.commit_single_example`."""
+        :func:`F.commit_single_example`; ``events`` lets a single-chunk CUDA update be committed
+        by :func:`torchtsetlin._triton.fused_commit` (no count tensors at all)."""
         dev, cd = self.ta_state.device, self.compute_dtype
         acc = self.__dict__.get("_acc_cache")
         if acc is None or not acc.matches(self.n_clauses_total, self.n_literals, dev, cd):
@@ -442,17 +604,30 @@ class TsetlinMachineBase(nn.Module):
             self.__dict__["_acc_cache"] = acc
         elif self.__dict__.get("_acc_dirty", False):
             # a previous update raised before its commit: clear everything
-            for t in (acc.n_true, acc.n_false, acc.n2, acc.n_ib):
+            for t in (acc._counts or ()) + (acc.n_ib, acc.n_ia):
                 t.zero_()
             acc.rows.zero_()
             acc.extra = {}
             acc.single = None
+            acc.events = None
+            acc.n_examples = 0
         self.__dict__["_acc_dirty"] = True
         # Row-sparse commit (F.apply_feedback_rows) on the CPU and for single examples; a
         # batched GPU update is faster dense (no host syncs for the sparse bookkeeping).
         acc.sparse = (dev.type == "cpu") if sparse is None else bool(sparse)
         acc.fuse = bool(fuse)
+        acc.record_events = bool(events)
         return acc
+
+    def _events_eligible(self, n_examples: int) -> bool:
+        """Whether a batched update can record its events and be committed by the Triton
+        kernel: CUDA with Triton, a soft (or no) budget, an output layer whose
+        :meth:`_feedback_counts` knows events mode, and counts within the kernel's table."""
+        return (n_examples < _triton.TABLE_N
+                and (self.max_included_literals is None or self.budget_mode == "soft")
+                and getattr(type(self)._feedback_counts, "_records_events", False)
+                and _triton.available(self.ta_state.device)
+                and not torch.compiler.is_compiling())
 
     def _fuse_single_examples(self, n_examples: int = 1) -> bool:
         """Whether sequential mode commits each example with the fused compiled kernel: on
@@ -488,7 +663,8 @@ class TsetlinMachineBase(nn.Module):
         commits (see :mod:`torchtsetlin.models.segmentation`) do not have to re-encode.
         """
         clause_active = self._clause_active
-        clause_out, ctx = self._evaluate(literals, empty_value=True)
+        clause_out, ctx = self._evaluate_learning(literals, acc)
+        acc.n_examples += literals.shape[0]
         if clause_active is not None:
             clause_out = clause_out & clause_active.unsqueeze(0)
         votes = self._votes(clause_out)
@@ -505,8 +681,57 @@ class TsetlinMachineBase(nn.Module):
         self._accumulate_weights(acc, aux, clause_out, sel_fire_i, sel_fire_ii)
         return votes
 
+    def _evaluate_learning(self, literals: Tensor, acc: FeedbackAccumulator) -> Tuple[Tensor, Any]:
+        """Clause outputs with learning semantics for :meth:`_accumulate_literals` (a hook so
+        that a model can produce extra feedback context while learning)."""
+        return self._evaluate(literals, empty_value=True)
+
+    def include_bits(self) -> Tensor:
+        """The include mask bit-packed, ``(C, ceil(2F/32))`` int32 (literal ``l`` in bit
+        ``l % 32`` of word ``l // 32``), refreshed from :attr:`include` when stale. The Triton
+        commit writes it directly."""
+        bits = self.include_bits_buffer()
+        if not self.__dict__.get("_bits_fresh", False):
+            bits.copy_(_triton.pack_bits(self.include))
+            self.__dict__["_bits_fresh"] = True
+        return bits
+
+    def _events_to_counts(self, acc: FeedbackAccumulator) -> None:
+        """Write recorded events into the count buffers (when the Triton commit declines)."""
+        lit, s_i, s_ii, p_i, p_ii = acc.events  # type: ignore[misc]
+        acc.events = None
+        cd = acc.dtype
+        if p_i is None:
+            lit = lit.to(cd)
+            acc.n_true.addmm_(s_i.t().to(cd), lit)
+            acc.n_false.addmm_(s_i.t().to(cd), 1.0 - lit)
+            acc.n2.addmm_(s_ii.t().to(cd), 1.0 - lit)
+            return
+        for b in range(lit.shape[0]):  # convolutional: each clause's own patch per example
+            ri = lit[b, p_i[b].long()].to(cd)
+            rii = lit[b, p_ii[b].long()].to(cd)
+            acc.n_true.add_(s_i[b].to(cd).unsqueeze(1) * ri)
+            acc.n_false.add_(s_i[b].to(cd).unsqueeze(1) * (1.0 - ri))
+            acc.n2.add_(s_ii[b].to(cd).unsqueeze(1) * (1.0 - rii))
+
     def _commit(self, acc: FeedbackAccumulator) -> None:
         """Apply accumulated feedback to the automata (and weights) and refresh caches."""
+        self.__dict__["_bits_fresh"] = False
+        if acc.events is not None:
+            lit, s_i, s_ii, p_i, p_ii = acc.events
+            if _triton.fused_commit(
+                self.ta_state, self.include, self.include_bits_buffer(), self.include_count,
+                lit, s_i, s_ii, p_i, p_ii, acc.n_ia, acc.n_ib, n_states=self.n_states, s=self.s,
+                boost_true_positive=self.boost_true_positive,
+                max_included_literals=self.max_included_literals,
+                literal_active=self._literal_active, max_events=acc.n_examples,
+            ):
+                self.__dict__["_bits_fresh"] = True
+                self._commit_weights(acc)
+                acc.reset()
+                self.__dict__["_acc_dirty"] = False
+                return
+            self._events_to_counts(acc)  # Type Ib counts are already in n_ib
         if acc.single is not None:
             lit, lit_ii, fire_i, nofire_i, fire_ii = acc.single
             count = F.commit_single_example(
@@ -515,8 +740,7 @@ class TsetlinMachineBase(nn.Module):
                 max_included_literals=self.max_included_literals,
                 literal_active=self._literal_active, literals_ii=lit_ii,
             )
-            if count is not None:
-                self.include_count = count
+            if count is not None:  # include and include_count were updated in place
                 self._commit_weights(acc)
                 acc.reset()
                 self.__dict__["_acc_dirty"] = False
@@ -530,10 +754,9 @@ class TsetlinMachineBase(nn.Module):
                 acc.n_ib, acc.n2, n_states=self.n_states, s=self.s,
                 boost_true_positive=self.boost_true_positive,
                 max_included_literals=self.max_included_literals,
-                literal_active=self._literal_active,
+                literal_active=self._literal_active, max_events=acc.n_examples,
             )
-            if count is not None:
-                self.include_count = count
+            if count is not None:  # include and include_count were updated in place
                 self._commit_weights(acc)
                 acc.reset(counts_clear=True)
                 self.__dict__["_acc_dirty"] = False
@@ -585,6 +808,10 @@ class TsetlinMachineBase(nn.Module):
             acc.single = (literals[0], literals[0], sel_fire_i[0], sel_nofire_i[0], sel_fire_ii[0])
             return
         acc.n_ib += sel_nofire_i.sum(dim=0)
+        if acc.record_events:  # the Triton commit computes the counts from the events
+            acc.n_ia += sel_fire_i.sum(dim=0)
+            acc.events = (literals, sel_fire_i, sel_fire_ii, None, None)
+            return
         neg_lit = 1.0 - literals
         idx = ((sel_fire_i + sel_fire_ii).sum(dim=0) > 0).nonzero().squeeze(1) if acc.sparse else None
         if idx is None or idx.numel() * 4 > sel_fire_i.shape[1]:  # dense is cheaper
@@ -601,6 +828,19 @@ class TsetlinMachineBase(nn.Module):
         acc.n2.index_add_(0, idx, sel_fire_ii[:, idx].transpose(0, 1) @ neg_lit)
 
     _feedback_counts._records_single = True  # type: ignore[attr-defined]
+    _feedback_counts._records_events = True  # type: ignore[attr-defined]
+
+    def include_bits_buffer(self) -> Tensor:
+        """The ``(C, ceil(2F/32))`` int32 buffer behind :meth:`include_bits`, without refreshing
+        it (a commit kernel overwrites it whole)."""
+        bits = self.__dict__.get("_include_bits")
+        W = _triton.n_words(self.n_literals)
+        if (bits is None or bits.device != self.ta_state.device
+                or tuple(bits.shape) != (self.n_clauses_total, W)):
+            bits = torch.zeros(self.n_clauses_total, W, dtype=torch.int32, device=self.ta_state.device)
+            self.__dict__["_include_bits"] = bits
+            self.__dict__["_bits_fresh"] = False
+        return bits
 
     def _write_single_counts(self, acc: FeedbackAccumulator) -> None:
         """Turn the factors recorded for :func:`F.commit_single_example` into counts."""

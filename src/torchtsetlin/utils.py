@@ -54,6 +54,27 @@ def _to_device(t: Tensor, device: torch.device) -> Tensor:
     return t.to(device, non_blocking=(device.type == "cuda"))
 
 
+def class_targets(y, n: int, n_classes: int, device: torch.device) -> Tensor:
+    """Class-index targets ``(n,)`` long on ``device``, checked to lie in ``[0, n_classes)``.
+
+    The check runs where the labels are, so a training step on CUDA never waits for the GPU:
+    labels coming from the host are checked there before the copy; labels already on a CUDA
+    device are checked by a device-side assertion (``torch._assert_async``), which reports an
+    invalid label as a CUDA error at the next synchronisation, as PyTorch's own loss functions do.
+    """
+    if not isinstance(y, Tensor):
+        y = torch.as_tensor(np.asarray(y))
+    y = y.reshape(-1)
+    if y.shape[0] != n:
+        raise ValueError(f"x has {n} examples but y has {y.shape[0]} labels")
+    msg = f"labels must lie in [0, {n_classes - 1}]"
+    if y.device.type == "cuda":
+        torch._assert_async(((y >= 0) & (y < n_classes)).all(), msg)
+    elif y.numel() and (int(y.min()) < 0 or int(y.max()) >= n_classes):
+        raise ValueError(msg)
+    return as_long_tensor(y, device=device)
+
+
 def as_bool_tensor(x, device: Optional[torch.device] = None) -> Tensor:
     """Coerce ``x`` (tensor / ndarray / sequence) to a boolean tensor.
 

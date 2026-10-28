@@ -300,11 +300,15 @@ def _icdf_count(u: Tensor, thr: Tensor) -> Tensor:
 # automaton instead of an unrolled compare per column, and no tail to resample.
 _WIDE_TABLE_N = 256
 _WIDE_CDF_CACHE: Dict[float, Tensor] = {}
+_WIDE_ON_DEVICE: Dict[Tuple[float, torch.device], Tensor] = {}
 
 
 def _wide_thresholds(p: float, device: torch.device) -> Tensor:
     """Flattened float32 ``P(Binomial(n, p) <= k)`` for ``n, k < _WIDE_TABLE_N`` (``2.0`` where
     ``k >= n``)."""
+    on_dev = _WIDE_ON_DEVICE.get((float(p), torch.device(device)))
+    if on_dev is not None:  # cached per device: no host-to-device copy (and sync) per commit
+        return on_dev
     tab = _WIDE_CDF_CACHE.get(float(p))
     if tab is None:
         n = torch.arange(_WIDE_TABLE_N, dtype=torch.float64).unsqueeze(1)
@@ -313,7 +317,8 @@ def _wide_thresholds(p: float, device: torch.device) -> Tensor:
                    + k * math.log(p) + (n - k) * math.log1p(-p))
         cdf = torch.where(k <= n, log_pmf.exp(), torch.zeros(())).cumsum(1)
         tab = _WIDE_CDF_CACHE[float(p)] = cdf.masked_fill_(k >= n, 2.0).reshape(-1)
-    return tab.to(dtype=torch.float32, device=device)
+    out = _WIDE_ON_DEVICE[(float(p), torch.device(device))] = tab.to(dtype=torch.float32, device=device)
+    return out
 
 
 def _bisect_binomial(n: Tensor, thr: Tensor, flip: bool, width: int = _WIDE_TABLE_N) -> Tensor:
@@ -752,7 +757,9 @@ def _single_example_kernel(
     included = new >= N
     state.copy_(new.to(state.dtype))
     include.copy_(included.to(include.dtype))
-    return included.sum(dim=1).to(include_count.dtype)
+    count = included.sum(dim=1).to(include_count.dtype)
+    include_count.copy_(count)  # in place: CUDA graphs keep pointing at the same buffers
+    return count
 
 
 def commit_single_example(
@@ -781,7 +788,8 @@ def commit_single_example(
     Args:
         state: ``(C, 2F)`` TA states, updated in place.
         include: ``(C, 2F)`` cached include mask, updated in place.
-        include_count: ``(C,)`` included literals per clause *before* the update.
+        include_count: ``(C,)`` included literals per clause *before* the update; updated in
+            place.
         literals: ``(2F,)`` 0/1 literals of the example, or ``(C, 2F)`` literals per clause
             (a convolutional model updates each clause from its own random matching patch).
         fire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ia feedback.
@@ -836,7 +844,8 @@ def _dense_commit_kernel(
     n_true.zero_()
     n_false.zero_()
     n2.zero_()
-    return included.sum(dim=1).to(include_count.dtype)
+    # include_count is not summed here: fused in, inductor schedules the whole kernel as a row
+    # reduction at half the speed (G16); the caller sums the new state separately
 
 
 def commit_dense(
@@ -853,6 +862,7 @@ def commit_dense(
     boost_true_positive: bool = True,
     max_included_literals: Optional[int] = None,
     literal_active: Optional[Tensor] = None,
+    max_events: Optional[int] = None,
 ) -> Optional[Tensor]:
     """:func:`apply_feedback` (soft budget) as one fused ``torch.compile`` kernel that also
     refreshes the include cache.
@@ -864,7 +874,8 @@ def commit_dense(
     Args:
         state: ``(C, 2F)`` TA states, updated in place.
         include: ``(C, 2F)`` cached include mask, updated in place.
-        include_count: ``(C,)`` included literals per clause *before* the update.
+        include_count: ``(C,)`` included literals per clause *before* the update; updated in
+            place.
         n_true: as in :func:`apply_feedback`; zeroed on return (as are ``n_false`` and
             ``n2``; ``n_ib`` is left as it was).
         n_false: as in :func:`apply_feedback`.
@@ -875,11 +886,14 @@ def commit_dense(
         boost_true_positive: as in :func:`apply_feedback`.
         max_included_literals: as in :func:`apply_feedback` (soft budget).
         literal_active: as in :func:`apply_feedback`.
+        max_events: an upper bound on any count (e.g. the examples in the update). With it the
+            table width is chosen without reading the counts back to the host.
 
     Returns:
-        The new ``(C,)`` include counts, or ``None`` (nothing modified) when the kernel cannot
-        be used: compilation disabled or failed, or more than ``_WIDE_TABLE_N - 1`` events
-        aggregated into one automaton. The caller then takes the eager path.
+        The new ``(C,)`` include counts (``include_count`` itself), or ``None`` (nothing
+        modified) when the kernel cannot be used: compilation disabled or failed, or more than
+        ``_WIDE_TABLE_N - 1`` events aggregated into one automaton. The caller then takes the
+        eager path.
     """
     p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
     if (not _compile_wanted(state.numel()) or _dense_commit_kernel in _FAILED
@@ -887,8 +901,11 @@ def commit_dense(
         return None
     # Type Ia events per clause are n_true + n_false of any one literal; with Type Ib they
     # bound every count that is sampled.
-    events = n_true[:, 0] + n_false[:, 0] + n_ib
-    most = int(events.max())
+    if max_events is not None and int(max_events) < _WIDE_TABLE_N:
+        most = int(max_events)
+    else:  # no bound given (or a large one): read the actual largest count back
+        events = n_true[:, 0] + n_false[:, 0] + n_ib
+        most = int(events.max())
     if most >= _WIDE_TABLE_N:
         return None
     width = _bisect_width(most)
@@ -905,9 +922,13 @@ def commit_dense(
     thr_forget, forget_flip = table(1.0 / float(s))
     budget = -1 if max_included_literals is None else int(max_included_literals)
     active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
-    return _run_compiled(_dense_commit_kernel, state, include, include_count, n_true, n_false,
+    done = _run_compiled(_dense_commit_kernel, state, include, include_count, n_true, n_false,
                          n_ib, n2, thr_mem, thr_forget, active, N, mem_flip, forget_flip, budget,
                          width)
+    if done is None and _dense_commit_kernel in _FAILED:
+        return None
+    torch.sum(state >= N, dim=1, out=include_count)
+    return include_count
 
 def _cap_new_inclusions(
     state: Tensor,

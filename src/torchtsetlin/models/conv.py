@@ -8,6 +8,7 @@ import torch
 from torch import Tensor
 from torch.nn import functional as TF
 
+from .. import _triton
 from .. import functional as F
 from ..utils import chunk_indices
 from .base import FeedbackAccumulator
@@ -140,6 +141,44 @@ class _ConvMixin:
         C = self.n_clauses_total  # type: ignore[attr-defined]
         return P * C + P * self.n_literals  # type: ignore[attr-defined]
 
+    # ---- fused CUDA evaluation (Triton) ------------------------------------------------
+    def _one_patch_block(self, P: int) -> bool:
+        """Whether the patch axis is evaluated in one block (always, for 2D models)."""
+        return True
+
+    def _fused_eval_ok(self, P: int) -> bool:
+        """Whether clauses are evaluated by the fused Triton kernel on bit-packed literals
+        (:func:`torchtsetlin._triton.conv_eval`): CUDA with Triton, outside ``torch.compile``."""
+        return (self._one_patch_block(P) and _triton.available(self.ta_state.device)  # type: ignore[attr-defined]
+                and not torch.compiler.is_compiling())
+
+    def _fused_chunk_size(self, xb: Tensor) -> int:
+        """Examples per chunk when the fused kernel evaluates: no ``(P, C)`` intermediate, only
+        the literals, their packed bits and ``(B, C)`` outputs per example."""
+        P = self._patches_per_example(xb)
+        per = 4 * P * self.n_literals + 8 * self.n_clauses_total  # type: ignore[attr-defined]
+        return max(1, min(xb.shape[0], self.max_chunk_elements // per))  # type: ignore[attr-defined]
+
+    def _chunk_size(self, xb: Tensor) -> int:  # type: ignore[override]
+        if not self.training and self._fused_eval_ok(self._patches_per_example(xb)):  # type: ignore[attr-defined]
+            return self._fused_chunk_size(xb)
+        return super()._chunk_size(xb)  # type: ignore[misc]
+
+    def _events_chunk_size(self, xb: Tensor) -> int:  # type: ignore[override]
+        if self._fused_eval_ok(self._patches_per_example(xb)):
+            return self._fused_chunk_size(xb)
+        return super()._events_chunk_size(xb)  # type: ignore[misc]
+
+    def _neg_bits(self, literals: Tensor) -> Tensor:
+        """``(B*P, ceil(2F/32))`` int32: the *False* literals of every patch, bit-packed."""
+        B, P, L = literals.shape
+        return _triton.pack_bits(literals.reshape(B * P, L) == 0)
+
+    def _literal_dtype(self) -> torch.dtype:
+        """float16 on CUDA (0/1 values are exact, and evaluation runs in half precision there
+        anyway), else ``compute_dtype``."""
+        return torch.float16 if self.ta_state.device.type == "cuda" else self.compute_dtype  # type: ignore[attr-defined]
+
     def _event_block(self, P: int) -> int:
         """Feedback events whose random patch is drawn together: the ``(n, P)`` draw and the
         ``(n, 2F)`` gathered literal rows stay within ``max_chunk_elements``."""
@@ -158,12 +197,11 @@ class _ConvMixin:
         """``(B, Z, H, W)`` Boolean -> literals ``(B, P, 2F)``."""
         B, Z, H, W = xb.shape
         Py, Px = self._grid(H, W)
-        patches = TF.unfold(
-            xb.to(self.compute_dtype), kernel_size=self.patch_size, stride=self.stride
-        )  # (B, Z*kh*kw, P)
+        dt = self._literal_dtype()
+        patches = TF.unfold(xb.to(dt), kernel_size=self.patch_size, stride=self.stride)  # (B, Z*kh*kw, P)
         patches = patches.transpose(1, 2)  # (B, P, Z*kh*kw)
         if self.position_encoding:
-            pos = self._position_bits(Py, Px, xb.device).to(self.compute_dtype)
+            pos = self._position_bits(Py, Px, xb.device).to(dt)
             patches = torch.cat([patches, pos.unsqueeze(0).expand(B, -1, -1)], dim=2)
         if patches.shape[2] != self.n_features:
             raise ValueError(
@@ -173,6 +211,17 @@ class _ConvMixin:
 
     def _evaluate(self, literals: Tensor, empty_value: bool) -> Tuple[Tensor, Any]:  # type: ignore[override]
         B, P, L = literals.shape
+        if not empty_value and self._fused_eval_ok(P):
+            # prediction: fused kernel, no (B, P, C) tensor and no feedback context needed
+            res = _triton.conv_eval(self._neg_bits(literals), self.include_bits(), B, P, draw=False)  # type: ignore[attr-defined]
+            if res is not None:
+                return res[0] & (self.include_count > 0).unsqueeze(0), None  # type: ignore[attr-defined]
+        return self._evaluate_dense(literals, empty_value)
+
+    def _evaluate_dense(self, literals: Tensor, empty_value: bool) -> Tuple[Tensor, Any]:
+        """:meth:`_evaluate` through the ``(B, P, C)`` match tensor (also the feedback context
+        of the non-fused learning path)."""
+        B, P, L = literals.shape
         matches = F.clause_outputs(
             literals.reshape(B * P, L), self.include, self.include_count, empty_value
         ).view(B, P, -1)  # (B, P, C)
@@ -180,6 +229,16 @@ class _ConvMixin:
         # matches travel on as the feedback context: :meth:`_feedback_counts` draws the random
         # matching patch from them, so prediction never pays for the draw.
         return matches.any(dim=1), matches
+
+    def _evaluate_learning(self, literals: Tensor, acc: FeedbackAccumulator) -> Tuple[Tensor, Any]:  # type: ignore[override]
+        B, P, L = literals.shape
+        if acc.record_events and self._fused_eval_ok(P):
+            # one kernel: clause outputs plus, per (example, clause), the random matching patch
+            # of Type Ia and an independent one of Type II
+            res = _triton.conv_eval(self._neg_bits(literals), self.include_bits(), B, P, draw=True)  # type: ignore[attr-defined]
+            if res is not None:
+                return res[0], ("patches", res[1], res[2])
+        return self._evaluate(literals, empty_value=True)
 
     def _feedback_counts(  # type: ignore[override]
         self,
@@ -190,8 +249,13 @@ class _ConvMixin:
         sel_fire_ii: Tensor,
         acc: FeedbackAccumulator,
     ) -> None:
-        matches: Tensor = ctx
         B, P, L = literals.shape
+        if isinstance(ctx, tuple) and ctx[0] == "patches":  # events mode (fused evaluation)
+            acc.n_ib += sel_nofire_i.sum(dim=0)
+            acc.n_ia += sel_fire_i.sum(dim=0)
+            acc.events = (literals, sel_fire_i, sel_fire_ii, ctx[1], ctx[2])
+            return
+        matches: Tensor = ctx
         if acc.fuse and B == 1:
             # Fused sequential mode (F.commit_single_example): the random matching patch of
             # every clause, drawn independently for Type Ia and Type II, as (C, 2F) literal
@@ -214,7 +278,7 @@ class _ConvMixin:
                 # coalesced clause can receive both in the same update.
                 cand = matches[b_idx, :, j_idx]  # (n_sel, P)
                 p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
-                rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
+                rows = flat[b_idx * P + p_idx].to(acc.dtype)  # (n_sel, 2F)
                 if kind == "i":
                     acc.n_true.index_add_(0, j_idx, rows)
                     acc.n_false.index_add_(0, j_idx, 1.0 - rows)
@@ -222,6 +286,7 @@ class _ConvMixin:
                     acc.n2.index_add_(0, j_idx, 1.0 - rows)
 
     _feedback_counts._records_single = True  # type: ignore[attr-defined]
+    _feedback_counts._records_events = True  # type: ignore[attr-defined]
 
     # ---- dense introspection ------------------------------------------------------
     @torch.no_grad()
@@ -249,8 +314,9 @@ class _ConvMixin:
         xb = self._prepare(x)  # type: ignore[attr-defined]
         Py, Px = self._grid(xb.shape[2], xb.shape[3])
         outs = []
-        for sl in chunk_indices(xb.shape[0], self._chunk_size(xb)):  # type: ignore[attr-defined]
-            _, matches = self._evaluate(self._encode(xb[sl]), empty_value)  # (b, P, C)
+        chunk = max(1, self.max_chunk_elements // max(1, self._chunk_elements_per_example(xb)))  # type: ignore[attr-defined]
+        for sl in chunk_indices(xb.shape[0], chunk):
+            _, matches = self._evaluate_dense(self._encode(xb[sl]), empty_value)  # (b, P, C)
             outs.append(matches)
         return torch.cat(outs, dim=0).view(xb.shape[0], Py, Px, -1)
 
@@ -576,10 +642,11 @@ class _Conv3dMixin(_ConvMixin):
         Pd, Ph, Pw = self._grid(D, H, W)
         # torch.nn.functional.unfold is 2D only; three Tensor.unfold calls cut the windows
         # out along depth, height and width -> (B, Z, Pd, Ph, Pw, kd, kh, kw).
-        windows = xb.to(self.compute_dtype).unfold(2, kd, sd).unfold(3, kh, sh).unfold(4, kw, sw)
+        dt = self._literal_dtype()
+        windows = xb.to(dt).unfold(2, kd, sd).unfold(3, kh, sh).unfold(4, kw, sw)
         patches = windows.permute(0, 2, 3, 4, 1, 5, 6, 7).reshape(B, Pd * Ph * Pw, Z * kd * kh * kw)
         if self.position_encoding:
-            pos = self._position_bits(Pd, Ph, Pw, xb.device).to(self.compute_dtype)
+            pos = self._position_bits(Pd, Ph, Pw, xb.device).to(dt)
             patches = torch.cat([patches, pos.unsqueeze(0).expand(B, -1, -1)], dim=2)
         if patches.shape[2] != self.n_features:  # type: ignore[attr-defined]
             raise ValueError(
@@ -588,11 +655,14 @@ class _Conv3dMixin(_ConvMixin):
         return torch.cat([patches, 1.0 - patches], dim=2)
 
     # ---- patch-blocked evaluation and feedback --------------------------------------
-    def _evaluate(self, literals: Tensor, empty_value: bool) -> Tuple[Tensor, Any]:  # type: ignore[override]
+    def _one_patch_block(self, P: int) -> bool:  # type: ignore[override]
+        return self._patch_block(P) >= P
+
+    def _evaluate_dense(self, literals: Tensor, empty_value: bool) -> Tuple[Tensor, Any]:  # type: ignore[override]
         B, P, L = literals.shape
         Pb = self._patch_block(P)
         if Pb >= P:
-            return super()._evaluate(literals, empty_value)
+            return super()._evaluate_dense(literals, empty_value)
         C = self.n_clauses_total  # type: ignore[attr-defined]
         matches = torch.empty(B, P, C, dtype=torch.bool, device=literals.device)
         for sl in chunk_indices(P, Pb):
@@ -637,12 +707,14 @@ class _Conv3dMixin(_ConvMixin):
                 better = val > best_val
                 best_val = torch.where(better, val, best_val)
                 best_p = torch.where(better, arg + sl.start, best_p)
-            rows = flat[b_idx * P + best_p]  # (n_sel, 2F)
+            rows = flat[b_idx * P + best_p].to(acc.dtype)  # (n_sel, 2F)
             if kind == "i":
                 acc.n_true.index_add_(0, j_idx, rows)
                 acc.n_false.index_add_(0, j_idx, 1.0 - rows)
             else:
                 acc.n2.index_add_(0, j_idx, 1.0 - rows)
+
+    _feedback_counts._records_events = True  # type: ignore[attr-defined]
 
     # ---- dense introspection ------------------------------------------------------
     @torch.no_grad()
@@ -662,8 +734,9 @@ class _Conv3dMixin(_ConvMixin):
         xb = self._prepare(x)  # type: ignore[attr-defined]
         Pd, Ph, Pw = self._grid(xb.shape[2], xb.shape[3], xb.shape[4])
         outs = []
-        for sl in chunk_indices(xb.shape[0], self._chunk_size(xb)):  # type: ignore[attr-defined]
-            _, matches = self._evaluate(self._encode(xb[sl]), empty_value)  # (b, P, C)
+        chunk = max(1, self.max_chunk_elements // max(1, self._chunk_elements_per_example(xb)))  # type: ignore[attr-defined]
+        for sl in chunk_indices(xb.shape[0], chunk):
+            _, matches = self._evaluate_dense(self._encode(xb[sl]), empty_value)  # (b, P, C)
             outs.append(matches)
         return torch.cat(outs, dim=0).view(xb.shape[0], Pd, Ph, Pw, -1)
 

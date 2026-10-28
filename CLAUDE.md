@@ -117,6 +117,26 @@ do not reuse them after the call.
   `acc.rows` (`_accumulate_literals` marks every selected matching clause). The count buffers are
   reused across updates (`_new_accumulator`), so never keep a reference to them after `_commit`.
   `tests/test_models.py::test_include_caches_track_the_automata` pins the cache refresh.
+- **CUDA fast path since 2026-10-28** (`_triton.py`, LIBRARY_GAPS round 3). A batched CUDA
+  update that fits one chunk runs in *events mode* (`acc.record_events`): `_feedback_counts`
+  stores `acc.events = (literals, sel_i, sel_ii, patch_i, patch_ii)` instead of counts and
+  `_triton.fused_commit` computes, samples and applies them in one kernel. A model joins only if
+  its `_feedback_counts` carries `_records_events = True`; a new output layer that overrides it
+  must handle (or decline) events. Conv models evaluate with `_triton.conv_eval` on bit-packed
+  literals (prediction, and learning in events mode, where it also draws the patches);
+  `_evaluate_dense` is the old `(B, P, C)` path, kept for `patch_clause_outputs` and fall-backs.
+  `include_bits()` is a lazily refreshed bit-packed include mask: every commit path sets
+  `_bits_fresh = False` except the Triton one, which writes it. Chunk sizes differ by path
+  (`_fused_chunk_size` vs `_chunk_elements_per_example`): never evaluate densely with a fused
+  chunk size, it allocates `(chunk, P, C)`.
+- **CUDA graphs since 2026-10-28** (`_graphed_update`). Update shapes are captured on third use
+  and replayed. Anything inside `_update_block` must be sync-free (use `torch._assert_async`,
+  `scatter_`, host-side bounds; `tests/test_triton.py::test_updates_never_synchronise_with_the_host`)
+  and must update buffers **in place** (`include_count.copy_`, kernels writing `include`): a
+  reassigned buffer changes the graph key (fine), but a tensor the graph allocated and Python
+  keeps is graph-private memory. Python constants (`s`, `T`, ...) are part of the key, so
+  hyper-parameter schedules recapture. Labels on CUDA are checked device-side
+  (`utils.class_targets`): a bad label surfaces as a CUDA error, not a `ValueError`.
 - **`torch.compile` kernels since 2026-10-24** (`functional.py`, "Compiled kernels"). The CPU
   row-sparse commit runs Type Ib forgetting (`_forget_rows`) and its binomials
   (`_binomial_compiled`) as inverse-CDF kernels with in-kernel RNG; sequential mode on CUDA

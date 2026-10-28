@@ -244,7 +244,9 @@ def test_conv_evaluation_is_or_over_patches(device):
     literals = m._encode(x)
     inc, Fn = m.included_mask(), int(m.n_features)
     for empty_value in (True, False):
-        out, matches = m._evaluate(literals, empty_value)
+        out, _ = m._evaluate(literals, empty_value)  # the fused kernel when predicting on CUDA
+        dense, matches = m._evaluate_dense(literals, empty_value)
+        assert torch.equal(out, dense)
         assert matches.shape == (5, Py * Px, m.n_clauses_total)
         for b in range(5):
             ref = _ref_patch_feats(x[b], 3, 2, 2, 1, Py, Px)
@@ -569,6 +571,7 @@ def test_fused_sequential_mode_learns_and_tracks_caches(compiled, monkeypatch):
     torch.manual_seed(0)
     m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, feedback_mode="sequential",
                           weighted=True, max_included_literals=6).to(dev)
+    m.cuda_graphs = False  # count the Python-level calls (a CUDA graph replays without them)
     assert m._fuse_single_examples()
     acc = _train_xor(m, dev, epochs=10, bs=100, n=1000)
     assert acc > 0.8, acc
@@ -624,23 +627,34 @@ def test_conv_batch_is_evaluated_in_one_chunk():
 
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="fused commits are CUDA-only")
-def test_fused_cuda_commits_learn_and_track_caches(compiled, monkeypatch):
-    # batched updates on CUDA commit through F.commit_dense; sequential conv models through
-    # F.commit_single_example with one literal row per clause
+@pytest.mark.parametrize("triton_path", [True, False])
+def test_fused_cuda_commits_learn_and_track_caches(compiled, monkeypatch, triton_path):
+    # batched CUDA updates commit through the Triton kernel (or, without it, F.commit_dense);
+    # sequential conv models through F.commit_single_example with one literal row per clause
+    from torchtsetlin import _triton
+
+    if triton_path and not _triton.available(torch.device("cuda")):
+        pytest.skip("Triton is unavailable")
+    if not triton_path:
+        monkeypatch.setattr(_triton, "available", lambda device: False)
     dev = torch.device("cuda")
-    dense, single = [], []
-    real_dense, real_single = compiled.commit_dense, compiled.commit_single_example
+    fused, dense, single = [], [], []
+    real_fused, real_dense = _triton.fused_commit, compiled.commit_dense
+    real_single = compiled.commit_single_example
+    monkeypatch.setattr(_triton, "fused_commit", lambda *a, **k: fused.append(1) or real_fused(*a, **k))
     monkeypatch.setattr(compiled, "commit_dense", lambda *a, **k: dense.append(1) or real_dense(*a, **k))
     monkeypatch.setattr(compiled, "commit_single_example",
                         lambda *a, **k: single.append(1) or real_single(*a, **k))
     torch.manual_seed(0)
     m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, max_included_literals=6).to(dev)
+    m.cuda_graphs = False  # count the Python-level calls (a CUDA graph replays without them)
     acc = _train_xor(m, dev, epochs=40, bs=10)  # eager and fused: ~0.93 over 6 seeds
     assert acc > 0.85, acc
-    assert dense
+    assert (fused and not dense) if triton_path else (dense and not fused)
     x, y = tt.data.make_2d_noisy_xor(2000, device=dev)
     c = tt.ConvTsetlinMachine(2, 20, 30, 3.9, patch_size=2, position_encoding=False,
                               input_shape=tuple(x.shape[1:]), feedback_mode="sequential").to(dev)
+    c.cuda_graphs = False
     assert c._fuse_single_examples(len(x))
     for _ in range(10):
         c.update(x, y)

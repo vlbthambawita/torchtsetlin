@@ -8,7 +8,7 @@ import torch
 from torch import Tensor
 
 from .. import functional as F
-from ..utils import as_long_tensor
+from ..utils import class_targets
 from .base import FeedbackAccumulator, TsetlinMachineBase
 
 __all__ = ["TsetlinMachine"]
@@ -119,12 +119,7 @@ class TsetlinMachine(TsetlinMachineBase):
         return v
 
     def _coerce_targets(self, y, n: int, device: torch.device) -> Tensor:
-        y = as_long_tensor(y, device=device).view(-1)
-        if y.shape[0] != n:
-            raise ValueError(f"x has {n} examples but y has {y.shape[0]} labels")
-        if bool((y < 0).any()) or bool((y >= self.n_classes).any()):
-            raise ValueError(f"labels must lie in [0, {self.n_classes - 1}]")
-        return y
+        return class_targets(y, n, self.n_classes, device)
 
     # ------------------------------------------------------------------ inference API
     def predict(self, x) -> Tensor:
@@ -156,22 +151,21 @@ class TsetlinMachine(TsetlinMachineBase):
         y_neg = F.sample_negative_classes(
             y, self.n_classes, votes=votes, focused=self.focused_negative_sampling, T=self.T
         )
-        ar = torch.arange(B, device=dev)
-        p_tgt = F.feedback_probabilities(votes[ar, y], self.T, target=True)
-        p_neg = F.feedback_probabilities(votes[ar, y_neg], self.T, target=False)
+        yc, nc = y.view(B, 1), y_neg.view(B, 1)
+        p_tgt = F.feedback_probabilities(votes.gather(1, yc), self.T, target=True)
+        p_neg = F.feedback_probabilities(votes.gather(1, nc), self.T, target=False)
 
         # Per-class feedback probability (0 for classes that are neither the target nor the
-        # sampled negative class), broadcast over the clauses of each class.
+        # sampled negative class), broadcast over the clauses of each class. scatter_ rather
+        # than index assignment, which synchronises with the host on CUDA.
         p_class = torch.zeros(B, self.n_classes, device=dev)
-        p_class[ar, y] = p_tgt
-        p_class[ar, y_neg] = p_neg
+        p_class.scatter_(1, yc, p_tgt)
+        p_class.scatter_(1, nc, p_neg)
         r = torch.rand(B, self.n_classes, self.n_clauses, device=dev)
         selected = r < p_class.unsqueeze(2)  # (B, K, n)
 
-        is_tgt = torch.zeros(B, self.n_classes, dtype=torch.bool, device=dev)
-        is_tgt[ar, y] = True
-        is_neg = torch.zeros_like(is_tgt)
-        is_neg[ar, y_neg] = True
+        is_tgt = torch.zeros(B, self.n_classes, dtype=torch.bool, device=dev).scatter_(1, yc, True)
+        is_neg = torch.zeros_like(is_tgt).scatter_(1, nc, True)
         positive = (self.clause_polarity.view(self.n_classes, self.n_clauses) > 0).unsqueeze(0)
         type_i = selected & ((is_tgt.unsqueeze(2) & positive) | (is_neg.unsqueeze(2) & ~positive))
         type_ii = selected & ((is_tgt.unsqueeze(2) & ~positive) | (is_neg.unsqueeze(2) & positive))

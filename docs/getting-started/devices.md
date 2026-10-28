@@ -36,6 +36,33 @@ code.
   once and uses the eager code. Turn the kernels off with `TORCHTSETLIN_COMPILE=0` or
   `torchtsetlin.functional.set_compile(False)`.
 
+## The CUDA fast path (Triton kernels and CUDA graphs)
+
+On CUDA, with Triton available (it ships with the Linux CUDA builds of PyTorch), a batched
+update runs through two hand-written kernels and is replayed as a CUDA graph:
+
+* **One commit kernel** applies all of an update's feedback in a single pass over the automata:
+  it computes the Type Ia / Type II counts from the update's events (on tensor cores for flat
+  models), samples them, and writes the state, the include cache and the per-clause include
+  counts. No count tensor is materialised.
+* **Convolutional models** evaluate their clauses on bit-packed literals (32 per word) and OR
+  over the patches in registers, so the `(batch, patches, clauses)` match tensor never exists.
+  While learning, the same kernel picks each clause's random matching patch. Prediction of a
+  10x10-patch MNIST model is 4.7x faster than in 0.5.1.
+* **No host synchronisation**: labels that are already on the GPU are checked with a
+  device-side assertion (an invalid label is reported as a CUDA error at the next
+  synchronisation, as in PyTorch's own losses); labels from the host are checked there.
+* **CUDA graphs**: an update shape seen for the third time is captured and replayed from then on
+  (sequential mode in blocks of 64 examples). Replays give bit-identical results to eager
+  execution and remove the kernel-launch overhead that dominates small models and sequential
+  mode (Noisy XOR in sequential mode: 17x faster than 0.5.1). Models with clause or literal
+  dropout are not graphed.
+
+Turn the pieces off with `TORCHTSETLIN_TRITON=0` (Triton kernels), `TORCHTSETLIN_CUDA_GRAPHS=0`
+or `model.cuda_graphs = False` (graphs), or `TORCHTSETLIN_COMPILE=0` (everything compiled). Every
+fast path has the previous code as its fall-back, which is also what runs on the CPU, on MPS, and
+when Triton is missing.
+
 ## Multiple GPUs
 
 Different models can live on different GPUs; a single model uses one device. Because Tsetlin
@@ -45,10 +72,11 @@ usually enough for tens of thousands of clauses.
 ## Memory
 
 The state uses 1 byte per automaton by default (`state_dtype=None` picks `uint8` for the
-default `n_states=128`), i.e. `n_clauses_total * 2 * n_features` bytes, plus a float copy of
-the include mask (4 bytes per automaton). While learning, three float count buffers (12 bytes
-per automaton) are kept between updates; `model.eval()` releases them. A
-2000-clause-per-class MNIST classifier (20 000 clauses × 1568 literals) needs about 160 MB to
-predict and about 530 MB while learning. Intermediate tensors of an update are chunked automatically to stay within
+default `n_states=128`), i.e. `n_clauses_total * 2 * n_features` bytes, plus a copy of the
+include mask in the evaluation dtype (2 bytes per automaton on CUDA, 4 on the CPU) and, on CUDA,
+a bit-packed one (1 bit). The CUDA fast path needs no count buffers; the other paths keep three
+float count buffers (12 bytes per automaton) between updates, which `model.eval()` releases. A
+2000-clause-per-class MNIST classifier (20 000 clauses × 1568 literals) needs about 100 MB on
+CUDA. Intermediate tensors of an update are chunked automatically to stay within
 `max_chunk_elements` (default 2^27 elements); lower it if you hit out-of-memory errors on a
 small GPU.

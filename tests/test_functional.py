@@ -436,7 +436,7 @@ def test_commit_dense_matches_apply_feedback(compiled, boost, budget, dropout, s
                          generator=g, **kw)
         include = torch.zeros(C, L, device=dev, dtype=torch.float16)
         cts = nt.clone(), nf.clone(), nib.clone(), n2.clone()
-        count = F.commit_dense(b, include, inc_count, *cts, **kw)
+        count = F.commit_dense(b, include, inc_count.clone(), *cts, **kw)  # updated in place
         assert count is not None
         assert torch.equal(include, (b >= N).half()) and torch.equal(count, (b >= N).sum(1))
         assert not cts[0].any() and not cts[1].any() and not cts[3].any()  # zeroed for reuse

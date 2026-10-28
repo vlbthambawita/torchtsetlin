@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.6.0 (2026-10-28)
+
+**The CUDA path is rebuilt around two Triton kernels and CUDA graphs** (gaps G15-G24 of the
+low-level kernel audit, `experiments/paper_experiments/LIBRARY_GAPS.md`). What a model learns is
+unchanged in distribution, and CUDA-graph replays are bit-identical to eager execution. Same GPU
+(RTX 3080), per `update()` against 0.5.1: flat MNIST batch 32 4.7 -> 1.1 ms, batch 100 5.1 -> 1.7
+ms; IMDb-sized flat model 20.7 -> 6.6 ms; convolutional MNIST batch 16 5.0 -> 1.5 ms, batch 100
+22.7 -> 7.6 ms; Noisy XOR sequential 17x and 2-D Noisy XOR sequential 12x faster; convolutional
+prediction 4.7x faster.
+
+- **Fused commit kernel** (`torchtsetlin._triton.fused_commit`; G15, G16, G17, G22). A batched
+  CUDA update that fits one chunk records its events instead of count tensors; one kernel computes
+  the Type Ia / Type II counts per tile (tensor cores for flat models, a gather of each clause's
+  random matching patch for convolutional ones), samples them (inverse CDF, walked arithmetically
+  for small counts), and writes the state, the include cache, the bit-packed include mask and the
+  include counts. No `(C, 2F)` count buffer is allocated, saving 12 bytes per automaton.
+- **Fused convolutional evaluation** (`_triton.conv_eval`; G20, G21, G24). Clauses are evaluated
+  on bit-packed literals with the OR over patches in registers; while learning the kernel also
+  draws each clause's random matching patch for Type Ia and, independently, Type II. Conv literals
+  are float16 on CUDA. `ConvTsetlinMachine.patch_clause_outputs` keeps the dense evaluation.
+- **No host synchronisation in an update** (G18). Labels already on a CUDA device are checked by
+  a device-side assertion (`utils.class_targets`); labels from the host are checked there before
+  the copy. Feedback selection uses `scatter_`, the CDF table is cached per device, and the
+  table width comes from the batch size instead of a read-back.
+- **CUDA graphs** (G19). On CUDA, an update shape seen for the third time (sequential mode: blocks
+  of 64 examples) is captured and replayed. Off with `model.cuda_graphs = False` or
+  `TORCHTSETLIN_CUDA_GRAPHS=0`; not used with clause or literal dropout.
+- `functional.commit_dense` and `functional.commit_single_example` update `include_count` in
+  place; `commit_dense` takes `max_events` and no longer sums the include counts inside the
+  compiled kernel (half its time). `TORCHTSETLIN_TRITON=0` disables the Triton kernels.
+- Start-up: the first update of a process takes 2.2 s cold / 0.7 s warm (was 5.2 / 2.1 s, G23).
+
 ## 0.5.1 (2026-10-28)
 
 **Faster GPU training, and two CPU slow paths removed** (gaps G10-G14 of the cross-library

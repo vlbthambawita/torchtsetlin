@@ -8,7 +8,7 @@ import torch
 from torch import Tensor
 
 from .. import functional as F
-from ..utils import as_bool_tensor, as_long_tensor
+from ..utils import as_bool_tensor, class_targets
 from .base import FeedbackAccumulator, TsetlinMachineBase
 
 __all__ = ["CoalescedTsetlinMachine"]
@@ -98,12 +98,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
             if yb.shape != (n, self.n_outputs):
                 raise ValueError(f"multi-label targets must have shape ({n}, {self.n_outputs})")
             return yb
-        y = as_long_tensor(y, device=device).view(-1)
-        if y.shape[0] != n:
-            raise ValueError(f"x has {n} examples but y has {y.shape[0]} labels")
-        if bool((y < 0).any()) or bool((y >= self.n_outputs).any()):
-            raise ValueError(f"labels must lie in [0, {self.n_outputs - 1}]")
-        return y
+        return class_targets(y, n, self.n_outputs, device)
 
     def predict(self, x) -> Tensor:
         """Class indices ``(B,)`` (multi-class) or a Boolean ``(B, n_outputs)`` matrix."""
