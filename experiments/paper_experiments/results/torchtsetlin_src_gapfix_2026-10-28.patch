@@ -1,0 +1,746 @@
+diff --git a/src/torchtsetlin/functional.py b/src/torchtsetlin/functional.py
+index 712e056..9b9f3b8 100644
+--- a/src/torchtsetlin/functional.py
++++ b/src/torchtsetlin/functional.py
+@@ -36,6 +36,7 @@ __all__ = [
+     "sample_forget_events",
+     "apply_feedback_rows",
+     "commit_single_example",
++    "commit_dense",
+     "set_compile",
+     "type_i_counts",
+     "type_ii_counts",
+@@ -69,8 +70,13 @@ def clause_violations(literals: Tensor, include: Tensor) -> Tensor:
+         ``(B, C)`` floating tensor; a clause matches an example iff its entry is ``0``.
+     """
+     # (1 - literals) marks False literals; a False literal that is included violates the AND.
+-    if literals.dim() == 2 and literals.device.type == "cpu":
+-        # clause-major (C, 2F) @ (2F, B) is ~2x faster than (B, 2F) @ (2F, C) on the CPU
++    # The literals follow the dtype of ``include`` (the models keep it in float16 on CUDA).
++    if literals.dtype != include.dtype:
++        literals = literals.to(include.dtype)
++    if literals.dim() == 2 and literals.device.type == "cpu" and literals.shape[0] <= 256:
++        # clause-major (C, 2F) @ (2F, B) is up to ~2x faster than (B, 2F) @ (2F, C) on the CPU
++        # for a few rows (flat mini-batches), but ~3x slower for the thousands of patch rows of
++        # a convolutional batch (B=16 MNIST images: 582 vs 187 ms on 16 threads)
+         return torch.matmul(include, (1.0 - literals).transpose(0, 1)).transpose(0, 1).contiguous()
+     return torch.matmul(1.0 - literals, include.transpose(0, 1))
+ 
+@@ -287,6 +293,46 @@ def _icdf_count(u: Tensor, thr: Tensor) -> Tensor:
+     return out
+ 
+ 
++# A batched update aggregates up to one Type I event per example into an automaton, so the
++# dense GPU commit (and the CPU kernels, for large batches or small s) needs counts beyond the
++# narrow table. It searches one fixed square table
++# (counts up to _WIDE_TABLE_N - 1, every CDF column) by bisection: log2(_WIDE_TABLE_N) gathers per
++# automaton instead of an unrolled compare per column, and no tail to resample.
++_WIDE_TABLE_N = 256
++_WIDE_CDF_CACHE: Dict[float, Tensor] = {}
++
++
++def _wide_thresholds(p: float, device: torch.device) -> Tensor:
++    """Flattened float32 ``P(Binomial(n, p) <= k)`` for ``n, k < _WIDE_TABLE_N`` (``2.0`` where
++    ``k >= n``)."""
++    tab = _WIDE_CDF_CACHE.get(float(p))
++    if tab is None:
++        n = torch.arange(_WIDE_TABLE_N, dtype=torch.float64).unsqueeze(1)
++        k = torch.arange(_WIDE_TABLE_N, dtype=torch.float64)
++        log_pmf = (torch.lgamma(n + 1) - torch.lgamma(k + 1) - torch.lgamma((n - k).clamp(min=0) + 1)
++                   + k * math.log(p) + (n - k) * math.log1p(-p))
++        cdf = torch.where(k <= n, log_pmf.exp(), torch.zeros(())).cumsum(1)
++        tab = _WIDE_CDF_CACHE[float(p)] = cdf.masked_fill_(k >= n, 2.0).reshape(-1)
++    return tab.to(dtype=torch.float32, device=device)
++
++
++def _bisect_binomial(n: Tensor, thr: Tensor, flip: bool, width: int = _WIDE_TABLE_N) -> Tensor:
++    """``Binomial(n, q)`` from the flattened :func:`_wide_thresholds` table of ``q``:
++    ``#{k : u >= cdf[n, k]}`` by bisection over the non-decreasing row, searching the first
++    ``width`` (a power of two ``> n``) columns. ``flip`` returns ``n - X`` instead, i.e.
++    ``Binomial(n, 1 - q)``."""
++    u = torch.rand(n.shape, dtype=thr.dtype, device=n.device)
++    base = n.long() * _WIDE_TABLE_N
++    lo = torch.zeros(n.shape, dtype=torch.long, device=n.device)
++    step = width // 2
++    while step:
++        cand = lo + step
++        lo = torch.where(u >= thr[base + cand - 1], cand, lo)
++        step //= 2
++    out = lo.to(n.dtype)
++    return n - out if flip else out
++
++
+ def _binomial_kernel(count: Tensor, thr: Tensor) -> Tensor:
+     u = torch.rand(count.shape, dtype=thr.dtype, device=count.device)
+     return _icdf_count(u, thr[count.long()]).to(count.dtype)
+@@ -302,7 +348,26 @@ def _forget_rows_kernel(sub: Tensor, n: Tensor, thr: Tensor, active: Optional[Te
+     return new.to(sub.dtype), (old >= N) & (new < N)
+ 
+ 
+-_DYNAMIC = {_binomial_kernel, _forget_rows_kernel}
++def _bisect_kernel(count: Tensor, thr: Tensor, width: int) -> Tensor:
++    return _bisect_binomial(count, thr, False, width)
++
++
++def _forget_rows_bisect_kernel(sub: Tensor, n: Tensor, thr: Tensor, active: Optional[Tensor], N: int,
++                               width: int):
++    dec = _bisect_binomial(n.expand(sub.shape), thr, False, width)  # (R, L) from (R, 1)
++    if active is not None:
++        dec = dec * active
++    old = sub.to(torch.int32)
++    new = (old - dec.to(torch.int32)).clamp(min=0)
++    return new.to(sub.dtype), (old >= N) & (new < N)
++
++
++def _bisect_width(n_max: int) -> int:
++    """Bisection steps for counts up to ``n_max`` (a few distinct widths, each compiled once)."""
++    return max(16, 1 << int(n_max).bit_length())
++
++
++_DYNAMIC = {_binomial_kernel, _forget_rows_kernel, _bisect_kernel, _forget_rows_bisect_kernel}
+ 
+ 
+ def _tail_extra(n: Tensor, p: float) -> Tensor:
+@@ -321,7 +386,11 @@ def _binomial_compiled(count: Tensor, p: float) -> Optional[Tensor]:
+     if n_max == 0:
+         return torch.zeros_like(count)
+     if not _table_fits(p, n_max):
+-        return None
++        # counts beyond the narrow table (large batches, small s): bisect the wide one
++        if n_max >= _WIDE_TABLE_N:
++            return None
++        return _run_compiled(_bisect_kernel, count, _wide_thresholds(p, count.device),
++                             _bisect_width(n_max))
+     out = _run_compiled(_binomial_kernel, count, _thresholds(p, count.device))
+     if out is None:
+         return None
+@@ -623,13 +692,20 @@ def _forget_rows(
+     n_max = int(n.max()) if n.numel() else 0
+     if n_max == 0:
+         return empty
+-    if not _table_fits(p, n_max):
+-        return None
+-    thr = _thresholds(p, state.device)
+-    K = _TABLE_K
+     active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
+     sub = state[rows]
+-    out = _run_compiled(_forget_rows_kernel, sub, n.unsqueeze(1), thr, active, N)
++    K = _TABLE_K
++    if not _table_fits(p, n_max):
++        # counts beyond the narrow table (large batches, small s): bisect the wide one, which
++        # covers every count it holds, so there is no tail to resample
++        if n_max >= _WIDE_TABLE_N:
++            return None
++        out = _run_compiled(_forget_rows_bisect_kernel, sub, n.unsqueeze(1),
++                            _wide_thresholds(p, state.device), active, N, _bisect_width(n_max))
++        K = _WIDE_TABLE_N
++    else:
++        out = _run_compiled(_forget_rows_kernel, sub, n.unsqueeze(1), _thresholds(p, state.device),
++                            active, N)
+     if out is None:
+         return None
+     new, crossed = out
+@@ -649,11 +725,12 @@ def _forget_rows(
+ 
+ 
+ def _single_example_kernel(
+-    state: Tensor, include: Tensor, literals: Tensor, fire_i: Tensor, nofire_i: Tensor,
+-    fire_ii: Tensor, include_count: Tensor, active: Optional[Tensor], N: int, p_mem: float,
+-    p_forget: float, budget: int,
++    state: Tensor, include: Tensor, lit: Tensor, lit_ii: Tensor, fire_i: Tensor,
++    nofire_i: Tensor, fire_ii: Tensor, include_count: Tensor, active: Optional[Tensor], N: int,
++    p_mem: float, p_forget: float, budget: int,
+ ) -> Tensor:
+-    lit = literals.unsqueeze(0)
++    # lit / lit_ii: (1, 2F) for a flat model, (C, 2F) when every clause is updated from its
++    # own literals (the random matching patch of a convolutional model)
+     neg = 1.0 - lit
+     fi = fire_i.unsqueeze(1)
+     nib = nofire_i.unsqueeze(1)
+@@ -667,7 +744,7 @@ def _single_example_kernel(
+         inc = inc * (torch.rand(state.shape, device=state.device) < p_mem).to(inc.dtype)
+     # fire and no-fire are exclusive, so every count is 0 or 1 and the binomials are Bernoulli
+     dec = (fi * neg + nib) * (torch.rand(state.shape, device=state.device) < p_forget).to(inc.dtype)
+-    inc2 = torch.minimum(fire_ii.unsqueeze(1) * neg, (N - old).clamp(min=0))
++    inc2 = torch.minimum(fire_ii.unsqueeze(1) * (1.0 - lit_ii), (N - old).clamp(min=0))
+     delta = inc - dec + inc2
+     if active is not None:
+         delta = delta * active
+@@ -692,6 +769,7 @@ def commit_single_example(
+     boost_true_positive: bool = True,
+     max_included_literals: Optional[int] = None,
+     literal_active: Optional[Tensor] = None,
++    literals_ii: Optional[Tensor] = None,
+ ) -> Optional[Tensor]:
+     """The feedback of **one** example, applied by a single fused ``torch.compile`` kernel.
+ 
+@@ -704,7 +782,8 @@ def commit_single_example(
+         state: ``(C, 2F)`` TA states, updated in place.
+         include: ``(C, 2F)`` cached include mask, updated in place.
+         include_count: ``(C,)`` included literals per clause *before* the update.
+-        literals: ``(2F,)`` 0/1 literals of the example.
++        literals: ``(2F,)`` 0/1 literals of the example, or ``(C, 2F)`` literals per clause
++            (a convolutional model updates each clause from its own random matching patch).
+         fire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ia feedback.
+         nofire_i: ``(C,)`` 0/1 mask of the clauses that get Type Ib feedback.
+         fire_ii: ``(C,)`` 0/1 mask of the clauses that get Type II feedback.
+@@ -713,18 +792,123 @@ def commit_single_example(
+         boost_true_positive: as in :func:`apply_feedback`.
+         max_included_literals: as in :func:`apply_feedback` (soft budget).
+         literal_active: as in :func:`apply_feedback`.
++        literals_ii: literals of the Type II events, shaped like ``literals``; defaults to
++            ``literals`` (a convolutional model draws the patch of each kind independently).
+ 
+     Returns:
+         The new ``(C,)`` include counts, or ``None`` when the compiled kernel is unavailable
+         (nothing has been modified; the caller falls back to :func:`apply_feedback_rows`).
+     """
++    lit = literals if literals.dim() == 2 else literals.unsqueeze(0)
++    lit_ii = lit if literals_ii is None else (
++        literals_ii if literals_ii.dim() == 2 else literals_ii.unsqueeze(0))
+     N = int(n_states)
+     p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
+     budget = -1 if max_included_literals is None else int(max_included_literals)
+     active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
+-    return _run_compiled(_single_example_kernel, state, include, literals, fire_i, nofire_i,
++    return _run_compiled(_single_example_kernel, state, include, lit, lit_ii, fire_i, nofire_i,
+                          fire_ii, include_count, active, N, p_mem, 1.0 / float(s), budget)
+ 
++
++def _dense_commit_kernel(
++    state: Tensor, include: Tensor, include_count: Tensor, n_true: Tensor, n_false: Tensor,
++    n_ib: Tensor, n2: Tensor, thr_mem: Optional[Tensor], thr_forget: Optional[Tensor],
++    active: Optional[Tensor], N: int, mem_flip: bool, forget_flip: bool, budget: int, width: int,
++) -> Tensor:
++    nt, nf, nib = n_true, n_false, n_ib.unsqueeze(1)
++    if budget >= 0:  # an oversized matching clause gets Type Ib instead of Type Ia
++        over = (include_count > budget).unsqueeze(1).to(nt.dtype)
++        nib = nib + (nt[:, :1] + nf[:, :1]) * over
++        nt = nt * (1.0 - over)
++        nf = nf * (1.0 - over)
++    inc = nt if thr_mem is None else _bisect_binomial(nt, thr_mem, mem_flip, width)
++    nf = nf + nib
++    dec = nf if thr_forget is None else _bisect_binomial(nf, thr_forget, forget_flip, width)
++    old = state.to(torch.float32)
++    inc2 = torch.minimum(n2, (N - old).clamp(min=0))
++    delta = inc - dec + inc2
++    if active is not None:
++        delta = delta * active
++    new = (old + delta).clamp(0, 2 * N - 1)
++    included = new >= N
++    state.copy_(new.to(state.dtype))
++    include.copy_(included.to(include.dtype))
++    n_true.zero_()
++    n_false.zero_()
++    n2.zero_()
++    return included.sum(dim=1).to(include_count.dtype)
++
++
++def commit_dense(
++    state: Tensor,
++    include: Tensor,
++    include_count: Tensor,
++    n_true: Tensor,
++    n_false: Tensor,
++    n_ib: Tensor,
++    n2: Tensor,
++    *,
++    n_states: int,
++    s: float,
++    boost_true_positive: bool = True,
++    max_included_literals: Optional[int] = None,
++    literal_active: Optional[Tensor] = None,
++) -> Optional[Tensor]:
++    """:func:`apply_feedback` (soft budget) as one fused ``torch.compile`` kernel that also
++    refreshes the include cache.
++
++    The binomials are drawn inside the kernel by inverse-CDF lookup, so the update reads the
++    counts and the state once and writes the state, the include mask and zeroed counts once,
++    instead of the ~20 full passes of the eager update. Used by batched updates on CUDA.
++
++    Args:
++        state: ``(C, 2F)`` TA states, updated in place.
++        include: ``(C, 2F)`` cached include mask, updated in place.
++        include_count: ``(C,)`` included literals per clause *before* the update.
++        n_true: as in :func:`apply_feedback`; zeroed on return (as are ``n_false`` and
++            ``n2``; ``n_ib`` is left as it was).
++        n_false: as in :func:`apply_feedback`.
++        n_ib: as in :func:`apply_feedback`.
++        n2: as in :func:`apply_feedback`.
++        n_states: as in :func:`apply_feedback`.
++        s: as in :func:`apply_feedback`.
++        boost_true_positive: as in :func:`apply_feedback`.
++        max_included_literals: as in :func:`apply_feedback` (soft budget).
++        literal_active: as in :func:`apply_feedback`.
++
++    Returns:
++        The new ``(C,)`` include counts, or ``None`` (nothing modified) when the kernel cannot
++        be used: compilation disabled or failed, or more than ``_WIDE_TABLE_N - 1`` events
++        aggregated into one automaton. The caller then takes the eager path.
++    """
++    p_mem = 1.0 if boost_true_positive else (float(s) - 1.0) / float(s)
++    if (not _compile_wanted(state.numel()) or _dense_commit_kernel in _FAILED
++            or p_mem <= 0.0):
++        return None
++    # Type Ia events per clause are n_true + n_false of any one literal; with Type Ib they
++    # bound every count that is sampled.
++    events = n_true[:, 0] + n_false[:, 0] + n_ib
++    most = int(events.max())
++    if most >= _WIDE_TABLE_N:
++        return None
++    width = _bisect_width(most)
++    N = int(n_states)
++    dev = state.device
++
++    def table(p: float) -> Tuple[Optional[Tensor], bool]:
++        if p >= 1.0:
++            return None, False
++        q = min(p, 1.0 - p)
++        return _wide_thresholds(q, dev), p > 0.5
++
++    thr_mem, mem_flip = table(p_mem)
++    thr_forget, forget_flip = table(1.0 / float(s))
++    budget = -1 if max_included_literals is None else int(max_included_literals)
++    active = None if literal_active is None else literal_active.reshape(1, -1).to(torch.float32)
++    return _run_compiled(_dense_commit_kernel, state, include, include_count, n_true, n_false,
++                         n_ib, n2, thr_mem, thr_forget, active, N, mem_flip, forget_flip, budget,
++                         width)
++
+ def _cap_new_inclusions(
+     state: Tensor,
+     was_included: Tensor,
+@@ -838,3 +1022,6 @@ def thermometer_cast(votes: Tensor, levels: Sequence[float]) -> Tensor:
+     if votes.dim() == 2:
+         return (votes.unsqueeze(2) >= lv.view(1, 1, -1)).reshape(votes.shape[0], -1)
+     raise ValueError("thermometer_cast expects (B, K, H, W) or (B, K)")
++
++
++_DYNAMIC.add(_dense_commit_kernel)  # model sizes differ between models; compile shape-generic
+diff --git a/src/torchtsetlin/models/base.py b/src/torchtsetlin/models/base.py
+index ef45b4a..3e47535 100644
+--- a/src/torchtsetlin/models/base.py
++++ b/src/torchtsetlin/models/base.py
+@@ -29,17 +29,21 @@ class FeedbackAccumulator:
+         #: record a single example as factors for :func:`F.commit_single_example` (see
+         #: :meth:`TsetlinMachineBase._feedback_counts`) instead of writing the counts
+         self.fuse = False
+-        self.single: Optional[Tuple[Tensor, Tensor, Tensor, Tensor]] = None
++        #: ``(literals, literals_ii, fire_i, nofire_i, fire_ii)`` of that example
++        self.single: Optional[Tuple[Tensor, Tensor, Tensor, Tensor, Tensor]] = None
+         self.extra: Dict[str, Tensor] = {}
+ 
+     def matches(self, n_clauses: int, n_literals: int, device: torch.device, dtype: torch.dtype) -> bool:
+         return (tuple(self.n_true.shape) == (n_clauses, n_literals) and self.n_true.device == device
+                 and self.n_true.dtype == dtype)
+ 
+-    def reset(self) -> None:
+-        """Zero the counts for reuse; only the rows that can be non-zero are touched."""
++    def reset(self, counts_clear: bool = False) -> None:
++        """Zero the counts for reuse; only the rows that can be non-zero are touched.
++        ``counts_clear``: the commit already zeroed ``n_true``, ``n_false`` and ``n2``."""
+         if self.single is not None:  # the counts were never written
+             self.single = None
++        elif counts_clear:
++            pass
+         elif not self.sparse:
+             for t in (self.n_true, self.n_false, self.n2):
+                 t.zero_()
+@@ -96,7 +100,10 @@ class TsetlinMachineBase(nn.Module):
+             smallest safe one: ``uint8`` when ``2 * n_states - 1 <= 255`` (8 bits per automaton,
+             as in the reference implementations), else ``int16`` or ``int32``. Cast before
+             doing arithmetic on ``ta_state`` yourself (``model.ta_state.long() - N``).
+-        compute_dtype: floating dtype used for matmul-based clause evaluation.
++        compute_dtype: floating dtype of the literals and feedback counts. On CUDA, clauses
++            are evaluated in ``float16`` regardless: the evaluation only tests whether a count
++            of violated literals is zero, which half precision decides exactly (a sum of
++            non-negative integers never rounds to zero).
+         max_chunk_elements: memory budget (in tensor elements) for the largest intermediate
+             tensor of an update; batches are processed in chunks that respect it.
+         feedback_mode: ``"batch"`` accumulates the feedback of all examples in a batch and
+@@ -232,12 +239,25 @@ class TsetlinMachineBase(nn.Module):
+         if self.is_initialized:
+             self._initialize_state(int(self.n_features), self.ta_state.device)  # type: ignore[arg-type]
+ 
++    def _include_dtype(self) -> torch.dtype:
++        """dtype of the cached include mask, the operand of clause evaluation: ``float16`` on
++        CUDA (exact for the zero test, and the matmul runs on tensor cores), else
++        ``compute_dtype``."""
++        return torch.float16 if self.ta_state.device.type == "cuda" else self.compute_dtype
++
+     def _refresh_include(self) -> None:
+         """Recompute the cached include mask after the automata changed."""
+         inc = self.ta_state >= self.n_states
+-        self.include = inc.to(self.compute_dtype)
++        self.include = inc.to(self._include_dtype())
+         self.include_count = inc.sum(dim=1)
+ 
++    def _apply(self, fn, recurse: bool = True):  # type: ignore[override]
++        # .to(device) keeps buffer dtypes; re-derive the include cache for the new device.
++        out = super()._apply(fn, recurse)
++        if self.is_initialized and self.include.dtype != self._include_dtype():
++            self._refresh_include()
++        return out
++
+     def _refresh_include_at(self, rows: Tensor, pos: Tensor) -> None:
+         """Refresh the include caches where :func:`F.apply_feedback_rows` changed the state:
+         whole clauses ``rows`` and the flat positions ``pos`` (unique) elsewhere."""
+@@ -388,7 +408,7 @@ class TsetlinMachineBase(nn.Module):
+             seq = self.feedback_mode == "sequential" if sequential is None else bool(sequential)
+             votes_all = []
+             if seq:
+-                fuse = self._fuse_single_examples()
++                fuse = self._fuse_single_examples(B)
+                 for i in range(B):
+                     acc = self._new_accumulator(sparse=True, fuse=fuse)
+                     if fuse:
+@@ -434,15 +454,17 @@ class TsetlinMachineBase(nn.Module):
+         acc.fuse = bool(fuse)
+         return acc
+ 
+-    def _fuse_single_examples(self) -> bool:
++    def _fuse_single_examples(self, n_examples: int = 1) -> bool:
+         """Whether sequential mode commits each example with the fused compiled kernel: on
+         CUDA, where the row-sparse commit is dominated by kernel launches and host syncs (on
+         the CPU the row-sparse commit is cheaper than any dense pass), and not under the hard
+-        budget, which the kernel does not implement."""
++        budget, which the kernel does not implement. The compile cost is paid once, so the
++        threshold is on the work of the whole call (``n_examples`` steps), not of one step:
++        a small model trained example by example is exactly where launches dominate."""
+         return (self.ta_state.device.type == "cuda"
+-                and type(self)._feedback_counts is TsetlinMachineBase._feedback_counts
++                and getattr(type(self)._feedback_counts, "_records_single", False)
+                 and (self.max_included_literals is None or self.budget_mode == "soft")
+-                and F._compile_wanted(self.ta_state.numel()))
++                and F._compile_wanted(self.ta_state.numel() * max(1, int(n_examples))))
+ 
+     def _accumulate_one(self, xb: Tensor, y_t: Tensor, acc: FeedbackAccumulator) -> Tensor:
+         """:meth:`_accumulate_chunk` for one example of fused sequential mode, through
+@@ -486,11 +508,12 @@ class TsetlinMachineBase(nn.Module):
+     def _commit(self, acc: FeedbackAccumulator) -> None:
+         """Apply accumulated feedback to the automata (and weights) and refresh caches."""
+         if acc.single is not None:
++            lit, lit_ii, fire_i, nofire_i, fire_ii = acc.single
+             count = F.commit_single_example(
+-                self.ta_state, self.include, self.include_count, *acc.single,
++                self.ta_state, self.include, self.include_count, lit, fire_i, nofire_i, fire_ii,
+                 n_states=self.n_states, s=self.s, boost_true_positive=self.boost_true_positive,
+                 max_included_literals=self.max_included_literals,
+-                literal_active=self._literal_active,
++                literal_active=self._literal_active, literals_ii=lit_ii,
+             )
+             if count is not None:
+                 self.include_count = count
+@@ -499,6 +522,22 @@ class TsetlinMachineBase(nn.Module):
+                 self.__dict__["_acc_dirty"] = False
+                 return
+             self._write_single_counts(acc)  # no compiled kernel: commit the counts instead
++        if (not acc.sparse and acc.single is None and self.ta_state.device.type == "cuda"
++                and (self.max_included_literals is None or self.budget_mode == "soft")):
++            # one fused pass: sample, update the state, refresh the include cache, zero counts
++            count = F.commit_dense(
++                self.ta_state, self.include, self.include_count, acc.n_true, acc.n_false,
++                acc.n_ib, acc.n2, n_states=self.n_states, s=self.s,
++                boost_true_positive=self.boost_true_positive,
++                max_included_literals=self.max_included_literals,
++                literal_active=self._literal_active,
++            )
++            if count is not None:
++                self.include_count = count
++                self._commit_weights(acc)
++                acc.reset(counts_clear=True)
++                self.__dict__["_acc_dirty"] = False
++                return
+         if acc.sparse:
+             changed = F.apply_feedback_rows(
+                 self.ta_state, acc.n_true, acc.n_false, acc.n_ib, acc.n2, acc.rows,
+@@ -543,7 +582,7 @@ class TsetlinMachineBase(nn.Module):
+         """Accumulate feedback event counts for a chunk (flat models: matmuls over the
+         clauses that matched and were selected; usually a small fraction of all clauses)."""
+         if acc.fuse and literals.shape[0] == 1:
+-            acc.single = (literals[0], sel_fire_i[0], sel_nofire_i[0], sel_fire_ii[0])
++            acc.single = (literals[0], literals[0], sel_fire_i[0], sel_nofire_i[0], sel_fire_ii[0])
+             return
+         acc.n_ib += sel_nofire_i.sum(dim=0)
+         neg_lit = 1.0 - literals
+@@ -561,13 +600,20 @@ class TsetlinMachineBase(nn.Module):
+         acc.n_false.index_add_(0, idx, sel_i @ neg_lit)
+         acc.n2.index_add_(0, idx, sel_fire_ii[:, idx].transpose(0, 1) @ neg_lit)
+ 
++    _feedback_counts._records_single = True  # type: ignore[attr-defined]
++
+     def _write_single_counts(self, acc: FeedbackAccumulator) -> None:
+         """Turn the factors recorded for :func:`F.commit_single_example` into counts."""
+-        literals, fire_i, nofire_i, fire_ii = acc.single  # type: ignore[misc]
++        lit, lit_ii, fire_i, nofire_i, fire_ii = acc.single  # type: ignore[misc]
+         acc.single = None
+         acc.fuse = False
+-        self._feedback_counts(literals.unsqueeze(0), None, fire_i.unsqueeze(0),
+-                              nofire_i.unsqueeze(0), fire_ii.unsqueeze(0), acc)
++        lit = lit if lit.dim() == 2 else lit.unsqueeze(0)  # (1 or C, 2F)
++        lit_ii = lit_ii if lit_ii.dim() == 2 else lit_ii.unsqueeze(0)
++        fi = fire_i.unsqueeze(1)
++        acc.n_true += fi * lit
++        acc.n_false += fi * (1.0 - lit)
++        acc.n2 += fire_ii.unsqueeze(1) * (1.0 - lit_ii)
++        acc.n_ib += nofire_i
+ 
+     # ------------------------------------------------------------------ dropout masks
+     def resample_dropout(self) -> None:
+diff --git a/src/torchtsetlin/models/conv.py b/src/torchtsetlin/models/conv.py
+index 575d4de..7d769a3 100644
+--- a/src/torchtsetlin/models/conv.py
++++ b/src/torchtsetlin/models/conv.py
+@@ -130,11 +130,21 @@ class _ConvMixin:
+         return Py * Px
+ 
+     def _chunk_elements_per_example(self, xb: Tensor) -> int:  # type: ignore[override]
+-        # The (B, P, C) match tensor plus, per feedback kind, the (n_sel <= B*C, P) patch
+-        # draw, and the worst-case gathered literal rows (B*C, 2F).
++        # The largest per-example intermediate is the (P, C) block of clause evaluation, next
++        # to the example's (P, 2F) literals. The patch draw and the gathered literal rows of
++        # :meth:`_feedback_counts` scale with the number of feedback events, not with B*C,
++        # and are bounded separately (:meth:`_event_block`). Counting their worst case here
++        # (every clause selected for every example) split a batch of 16 MNIST images into 4
++        # chunks and made a GPU update ~2.5x slower.
+         P = self._patches_per_example(xb)
+         C = self.n_clauses_total  # type: ignore[attr-defined]
+-        return 3 * P * C + 2 * C * self.n_literals + P * self.n_literals  # type: ignore[attr-defined]
++        return P * C + P * self.n_literals  # type: ignore[attr-defined]
++
++    def _event_block(self, P: int) -> int:
++        """Feedback events whose random patch is drawn together: the ``(n, P)`` draw and the
++        ``(n, 2F)`` gathered literal rows stay within ``max_chunk_elements``."""
++        L = self.n_literals  # type: ignore[attr-defined]
++        return max(1, self.max_chunk_elements // (2 * P + 2 * L))  # type: ignore[attr-defined]
+ 
+     def _position_bits(self, Py: int, Px: int, device: torch.device) -> Tensor:
+         """``(P, (Py-1)+(Px-1))`` thermometer bits for every patch position (row-major)."""
+@@ -181,25 +191,37 @@ class _ConvMixin:
+         acc: FeedbackAccumulator,
+     ) -> None:
+         matches: Tensor = ctx
+-        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no patch features
+         B, P, L = literals.shape
++        if acc.fuse and B == 1:
++            # Fused sequential mode (F.commit_single_example): the random matching patch of
++            # every clause, drawn independently for Type Ia and Type II, as (C, 2F) literal
++            # rows; the fire masks select which of them count. Dense, so it compiles.
++            m = matches[0].transpose(0, 1)  # (C, P)
++            p_i = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1)
++            p_ii = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1)
++            acc.single = (literals[0, p_i], literals[0, p_ii], sel_fire_i[0], sel_nofire_i[0],
++                          sel_fire_ii[0])
++            return
++        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no patch features
+         flat = literals.reshape(B * P, L)
++        E = self._event_block(P)
+         for sel, kind in ((sel_fire_i, "i"), (sel_fire_ii, "ii")):
+             nz = torch.nonzero(sel, as_tuple=True)
+-            if nz[0].numel() == 0:
+-                continue
+-            b_idx, j_idx = nz
+-            # One uniformly random *matching* patch per feedback event. The draws are
+-            # independent per event (and so between Type Ia and Type II), because a coalesced
+-            # clause can receive both in the same update.
+-            cand = matches[b_idx, :, j_idx]  # (n_sel, P)
+-            p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
+-            rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
+-            if kind == "i":
+-                acc.n_true.index_add_(0, j_idx, rows)
+-                acc.n_false.index_add_(0, j_idx, 1.0 - rows)
+-            else:
+-                acc.n2.index_add_(0, j_idx, 1.0 - rows)
++            for ev in chunk_indices(nz[0].numel(), E):
++                b_idx, j_idx = nz[0][ev], nz[1][ev]
++                # One uniformly random *matching* patch per feedback event. The draws are
++                # independent per event (and so between Type Ia and Type II), because a
++                # coalesced clause can receive both in the same update.
++                cand = matches[b_idx, :, j_idx]  # (n_sel, P)
++                p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
++                rows = flat[b_idx * P + p_idx]  # (n_sel, 2F)
++                if kind == "i":
++                    acc.n_true.index_add_(0, j_idx, rows)
++                    acc.n_false.index_add_(0, j_idx, 1.0 - rows)
++                else:
++                    acc.n2.index_add_(0, j_idx, 1.0 - rows)
++
++    _feedback_counts._records_single = True  # type: ignore[attr-defined]
+ 
+     # ---- dense introspection ------------------------------------------------------
+     @torch.no_grad()
+diff --git a/tests/test_functional.py b/tests/test_functional.py
+index b4d777a..c555731 100644
+--- a/tests/test_functional.py
++++ b/tests/test_functional.py
+@@ -376,3 +376,105 @@ def test_set_compile_disables_the_kernels(compiled):
+         assert not F._compile_wanted(10**9)
+     finally:
+         F.set_compile(True)
++
++
++cuda_only = pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA-only kernel")
++
++
++@cuda_only
++def test_clause_outputs_in_half_precision_are_exact():
++    # the models evaluate clauses in float16 on CUDA: only `violations == 0` is used, and a
++    # sum of non-negative integers never rounds to zero, even far beyond float16's 2048
++    dev = torch.device("cuda")
++    g = torch.Generator(device=dev).manual_seed(0)
++    for L in (24, 1568, 20000):
++        lit = (torch.rand(300, L, device=dev, generator=g) < 0.5).float()
++        inc = (torch.rand(200, L, device=dev, generator=g) < 3.0 / L).float()
++        inc[:20] = 0  # empty clauses
++        # clauses of a few literals that are all True for one example: it must match
++        inc[40:60] = lit[40:60] * (torch.rand(20, L, device=dev, generator=g) < 0.01)
++        ref = F.clause_outputs(lit, inc, empty_value=True)
++        half = F.clause_outputs(lit, inc.half(), empty_value=True)
++        assert torch.equal(ref, half)
++        assert bool(ref.any()) and not bool(ref.all())
++
++
++@cuda_only
++@pytest.mark.parametrize("flip", [False, True])
++def test_bisection_binomial_matches_the_pmf(compiled, flip):
++    # the dense GPU commit draws Binomial(n, q) by bisection over the CDF table (n - X for p > 1/2)
++    dev = torch.device("cuda")
++    for q in (0.1, 0.35):
++        thr = F._wide_thresholds(q, dev)
++        for n in (1, 7, 100, 255):
++            draws = F._bisect_binomial(torch.full((200_000,), float(n), device=dev), thr, flip)
++            _assert_matches_pmf(draws.cpu(), n, 1 - q if flip else q)
++
++
++@cuda_only
++@pytest.mark.parametrize("boost,budget,dropout,s", [(True, None, False, 4.0), (False, 3, True, 4.0),
++                                                    (False, None, False, 1.5)])
++def test_commit_dense_matches_apply_feedback(compiled, boost, budget, dropout, s):
++    # the fused dense GPU commit against the eager update, with counts of a batch of ~100
++    dev = torch.device("cuda")
++    N, C, L, reps = 16, 24, 20, 400
++    g = torch.Generator(device=dev).manual_seed(4)
++    state0 = torch.randint(N - 5, N + 5, (C, L), device=dev, dtype=torch.uint8, generator=g)
++    n_ia = torch.randint(0, 60, (C, 1), device=dev, generator=g).float()
++    nt = torch.floor(torch.rand(C, L, device=dev, generator=g) * (n_ia + 1))
++    nf = n_ia - nt
++    nib = torch.randint(0, 40, (C,), device=dev, generator=g).float()
++    n2 = torch.randint(0, 3, (C, L), device=dev, generator=g).float()
++    active = (torch.rand(L, device=dev, generator=g) < 0.8).float() if dropout else None
++    kw = dict(n_states=N, s=s, boost_true_positive=boost, max_included_literals=budget,
++              literal_active=active)
++    inc_count = (state0 >= N).sum(1)
++    da, db = [], []
++    for _ in range(reps):
++        a, b = state0.clone(), state0.clone()
++        F.apply_feedback(a, nt.clone(), nf.clone(), nib.clone(), n2.clone(), include_count=inc_count,
++                         generator=g, **kw)
++        include = torch.zeros(C, L, device=dev, dtype=torch.float16)
++        cts = nt.clone(), nf.clone(), nib.clone(), n2.clone()
++        count = F.commit_dense(b, include, inc_count, *cts, **kw)
++        assert count is not None
++        assert torch.equal(include, (b >= N).half()) and torch.equal(count, (b >= N).sum(1))
++        assert not cts[0].any() and not cts[1].any() and not cts[3].any()  # zeroed for reuse
++        da.append((a.int() - state0.int()).float())
++        db.append((b.int() - state0.int()).float())
++    assert F._dense_commit_kernel in F._KERNELS
++    da, db = torch.stack(da), torch.stack(db)
++    se = ((da.var(0) + db.var(0)) / reps).sqrt().clamp(min=1e-3)
++    assert ((da.mean(0) - db.mean(0)).abs() / se).max().item() < 5.0  # per automaton
++    assert abs(da.mean().item() - db.mean().item()) < 0.05
++    assert abs(da.var(0).mean().item() - db.var(0).mean().item()) < 0.1 * da.var(0).mean().item() + 0.02
++
++
++@cuda_only
++def test_commit_dense_declines_counts_beyond_its_table(compiled):
++    dev = torch.device("cuda")
++    state = torch.full((4, 6), 10, dtype=torch.uint8, device=dev)
++    nib = torch.full((4,), float(F._WIDE_TABLE_N), device=dev)
++    z = torch.zeros(4, 6, device=dev)
++    out = F.commit_dense(state.clone(), z.half(), torch.zeros(4, dtype=torch.long, device=dev),
++                         z.clone(), z.clone(), nib, z.clone(), n_states=16, s=4.0)
++    assert out is None
++
++
++def test_compiled_cpu_kernels_bisect_counts_beyond_the_narrow_table(compiled):
++    # batch 100 with s=3 aggregates counts past the 64 x 32 table; the CPU kernels then
++    # bisect the wide table instead of falling back to the slow eager samplers
++    for p, n in ((1 / 3, 100), (0.1, 200)):
++        draws = F._binomial(torch.full((100_000,), float(n)), p)
++        _assert_matches_pmf(draws, n, p)
++    assert F._bisect_kernel in F._KERNELS
++    N, L, p = 64, 40, 1 / 3
++    n = torch.tensor([90.0, 150.0]).repeat_interleave(3000)
++    rows = torch.arange(n.numel())
++    state = torch.full((n.numel(), L), 250, dtype=torch.uint8)
++    old = state.clone()
++    pos = F._forget_rows(state, rows, n, p, None, N)
++    assert pos is not None and F._forget_rows_bisect_kernel in F._KERNELS
++    dec = old.int() - state.int()
++    for v in (90, 150):
++        _assert_matches_pmf(dec[n == v], v, p)
+diff --git a/tests/test_models.py b/tests/test_models.py
+index d720dc8..b1e9973 100644
+--- a/tests/test_models.py
++++ b/tests/test_models.py
+@@ -593,3 +593,61 @@ def test_fused_sequential_mode_learns_and_tracks_caches(compiled, monkeypatch):
+         r.update(x, y)
+     r.eval()
+     assert float((r.predict(x) - y).abs().mean()) < 0.15
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA-only include dtype")
++def test_cuda_include_cache_is_half_precision_and_predicts_like_cpu():
++    torch.manual_seed(0)
++    x, y = tt.data.make_noisy_xor(1000, noise=0.1)
++    for m in (tt.TsetlinMachine(12, 2, 20, 15, 3.9),
++              tt.ConvTsetlinMachine(2, 10, 15, 3.9, patch_size=2, input_shape=(1, 3, 4))):
++        xin = x.view(-1, 1, 3, 4) if isinstance(m, tt.ConvTsetlinMachine) else x
++        for i in range(0, 1000, 50):
++            m.update(xin[i:i + 50], y[i:i + 50])
++        m.eval()
++        ref = m(xin)
++        assert m.include.dtype == m.compute_dtype
++        m.cuda()
++        assert m.include.dtype == torch.float16
++        assert torch.equal(m(xin.cuda()).cpu(), ref)
++        m.cpu()
++        assert m.include.dtype == m.compute_dtype
++
++
++def test_conv_batch_is_evaluated_in_one_chunk():
++    # the chunk size follows the largest real intermediate (the (P, C) block); counting the
++    # worst-case patch draw split a batch of 16 MNIST images into 4 chunks
++    m = tt.ConvTsetlinMachine(10, 2000, 5000, 5.0, patch_size=10, input_shape=(1, 28, 28))
++    xb = torch.zeros(16, 1, 28, 28, dtype=torch.bool)
++    assert m._chunk_size(xb) == 16
++    assert m._event_block(361) * (2 * 361 + 2 * m.n_literals) <= m.max_chunk_elements
++
++
++@pytest.mark.skipif(not torch.cuda.is_available(), reason="fused commits are CUDA-only")
++def test_fused_cuda_commits_learn_and_track_caches(compiled, monkeypatch):
++    # batched updates on CUDA commit through F.commit_dense; sequential conv models through
++    # F.commit_single_example with one literal row per clause
++    dev = torch.device("cuda")
++    dense, single = [], []
++    real_dense, real_single = compiled.commit_dense, compiled.commit_single_example
++    monkeypatch.setattr(compiled, "commit_dense", lambda *a, **k: dense.append(1) or real_dense(*a, **k))
++    monkeypatch.setattr(compiled, "commit_single_example",
++                        lambda *a, **k: single.append(1) or real_single(*a, **k))
++    torch.manual_seed(0)
++    m = tt.TsetlinMachine(12, 2, 20, T=15, s=3.9, n_states=50, max_included_literals=6).to(dev)
++    acc = _train_xor(m, dev, epochs=40, bs=10)  # eager and fused: ~0.93 over 6 seeds
++    assert acc > 0.85, acc
++    assert dense
++    x, y = tt.data.make_2d_noisy_xor(2000, device=dev)
++    c = tt.ConvTsetlinMachine(2, 20, 30, 3.9, patch_size=2, position_encoding=False,
++                              input_shape=tuple(x.shape[1:]), feedback_mode="sequential").to(dev)
++    assert c._fuse_single_examples(len(x))
++    for _ in range(10):
++        c.update(x, y)
++    assert len(single) == 10 * len(x)
++    c.eval()
++    assert float((c.predict(x) == y).float().mean()) > 0.9
++    for model in (m, c):
++        inc = model.ta_state >= model.n_states
++        assert torch.equal(model.include, inc.to(model.include.dtype))
++        assert torch.equal(model.include_count, inc.sum(dim=1).to(model.include_count.dtype))

@@ -22,6 +22,31 @@ open and are disclosed.
 | G9 | **The exact sequential mode is slow, even on the GPU.** 406 s/epoch on B4 (one `update` per example), against 36 s for pyTM on one core; on the CPU 25,000 s/epoch. | `results/smoke/B4/*tt-*seq*` | tt-seq rows | **fixed on the GPU 2026-10-24**: flat models in sequential mode on CUDA commit each example with one fused `torch.compile` kernel (`F.commit_single_example`: every count of one example is 0/1, so the binomials are Bernoulli draws; no `(C, 2F)` count tensors, no host syncs), and the per-example clause evaluation + feedback selection is compiled too. B4, 1 epoch from init: **405.7 → 36.6 s** incl. compilation (eager today 127 s), acc 0.9447 → 0.9453 (`results/gapfix/B4_tt-cuda_seq_*`, `code/gap_timing_seq.py`; B4 has no harness seq cell since D10). Now at pyTM's 36 s. The CPU sequential mode is unchanged (~10 ms per example, bound by the per-example evaluation matvec); open. Conv models keep the row-sparse path. |
 | G7 | No constructor flag for clamped prediction votes, which pyTM and CUDA use (argmax over votes clipped to [−T, T]); it is a class attribute only. | `models/base.py:285` | diagnostics only | **fixed 2026-10-24**: `clamp_prediction_votes=` constructor argument; test `test_clamp_prediction_votes_constructor_flag` |
 
+## Round 2 (2026-10-28): gaps found in the timing runs on 0.5.0
+
+Found in the Phase 4 timing records (B1–B7) and by profiling. **User decision (2026-10-28): stop
+the run, fix the gaps in `src/`, re-run the smoke tests, then the full benchmark for the
+selected GPU libraries only.** The fixes are **released as torchtsetlin 0.5.1** (commit `869c045`,
+tag `v0.5.1`); the source diff from 0.5.0 is also saved as
+`results/torchtsetlin_src_gapfix_2026-10-28.patch`. The GPU smoke records were made from the same
+source before the commit (`git_sha` `…-dirty-src`, `lib_version` 0.5.0); the full-benchmark
+records report 0.5.1. tt records measured before the fix are kept
+under `results/timing_v0.5.0/` and are not mixed with the new ones. Times below are ms per
+`update()` after warm-up (profiling script, RTX 3090 / 16 threads); harness numbers are in the
+smoke and timing records.
+
+| ID | Gap | Evidence | Affects | Status |
+|---|---|---|---|---|
+| G10 | **Batched GPU commit is ~20 full passes over the automata** (binomials, clamps, copies, include refresh), 6.5 ms of the 7.2 ms of a B4 update. | `torch.profiler`, B4 batch 32 | every tt-cuda batch / b100 row | **fixed**: one fused `torch.compile` kernel (`F.commit_dense`), binomials by inverse-CDF bisection inside the kernel. B4 batch 32 7.2 → 3.9 ms, b100 7.6 → 4.1 ms (b100: 2.4 s/epoch vs pyTM-CUDA 3.4 s). Tests `test_commit_dense_matches_apply_feedback`, `test_bisection_binomial_matches_the_pmf`, `test_fused_cuda_commits_learn_and_track_caches` |
+| G11 | Clause evaluation on CUDA is an fp32 SGEMM (50% of a conv update). | profiler, B7 | GPU rows, conv most | **fixed**: include cache in fp16 on CUDA (tensor cores). Exact: only `violations == 0` is used. Test `test_clause_outputs_in_half_precision_are_exact`, `test_cuda_include_cache_is_half_precision_and_predicts_like_cpu` |
+| G12 | **Conv batches split into tiny chunks**: `_chunk_elements_per_example` counted the worst-case patch draw (B·C events), so batch 16 on MNIST ran as 4 chunks, each with its own host syncs. | B7 9.6 ms/update, 1 chunk 3.8 ms | B2, B7, B8 (CPU and GPU) | **fixed**: chunk by the real `(P, C)` block; the draw is blocked by events (`_event_block`). With G10/G11: B7 9.6 → 4.1 ms/update (36 → 15.5 s/epoch; pyTM-CUDA 9.5 s). Test `test_conv_batch_is_evaluated_in_one_chunk` |
+| G13 | **tt-seq on the GPU is slow for small and conv models** (B1 13.7 s/epoch vs pyTM 0.008 s; B2 7.8 s, the B2 cell took 11 h): the fused per-example kernel (G9) was skipped below `COMPILE_MIN_ELEMENTS` per step and not implemented for conv. | `results/timing_v0.5.0/B1`, `/B2` | tt-seq rows | **fixed**: compile decision on the work of the whole `update()` call; conv records per-clause matching-patch literals for `F.commit_single_example`. B1 3.1 → 0.55 ms/example (2.8 s/epoch), B2 3.6 → 0.73 ms (1.8 s/epoch). Still ~300× pyTM on B1: launch-bound, see open items |
+| G14 | **Two CPU slow paths.** (a) Conv CPU training 2× slower than at smoke time: clause-major evaluation (G8) is 3× slower for conv's 5776 patch rows. (b) b100 on the CPU 6× slower than batch 32 (B6 C2000: 271 vs 44 s/epoch): counts > 63 miss the 64×32 kernel table and fall back to the eager geometric sampler. | `results/timing_v0.5.0/B7`, `/B6` | tt-cpu rows | **fixed**: (a) clause-major only for ≤ 256 rows, B7 619 → 258 ms/update; (b) CPU kernels bisect the wide table, B6 C2000 b100 2047 → 110 ms/update. Test `test_compiled_cpu_kernels_bisect_counts_beyond_the_narrow_table` |
+
+Still open after round 2: CPU training remains slower than pyTsetlinMachine (G8; e.g. conv B7
+~970 s/epoch vs 354 s); tt-seq on the GPU is launch-bound for tiny models (~0.5 ms per example
+regardless of size); conv on the GPU trails pyTM-CUDA (15.5 vs 9.5 s/epoch on B7).
+
 ## Defects in the other libraries (not ours; recorded because they affect the protocol)
 
 | Library | Defect | Handling |

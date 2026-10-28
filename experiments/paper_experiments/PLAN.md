@@ -250,6 +250,7 @@ pyTM single-thread conv is the long pole.
 | D8 | Gaps G1, G3, G4 (audit) | **Fixed in `src/` before the runs** (user, 2026-10-22). G2, G5–G7 stay open and are disclosed. |
 | D10 | Run scope after the smoke phase (the plan as written needed ~2,950 h of exclusive timing, nearly all of it tt on the CPU and tt-seq on MNIST) | **Trimmed** (user, 2026-10-23): tt-seq only on B1, B2, B3, B10; tt-CPU timing over 3 epochs (B6: full 5); everything else as published; 5 seeds. ~4.5 days timing + ~2 days seeds. |
 | D9 | tt batch size, after the audit showed CUDA's `batch_size` is a sync window, not a mini-batch | **Run both**: `tt-batch` (32 flat / 16 conv) and `tt-b100` (100, CUDA's number). |
+| D11 | Run scope after the B1–B7 timing runs exposed tt GPU/CPU gaps (user, 2026-10-28) | **Stop the all-library run; fix gaps G10–G14 in `src/` (released as 0.5.1); re-run smoke on every GPU cell; run the full benchmark (timing, seeds, report) only for the GPU libraries: tt, PyTsetlinMachineCUDA, tmu-GPU** (`code/run_gpu.sh`). The two baselines are the only other GPU-capable libraries and both pass smoke on all 10 benchmarks (`results/gpu_selection_smoke.md`). CPU-library records of B1–B7 are kept; tt records from before the fix are in `results/timing_v0.5.0/`. Protocol for others: `docs/guides/benchmarking.md`. |
 
 ---------------------------------------------------------------------------------------------------
 
