@@ -141,7 +141,7 @@ other formats are at <https://vajira.info/torchtsetlin/cite/>, and GitHub's
 ```bibtex
 @techreport{thambawita2026torchtsetlin,
   author      = {Thambawita, Vajira},
-  title       = {torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines},
+  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem},
   institution = {Simula Metropolitan Center for Digital Engineering},
   type        = {Technical report},
   year        = {2026},
