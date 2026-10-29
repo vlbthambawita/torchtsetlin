@@ -1,0 +1,3503 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="GPU-enabled, PyTorch-native Tsetlin machines">
+      
+      
+      
+        <link rel="canonical" href="https://vlbthambawita.github.io/torchtsetlin/cpu-vs-gpu/">
+      
+      
+        <link rel="prev" href="../benchmarks/">
+      
+      
+        <link rel="next" href="../benchmark-history/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>CPU vs GPU - torchtsetlin</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/theme.css">
+    
+      <link rel="stylesheet" href="../stylesheets/literature.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cpu-vs-gpu" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+        <aside class="md-banner">
+          <div class="md-banner__inner md-grid md-typeset">
+            
+              <button class="md-banner__button md-icon" aria-label="Don't show this again">
+                
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+              </button>
+            
+            
+  <a class="tt-release" href="../changelog/">
+    <strong>torchtsetlin 0.6.0</strong> is out. See what's new&nbsp;→
+  </a>
+
+          </div>
+          
+            <script>var el=document.querySelector("[data-md-component=announce]");if(el){var content=el.querySelector(".md-typeset");__md_hash(content.innerHTML)===__md_get("__announce")&&(el.hidden=!0)}</script>
+          
+        </aside>
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="torchtsetlin" class="md-header__button md-logo" aria-label="torchtsetlin" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            torchtsetlin
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CPU vs GPU
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vlbthambawita/torchtsetlin" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vlbthambawita/torchtsetlin
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../concepts/tsetlin-machine/" class="md-tabs__link">
+          
+  
+  
+  Concepts
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guides/training/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../examples/noisy-xor/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/models/" class="md-tabs__link">
+          
+  
+  
+  API reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../benchmarks/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../cite/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Cite
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../changelog/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Changelog
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="torchtsetlin" class="md-nav__button md-logo" aria-label="torchtsetlin" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    torchtsetlin
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vlbthambawita/torchtsetlin" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vlbthambawita/torchtsetlin
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/devices/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing a device
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/tsetlin-machine/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How a Tsetlin machine learns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/batching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batched vs sequential feedback
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/convolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convolution
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/segmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/booleanization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Booleanization
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/hyperparameters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hyper-parameters
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/training/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training loops and the Trainer
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/evaluation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Evaluation and metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/interpretability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interpreting a model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/visualization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Visualisation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/saving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Saving and loading
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/regression-multilabel/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Regression and multi-label
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/segmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Semantic segmentation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/extending/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extending torchtsetlin
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/benchmarking/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarking against other libraries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Examples
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Examples
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/noisy-xor/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Noisy XOR
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/mnist/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MNIST
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/convolution/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Convolution on generated data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/segmentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Segmentation on generated scenes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/tabular/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tabular data with thermometers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/functional/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    functional
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/data/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/train/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    train
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/interpret/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    interpret
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/viz/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    viz
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmarks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPU vs GPU
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CPU vs GPU
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#throughput-vs-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput vs batch size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-much-the-gpu-buys-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How much the GPU buys you
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throughput-vs-model-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput vs model size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-model-zoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The model zoo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-an-update-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where an update goes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpu-thread-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CPU thread scaling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batched-vs-sequential-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batched vs sequential feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-data-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the data lives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dense-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dense segmentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3d-convolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3D convolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-mnist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End to end: MNIST
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../benchmark-history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Version history
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../literature/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Literature results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cite/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cite
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#throughput-vs-batch-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput vs batch size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-much-the-gpu-buys-you" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How much the GPU buys you
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#throughput-vs-model-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Throughput vs model size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-model-zoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The model zoo
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-an-update-goes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where an update goes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpu-thread-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CPU thread scaling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#batched-vs-sequential-feedback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batched vs sequential feedback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-data-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where the data lives
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dense-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dense segmentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3d-convolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3D convolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-mnist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        End to end: MNIST
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reproducing
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cpu-vs-gpu">CPU vs GPU<a class="headerlink" href="#cpu-vs-gpu" title="Permanent link">&para;</a></h1>
+<!-- generated by benchmarks/plot_benchmarks.py from benchmarks/results/versions/0.6.0/cpu_vs_gpu.json — do not edit by hand; re-run ./benchmarks/run_benchmarks.sh -->
+
+<p>Every number on this page comes from one run of <code>benchmarks/run_benchmarks.sh</code> on a single machine:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU</td>
+<td>AMD Ryzen 9 3950X 16-Core Processor (32 logical cores, torch using 16 threads)</td>
+</tr>
+<tr>
+<td>GPU 0</td>
+<td>NVIDIA GeForce RTX 3090</td>
+</tr>
+<tr>
+<td>GPU 1</td>
+<td>NVIDIA GeForce RTX 3080</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>2.10.0+cu128 / CUDA 12.8</td>
+</tr>
+<tr>
+<td>torchtsetlin</td>
+<td>0.6.0</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.10.11</td>
+</tr>
+<tr>
+<td>measured</td>
+<td>2026-10-29 09:10:06</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">How to read these</p>
+<p>Each point is the median of three timed blocks of steady-state calls, after a warm-up, with the device synchronised once per block. The micro-benchmarks use synthetic Boolean data at 20 % density, resident on the device unless stated otherwise. Reproduce — or replace these numbers with your own hardware's — with:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./benchmarks/run_benchmarks.sh<span class="w">          </span><span class="c1"># ~20-25 min, rewrites this page</span>
+</code></pre></div>
+</div>
+<p>These are the numbers of torchtsetlin 0.6.0. <a href="../benchmark-history/">Benchmark history</a> puts the same suites side by side for every earlier version.</p>
+<h2 id="throughput-vs-batch-size">Throughput vs batch size<a class="headerlink" href="#throughput-vs-batch-size" title="Permanent link">&para;</a></h2>
+<p><img alt="Throughput vs batch size" src="../assets/benchmarks/throughput-vs-batch.png#only-light" />
+<img alt="Throughput vs batch size" src="../assets/benchmarks/throughput-vs-batch_dark.png#only-dark" /></p>
+<p>One <code>update()</code> call touches every automaton in the machine, so its cost depends far more on the size of the machine than on how many examples are in the batch. Feeding the GPU more examples per call is therefore nearly free: training throughput rises from 4,042 examples/s at batch 1 to 248,421 at batch 4096. At batch 256 the same model trains 138,358 examples/s on the GPU against 3,692 on the CPU (37×).</p>
+<p>The Noisy-XOR scale machine in the bottom row is the counter-example: 20 clauses over 12 features is less work than a kernel launch, so only past batch 1 does the GPU pull ahead. Small machines belong on the CPU.</p>
+<details class="abstract">
+<summary>Batch size — MNIST scale (784 features, 500 clauses/class)</summary>
+<table>
+<thead>
+<tr>
+<th>batch</th>
+<th>CPU train ex/s</th>
+<th>GPU train ex/s</th>
+<th>train speedup</th>
+<th>CPU infer ex/s</th>
+<th>GPU infer ex/s</th>
+<th>infer speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>228</td>
+<td>4,042</td>
+<td>17.8×</td>
+<td>574</td>
+<td>3,906</td>
+<td>6.8×</td>
+</tr>
+<tr>
+<td>2</td>
+<td>533</td>
+<td>8,187</td>
+<td>15.4×</td>
+<td>2,290</td>
+<td>7,680</td>
+<td>3.4×</td>
+</tr>
+<tr>
+<td>4</td>
+<td>783</td>
+<td>16,086</td>
+<td>20.5×</td>
+<td>4,118</td>
+<td>15,358</td>
+<td>3.7×</td>
+</tr>
+<tr>
+<td>8</td>
+<td>881</td>
+<td>31,405</td>
+<td>35.6×</td>
+<td>4,793</td>
+<td>30,683</td>
+<td>6.4×</td>
+</tr>
+<tr>
+<td>16</td>
+<td>1,285</td>
+<td>59,537</td>
+<td>46.3×</td>
+<td>8,536</td>
+<td>62,631</td>
+<td>7.3×</td>
+</tr>
+<tr>
+<td>32</td>
+<td>1,853</td>
+<td>112,278</td>
+<td>60.6×</td>
+<td>12,708</td>
+<td>126,117</td>
+<td>9.9×</td>
+</tr>
+<tr>
+<td>64</td>
+<td>2,119</td>
+<td>200,553</td>
+<td>94.6×</td>
+<td>16,779</td>
+<td>250,169</td>
+<td>14.9×</td>
+</tr>
+<tr>
+<td>128</td>
+<td>2,065</td>
+<td>299,217</td>
+<td>144.9×</td>
+<td>25,023</td>
+<td>502,813</td>
+<td>20.1×</td>
+</tr>
+<tr>
+<td>256</td>
+<td>3,692</td>
+<td>138,358</td>
+<td>37.5×</td>
+<td>31,858</td>
+<td>968,265</td>
+<td>30.4×</td>
+</tr>
+<tr>
+<td>512</td>
+<td>4,487</td>
+<td>214,686</td>
+<td>47.8×</td>
+<td>50,911</td>
+<td>1,958,782</td>
+<td>38.5×</td>
+</tr>
+<tr>
+<td>1,024</td>
+<td>5,000</td>
+<td>277,166</td>
+<td>55.4×</td>
+<td>47,860</td>
+<td>2,410,515</td>
+<td>50.4×</td>
+</tr>
+<tr>
+<td>2,048</td>
+<td>5,854</td>
+<td>308,585</td>
+<td>52.7×</td>
+<td>30,055</td>
+<td>2,417,111</td>
+<td>80.4×</td>
+</tr>
+<tr>
+<td>4,096</td>
+<td>505</td>
+<td>248,421</td>
+<td>491.9×</td>
+<td>30,085</td>
+<td>2,520,419</td>
+<td>83.8×</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="abstract">
+<summary>Batch size — Noisy-XOR scale (12 features, 10 clauses/class)</summary>
+<table>
+<thead>
+<tr>
+<th>batch</th>
+<th>CPU train ex/s</th>
+<th>GPU train ex/s</th>
+<th>train speedup</th>
+<th>CPU infer ex/s</th>
+<th>GPU infer ex/s</th>
+<th>infer speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>864</td>
+<td>4,403</td>
+<td>5.1×</td>
+<td>8,572</td>
+<td>3,998</td>
+<td>0.5×</td>
+</tr>
+<tr>
+<td>4</td>
+<td>3,090</td>
+<td>17,714</td>
+<td>5.7×</td>
+<td>29,995</td>
+<td>15,801</td>
+<td>0.5×</td>
+</tr>
+<tr>
+<td>16</td>
+<td>11,979</td>
+<td>71,039</td>
+<td>5.9×</td>
+<td>115,284</td>
+<td>62,742</td>
+<td>0.5×</td>
+</tr>
+<tr>
+<td>64</td>
+<td>45,845</td>
+<td>285,206</td>
+<td>6.2×</td>
+<td>440,671</td>
+<td>251,805</td>
+<td>0.6×</td>
+</tr>
+<tr>
+<td>256</td>
+<td>133,553</td>
+<td>203,689</td>
+<td>1.5×</td>
+<td>1,448,447</td>
+<td>1,007,928</td>
+<td>0.7×</td>
+</tr>
+<tr>
+<td>1,024</td>
+<td>308,262</td>
+<td>822,790</td>
+<td>2.7×</td>
+<td>4,124,239</td>
+<td>4,026,418</td>
+<td>1.0×</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="how-much-the-gpu-buys-you">How much the GPU buys you<a class="headerlink" href="#how-much-the-gpu-buys-you" title="Permanent link">&para;</a></h2>
+<p><img alt="How much the GPU buys you" src="../assets/benchmarks/gpu-speedup.png#only-light" />
+<img alt="How much the GPU buys you" src="../assets/benchmarks/gpu-speedup_dark.png#only-dark" /></p>
+<p>The speedup is not one number. It grows with batch size because the CPU pays the per-clause cost serially while the GPU hides it, peaks at about 492× around batch 4096, and holds from there. Inference behaves differently again: the CPU forward pass is already cheap, so the gap there tops out at 84× — worth having, but not the same kind of difference.</p>
+<h2 id="throughput-vs-model-size">Throughput vs model size<a class="headerlink" href="#throughput-vs-model-size" title="Permanent link">&para;</a></h2>
+<p><img alt="Throughput vs model size" src="../assets/benchmarks/throughput-vs-model-size.png#only-light" />
+<img alt="Throughput vs model size" src="../assets/benchmarks/throughput-vs-model-size_dark.png#only-dark" /></p>
+<p>Both axes cost the same thing — the update is <code>n_clauses × 2 × n_features</code> element-wise work — so both curves fall roughly as <code>1/x</code>. The CPU falls off immediately; the GPU stays flat until the machine is big enough to fill it, which is why the gap <em>widens</em> with model size: 39× at 50 clauses/class against 47× at 4000; 19× at 128 features against 36× at 8192. Big machines are exactly the ones worth moving to a GPU.</p>
+<details class="abstract">
+<summary>Clause budget (784 features, batch 256)</summary>
+<table>
+<thead>
+<tr>
+<th>clauses/class</th>
+<th>CPU train ex/s</th>
+<th>GPU train ex/s</th>
+<th>train speedup</th>
+<th>CPU infer ex/s</th>
+<th>GPU infer ex/s</th>
+<th>infer speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>50</td>
+<td>4,961</td>
+<td>192,140</td>
+<td>38.7×</td>
+<td>248,098</td>
+<td>979,219</td>
+<td>3.9×</td>
+</tr>
+<tr>
+<td>100</td>
+<td>11,918</td>
+<td>186,057</td>
+<td>15.6×</td>
+<td>151,742</td>
+<td>1,011,026</td>
+<td>6.7×</td>
+</tr>
+<tr>
+<td>250</td>
+<td>5,290</td>
+<td>167,860</td>
+<td>31.7×</td>
+<td>63,210</td>
+<td>1,004,436</td>
+<td>15.9×</td>
+</tr>
+<tr>
+<td>500</td>
+<td>3,560</td>
+<td>141,289</td>
+<td>39.7×</td>
+<td>32,815</td>
+<td>985,867</td>
+<td>30.0×</td>
+</tr>
+<tr>
+<td>1,000</td>
+<td>1,474</td>
+<td>91,372</td>
+<td>62.0×</td>
+<td>13,330</td>
+<td>1,000,287</td>
+<td>75.0×</td>
+</tr>
+<tr>
+<td>2,000</td>
+<td>784</td>
+<td>47,474</td>
+<td>60.6×</td>
+<td>5,661</td>
+<td>629,095</td>
+<td>111.1×</td>
+</tr>
+<tr>
+<td>4,000</td>
+<td>514</td>
+<td>24,116</td>
+<td>46.9×</td>
+<td>1,999</td>
+<td>260,728</td>
+<td>130.4×</td>
+</tr>
+</tbody>
+</table>
+</details>
+<details class="abstract">
+<summary>Feature count (500 clauses/class, batch 256)</summary>
+<table>
+<thead>
+<tr>
+<th>features</th>
+<th>CPU train ex/s</th>
+<th>GPU train ex/s</th>
+<th>train speedup</th>
+<th>CPU infer ex/s</th>
+<th>GPU infer ex/s</th>
+<th>infer speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>128</td>
+<td>9,768</td>
+<td>187,734</td>
+<td>19.2×</td>
+<td>89,701</td>
+<td>960,951</td>
+<td>10.7×</td>
+</tr>
+<tr>
+<td>256</td>
+<td>9,587</td>
+<td>178,397</td>
+<td>18.6×</td>
+<td>52,506</td>
+<td>997,185</td>
+<td>19.0×</td>
+</tr>
+<tr>
+<td>512</td>
+<td>4,613</td>
+<td>158,266</td>
+<td>34.3×</td>
+<td>36,591</td>
+<td>981,522</td>
+<td>26.8×</td>
+</tr>
+<tr>
+<td>1,024</td>
+<td>2,897</td>
+<td>131,572</td>
+<td>45.4×</td>
+<td>24,392</td>
+<td>977,050</td>
+<td>40.1×</td>
+</tr>
+<tr>
+<td>2,048</td>
+<td>1,349</td>
+<td>77,025</td>
+<td>57.1×</td>
+<td>13,695</td>
+<td>973,727</td>
+<td>71.1×</td>
+</tr>
+<tr>
+<td>4,096</td>
+<td>842</td>
+<td>42,651</td>
+<td>50.6×</td>
+<td>7,355</td>
+<td>605,203</td>
+<td>82.3×</td>
+</tr>
+<tr>
+<td>8,192</td>
+<td>603</td>
+<td>21,766</td>
+<td>36.1×</td>
+<td>3,787</td>
+<td>330,395</td>
+<td>87.2×</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="the-model-zoo">The model zoo<a class="headerlink" href="#the-model-zoo" title="Permanent link">&para;</a></h2>
+<p><img alt="The model zoo" src="../assets/benchmarks/model-zoo.png#only-light" />
+<img alt="The model zoo" src="../assets/benchmarks/model-zoo_dark.png#only-dark" /></p>
+<p>Weighted and coalesced variants cost about what the plain machine costs: they change the output layer and the feedback policy, not the per-clause work that dominates. The convolutional models are the outlier at 6× the cost of the flat machine per example — a 10×10 patch over a 28×28 image is 361 patches, and every patch is evaluated against every clause.</p>
+<details class="abstract">
+<summary>Model zoo (784 features, batch 128)</summary>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>CPU train ex/s</th>
+<th>GPU train ex/s</th>
+<th>train speedup</th>
+<th>CPU infer ex/s</th>
+<th>GPU infer ex/s</th>
+<th>infer speedup</th>
+<th>GPU peak memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TsetlinMachine</td>
+<td>2,251</td>
+<td>275,696</td>
+<td>122×</td>
+<td>19,614</td>
+<td>500,053</td>
+<td>25×</td>
+<td>55 MB</td>
+</tr>
+<tr>
+<td>TsetlinMachine (weighted)</td>
+<td>2,608</td>
+<td>292,007</td>
+<td>112×</td>
+<td>23,596</td>
+<td>462,666</td>
+<td>20×</td>
+<td>56 MB</td>
+</tr>
+<tr>
+<td>CoalescedTsetlinMachine</td>
+<td>1,823</td>
+<td>197,189</td>
+<td>108×</td>
+<td>23,299</td>
+<td>501,733</td>
+<td>22×</td>
+<td>64 MB</td>
+</tr>
+<tr>
+<td>RegressionTsetlinMachine</td>
+<td>3,047</td>
+<td>312,436</td>
+<td>103×</td>
+<td>27,998</td>
+<td>527,448</td>
+<td>19×</td>
+<td>56 MB</td>
+</tr>
+<tr>
+<td>ConvTsetlinMachine</td>
+<td>627</td>
+<td>48,537</td>
+<td>77×</td>
+<td>616</td>
+<td>56,769</td>
+<td>92×</td>
+<td>167 MB</td>
+</tr>
+<tr>
+<td>ConvCoalescedTsetlinMachine</td>
+<td>497</td>
+<td>47,276</td>
+<td>95×</td>
+<td>628</td>
+<td>56,652</td>
+<td>90×</td>
+<td>167 MB</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="where-an-update-goes">Where an update goes<a class="headerlink" href="#where-an-update-goes" title="Permanent link">&para;</a></h2>
+<p><img alt="Where an update goes" src="../assets/benchmarks/update-cost-breakdown.png#only-light" />
+<img alt="Where an update goes" src="../assets/benchmarks/update-cost-breakdown_dark.png#only-dark" /></p>
+<p><code>apply_feedback</code> — the stochastic increment/decrement of the whole <code>(n_clauses, 2F)</code> automaton state — is the expensive part of an update: on the CPU it is 22 % of the 57.2 ms call; on the GPU it is 28 % of the 1.9 ms call. A standalone <code>torch.binomial</code> draw of the same <code>(C, 2F)</code> shape costs 266.65 ms on the CPU and 0.21 ms on the GPU — the single most expensive op in the commit. Everything before the commit (encoding, clause evaluation, the vote sums and the feedback count matmuls) is comparatively cheap. That is also why batching pays: a batched update draws once per commit, a sequential one draws once per example.</p>
+<details class="abstract">
+<summary>Update cost breakdown (5 000 clauses, 784 features, batch 256)</summary>
+<table>
+<thead>
+<tr>
+<th>stage</th>
+<th>cpu (ms)</th>
+<th>cuda:0 (ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>encode</td>
+<td>0.075</td>
+<td>0.038</td>
+</tr>
+<tr>
+<td>evaluate</td>
+<td>7.508</td>
+<td>0.108</td>
+</tr>
+<tr>
+<td>votes+select</td>
+<td>9.059</td>
+<td>0.436</td>
+</tr>
+<tr>
+<td>feedback_counts</td>
+<td>14.962</td>
+<td>0.675</td>
+</tr>
+<tr>
+<td>accumulator_alloc</td>
+<td>3.800</td>
+<td>0.117</td>
+</tr>
+<tr>
+<td>coerce_targets</td>
+<td>0.009</td>
+<td>0.052</td>
+</tr>
+<tr>
+<td>apply_feedback</td>
+<td>12.591</td>
+<td>0.525</td>
+</tr>
+<tr>
+<td>refresh_include</td>
+<td>15.303</td>
+<td>0.227</td>
+</tr>
+<tr>
+<td>commit</td>
+<td>27.903</td>
+<td>0.803</td>
+</tr>
+<tr>
+<td>torch.binomial (C x 2F)</td>
+<td>266.648</td>
+<td>0.209</td>
+</tr>
+<tr>
+<td><strong>update() total</strong></td>
+<td><strong>57.181</strong></td>
+<td><strong>1.876</strong></td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="cpu-thread-scaling">CPU thread scaling<a class="headerlink" href="#cpu-thread-scaling" title="Permanent link">&para;</a></h2>
+<p><img alt="CPU thread scaling" src="../assets/benchmarks/cpu-threads.png#only-light" />
+<img alt="CPU thread scaling" src="../assets/benchmarks/cpu-threads_dark.png#only-dark" /></p>
+<p>More CPU threads buy surprisingly little in training: 0.5× going from 1 to 32 threads. The batched update is a chain of large element-wise ops over the state, and the binomial draw that dominates it does not thread. Inference scales much better (5.2× over the same range): the forward pass is one big matmul-shaped reduction. If a CPU run is too slow, the lever is the clause budget or the batch size, not <code>torch.set_num_threads</code>.</p>
+<details class="abstract">
+<summary>CPU thread scaling (5 000 clauses, 784 features, batch 256)</summary>
+<table>
+<thead>
+<tr>
+<th>threads</th>
+<th>train ex/s</th>
+<th>infer ex/s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>720</td>
+<td>4,629</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1,528</td>
+<td>9,072</td>
+</tr>
+<tr>
+<td>4</td>
+<td>2,015</td>
+<td>10,974</td>
+</tr>
+<tr>
+<td>8</td>
+<td>3,860</td>
+<td>23,464</td>
+</tr>
+<tr>
+<td>16</td>
+<td>4,136</td>
+<td>29,778</td>
+</tr>
+<tr>
+<td>32</td>
+<td>379</td>
+<td>23,923</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="batched-vs-sequential-feedback">Batched vs sequential feedback<a class="headerlink" href="#batched-vs-sequential-feedback" title="Permanent link">&para;</a></h2>
+<p><img alt="Batched vs sequential feedback" src="../assets/benchmarks/feedback-mode.png#only-light" />
+<img alt="Batched vs sequential feedback" src="../assets/benchmarks/feedback-mode_dark.png#only-dark" /></p>
+<p><code>feedback_mode="sequential"</code> is the exact per-example algorithm: it commits once per example, so a mini-batch of 32 pays 32 commits instead of one. Measured at batch 32 that is 6-399× slower than the batched update, depending on the model scale and the device. Batching is the default for that reason — but it is an approximation, and its fidelity degrades as the batch grows. See <a href="../concepts/batching/">Batched vs sequential feedback</a> for the accuracy side of this trade.</p>
+<details class="abstract">
+<summary>Batched vs sequential feedback</summary>
+<table>
+<thead>
+<tr>
+<th>scale</th>
+<th>feedback_mode</th>
+<th>batch</th>
+<th>device</th>
+<th>examples/s</th>
+<th>ms / update call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>1</td>
+<td>cpu</td>
+<td>439</td>
+<td>2.28</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>1</td>
+<td>cuda:0</td>
+<td>4,377</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>32</td>
+<td>cpu</td>
+<td>2,878</td>
+<td>11.12</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>32</td>
+<td>cuda:0</td>
+<td>141,337</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>256</td>
+<td>cpu</td>
+<td>16,428</td>
+<td>15.58</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>batch</td>
+<td>256</td>
+<td>cuda:0</td>
+<td>183,495</td>
+<td>1.40</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>sequential</td>
+<td>1</td>
+<td>cpu</td>
+<td>370</td>
+<td>2.70</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>sequential</td>
+<td>1</td>
+<td>cuda:0</td>
+<td>1,456</td>
+<td>0.69</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>sequential</td>
+<td>32</td>
+<td>cpu</td>
+<td>446</td>
+<td>71.72</td>
+</tr>
+<tr>
+<td>mnist-1k</td>
+<td>sequential</td>
+<td>32</td>
+<td>cuda:0</td>
+<td>18,667</td>
+<td>1.71</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>1</td>
+<td>cpu</td>
+<td>832</td>
+<td>1.20</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>1</td>
+<td>cuda:0</td>
+<td>4,364</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>32</td>
+<td>cpu</td>
+<td>22,225</td>
+<td>1.44</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>32</td>
+<td>cuda:0</td>
+<td>141,475</td>
+<td>0.23</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>256</td>
+<td>cpu</td>
+<td>119,070</td>
+<td>2.15</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>batch</td>
+<td>256</td>
+<td>cuda:0</td>
+<td>207,292</td>
+<td>1.23</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>sequential</td>
+<td>1</td>
+<td>cpu</td>
+<td>925</td>
+<td>1.08</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>sequential</td>
+<td>1</td>
+<td>cuda:0</td>
+<td>358</td>
+<td>2.79</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>sequential</td>
+<td>32</td>
+<td>cpu</td>
+<td>830</td>
+<td>38.57</td>
+</tr>
+<tr>
+<td>xor</td>
+<td>sequential</td>
+<td>32</td>
+<td>cuda:0</td>
+<td>355</td>
+<td>90.20</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="where-the-data-lives">Where the data lives<a class="headerlink" href="#where-the-data-lives" title="Permanent link">&para;</a></h2>
+<p>Keeping the Boolean dataset in host memory and copying each mini-batch across costs at most 4 % of throughput here — the update is long enough to hide the transfer. So stream a dataset that does not fit in VRAM without worrying, but do hand the <em>model</em> a device tensor: see <a href="../getting-started/devices/">Choosing a device</a> for the one copy that does bite (Booleanization encoders keep their thresholds on the CPU).</p>
+<details class="abstract">
+<summary>Host- vs device-resident data (training, 784 features, 500 clauses/class)</summary>
+<table>
+<thead>
+<tr>
+<th>device</th>
+<th>batch</th>
+<th>dataset lives on</th>
+<th>examples/s</th>
+<th>ms / update</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cpu</td>
+<td>32</td>
+<td>device</td>
+<td>1,420</td>
+<td>22.54</td>
+</tr>
+<tr>
+<td>cpu</td>
+<td>32</td>
+<td>host</td>
+<td>1,366</td>
+<td>23.43</td>
+</tr>
+<tr>
+<td>cpu</td>
+<td>256</td>
+<td>device</td>
+<td>3,538</td>
+<td>72.36</td>
+</tr>
+<tr>
+<td>cpu</td>
+<td>256</td>
+<td>host</td>
+<td>3,570</td>
+<td>71.70</td>
+</tr>
+<tr>
+<td>cpu</td>
+<td>2048</td>
+<td>device</td>
+<td>5,268</td>
+<td>388.80</td>
+</tr>
+<tr>
+<td>cpu</td>
+<td>2048</td>
+<td>host</td>
+<td>5,719</td>
+<td>358.10</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>32</td>
+<td>device</td>
+<td>101,124</td>
+<td>0.32</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>32</td>
+<td>host</td>
+<td>104,502</td>
+<td>0.31</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>256</td>
+<td>device</td>
+<td>136,039</td>
+<td>1.88</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>256</td>
+<td>host</td>
+<td>135,599</td>
+<td>1.89</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>2048</td>
+<td>device</td>
+<td>305,019</td>
+<td>6.71</td>
+</tr>
+<tr>
+<td>cuda:0</td>
+<td>2048</td>
+<td>host</td>
+<td>301,221</td>
+<td>6.80</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="dense-segmentation">Dense segmentation<a class="headerlink" href="#dense-segmentation" title="Permanent link">&para;</a></h2>
+<p><img alt="Dense segmentation" src="../assets/benchmarks/segmentation-throughput.png#only-light" />
+<img alt="Dense segmentation" src="../assets/benchmarks/segmentation-throughput_dark.png#only-dark" /></p>
+<p>Dense prediction evaluates one patch per <strong>pixel</strong>, so throughput is quoted in pixels per second rather than examples per second — one 32×32 image is 1 024 examples.</p>
+<ul>
+<li>A 3×3 dense model on 32×32 inputs runs at 20,472 px/s training and 1,048,820 px/s predicting on CPU — prediction is roughly 51× cheaper, because it never draws feedback or touches the automata.</li>
+<li><code>patches_per_commit</code> is the price of fidelity: committing once per batch reaches 43,432 px/s against 20,472 at the default 128, a 2.1× speedup that costs real accuracy (see the segmentation guide's ablation).</li>
+</ul>
+<details class="abstract">
+<summary>Dense segmentation (4 planes, 4 classes, batch 8 images)</summary>
+<table>
+<thead>
+<tr>
+<th>configuration</th>
+<th>patches/commit</th>
+<th>CPU train px/s</th>
+<th>GPU train px/s</th>
+<th>train speedup</th>
+<th>CPU infer px/s</th>
+<th>GPU infer px/s</th>
+<th>infer speedup</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dense 3x3 32px</td>
+<td>128</td>
+<td>20,472</td>
+<td>107,750</td>
+<td>5×</td>
+<td>1,048,820</td>
+<td>21,982,433</td>
+<td>21×</td>
+</tr>
+<tr>
+<td>dense 5x5 32px</td>
+<td>128</td>
+<td>12,402</td>
+<td>109,839</td>
+<td>9×</td>
+<td>876,901</td>
+<td>21,861,851</td>
+<td>25×</td>
+</tr>
+<tr>
+<td>dense 3x3 64px</td>
+<td>128</td>
+<td>20,813</td>
+<td>111,119</td>
+<td>5×</td>
+<td>716,707</td>
+<td>54,257,194</td>
+<td>76×</td>
+</tr>
+<tr>
+<td>dense 3x3 32px + position</td>
+<td>128</td>
+<td>17,291</td>
+<td>111,121</td>
+<td>6×</td>
+<td>1,022,430</td>
+<td>18,601,999</td>
+<td>18×</td>
+</tr>
+<tr>
+<td>dense 3x3 32px 400 clauses</td>
+<td>128</td>
+<td>10,172</td>
+<td>111,073</td>
+<td>11×</td>
+<td>195,079</td>
+<td>15,617,485</td>
+<td>80×</td>
+</tr>
+<tr>
+<td>dense 3x3 32px ppc=32</td>
+<td>32</td>
+<td>9,329</td>
+<td>27,881</td>
+<td>3×</td>
+<td>1,047,587</td>
+<td>21,967,614</td>
+<td>21×</td>
+</tr>
+<tr>
+<td>dense 3x3 32px ppc=512</td>
+<td>512</td>
+<td>45,850</td>
+<td>429,667</td>
+<td>9×</td>
+<td>1,107,562</td>
+<td>22,158,173</td>
+<td>20×</td>
+</tr>
+<tr>
+<td>dense 3x3 32px ppc=None</td>
+<td>all</td>
+<td>43,432</td>
+<td>5,368,704</td>
+<td>124×</td>
+<td>2,277,724</td>
+<td>21,918,503</td>
+<td>10×</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="3d-convolution">3D convolution<a class="headerlink" href="#3d-convolution" title="Permanent link">&para;</a></h2>
+<p><img alt="3D convolution" src="../assets/benchmarks/conv3d-throughput.png#only-light" />
+<img alt="3D convolution" src="../assets/benchmarks/conv3d-throughput_dark.png#only-dark" /></p>
+<p>A 3D convolutional machine evaluates every clause at every window position of a volume, so the cost scales with the number of positions <code>P = Pd·Ph·Pw</code>. Throughput is quoted in volumes per second.</p>
+<ul>
+<li>On GPU (RTX 3090), a cardiac-sized 12×64×64 volume with a 3×7×7 window has 33,640 window positions and trains at 1,287.2 volumes/s; an in-plane stride of 2 cuts that to 8,410 positions and runs at 1,168.8 volumes/s (0.9×).</li>
+<li>With 2 000 clauses one such volume no longer fits <code>max_chunk_elements</code>, so the patch axis is split automatically into blocks of 18,982 positions: peak memory 247 MB at 306.05 volumes/s, against 268 MB at 367.61 volumes/s when it is forced into one block. The output is identical (the OR over patches and the random-patch draw are exact under the split); with fewer clauses, ordinary batch chunking already respects the budget and blocking buys nothing.</li>
+</ul>
+<details class="abstract">
+<summary>3D convolution (1 plane; 2 x 100 clauses, batch 4 — or 10 x 200, batch 2)</summary>
+<table>
+<thead>
+<tr>
+<th>configuration</th>
+<th>patches P</th>
+<th>patches per block</th>
+<th>CPU train vol/s</th>
+<th>GPU train vol/s</th>
+<th>train speedup</th>
+<th>CPU infer vol/s</th>
+<th>GPU infer vol/s</th>
+<th>infer speedup</th>
+<th>GPU peak memory (train)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8x32x32, 3x5x5</td>
+<td>4,704</td>
+<td>4,704</td>
+<td>146.6</td>
+<td>1,633.1</td>
+<td>11×</td>
+<td>176.5</td>
+<td>2,372.2</td>
+<td>13×</td>
+<td>60 MB</td>
+</tr>
+<tr>
+<td>16x32x32, 3x5x5</td>
+<td>10,976</td>
+<td>10,976</td>
+<td>57.6</td>
+<td>776.7</td>
+<td>13×</td>
+<td>66.8</td>
+<td>1,027.1</td>
+<td>15×</td>
+<td>142 MB</td>
+</tr>
+<tr>
+<td>12x64x64, 3x7x7, stride (1,2,2)</td>
+<td>8,410</td>
+<td>8,410</td>
+<td>60.8</td>
+<td>1,168.8</td>
+<td>19×</td>
+<td>67.2</td>
+<td>1,832.5</td>
+<td>27×</td>
+<td>170 MB</td>
+</tr>
+<tr>
+<td>12x64x64, 3x7x7</td>
+<td>33,640</td>
+<td>33,640</td>
+<td>12.6</td>
+<td>1,287.2</td>
+<td>102×</td>
+<td>12.3</td>
+<td>127.5</td>
+<td>10×</td>
+<td>360 MB</td>
+</tr>
+<tr>
+<td>12x64x64, 3x7x7, 2000 clauses, one block</td>
+<td>33,640</td>
+<td>33,640</td>
+<td>4.4</td>
+<td>367.6</td>
+<td>84×</td>
+<td>4.3</td>
+<td>121.8</td>
+<td>28×</td>
+<td>268 MB</td>
+</tr>
+<tr>
+<td>12x64x64, 3x7x7, 2000 clauses, auto blocks</td>
+<td>33,640</td>
+<td>18,982</td>
+<td>4.2</td>
+<td>306.0</td>
+<td>72×</td>
+<td>4.6</td>
+<td>426.3</td>
+<td>92×</td>
+<td>247 MB</td>
+</tr>
+<tr>
+<td>12x64x64, 3x7x7, 2000 clauses, patches_per_chunk=2048</td>
+<td>33,640</td>
+<td>2,048</td>
+<td>5.2</td>
+<td>195.8</td>
+<td>37×</td>
+<td>5.9</td>
+<td>352.8</td>
+<td>60×</td>
+<td>266 MB</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="end-to-end-mnist">End to end: MNIST<a class="headerlink" href="#end-to-end-mnist" title="Permanent link">&para;</a></h2>
+<p><img alt="End to end: MNIST" src="../assets/benchmarks/mnist-epoch.png#only-light" />
+<img alt="End to end: MNIST" src="../assets/benchmarks/mnist-epoch_dark.png#only-dark" /></p>
+<p>Synthetic micro-benchmarks flatter whichever device wins the micro-benchmark, so here is the whole thing end to end, <code>Trainer.fit</code> included:</p>
+<ul>
+<li><strong>ConvTsetlinMachine 200/class 10x10</strong> — 0.2 s/epoch on the GPU vs 16 s on the CPU (65×), 82.8% test accuracy</li>
+<li><strong>TsetlinMachine 500/class</strong> — 0.4 s/epoch on the GPU vs 12 s on the CPU (33×), 95.4% test accuracy</li>
+</ul>
+<p>Accuracy matches across devices to within run-to-run noise, as it should — only the wall clock moves. These are short runs at a modest clause budget; see <a href="../benchmarks/">Benchmarks</a> for what longer runs reach.</p>
+<details class="abstract">
+<summary>End-to-end MNIST</summary>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>device</th>
+<th>train examples</th>
+<th>epochs</th>
+<th>s / epoch</th>
+<th>examples/s</th>
+<th>test accuracy</th>
+<th>GPU peak memory</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ConvTsetlinMachine 200/class 10x10</td>
+<td>cpu</td>
+<td>10,000</td>
+<td>1</td>
+<td>16.12</td>
+<td>620</td>
+<td>0.8200</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ConvTsetlinMachine 200/class 10x10</td>
+<td>cuda:0</td>
+<td>10,000</td>
+<td>1</td>
+<td>0.25</td>
+<td>40,266</td>
+<td>0.8280</td>
+<td>474 MB</td>
+</tr>
+<tr>
+<td>TsetlinMachine 500/class</td>
+<td>cpu</td>
+<td>60,000</td>
+<td>3</td>
+<td>12.08</td>
+<td>4,966</td>
+<td>0.9541</td>
+<td>—</td>
+</tr>
+<tr>
+<td>TsetlinMachine 500/class</td>
+<td>cuda:0</td>
+<td>60,000</td>
+<td>3</td>
+<td>0.37</td>
+<td>162,193</td>
+<td>0.9541</td>
+<td>236 MB</td>
+</tr>
+</tbody>
+</table>
+</details>
+<h2 id="reproducing">Reproducing<a class="headerlink" href="#reproducing" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./benchmarks/run_benchmarks.sh<span class="w">                  </span><span class="c1"># every suite, cpu + cuda:0</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>./benchmarks/run_benchmarks.sh<span class="w"> </span>--quick<span class="w">          </span><span class="c1"># ~1 min smoke test</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>./benchmarks/run_benchmarks.sh<span class="w"> </span>-s<span class="w"> </span>batch<span class="w"> </span>models<span class="w">  </span><span class="c1"># a subset</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>./benchmarks/run_benchmarks.sh<span class="w"> </span>--plots-only<span class="w">     </span><span class="c1"># re-render from existing results</span>
+</code></pre></div>
+<p>The raw records live in <code>benchmarks/results/versions/0.6.0/cpu_vs_gpu.json</code> (one folder per library version); <code>benchmarks/plot_benchmarks.py</code> turns them into the figures above and writes this page.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 Vajira Thambawita
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "content.code.copy", "content.code.annotate", "search.suggest", "announce.dismiss", "toc.follow"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": "0.6.0"}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
