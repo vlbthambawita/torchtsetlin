@@ -10,7 +10,7 @@ behind every option.
 
     ---
 
-    *torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines*. Software version
+    *torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem*. Software version
     %%version%%.
 
     [Download the PDF](../assets/papers/torchtsetlin-report.pdf){ .md-button .md-button--primary }
@@ -31,7 +31,7 @@ behind every option.
 ```bibtex
 @techreport{thambawita2026torchtsetlin,
   author      = {Thambawita, Vajira},
-  title       = {torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines},
+  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem},
   institution = {Simula Metropolitan Center for Digital Engineering},
   type        = {Technical report},
   year        = {2026},
@@ -42,7 +42,7 @@ behind every option.
 
 ## Plain text
 
-V. Thambawita. *torchtsetlin: GPU-native, PyTorch-idiomatic Tsetlin machines*. Technical report,
+V. Thambawita. *torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem*. Technical report,
 Simula Metropolitan Center for Digital Engineering, 2026. Software version %%version%%.
 <https://github.com/vlbthambawita/torchtsetlin>
 

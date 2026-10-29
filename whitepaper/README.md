@@ -1,7 +1,7 @@
 # torchtsetlin white paper
 
-LaTeX source for **_torchtsetlin: A GPU-native, PyTorch-idiomatic framework for Tsetlin
-machines_** — an orange-themed white paper with TikZ diagrams and pgfplots charts drawn from
+LaTeX source for **_torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch
+Ecosystem_** — an orange-themed white paper with TikZ diagrams and pgfplots charts drawn from
 the repository's own benchmark records.
 
 Built PDFs: [`main.pdf`](main.pdf), the white paper (~41 pages, A4), and
