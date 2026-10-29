@@ -10,6 +10,8 @@ The systematic CPU-vs-GPU sweep — throughput against batch size, clause budget
 count, the model zoo, and where the time inside one `update()` goes — lives on its own page:
 **[CPU vs GPU](cpu-vs-gpu.md)**. That page is generated end to end by
 `benchmarks/run_benchmarks.sh`, so you can replace its numbers with your own hardware's.
+Results are kept per library version, and **[Version history](benchmark-history.md)** puts
+every release's numbers side by side.
 
 How torchtsetlin is compared with the other Tsetlin-machine libraries (pyTsetlinMachine and its
 parallel and CUDA variants, tmu, green-tsetlin) — data, training, testing and what is measured —
@@ -62,13 +64,16 @@ python examples/noisy_xor.py --batch-size 10
 ```
 
 The throughput numbers on [CPU vs GPU](cpu-vs-gpu.md) come from the benchmark driver, which
-runs every suite, writes `benchmarks/results/cpu_vs_gpu.json`, and regenerates the figures,
-tables and that page:
+runs every suite, writes `benchmarks/results/versions/<version>/cpu_vs_gpu.json` for the
+installed torchtsetlin version, and regenerates the figures, tables and that page, plus the
+[Version history](benchmark-history.md) page comparing every version on disk. A run never
+touches another version's results:
 
 ```bash
 ./benchmarks/run_benchmarks.sh                  # every suite, cpu + cuda:0 (~20-25 min)
 ./benchmarks/run_benchmarks.sh --quick          # ~1 min smoke test, docs untouched
 ./benchmarks/run_benchmarks.sh -s batch models  # a subset
 ./benchmarks/run_benchmarks.sh --plots-only     # re-render from the results already on disk
+./benchmarks/run_benchmarks.sh --plots-only -V 0.5.0  # re-render one older version's tables
 ./benchmarks/run_benchmarks.sh --help           # every option
 ```

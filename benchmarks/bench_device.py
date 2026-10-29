@@ -21,6 +21,8 @@ Each *suite* varies one axis and measures training (``model.update``) and infere
 
 Results are written as one JSON document (environment + flat list of records) that
 ``benchmarks/plot_benchmarks.py`` turns into the plots used in ``docs/benchmarks.md``.
+One file holds one library version: re-running a suite replaces its records, but records of
+another torchtsetlin version are never merged in (the run is written beside it instead).
 
 Examples::
 
@@ -845,6 +847,16 @@ def main() -> None:
     if os.path.exists(args.out):
         with open(args.out) as fh:
             old = json.load(fh)
+        old_version = old.get("environment", {}).get("torchtsetlin")
+        if old_version and old_version != payload["environment"]["torchtsetlin"]:
+            # one results file holds one library version; the history page compares them
+            alt = f"{os.path.splitext(args.out)[0]}-{payload['environment']['torchtsetlin']}.json"
+            print(f"\n{args.out} holds torchtsetlin {old_version} records, not "
+                  f"{payload['environment']['torchtsetlin']}; writing {alt} instead", flush=True)
+            args.out, old = alt, {"records": []}
+            if os.path.exists(alt):
+                with open(alt) as fh:
+                    old = json.load(fh)
         keep = [r for r in old.get("records", [])
                 if not (r["suite"] in suites and r["device"] in payload["devices"])]
         payload["records"] = keep + payload["records"]

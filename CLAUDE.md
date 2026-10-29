@@ -187,9 +187,20 @@ do not reuse them after the call.
 `benchmarks/run_benchmarks.sh` is the driver: it runs `bench_device.py` **one suite at a time**
 (so a crash costs only the running suite — the JSON is merged after each), then
 `plot_benchmarks.py`, which writes `docs/assets/benchmarks/*.png` (light + `_dark` pairs for the
-MkDocs Material theme), `benchmarks/results/tables.md`, and regenerates `docs/cpu-vs-gpu.md`
+MkDocs Material theme), the version's `tables.md`, and regenerates `docs/cpu-vs-gpu.md`
 whole — prose, figures and tables are derived from the records, so **do not hand-edit that page**.
 Figures skip suites that are missing from the results, so partial runs plot fine.
+
+Results are **per library version** since 2026-10-29: `benchmarks/results/versions/<version>/`
+(`cpu_vs_gpu.json` + `tables.md`; the `.log` is git-ignored), keyed by the installed
+`torchtsetlin.__version__`. `bench_device.py` refuses to merge records of another version into a
+file. `docs/cpu-vs-gpu.md` always shows the newest version on disk (measuring or re-plotting an
+older one with `-V` only refreshes its tables), and `plot_history.py` regenerates
+`docs/benchmark-history.md` + `version-history*.png` from every version. It matches
+configurations across versions by their settings (`config_key`), and drops records whose
+timings equal an older version's: before per-version results, a single-suite run merged into the
+previous file, so 0.3.0's JSON holds 0.2.0's numbers for every suite but conv3d. Folders
+0.1.2-0.5.0 were recovered from git history.
 
 `benchmarks/literature/` is the literature catalog: `papers/*.json` (one hand-checked record per
 paper in `source_documents/papers/`) is the source of truth, and `build_catalog.py` regenerates

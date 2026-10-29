@@ -1,15 +1,21 @@
-"""Regenerate the white paper's data/*.csv from benchmarks/results/cpu_vs_gpu.json.
+"""Regenerate the white paper's data/*.csv from one version's benchmark results.
 
 Run from the repository root after ./benchmarks/run_benchmarks.sh:
 
-    python whitepaper/data/regen.py
+    python whitepaper/data/regen.py            # newest benchmarks/results/versions/*
+    python whitepaper/data/regen.py 0.5.0      # a specific version
 
 The figures read these CSVs directly, so a rebuild of main.pdf then picks the new numbers up.
 The hand-written tables and the prose figures in sections/08-benchmarks.tex are NOT derived
-from the CSVs -- check them against benchmarks/results/tables.md by hand.
+from the CSVs -- check them against benchmarks/results/versions/<version>/tables.md by hand.
 """
-import json, os
-J = json.load(open('benchmarks/results/cpu_vs_gpu.json'))
+import json, os, sys
+sys.path.insert(0, 'benchmarks')
+from plot_history import version_key
+_ROOT = 'benchmarks/results/versions'
+_VER = sys.argv[1] if len(sys.argv) > 1 else max(os.listdir(_ROOT), key=version_key)
+print(f'benchmark results of torchtsetlin {_VER}')
+J = json.load(open(os.path.join(_ROOT, _VER, 'cpu_vs_gpu.json')))
 R = J['records']
 OUT = 'whitepaper/data'
 

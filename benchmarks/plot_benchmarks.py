@@ -8,8 +8,11 @@ the ``#only-light`` / ``#only-dark`` image suffixes.
 Usage::
 
     python benchmarks/plot_benchmarks.py \\
-        --results benchmarks/results/cpu_vs_gpu.json \\
+        --results benchmarks/results/versions/0.6.0/cpu_vs_gpu.json \\
         --out docs/assets/benchmarks
+
+Without ``--results`` it renders the newest version under ``benchmarks/results/versions``.
+``benchmarks/plot_history.py`` compares the versions with each other.
 """
 
 from __future__ import annotations
@@ -1276,6 +1279,10 @@ def write_page(recs, env, path: str, fig_dir: str, results: str, figures: Sequen
         "    ./benchmarks/run_benchmarks.sh          # ~20-25 min, rewrites this page",
         "    ```",
         "",
+        f"These are the numbers of torchtsetlin {env.get('torchtsetlin', '?')}. "
+        "[Benchmark history](benchmark-history.md) puts the same suites side by side for "
+        "every earlier version.",
+        "",
     ]
     for fig, heading, prose, slugs in PAGE_SECTIONS:
         body = prose(recs, env)
@@ -1307,8 +1314,9 @@ def write_page(recs, env, path: str, fig_dir: str, results: str, figures: Sequen
         "./benchmarks/run_benchmarks.sh --plots-only     # re-render from existing results",
         "```",
         "",
-        f"The raw records live in `{results}`; `benchmarks/plot_benchmarks.py` turns them into "
-        f"the figures above and writes this page.",
+        f"The raw records live in `{results}` (one folder per library version); "
+        f"`benchmarks/plot_benchmarks.py` turns them into the figures above and writes this "
+        f"page.",
         "",
     ]
     with open(path, "w") as fh:
@@ -1318,17 +1326,31 @@ def write_page(recs, env, path: str, fig_dir: str, results: str, figures: Sequen
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--results", default="benchmarks/results/cpu_vs_gpu.json")
+    ap.add_argument("--results", default=None,
+                    help="results JSON (default: the newest benchmarks/results/versions/*)")
     ap.add_argument("--out", default="docs/assets/benchmarks")
-    ap.add_argument("--tables", default="benchmarks/results/tables.md")
+    ap.add_argument("--tables", default=None, help="markdown tables (default: beside --results)")
     ap.add_argument("--page", default="docs/cpu-vs-gpu.md",
                     help="documentation page to (re)generate")
     ap.add_argument("--no-page", action="store_true", help="do not write the documentation page")
+    ap.add_argument("--tables-only", action="store_true",
+                    help="write only the markdown tables (no figures, no page)")
     ap.add_argument("--figures", nargs="*", default=None, choices=list(FIGURES))
     args = ap.parse_args()
+    if args.results is None:
+        from plot_history import load_versions  # here: plot_history imports this module
+
+        root = "benchmarks/results/versions"
+        newest = load_versions(root)[-1][0]
+        args.results = os.path.join(root, newest, "cpu_vs_gpu.json")
+    if args.tables is None:
+        args.tables = os.path.join(os.path.dirname(args.results), "tables.md")
 
     payload = load(args.results)
     recs, env = payload["records"], payload["environment"]
+    if args.tables_only:
+        write_tables(recs, env, args.tables)
+        return
     os.makedirs(args.out, exist_ok=True)
     names = args.figures or list(FIGURES)
     written = []

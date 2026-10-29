@@ -7,6 +7,12 @@
 #   ./benchmarks/run_benchmarks.sh -s batch models  # just those suites
 #   ./benchmarks/run_benchmarks.sh --plots-only     # re-plot the results already on disk
 #
+# Results are kept per library version, in benchmarks/results/versions/<version>/ (the
+# version of the torchtsetlin the interpreter imports). A run never touches another
+# version's folder; after it, benchmarks/plot_history.py rebuilds the "Benchmark history"
+# page that puts every version side by side. The "CPU vs GPU" page and its figures always
+# show the newest version, so measuring an older release only adds it to the history.
+#
 # Suites are run one at a time so that each one is merged into the results JSON as soon as
 # it finishes: a crash (or a Ctrl-C) never costs more than the suite that was running.
 # The full run takes roughly 20-25 minutes on a 16-thread CPU with an RTX 3090.
@@ -27,12 +33,15 @@ results=""
 figures=""
 tables=""
 page=""
+history="docs/benchmark-history.md"
+version=""
 epochs=3
 data_root="./data"
 quick=0
 do_bench=1
 do_plots=1
 do_page=1
+do_history=1
 fresh=0
 fail_fast=0
 dry_run=0
@@ -47,7 +56,9 @@ usage() {
 ${bold}usage:${reset} benchmarks/run_benchmarks.sh [options]
 
 Runs benchmarks/bench_device.py over the requested suites, then benchmarks/plot_benchmarks.py
-to render the figures, tables and the "CPU vs GPU" documentation page.
+to render the figures, tables and the "CPU vs GPU" documentation page, then
+benchmarks/plot_history.py for the "Benchmark history" page comparing every version.
+Results go to benchmarks/results/versions/<torchtsetlin version>/, one folder per version.
 
 ${bold}suites${reset} (--suites, default: all)
   batch      throughput vs mini-batch size, MNIST-shaped flat classifier
@@ -66,10 +77,13 @@ ${bold}suites${reset} (--suites, default: all)
 ${bold}options${reset}
   -s, --suites LIST     suites to run, space or comma separated, or "all" (default: all)
   -d, --devices LIST    devices, e.g. "cpu cuda:0" (default: cpu, plus cuda:0 when available)
-  -o, --results FILE    results JSON (default: benchmarks/results/cpu_vs_gpu.json)
+  -V, --version VER     version folder to use (default: the installed torchtsetlin version;
+                        with --plots-only, re-render any version already on disk)
+  -o, --results FILE    results JSON (default: benchmarks/results/versions/VER/cpu_vs_gpu.json)
   -F, --figures DIR     figure output directory (default: docs/assets/benchmarks)
-  -T, --tables FILE     markdown tables (default: benchmarks/results/tables.md)
+  -T, --tables FILE     markdown tables (default: beside the results JSON)
   -P, --page FILE       documentation page to write (default: docs/cpu-vs-gpu.md)
+  -H, --history FILE    version comparison page (default: docs/benchmark-history.md)
       --epochs N        epochs for the mnist suite (default: ${epochs})
       --data-root DIR   dataset root for the mnist suite (default: ${data_root})
       --quick           cheap subset (${QUICK_SUITES[*]}) into benchmarks/results/quick.json,
@@ -78,6 +92,7 @@ ${bold}options${reset}
       --plots-only      skip benchmarking, just re-render from the results JSON
       --bench-only      benchmark only, no figures, tables or page
       --no-page         render figures and tables but do not rewrite the documentation page
+      --no-history      do not rebuild the version comparison page
       --fail-fast       stop at the first failing suite (default: keep going, report at the end)
   -n, --dry-run         print the commands instead of running them
   -h, --help            this message
@@ -126,6 +141,8 @@ while [[ $# -gt 0 ]]; do
         -F|--figures)  figures="${2:?--figures needs a path}"; shift 2 ;;
         -T|--tables)   tables="${2:?--tables needs a path}"; shift 2 ;;
         -P|--page)     page="${2:?--page needs a path}"; shift 2 ;;
+        -H|--history)  history="${2:?--history needs a path}"; shift 2 ;;
+        -V|--version)  version="${2:?--version needs a value}"; shift 2 ;;
         --epochs)      epochs="${2:?--epochs needs a number}"; shift 2 ;;
         --data-root)   data_root="${2:?--data-root needs a path}"; shift 2 ;;
         --quick)       quick=1; shift ;;
@@ -133,6 +150,7 @@ while [[ $# -gt 0 ]]; do
         --plots-only)  do_bench=0; shift ;;
         --bench-only)  do_plots=0; do_page=0; shift ;;
         --no-page)     do_page=0; shift ;;
+        --no-history)  do_history=0; shift ;;
         --fail-fast)   fail_fast=1; shift ;;
         -n|--dry-run)  dry_run=1; shift ;;
         -h|--help)     usage; exit 0 ;;
@@ -151,18 +169,47 @@ for s in "${suites[@]}"; do
     [[ " ${ALL_SUITES[*]} " == *" $s "* ]] || die "unknown suite '$s' (try --help)"
 done
 
+installed=$("$PYTHON" -c "import torchtsetlin; print(torchtsetlin.__version__)" 2>/dev/null) ||
+    die "the interpreter cannot import torchtsetlin — install with: pip install -e '.[dev]'"
+if [[ -z "$version" ]]; then
+    version=$installed
+elif [[ "$version" != "$installed" && $do_bench -eq 1 ]]; then
+    die "--version $version only works with --plots-only (the interpreter imports torchtsetlin $installed)"
+fi
+versions_dir="benchmarks/results/versions"
+
 if [[ $quick -eq 1 ]]; then
     results="${results:-benchmarks/results/quick.json}"
     figures="${figures:-benchmarks/results/quick-figures}"
     tables="${tables:-benchmarks/results/quick-tables.md}"
     epochs=1
     [[ -n "$page" ]] || do_page=0
+    do_history=0
 fi
-results="${results:-benchmarks/results/cpu_vs_gpu.json}"
+results="${results:-$versions_dir/$version/cpu_vs_gpu.json}"
 figures="${figures:-docs/assets/benchmarks}"
-tables="${tables:-benchmarks/results/tables.md}"
+tables="${tables:-$(dirname "$results")/tables.md}"
 page="${page:-docs/cpu-vs-gpu.md}"
 log="${results%.json}.log"
+
+# The "CPU vs GPU" page and its figures show the newest version on disk; measuring an older
+# release (or re-plotting one) only refreshes its tables and the history page.
+newest=$("$PYTHON" - "$versions_dir" "$version" <<'PY'
+import os, sys
+sys.path.insert(0, "benchmarks")
+from plot_history import version_key
+root, mine = sys.argv[1], sys.argv[2]
+names = [d for d in os.listdir(root) if os.path.isfile(os.path.join(root, d, "cpu_vs_gpu.json"))] \
+    if os.path.isdir(root) else []
+print(max(names + [mine], key=version_key))
+PY
+)
+if [[ $quick -eq 0 && "$newest" != "$version" && "$results" == "$versions_dir/$version/"* ]]; then
+    printf '%s\n' "${dim}note: $version is older than $newest — the CPU vs GPU page and figures stay on $newest${reset}"
+    figures_only_tables=1
+else
+    figures_only_tables=0
+fi
 
 # ------------------------------------------------------------------------- sanity checks
 "$PYTHON" - <<'PY' || die "the interpreter cannot import torch and torchtsetlin — install with: pip install -e '.[dev]'"
@@ -226,7 +273,8 @@ printf '  devices   %s\n' "${devices[*]}"
 printf '  results   %s\n' "$results"
 [[ $do_plots -eq 1 ]] && printf '  figures   %s\n' "$figures"
 [[ $do_plots -eq 1 ]] && printf '  tables    %s\n' "$tables"
-[[ $do_page  -eq 1 ]] && printf '  page      %s\n' "$page"
+[[ $do_page  -eq 1 && $figures_only_tables -eq 0 ]] && printf '  page      %s\n' "$page"
+[[ $do_plots -eq 1 && $do_history -eq 1 ]] && printf '  history   %s\n' "$history"
 printf '  log       %s\n\n' "$log"
 
 if [[ $fresh -eq 1 && -f "$results" && $dry_run -eq 0 ]]; then
@@ -264,8 +312,19 @@ if [[ $do_plots -eq 1 ]]; then
     printf '\n%s\n' "${bold}=== figures and tables ===${reset}"
     plot_args=(benchmarks/plot_benchmarks.py --results "$results" --out "$figures"
                --tables "$tables")
-    if [[ $do_page -eq 1 ]]; then plot_args+=(--page "$page"); else plot_args+=(--no-page); fi
+    if [[ $figures_only_tables -eq 1 ]]; then
+        plot_args+=(--no-page --tables-only)
+    elif [[ $do_page -eq 1 ]]; then
+        plot_args+=(--page "$page")
+    else
+        plot_args+=(--no-page)
+    fi
     run "$PYTHON" "${plot_args[@]}" || { failed+=(plots); }
+    if [[ $do_history -eq 1 ]]; then
+        printf '\n%s\n' "${bold}=== version history ===${reset}"
+        run "$PYTHON" benchmarks/plot_history.py --versions "$versions_dir" --out "$figures" \
+            --page "$history" || { failed+=(history); }
+    fi
 fi
 
 # ------------------------------------------------------------------------------- summary
@@ -275,7 +334,8 @@ printf '  results  %s\n' "$results"
 if [[ $do_plots -eq 1 && $dry_run -eq 0 ]]; then
     printf '  figures  %s (%s png)\n' "$figures" "$(find "$figures" -name '*.png' | wc -l)"
     printf '  tables   %s\n' "$tables"
-    [[ $do_page -eq 1 ]] && printf '  page     %s\n' "$page"
+    [[ $do_page -eq 1 && $figures_only_tables -eq 0 ]] && printf '  page     %s\n' "$page"
+    [[ $do_history -eq 1 ]] && printf '  history  %s\n' "$history"
     printf '\n  preview with: mkdocs serve\n'
 fi
 

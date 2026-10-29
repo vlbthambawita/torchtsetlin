@@ -52,7 +52,7 @@ ttwhitepaper.sty      the theme — palette, headings, callouts, listing style,
 sections/             one file per section, 00 (title page) to 12 (references)
 figures/              TikZ diagrams and pgfplots charts, \input by the sections
 data/                 benchmark CSVs the charts read, plus regen.py which rebuilds
-                      them from ../benchmarks/results/cpu_vs_gpu.json, and
+                      them from ../benchmarks/results/versions/<version>/, and
                       regen_literature.py, which writes lit-*.csv and lit-stats.tex
                       from ../docs/assets/literature/literature.db
 references.bib        BibTeX form of the reference list
@@ -81,18 +81,20 @@ Two details that are easy to trip over if you extend the theme:
 
 ### Updating the numbers
 
-The charts read the CSVs in `data/`, which are generated from
-`../benchmarks/results/cpu_vs_gpu.json`. After re-running the benchmarks:
+The charts read the CSVs in `data/`, which are generated from one version's
+`../benchmarks/results/versions/<version>/cpu_vs_gpu.json` (default: the newest). The CSVs
+in the repository are torchtsetlin **0.3.1**'s (`python whitepaper/data/regen.py 0.3.1`
+reproduces them exactly). After re-running the benchmarks:
 
 ```bash
 ./benchmarks/run_benchmarks.sh        # from the repo root
-python whitepaper/data/regen.py       # rewrite data/*.csv from the new JSON
+python whitepaper/data/regen.py       # rewrite data/*.csv from the newest version's JSON
 cd whitepaper && make
 ```
 
 The figures pick the new values up with no other changes. **The hand-written tables and the
 prose figures are not derived from the CSVs** — after a re-run, check these against
-`../benchmarks/results/tables.md` by hand:
+`../benchmarks/results/versions/<version>/tables.md` by hand:
 
 - the environment table, model zoo, 3D convolution and end-to-end MNIST tables in
   `sections/08-benchmarks.tex`
