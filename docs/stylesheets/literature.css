@@ -68,3 +68,21 @@
 .lit-detail dd { margin: 0; }
 .lit-close { position: absolute; top: .2rem; right: .4rem; border: 0; background: none; color: var(--md-default-fg-color); font-size: 1rem; cursor: pointer; }
 .lit-linkbtn { border: 0; background: none; color: var(--md-typeset-a-color); cursor: pointer; font: inherit; padding: 0; text-decoration: underline; }
+
+/* Filters in a left sidebar, results on the right; stacked on narrow screens. */
+.lit-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+.lit-panel[hidden] { display: none; }
+.lit-main { min-width: 0; }
+.lit-sidebar > .lit-hint:first-child { margin-top: 0; }
+@media screen and (min-width: 60em) {
+  .lit-panel { grid-template-columns: 13.5rem minmax(0, 1fr); gap: 1.2rem; align-items: start; }
+  .lit-sidebar {
+    position: sticky; top: 3.4rem; max-height: calc(100vh - 4rem); overflow-y: auto;
+    padding: .6rem .7rem; border: 1px solid var(--md-default-fg-color--lightest); border-radius: .2rem;
+    background: var(--md-code-bg-color);
+  }
+  .lit-sidebar .lit-fields { grid-template-columns: minmax(0, 1fr); }
+  .lit-sidebar .lit-toggles { flex-direction: column; align-items: flex-start; gap: .45rem; }
+  .lit-sidebar .lit-buttons { flex-wrap: wrap; margin-top: .2rem; }
+  .lit-main > .lit-status:first-child, .lit-main > .lit-hint:first-child { margin-top: 0; }
+}
