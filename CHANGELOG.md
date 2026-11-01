@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.1 (2026-11-01)
+
+**Fix: sequential convolutional models on CUDA predicted from a stale include mask** (gap G25,
+`experiments/paper_experiments/LIBRARY_GAPS.md`). In 0.6.0, once all of a sequential model's
+64-example update blocks were replayed from CUDA graphs, nothing marked the bit-packed include
+mask stale, so `predict()` / `forward()` on a `Conv*` model trained with
+`feedback_mode="sequential"` kept using the mask from its last eager update. Learning itself
+was correct; the predictions froze (2-D Noisy XOR: 78.5 +- 13.4% over 5 seeds against 100% on
+0.5.1). A replay now re-applies the Python-side flags its captured update set. Batched updates,
+flat models and the CPU were not affected. On 0.6.0, `model.cuda_graphs = False` or
+`TORCHTSETLIN_CUDA_GRAPHS=0` avoids it.
+
 ## 0.6.0 (2026-10-28)
 
 **The CUDA path is rebuilt around two Triton kernels and CUDA graphs** (gaps G15-G24 of the

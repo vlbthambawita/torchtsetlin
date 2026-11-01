@@ -129,7 +129,7 @@ CPU paths are unchanged (G8).
 
 | Gap | Defect | Status |
 |---|---|---|
-| G25 | Sequential conv models on CUDA predict from a stale bit-packed include mask once their 64-example update blocks replay as CUDA graphs: the replay never clears the Python flag `_bits_fresh`. Learning continues, predictions freeze (B2 tt-seq 78.5 ± 13.4 vs 100 on 0.5.1). | open, plan in `INVESTIGATION_B2.md` |
+| G25 | Sequential conv models on CUDA predict from a stale bit-packed include mask once their 64-example update blocks replay as CUDA graphs: the replay never clears the Python flag `_bits_fresh`. Learning continues, predictions freeze (B2 tt-seq 78.5 ± 13.4 vs 100 on 0.5.1). | fixed in 0.6.1 (`_GRAPH_FLAGS`, re-applied after each replay); plan in `INVESTIGATION_B2.md` |
 
 ## Defects in the other libraries (not ours; recorded because they affect the protocol)
 

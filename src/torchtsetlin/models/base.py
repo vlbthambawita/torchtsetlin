@@ -486,6 +486,10 @@ class TsetlinMachineBase(nn.Module):
     cuda_graphs: bool = True
     _GRAPH_STEPS = 64
     _GRAPH_CACHE = 4
+    #: Python-side flags an update sets. A replay runs only the kernels, so each replay
+    #: re-applies the values the captured block left (a stale ``_bits_fresh`` froze the
+    #: predictions of sequential conv models in 0.6.0).
+    _GRAPH_FLAGS = ("_bits_fresh", "_acc_dirty")
 
     def _graphs_ok(self, seq: bool, xb: Tensor, fuse: bool) -> bool:
         if not (self.cuda_graphs and os.environ.get("TORCHTSETLIN_CUDA_GRAPHS", "1") != "0"):
@@ -538,10 +542,11 @@ class TsetlinMachineBase(nn.Module):
                     if entry is None:
                         outs.append(self._update_block(xs, ys, seq, fuse))
                         continue
-                graph, gx, gy, votes, _acc = entry
+                graph, gx, gy, votes, _acc, flags = entry
                 gx.copy_(xs)
                 gy.copy_(ys)
                 graph.replay()
+                self.__dict__.update(flags)
                 outs.append(votes.clone())
             cache.move_to_end(key)
             while len(cache) > self._GRAPH_CACHE:
@@ -581,7 +586,8 @@ class TsetlinMachineBase(nn.Module):
         finally:
             self.__dict__["_acc_cache"] = saved
             self.__dict__["_acc_dirty"] = False
-        return graph, gx, gy, votes, acc
+        flags = {k: self.__dict__.get(k, False) for k in self._GRAPH_FLAGS}
+        return graph, gx, gy, votes, acc, flags
 
     def train(self, mode: bool = True) -> TsetlinMachineBase:
         """As :meth:`torch.nn.Module.train`; switching to ``eval()`` also releases the count

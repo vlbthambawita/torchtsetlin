@@ -135,7 +135,10 @@ do not reuse them after the call.
   and must update buffers **in place** (`include_count.copy_`, kernels writing `include`): a
   reassigned buffer changes the graph key (fine), but a tensor the graph allocated and Python
   keeps is graph-private memory. Python constants (`s`, `T`, ...) are part of the key, so
-  hyper-parameter schedules recapture. Labels on CUDA are checked device-side
+  hyper-parameter schedules recapture. A replay runs no Python: a flag an update sets in
+  `__dict__` must be listed in `_GRAPH_FLAGS`, which each replay re-applies (0.6.0 missed
+  `_bits_fresh`, and sequential conv models predicted from a frozen mask;
+  `test_replayed_updates_leave_the_prediction_caches_fresh`). Labels on CUDA are checked device-side
   (`utils.class_targets`): a bad label surfaces as a CUDA error, not a `ValueError`.
 - **`torch.compile` kernels since 2026-10-24** (`functional.py`, "Compiled kernels"). The CPU
   row-sparse commit runs Type Ib forgetting (`_forget_rows`) and its binomials

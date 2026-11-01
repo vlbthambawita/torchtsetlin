@@ -189,6 +189,33 @@ def test_cuda_graph_updates_learn_and_draw_fresh_randomness(seq):
 
 
 @needs_triton
+@pytest.mark.parametrize("cls", [tt.ConvTsetlinMachine, tt.ConvCoalescedTsetlinMachine])
+@pytest.mark.parametrize("seq", [False, True])
+def test_replayed_updates_leave_the_prediction_caches_fresh(compiled, cls, seq):
+    # 0.6.0: a replay skipped the Python flag that marks the bit-packed include mask stale, so
+    # a sequential conv model predicted from the mask of its last eager update (G25)
+    x, y = tt.data.make_2d_noisy_xor(1000, device=CUDA)
+    torch.manual_seed(0)
+    m = cls(2, 20, 30, 3.9, patch_size=2, input_shape=tuple(x.shape[1:]),
+            feedback_mode="sequential" if seq else "batch").to(CUDA)
+    bs = 200 if seq else 50
+    for _ in range(4):
+        for i in range(0, 1000, bs):
+            m.update(x[i:i + bs], y[i:i + bs])
+        m.eval()
+        m.predict(x[:64])  # packs the include mask between updates, as an epoch loop does
+        m.train()
+    graphs = [v for v in m.__dict__["_graphs"].values() if not isinstance(v, str)]
+    assert graphs, "no update was replayed from a CUDA graph"
+    m.eval()
+    inc = m.ta_state >= m.n_states
+    assert torch.equal(m.include_bits(), K.pack_bits(inc))
+    dense = m._evaluate_dense(m._encode(x), empty_value=False)[0]
+    assert torch.equal(m._evaluate(m._encode(x), empty_value=False)[0],
+                       dense & (m.include_count > 0).unsqueeze(0))
+
+
+@needs_triton
 def test_cuda_graphs_are_recaptured_when_the_model_changes():
     x, y = tt.data.make_noisy_xor(400, device=CUDA)
     m = tt.TsetlinMachine(12, 2, 20, 15, 3.9).to(CUDA)
