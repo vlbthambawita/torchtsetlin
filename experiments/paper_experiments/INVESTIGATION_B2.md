@@ -108,3 +108,19 @@ about 100 examples' worth of feedback per commit, so the same over-shooting is t
 pyTM-CUDA on B9 (81.27 ± 4.45, recall 72.8 ± 11.5) and on B8 (88.37 ± 2.08) varies across
 seeds, while tmu and tt do not. Look at the per-seed records before the paper says anything
 about it. One bad seed is likely, but this has not been checked yet.
+
+## Outcome of problem 1 (2026-11-01)
+
+Fixed in 0.6.1 (`3076e57`). Each replay now re-applies the Python-side flags of its captured
+update (`_GRAPH_FLAGS`), and `tests/test_triton.py::test_replayed_updates_leave_the_prediction_caches_fresh`
+fails on 0.6.0 and passes on 0.6.1. Step 4 turned out not to be a problem. The lingering `watch`
+key belongs to the shape seen before the first prediction allocated the bit-packed buffer, and
+all three block shapes replay.
+
+The B2 tt-seq cells were re-run on 0.6.1 with `code/run_b2_seq.sh`, and the 0.6.0 records moved to
+`results/{timing,seeds}_v0.6.0_tt/B2/`:
+
+- accuracy **99.60 ± 0.46** over 5 seeds (0.6.0: 78.52 ± 13.40);
+- training time unchanged at 0.102 s/epoch.
+
+Problem 2 (b100) is still open.
