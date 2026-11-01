@@ -123,4 +123,52 @@ The B2 tt-seq cells were re-run on 0.6.1 with `code/run_b2_seq.sh`, and the 0.6.
 - accuracy **99.60 ± 0.46** over 5 seeds (0.6.0: 78.52 ± 13.40);
 - training time unchanged at 0.102 s/epoch.
 
-Problem 2 (b100) is still open.
+## Outcome of problem 2 (2026-11-01)
+
+`code/diag_b2_batch.py` ran B2 with tt 0.6.1 on CUDA in batched mode: 5 seeds × the full 5000
+epochs per batch size, records in `results/diag_b2_batch/` (not part of `REPORT.md`). Final test
+accuracy:
+
+| batch | 16 | 32 | 50 | 100 | 200 | 500 |
+|---|---|---|---|---|---|---|
+| accuracy (%) | 99.61 ± 0.27 | 99.74 ± 0.28 | 99.61 ± 0.49 | 92.47 ± 3.83 | 75.77 ± 4.02 | 60.50 ± 9.66 |
+
+- Up to batch 50 batched feedback matches sequential mode (99.60 ± 0.46).
+- From 100 on, accuracy falls steadily with batch size. b100 sits on that trend, so it is the
+  known fidelity cost of committing a batch's feedback at once, not a conv-specific defect.
+- The batch-100 runs reproduce the `results/seeds` b100 cells exactly (92.47 ± 3.83).
+- On this task (40 clauses, 4×4 patches) the knee lies between 50 and 100, lower than the
+  "200 degrades" note for flat Noisy XOR.
+
+For the paper: report b100 as measured and cite this sweep as the explanation (no tuning, P7).
+
+## pyTM-CUDA on B8/B9 (checked 2026-11-01)
+
+Not one bad seed. On B9 every seed peaks near 88% and then oscillates between epochs (one seed:
+65.8-87.1 over the last 5 epochs), so the final-epoch number depends on where the run stops.
+B8 shows smaller dips (seed 3 ends at 84.7). tmu and tt are stable on both. The paper reports
+the final epoch for every library (protocol), and can note the oscillation in one sentence.
+
+## green-tsetlin on B5 (noticed 2026-11-01)
+
+GT's weighted MNIST run (CPU, 16 threads, one timing run) learns to 97.5% by epoch 6, then
+collapses: 64.8% at epoch 11, about 10% (chance) from epoch 40 to 100. The final-epoch row in
+`REPORT.md` is therefore 10.49 (best logged epoch 97.71). Not ours and not tuned (P7); the paper
+reports it with one sentence. Flat GT on B4 (unweighted) is stable at 98.05.
+
+## torchtsetlin CPU timing on 0.6.1 (B4/B5, 2026-11-01)
+
+`code/run_tt_cpu.sh`, 3 epochs at 16 threads (D10); 0.5.0 records in `results/timing_v0.5.0/`.
+
+| cell | 0.5.0 train s/epoch | 0.6.1 train s/epoch | 0.6.1 test s | accuracy after 3 epochs |
+|---|---|---|---|---|
+| B4 batch | 64.7 | 69.6 | 1.59 | 95.88 (same) |
+| B4 b100 | 58.2 | 64.3 | 1.63 | 95.03 (same) |
+| B5 batch | 66.3 | 73.0 | 1.66 | 95.95 (same) |
+| B5 b100 | 65.4 | 67.5 | 1.59 | 95.92 (same) |
+
+Training is 3-10% slower than 0.5.0, inference about 25% faster; the accuracies are identical,
+so the CPU learning path is unchanged. The CPU libraries train an epoch in 3.0-3.3 s (pyTM-Par,
+16 threads), 7.4-9.3 s (pyTM, 1 thread), 32 s (tmu, 1 thread) and 46-75 s (GT, 16 threads):
+tt's CPU path is the slowest trainer and the fastest at inference. The paper's speed claim is
+GPU-only.

@@ -186,6 +186,23 @@ def write_report(kind, ml, eff, b6, b6acc, rep):
                  f"{pct(r['acc_pub'])} | "
                  f"{fmt_n(r['train_s'])} / {fmt_n(r['train_pub'])} | {fmt_n(r['test_s'])} / {fmt_n(r['test_pub'])} | "
                  f"{'–' if r['passed'] is None else ('yes' if r['passed'] else 'NO')} |")
+    # R5: green-tsetlin's own timing claim (its paper, Table I) is the B6 protocol itself, so the
+    # check reads the B6 records. Machines differ (i9-12900K there), so the same ratio for
+    # pyTM (1 thread), measured in the same runs, is the hardware reference.
+    med = lambda v: sorted(v)[len(v) // 2] if v else None  # noqa: E731
+    r5 = []
+    for var, ref in (("gt-cpu1", "pytm-cpu1"), ("gt-cpu4", "pytmpar-cpu4")):
+        for C in (1000, 5000):
+            ours, pub = med(b6.get(var, {}).get(C, [])), GT_TABLE_I[var][B6_C.index(C)]
+            rours, rpub = med(b6.get(ref, {}).get(C, [])), GT_TABLE_I[ref][B6_C.index(C)]
+            if ours and rours:
+                r5.append((variant_label(var), C, ours, pub, ours / pub, variant_label(ref), rours / rpub))
+    if r5:
+        L += ["", "R5 (green-tsetlin, B6 protocol seconds, median of 3 repeats; published on an i9-12900K). "
+              "The hardware reference is the same ratio for a library measured in the same runs.", "",
+              "| Library | Clauses | Ours s | Published s | Ours / published | Reference | Its ours / published |",
+              "|---|---|---|---|---|---|---|"]
+        L += [f"| {v} | {C} | {o:.1f} | {p:g} | {q:.2f}× | {rv} | {rq:.2f}× |" for v, C, o, p, q, rv, rq in r5]
     L += ["", "## ML performance (final epoch, mean ± sd over runs, %)", ""]
     for bench in sorted(ml, key=lambda b: int(b[1:])):
         rows = ml[bench]
