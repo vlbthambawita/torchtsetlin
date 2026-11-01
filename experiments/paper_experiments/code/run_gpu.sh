@@ -8,7 +8,9 @@ LIBS=(pytmcuda tmu tt)
 {
   echo "== start $(date -Is)"
   ./reproduce.sh timing --lib "${LIBS[@]}" --device cuda
-  ./reproduce.sh seeds --lib "${LIBS[@]}" --jobs 4
+  # tmu seeds one at a time: four tmu runs sharing the GPU ran ~6x slower each (2026-10-29)
+  ./reproduce.sh seeds --lib pytmcuda tt --jobs 4
+  ./reproduce.sh seeds --lib tmu --jobs 1
   ./reproduce.sh report
   echo "== end $(date -Is)"
 } >> .cache/logs/run_gpu.txt 2>&1
