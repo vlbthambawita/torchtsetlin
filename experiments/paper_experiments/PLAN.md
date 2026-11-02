@@ -256,4 +256,48 @@ pyTM single-thread conv is the long pole.
 
 ## Deviations
 
-*(Filled in during the runs.)*
+Every departure from the plan above, written up after the runs (2026-11-02). The numbers are
+those in `REPORT.md`; the paper states each item that affects a reported number.
+
+### Scope and protocol
+
+| # | Planned | What happened | Effect on the reported numbers |
+|---|---|---|---|
+| V1 | All six libraries on every benchmark, seeds 0–4 (§3, §6). | **D11** (2026-10-28) stopped the all-library run after the B1–B7 timing runs. The CPU libraries (pyTM, pyTM-Par, tmu-CPU, GT) have one seed-0 timing run on B1–B7 and no seeds; B8–B10 were run only for the GPU libraries (tt, pyTM-CUDA, tmu-GPU), with 5 seeds (B3: 100 splits, B10: 25 splits). | CPU-library accuracy rows are single runs (no sd). tmu accuracy rows are tmu-GPU seeds. CPU libraries are missing from B8–B10. |
+| V2 | tt pinned at 0.4.0 (§2). | The measured library is **0.6.0** (all GPU timing and seed cells, 2026-10-29/30) and **0.6.1** (B2 tt-seq timing + seeds, B4/B5 tt-CPU timing, 2026-11-01). 0.6.1 differs from 0.6.0 only in re-applying two Python flags after a CUDA-graph replay (G25), which changes sequential conv models on CUDA and nothing else, so the 0.6.0 cells stand for 0.6.1. Records of 0.5.0 (B1–B7) and the 0.6.0 B2 seq cells are kept in `results/{timing,seeds}_v0.5.0*/` and `*_v0.6.0_tt/`, outside the report. | The paper names both versions and says why they are equivalent. |
+| V3 | P1: `src/torchtsetlin` read-only. | The user lifted P1 three times: G1/G3/G4 before the runs (D8), G10–G14 after the 0.5.0 timings (D11, release 0.5.1), the round-3 kernel work (0.6.0) and G25 (0.6.1). Each fix is in `LIBRARY_GAPS.md` with its test. | The measured tt is the fixed library; no tt number from before a fix is reported. |
+| V4 | tt modes `tt-seq` and `tt-batch` (§4.3), seq on B1–B5 and B10. | `tt-b100` added (D9: batch 100, PyTsetlinMachineCUDA's demo number). `tt-seq` only on B1, B2, B3, B10 (D10). | Three tt rows where seq runs, two elsewhere. |
+| V5 | tt on the CPU at 1, 4 and 16 threads on every benchmark. | After D10/D11 tt-CPU was timed only on B4/B5, at 16 threads, over **3 epochs** (train time = median of epochs 2–3), and has no accuracy rows. tt-CPU on B6 was dropped. | tt-CPU appears only in the B4/B5 efficiency rows. |
+| V6 | Timing at 4 and 16 threads for pyTM-Par and GT (§2). | 16 threads on B1–B7; B6 adds 4 threads (and 1 for GT), as GT's Table I. GT at 16 threads cannot run C = 10 (it splits the pool into one block per thread and refuses an empty block). | One missing B6 cell (GT ×16, C = 10). |
+| V7 | GPU for all timing runs: RTX 3090. | Kept. Accuracy-only seed runs also used the RTX 3080 (P6 allows this; their timings are never reported). | None. |
+| V8 | Booleanizer as in the demos (B3, B10). | Fitted on each training split, not on all data (M17). | Sound direction; small. |
+| V9 | B6 CUDA row = the coalesced CUDA package of GT's Table I. | GT's own script, which we copy, calls `PyTsetlinMachineCUDA.MultiClassTsetlinMachine` (unweighted, per class, no budget); the coalesced package is not installed (M15). | Our B6 CUDA row is not the Table I CUDA row. |
+
+### Library workarounds (P7)
+
+| # | Library | Workaround |
+|---|---|---|
+| V10 | tmu 0.8.3 | numpy 1.26.4 venv (fails under numpy 2); seeds `2k+1` (`seed=0` hangs); the adapter asserts the CUDA clause bank (silent CPU fall-back otherwise). |
+| V11 | green-tsetlin 1.1.0 | `load_best_state=False` (its default selects the best epoch on the eval set, M21); conv TM fails through the public API, so GT is n/a on B2, B7, B8. |
+| V12 | pyTsetlinMachine 0.6.6 | Its RNG cannot be seeded; seed `k` is a permutation of the training order, applied to every library (M5). |
+| V13 | PyTsetlinMachineCUDA 0.1.9 | The last 32-literal automata chunk is never initialised (M7); every run is a fresh process so no earlier model leaks in. |
+
+### Reproduction checks (§3.1)
+
+| # | Check | Outcome |
+|---|---|---|
+| V14 | R1 pyTM, R3 pyTM-CUDA, R6 tt | Pass (98.16 / 98.19; 90.70 / 90.94; 100.0 / 99.3). Training takes 0.95× (R1) and 0.96× (R3) the README seconds. |
+| V15 | R2 pyTM-Par (10 threads) | Accuracy passes (98.16 / 98.14); training is 2.6× and testing 3.0× slower than the README (4.43 / 1.70 s, 3.21 / 1.08 s). Hardware and thread layout differ; not investigated further (no pass/fail on timing). |
+| V16 | R4 tmu | No published number; reported as measured (CPU 98.22, GPU 98.20). |
+| V17 | R5 GT (from the B6 records, no separate run) | One thread: 1.94–1.97× the published seconds, against 2.04–2.14× for pyTM on the same runs, so the gap is the hardware (i9-12900K vs Ryzen 9 3950X). Four threads: 2.36× (C = 1000) and 3.13× (C = 5000), against 1.76–2.19× for pyTM-Par: GT's multi-thread scaling is weaker on this machine than in its paper. |
+
+### Results reported as measured (no tuning, P3/P4)
+
+| # | Cell | What it shows | Where it is explained |
+|---|---|---|---|
+| V18 | GT B1: 54.9% | Final epoch near chance; best logged epoch 70.0. Random initial states (≈ 50% literals included, M3) and a coalesced 10-clause pool (M1). | `config_map.md` (M1, M3) |
+| V19 | GT B5: 10.5% | Learns to 97.5% by epoch 6, collapses to chance from epoch ~40. | `INVESTIGATION_B2.md` |
+| V20 | GT B6 accuracy ≈ 89% | A coalesced pool of C clauses against C per class elsewhere (M1). | `config_map.md` |
+| V21 | pyTM-CUDA B8 88.4 ± 2.1, B9 81.3 ± 4.5 | Every seed oscillates between epochs after peaking (B9 ≈ 88%); the final epoch catches the swing. | `INVESTIGATION_B2.md` |
+| V22 | tt-b100 B2: 92.5 ± 3.8 | Batch fidelity: the diagnostic sweep `results/diag_b2_batch/` (outside the protocol, user go-ahead 2026-11-01) gives 99.6 up to batch 50, then 92.5 / 75.8 / 60.5 at 100 / 200 / 500. | `INVESTIGATION_B2.md` |
+| V23 | tt-seq B2 on 0.6.0: 78.5 ± 13.4 | Stale prediction cache after CUDA-graph replay (G25); superseded by 0.6.1 (99.60 ± 0.46). | `LIBRARY_GAPS.md` G25 |
