@@ -463,6 +463,70 @@ def write_paper_tables(timing, seeds, b6, b6acc, rep):
     (out / "numbers.tex").write_text("\n".join(L) + "\n")
 
 
+# Speed-up figure: how many times faster tt (GPU, batch mode) trains and predicts than each
+# comparison library, per benchmark. Dot plot on a log axis; > 1 means tt is faster.
+FIG_LIBS = [("pytmcuda-cuda", "pyTM-CUDA (GPU)", "#2a78d6", "o"),
+            ("tmu-cuda", "tmu (GPU)", "#eb6834", "s"),
+            ("pytmpar-cpu16", r"pyTM-Par (CPU$\times$16)", "#1baf7a", "^")]
+
+
+def write_paper_figure(timing, mode="batch"):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import NullLocator
+    benches = [f"B{i}" for i in range(1, 11) if i != 6]
+    t0 = {(r["bench"], r["_variant"], r["mode"]): r["timing"] for r in timing
+          if r["seed"] == 0 and r["bench"] in benches}
+
+    def sec(t, what):
+        return (t["train_s_median_after1"] or t["train_s_epoch1"]) if what == "train" else \
+            (t.get("test_s_median_after1") or t["test_s_median"])
+
+    plt.rcParams.update({"font.family": "serif", "font.size": 7, "axes.linewidth": 0.6,
+                         "xtick.major.width": 0.6, "ytick.major.width": 0.6, "pdf.fonttype": 42})
+    fig, axes = plt.subplots(1, 2, figsize=(3.4, 2.5), sharey=True)
+    ys = {b: i for i, b in enumerate(reversed(benches))}
+    for ax, what, title in zip(axes, ("train", "test"), ("Training", "Inference")):
+        ax.axvspan(1e-2, 1, color="#ebeae6", lw=0)
+        ax.axvline(1, color="#52514e", lw=0.8)
+        for b in benches:
+            ax.axhline(ys[b], color="#e4e3df", lw=0.5, zorder=0)
+        for k, (var, label, color, marker) in enumerate(FIG_LIBS):
+            pts = []
+            for b in benches:
+                mine, theirs = t0.get((b, "tt-cuda", mode)), t0.get((b, var, "default"))
+                if mine and theirs:
+                    pts.append((sec(theirs, what) / sec(mine, what), ys[b] + (1 - k) * 0.22))
+            if pts:
+                x, y = zip(*pts)
+                ax.scatter(x, y, s=16, color=color, marker=marker, label=label, zorder=3,
+                           edgecolors="white", linewidths=0.5)
+        ax.set_xscale("log")
+        ax.set_xlim(0.05, 700)
+        ax.set_title(title, fontsize=7.5, pad=3)
+        ax.set_xticks([0.1, 1, 10, 100], ["0.1×", "1×", "10×", "100×"])
+        ax.xaxis.set_minor_locator(NullLocator())
+        ax.tick_params(length=2, pad=1.5)
+        for side in ("top", "right"):
+            ax.spines[side].set_visible(False)
+        ax.text(0.07, -0.95, "slower", fontsize=6, color="#52514e", va="center")
+        ax.text(600, -0.95, "faster", fontsize=6, color="#52514e", va="center", ha="right")
+    axes[0].set_yticks(list(ys.values()), list(ys.keys()))
+    axes[0].set_ylim(-1.4, len(benches) - 0.5)
+    fig.supxlabel("speed-up of torchtsetlin: other library's time / torchtsetlin's time",
+                  fontsize=6.5, y=0.03)
+    h, lab = axes[0].get_legend_handles_labels()
+    fig.legend(h, lab, loc="upper center", ncol=3, frameon=False, fontsize=6.3,
+               handletextpad=0.1, columnspacing=0.8, bbox_to_anchor=(0.55, 1.01))
+    fig.tight_layout(rect=(0, 0.045, 1, 0.94), w_pad=0.8)
+    out = PAPER / "figures"
+    out.mkdir(exist_ok=True)
+    fig.savefig(out / "speedup.pdf")
+    fig.savefig(HERE / ".cache" / "speedup.png", dpi=200)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kind", default="timing")
@@ -480,6 +544,7 @@ def main():
     write_report(args.kind, ml, eff, b6, b6acc, rep)
     if args.kind == "timing" and not args.no_paper:
         write_paper_tables(timing, seeds, b6, b6acc, rep)
+        write_paper_figure(timing)
     print(f"{len(timing)} {args.kind} records, {len(seeds)} seed records, {len(repro)} repro records")
 
 
