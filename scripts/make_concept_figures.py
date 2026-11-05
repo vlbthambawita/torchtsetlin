@@ -15,6 +15,7 @@ Usage::
 
     python scripts/make_concept_figures.py            # writes docs/assets/concepts/*.svg
     python scripts/make_concept_figures.py --out DIR
+    python scripts/make_concept_figures.py --check    # Chapter 2 chains vs the book's values
 """
 
 from __future__ import annotations
@@ -1165,6 +1166,330 @@ def fig_specificity(c: Dict[str, str]) -> Fig:
     return f
 
 
+# ------------------------------------------------------------- Chapter 2: Markov chains
+#
+# The figures on concepts/why-it-learns.md are computed here, exactly, from the Markov chains
+# of Granmo's book (Chapter 2) -- nothing is hand-typed. Conventions follow the book: memory
+# positions 1..2n (included when > n), Recognize memorises True literals with probability 1,
+# forgetting happens with probability 1/s, Reject pushes False literals that are still
+# forgotten up by one. `python scripts/make_concept_figures.py --check` compares the results
+# with the values printed in the book.
+
+
+def _stationary(M):
+    import numpy as np
+
+    n = M.shape[0]
+    A = np.vstack([M.T - np.eye(n), np.ones(n)])
+    b = np.zeros(n + 1)
+    b[-1] = 1.0
+    return np.linalg.lstsq(A, b, rcond=None)[0]
+
+
+def single_literal_chain(n_half: int, s: float, p_y: float, p_l_y: float,
+                         p_notl_noty: float) -> List[float]:
+    """Stationary distribution of one literal automaton (positions 1..2n)."""
+    import numpy as np
+
+    N = 2 * n_half
+    up_recognize = p_l_y * p_y                        # (L, Y): always one step up
+    down = (1 - p_l_y) * p_y / s                      # (not L, Y): forget with prob. 1/s
+    up_reject = p_notl_noty * (1 - p_y)               # (not L, not Y): up while forgotten
+    M = np.zeros((N, N))
+    for i in range(N):
+        if i < N - 1:
+            M[i, i + 1] += up_recognize + (up_reject if i < n_half else 0.0)
+        if i > 0:
+            M[i, i - 1] += down
+        M[i, i] = 1.0 - M[i].sum()
+    return [float(v) for v in _stationary(M)]
+
+
+def _literal_moves(pos: int, n_half: int, true: bool, fb: Optional[str], s: float):
+    N = 2 * n_half
+    up, down = min(pos + 1, N), max(pos - 1, 1)
+    forget = {pos: 1.0} if down == pos else {down: 1 / s, pos: 1 - 1 / s}
+    if fb == "recognize":
+        return {up: 1.0} if true else forget
+    if fb == "erase":
+        return forget
+    if fb == "reject" and not true and pos <= n_half:
+        return {up: 1.0}
+    return {pos: 1.0}
+
+
+def _rule_step(state, n_half: int, lits, y: bool, s: float):
+    """Next-state distribution of one rule (a tuple of literal positions)."""
+    matches = all(t for t, p in zip(lits, state) if p > n_half)   # empty rule: True
+    fb = ("recognize" if matches else "erase") if y else ("reject" if matches else None)
+    out: Dict[tuple, float] = {(): 1.0}
+    for p, t in zip(state, lits):
+        nxt: Dict[tuple, float] = {}
+        for prefix, pr in out.items():
+            for q, pq in _literal_moves(p, n_half, t, fb, s).items():
+                nxt[prefix + (q,)] = nxt.get(prefix + (q,), 0.0) + pr * pq
+        out = nxt
+    return out
+
+
+def two_literal_chain(n_half: int, s: float, p_y_given: Dict[Tuple[bool, bool], float]
+                      ) -> Dict[Tuple[int, int], float]:
+    """One rule with two literals; the four literal combinations are equally likely."""
+    import itertools
+
+    import numpy as np
+
+    N = 2 * n_half
+    states = list(itertools.product(range(1, N + 1), repeat=2))
+    idx = {st: i for i, st in enumerate(states)}
+    M = np.zeros((len(states), len(states)))
+    for st in states:
+        for lits, py in p_y_given.items():
+            for y, pr_y in ((True, py), (False, 1 - py)):
+                for nx, pr in _rule_step(st, n_half, lits, y, s).items():
+                    M[idx[st], idx[nx]] += 0.25 * pr_y * pr
+    pi = _stationary(M)
+    return {st: float(pi[idx[st]]) for st in states}
+
+
+def two_rule_chain(n_half: int, s: float, T: Optional[int]) -> Dict[tuple, float]:
+    """Two rules over x1, x2 learning ``Y = x1 OR x2`` with 10 % label noise.
+
+    ``T=None`` gives every rule feedback on every example; ``T`` uses the vote margin: with
+    ``v`` rules voting (empty rules vote while learning), each rule independently gets
+    feedback with probability ``(T - v)/T`` on class Y and ``v/T`` on the other class.
+    """
+    import itertools
+
+    import numpy as np
+
+    N = 2 * n_half
+    per_rule = list(itertools.product(range(1, N + 1), repeat=2))
+    states = list(itertools.product(per_rule, repeat=2))
+    idx = {st: i for i, st in enumerate(states)}
+    M = np.zeros((len(states), len(states)))
+    for st in states:
+        for x in itertools.product((False, True), repeat=2):
+            p_yes = 0.9 if (x[0] or x[1]) else 0.1
+            for y, pr_y in ((True, p_yes), (False, 1 - p_yes)):
+                v = sum(all(t for t, p in zip(x, r) if p > n_half) for r in st)
+                pf = 1.0 if T is None else ((T - min(v, T)) / T if y else min(v, T) / T)
+                dists = []
+                for r in st:
+                    d: Dict[tuple, float] = {}
+                    if pf > 0:
+                        for nx, pr in _rule_step(r, n_half, x, y, s).items():
+                            d[nx] = d.get(nx, 0.0) + pf * pr
+                    if pf < 1:
+                        d[r] = d.get(r, 0.0) + (1 - pf)
+                    dists.append(d)
+                for (a, pa), (b, pb) in itertools.product(dists[0].items(), dists[1].items()):
+                    M[idx[st], idx[(a, b)]] += 0.25 * pr_y * pa * pb
+    pi = _stationary(M)
+    return {st: float(pi[idx[st]]) for st in states}
+
+
+# The book's scenarios (Chapter 2). Single literal: (memory half-depth n, s, P(Y), P(L|Y),
+# P(not L | not Y)).
+SINGLE_SCENARIOS = [
+    ("Rare literal, s = 1", "forgotten", (2, 1.0, 0.9, 0.1, 0.9)),
+    ("Same literal, s = 15", "kept: rarer patterns allowed", (2, 15.0, 0.9, 0.1, 0.9)),
+    ("Discriminative literal", "kept almost surely", (2, 15.0, 0.82, 0.99, 0.5)),
+    ("8 memory positions", "sharper still", (4, 15.0, 0.82, 0.99, 0.5)),
+]
+# Two literals: P(Y | L1, L2) for (L1, L2) in TT, TF, FT, FF; s.
+PAIR_SCENARIOS = [
+    ("Only Literal Two informs", "picks Literal Two",
+     {(True, True): 0.9, (True, False): 0.5, (False, True): 0.9, (False, False): 0.2}, 1.0),
+    ("Both inform, s = 1", "keeps two alternatives",
+     {(True, True): 0.99, (True, False): 0.9, (False, True): 0.9, (False, False): 0.1}, 1.0),
+    ("Both inform, s = 4", "combines both",
+     {(True, True): 0.99, (True, False): 0.9, (False, True): 0.9, (False, False): 0.1}, 4.0),
+]
+RULE_S = 5.0  # not stated in the book; s = 5 reproduces its peaks (0.31 and 0.16)
+
+
+def _mix(a: str, b: str, t: float) -> str:
+    """Blend two #rrggbb colours, t = 0 gives a."""
+    ca = [int(a[i:i + 2], 16) for i in (1, 3, 5)]
+    cb = [int(b[i:i + 2], 16) for i in (1, 3, 5)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(ca, cb))
+
+
+def fig_markov_literal(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 300, c, "One literal as a Markov chain",
+            "Four memory positions of one literal. A true literal in an example of the "
+            "rule's class always moves up; a false literal there moves down with probability "
+            "1/s; a false literal in an example of another class moves up only while it is "
+            "forgotten.")
+    xs = [110, 270, 490, 650]
+    cy = 156
+    f.add(f.text(380, 26, "One literal, four memory positions", 14.5, weight="bold"))
+    f.add(f.text(380, 46, "(L, Y): the literal is true in an example of the rule's class. "
+                 "(L, not Y) never moves it.", 11.5, c["muted"]))
+    f.add(f.rect(30, 66, 320, 180, c["panel2"], rx=14))
+    f.add(f.rect(410, 66, 320, 180, c["accent_soft"], rx=14))
+    f.add(f.text(190, 88, "Forgotten (excluded)", 13, c["muted"], weight="bold"))
+    f.add(f.text(570, 88, "Memorized (included)", 13, c["accent"], weight="bold"))
+    for i, x in enumerate(xs):
+        inc = i >= 2
+        f.add(f'<circle cx="{x}" cy="{cy}" r="25" fill="{c["panel"]}" '
+              f'stroke="{c["accent"] if inc else c["muted"]}" stroke-width="2.5"/>')
+        f.add(f.text(x, cy + 6, str(i + 1), 17, weight="bold"))
+    up_labels = ["(L, Y) or (not L, not Y)", "(L, Y) or (not L, not Y)", "(L, Y) only"]
+    for i in range(3):
+        a, b = xs[i] + 27, xs[i + 1] - 27
+        m = (a + b) / 2
+        f.add(f'<path d="M{a},{cy - 10} Q{m},{cy - 50} {b},{cy - 10}" fill="none" '
+              f'stroke="{c["pos"]}" stroke-width="2.2"/>')
+        f.add(f'<polygon points="{b},{cy - 10} {b - 9},{cy - 16} {b - 4},{cy - 22}" '
+              f'fill="{c["pos"]}"/>')
+        f.add(f'<path d="M{b},{cy + 10} Q{m},{cy + 50} {a},{cy + 10}" fill="none" '
+              f'stroke="{c["neg"]}" stroke-width="2.2" stroke-dasharray="6 4"/>')
+        f.add(f'<polygon points="{a},{cy + 10} {a + 9},{cy + 16} {a + 4},{cy + 22}" '
+              f'fill="{c["neg"]}"/>')
+        f.add(f.text(m, cy - 40, up_labels[i], 11, c["pos"], weight="bold"))
+        f.add(f.text(m, cy + 50, "(not L, Y) · 1/s", 11, c["neg"], weight="bold"))
+    f.add(f.text(380, 272, "Green: one step towards memorized. Red: one step towards "
+                 "forgotten, with probability 1/s.", 12, c["fg"]))
+    f.add(f.text(380, 290, "Reject feedback (not L, not Y) only acts on the forgotten side: "
+                 "it adds a literal but never deepens one.", 12, c["muted"]))
+    return f
+
+
+def fig_markov_scenarios(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 300, c, "Where a single literal settles",
+            "Stationary distribution of one literal automaton in the four scenarios of the "
+            "book's Chapter 2, computed exactly from the Markov chain.")
+    pw, gap = 178, 6
+    for k, (title, verdict, args) in enumerate(SINGLE_SCENARIOS):
+        dist = single_literal_chain(*args)
+        n_half = args[0]
+        kept = sum(dist[n_half:])
+        px = 6 + k * (pw + gap)
+        f.add(f.rect(px, 6, pw, 288, c["panel"], c["line"], rx=10))
+        f.add(f.text(px + pw / 2, 28, title, 12.5, weight="bold"))
+        f.add(f.text(px + pw / 2, 46, verdict, 11.5, c["muted"]))
+        x0, x1, y0, y1 = px + 16, px + pw - 12, 230, 70
+        bw = (x1 - x0) / len(dist)
+        for i, p in enumerate(dist):
+            inc = i >= n_half
+            h = p * (y0 - y1)
+            f.add(f.rect(x0 + i * bw + 2, y0 - h, bw - 4, max(h, 0.8),
+                         c["accent"] if inc else c["muted"], rx=2))
+            f.add(f.text(x0 + i * bw + bw / 2, y0 + 15, str(i + 1), 10.5, c["muted"]))
+        mid = x0 + n_half * bw
+        f.add(f.line(mid, y1 - 4, mid, y0, c["fg"], 1, 'stroke-dasharray="4 3"'))
+        f.add(f.line(x0, y0, x1, y0, c["line"], 1))
+        f.add(f.text(px + pw / 2, 266, f"P(included) = {kept:.2f}" if kept < 0.995
+                     else "P(included) > 0.999", 13, c["accent"], weight="bold"))
+        f.add(f.text(px + pw / 2, 284, f"s = {args[1]:g} · {2 * n_half} positions", 11,
+                     c["muted"]))
+    return f
+
+
+def fig_literal_game(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 330, c, "Two literals deciding together",
+            "Stationary distribution over the memory positions of two literals in one rule, "
+            "for three of the book's scenarios: one informative literal, two equally good "
+            "alternatives at s = 1, and both combined at s = 4.")
+    cs = 22
+    for k, (title, verdict, py, s) in enumerate(PAIR_SCENARIOS):
+        d = two_literal_chain(4, s, py)
+        top = max(d.values())
+        px = 8 + k * 252
+        f.add(f.text(px + 138, 22, title, 13, weight="bold"))
+        f.add(f.text(px + 138, 40, verdict, 12, c["accent"], weight="bold"))
+        gx, gy = px + 50, 56
+        for i in range(8):
+            for j in range(8):
+                p = d[(i + 1, j + 1)]
+                f.add(f.rect(gx + j * cs, gy + i * cs, cs - 1, cs - 1,
+                             _mix(c["panel2"], c["accent"], (p / top) ** 0.8), rx=2))
+                if p >= 0.995 * top:
+                    f.add(f.text(gx + j * cs + cs / 2, gy + i * cs + cs / 2 + 4, f"{p:.2f}"[1:],
+                                 9.5, c["on_accent"], weight="bold"))
+        f.add(f.line(gx + 4 * cs - 0.5, gy - 2, gx + 4 * cs - 0.5, gy + 8 * cs + 2, c["fg"], 1.5))
+        f.add(f.line(gx - 2, gy + 4 * cs - 0.5, gx + 8 * cs + 2, gy + 4 * cs - 0.5, c["fg"], 1.5))
+        f.add(f.text(gx + 2 * cs, gy + 8 * cs + 18, "forgotten", 10.5, c["muted"]))
+        f.add(f.text(gx + 6 * cs, gy + 8 * cs + 18, "memorized", 10.5, c["muted"]))
+        f.add(f.text(gx + 4 * cs, gy + 8 * cs + 34, "Literal Two", 11.5))
+        ly = gy + 4 * cs
+        f.add(f.text(gx - 30, ly, "Literal One", 11.5,
+                     extra=f'transform="rotate(-90 {gx - 30} {ly})"'))
+        f.add(f.text(gx - 12, gy + 2 * cs, "forgotten", 10.5, c["muted"],
+                     extra=f'transform="rotate(-90 {gx - 12} {gy + 2 * cs})"'))
+        f.add(f.text(gx - 12, gy + 6 * cs, "memorized", 10.5, c["muted"],
+                     extra=f'transform="rotate(-90 {gx - 12} {gy + 6 * cs})"'))
+    f.add(f.text(380, 318, "Stronger colour = more likely. Literal One down, Literal Two across; "
+                 "8 memory positions each.", 11.5, c["muted"]))
+    return f
+
+
+def _rule_pairs(d: Dict[tuple, float], n_half: int) -> Dict[str, float]:
+    def name(r):
+        lits = [x for x, p in zip(("x1", "x2"), r) if p > n_half]
+        return " AND ".join(lits) if lits else "(empty)"
+
+    groups = {"x1 AND x2 twice": 0.0, "x1 and x2 (the solution)": 0.0,
+              "one rule x1 AND x2": 0.0, "other": 0.0}
+    for (a, b), p in d.items():
+        pair = sorted([name(a), name(b)])
+        if pair == ["x1 AND x2", "x1 AND x2"]:
+            groups["x1 AND x2 twice"] += p
+        elif pair == ["x1", "x2"]:
+            groups["x1 and x2 (the solution)"] += p
+        elif "x1 AND x2" in pair:
+            groups["one rule x1 AND x2"] += p
+        else:
+            groups["other"] += p
+    return groups
+
+
+def fig_rule_interaction(c: Dict[str, str]) -> Fig:
+    f = Fig(760, 270, c, "Two rules learning x1 OR x2",
+            "Probability of each pair of rules after learning, without a vote margin and "
+            "with T = 2. Without the margin both rules usually become x1 AND x2; with it "
+            "they split into x1 and x2.")
+    runs = [("No vote margin", two_rule_chain(2, RULE_S, None), c["muted"]),
+            ("Vote margin T = 2", two_rule_chain(2, RULE_S, 2), c["accent"])]
+    groups = [_rule_pairs(d, 2) for _, d, _ in runs]
+    labels = list(groups[0])
+    x0, x1 = 230, 700
+    f.add(f.text(380, 24, f"Two rules, Y = x1 OR x2 with 10 % noise, s = {RULE_S:g}", 13.5,
+                 weight="bold"))
+    for gi, lab in enumerate(labels):
+        y = 50 + gi * 52
+        f.add(f.text(x0 - 12, y + 24, lab, 12.5, anchor="end",
+                     weight="bold" if "solution" in lab else "normal"))
+        for ri, (_, _, col) in enumerate(runs):
+            p = groups[ri][lab]
+            w = p * (x1 - x0)
+            f.add(f.rect(x0, y + ri * 20, max(w, 1), 17, col, rx=3))
+            f.add(f.text(x0 + w + 6, y + ri * 20 + 13, f"{100 * p:.1f} %", 11.5, anchor="start"))
+    ly = 262
+    for ri, (rname, _, col) in enumerate(runs):
+        lx = 250 + ri * 190
+        f.add(f.rect(lx, ly - 11, 14, 12, col, rx=2))
+        f.add(f.text(lx + 20, ly, rname, 12, anchor="start"))
+    return f
+
+
+def check_book_values() -> None:
+    """Print the computed values next to the ones printed in the book (Chapter 2)."""
+    book_single = [0.04, 0.87, 0.9999, 1.0]
+    for (title, _, args), want in zip(SINGLE_SCENARIOS, book_single):
+        got = sum(single_literal_chain(*args)[args[0]:])
+        print(f"single literal  {title:28s} book {want:<7g} computed {got:.4f}")
+    book_pair = [((1, 8), 0.16), ((1, 8), 0.07), ((8, 8), 0.36)]
+    for (title, _, py, s), (cell, want) in zip(PAIR_SCENARIOS, book_pair):
+        got = two_literal_chain(4, s, py)[cell]
+        print(f"two literals    {title:28s} book {want:<7g} computed {got:.4f} at {cell}")
+    for T, want in ((None, 0.31), (2, 0.16)):
+        got = max(two_rule_chain(2, RULE_S, T).values())
+        print(f"two rules       T = {str(T):24s} book peak {want:<4g} computed {got:.4f}")
+
+
 FIGURES: Dict[str, Callable[[Dict[str, str]], Fig]] = {
     "tm-clauses": fig_tm_clauses,
     "tm-automaton": fig_tm_automaton,
@@ -1179,6 +1504,10 @@ FIGURES: Dict[str, Callable[[Dict[str, str]], Fig]] = {
     "segmentation-pyramid": fig_segmentation_pyramid,
     "thermometer": fig_thermometer,
     "specificity": fig_specificity,
+    "markov-literal": fig_markov_literal,
+    "markov-scenarios": fig_markov_scenarios,
+    "literal-game": fig_literal_game,
+    "rule-interaction": fig_rule_interaction,
 }
 
 
@@ -1187,7 +1516,12 @@ def main(argv: Optional[Sequence[str]] = None) -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     ap.add_argument("--out", default=os.path.join(here, "..", "docs", "assets", "concepts"))
     ap.add_argument("--only", nargs="*", help="draw only these figures")
+    ap.add_argument("--check", action="store_true",
+                    help="print the Chapter 2 Markov-chain values next to the book's and exit")
     args = ap.parse_args(argv)
+    if args.check:
+        check_book_values()
+        return
     os.makedirs(args.out, exist_ok=True)
     for name, fn in FIGURES.items():
         if args.only and name not in args.only:

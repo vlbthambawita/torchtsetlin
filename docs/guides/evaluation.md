@@ -39,14 +39,24 @@ inputs.
 
 ## Composites of several machines
 
-Machines trained on different Booleanizations can be combined by normalising each member's
-vote sums by its own range and summing (TM composites):
+Machines trained on different Booleanizations can be combined by dividing each member's vote
+sums by that member's own range and summing them (TM composites, see
+[Confidence and composites](../concepts/confidence.md)). Fit each range **once** on a
+reference set and reuse it. A range taken from the batch being predicted would make each
+prediction depend on the rest of the batch.
 
 ```python
-def composite_votes(models, xs):
-    total = 0
-    for m, x in zip(models, xs):
+def fit_composite(models, xs_ref):
+    """One normalisation factor per member: max - min of its vote sums on a reference set."""
+    alphas = []
+    for m, x in zip(models, xs_ref):
         v = m(x)
-        total = total + v / (v.max() - v.min()).clamp_min(1e-6)
-    return total
+        alphas.append(float((v.max() - v.min()).clamp_min(1e-6)))
+    return alphas
+
+def composite_votes(models, xs, alphas):
+    return sum(m(x) / a for m, x, a in zip(models, xs, alphas))
+
+alphas = fit_composite(models, xs_val)            # e.g. a validation split, each member's encoding
+pred = composite_votes(models, xs_test, alphas).argmax(dim=1)
 ```

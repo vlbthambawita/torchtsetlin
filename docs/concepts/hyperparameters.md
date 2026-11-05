@@ -29,6 +29,16 @@ Reference configurations from the literature:
   <figcaption>Specificity <code>s</code>. Literals that do not help are forgotten with probability <code>1/s</code>: a small <code>s</code> keeps rules short and general, a large <code>s</code> lets them grow long and specific.</figcaption>
 </figure>
 
+What each core parameter does, from the Markov-chain analysis in
+[Why a Tsetlin machine learns what it learns](why-it-learns.md):
+
+* `s` is a **frequency threshold**: a literal stays in a clause roughly when it is true in
+  more than `1/s` of the examples that train the clause.
+* `n_states` sets how **sharp** each include/exclude decision is: every extra state makes
+  the automaton exponentially more likely to sit firmly on one side.
+* `T` makes clauses **divide the work**: without a margin, clauses for the same class
+  converge to the same pattern.
+
 Rules of thumb:
 
 * Raise `T` together with the number of clauses; the ratio matters more than either value.

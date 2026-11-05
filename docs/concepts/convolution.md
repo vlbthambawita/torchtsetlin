@@ -4,6 +4,16 @@ A convolutional Tsetlin machine (Granmo et al., 2019; book chapter 4) lets claus
 patterns *anywhere* in an image, sequence or volume instead of memorising absolute pixel
 positions.
 
+## Why convolution
+
+Take 4 × 4 black-and-white images of circles and crosses that can appear in any of the four
+corners (the book's example). A flat Tsetlin machine sees 16 pixel features, so the same
+circle in a different corner is a different pattern: it needs one clause per position, four for
+the circle and four for the cross. A convolutional machine looks at the image through a 3 × 3
+window and uses the window's 9 pixels as features, so the features are the same wherever the
+window is. One clause per shape is enough, and it stays one clause when the image grows; a
+larger image only adds window positions.
+
 ## Patches and position literals
 
 An input image `(Z, H, W)` of Boolean planes is cut into every `kh × kw` window (with a
@@ -17,6 +27,12 @@ stride). Each window becomes a patch with
 A clause that includes `y > 2 AND NOT y > 5` therefore only matches windows in rows 3–5,
 i.e. it can learn *where* a pattern is allowed to appear — or ignore position entirely.
 
+Position matters when the same local pattern means different things in different places. The
+book's example is a horizontal stroke: at the top of a digit it is the bar of a 7, at the
+bottom it is the base of a 2. A clause that restricts the stroke to the upper rows stops
+matching the 2. Thermometer bits are used because two of them express a range, so a clause
+can describe a rectangular region with at most four position literals.
+
 <figure markdown="span">
   ![Window rows with thermometer bits y > 2 and y > 5; only rows 3 to 5 satisfy the clause](../assets/concepts/conv-position.svg#only-light){ loading=lazy } ![Window rows with thermometer bits y > 2 and y > 5; only rows 3 to 5 satisfy the clause](../assets/concepts/conv-position_dark.svg#only-dark){ loading=lazy }
   <figcaption>Position literals are thermometer bits too. Including <code>y &gt; 2</code> and <code>NOT y &gt; 5</code> restricts the clause to window rows 3–5; including none of them lets it match anywhere.</figcaption>
@@ -28,6 +44,21 @@ A clause is True for an image if it matches **at least one** patch (OR over patc
 sums, `T` and the Type I / Type II selection are unchanged. When a matching clause receives
 Type Ia or Type II feedback, **one matching patch is drawn uniformly at random** and its
 literals are used for the update; Type Ib (no match) needs no patch.
+
+For a clause selected for feedback, the four cases are:
+
+| | clause matches some patch | clause matches no patch |
+|---|---|---|
+| **example of the clause's class** | Type Ia (Recognize) on one random matching patch | Type Ib (Erase), no patch needed |
+| **example of another class** | Type II (Reject) on one random matching patch | no feedback |
+
+Different clauses end up specialising on different parts of an image: one on a wheel, one on
+the ground below it, one on a window. The image's class is decided by their summed votes. This
+cooperation is what `T` buys. With the book's `T = 2` from Chapter 1, two matching clauses
+already satisfy the margin, so few clauses ever learn about a class. A larger `T` keeps
+feedback flowing until many clauses agree, so more of them learn to recognise different parts.
+That is why convolutional models use a much larger `T` relative to their clause count than flat
+ones (see [Hyper-parameters](hyperparameters.md)).
 
 <figure markdown="span">
   ![A plus-shaped clause sliding over an 8 by 8 image and matching at one position](../assets/concepts/conv-sliding.svg#only-light){ loading=lazy } ![A plus-shaped clause sliding over an 8 by 8 image and matching at one position](../assets/concepts/conv-sliding_dark.svg#only-dark){ loading=lazy }

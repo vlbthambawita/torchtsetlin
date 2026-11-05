@@ -12,6 +12,19 @@ Granmo's textbook *An Introduction to Tsetlin Machines* and the original paper
 | Reject feedback | Type II feedback |
 | Vote margin | threshold `T` |
 | memory position 1…2N | automaton state `0…2N-1`, included when `>= N` |
+| Memorize Value + Forget Value = 1 (Chapter 1, e.g. 0.1 / 0.9) | `(s-1)/s` and `1/s`, or memorize with probability 1 (`boost_true_positive=True`, the default, which is also the book's choice from Chapter 2 on) |
+
+The machine combines three strategies, one per part of the algorithm:
+
+1. **Frequent pattern mining.** Type Ia and Type Ib feedback make a clause describe what is
+   *typical* of its class, for example "most cars have four wheels".
+2. **Discrimination.** Type II feedback makes the clause reject look-alikes from other
+   classes, for example "cars have no wings".
+3. **Data dissection.** The vote margin `T` spreads the clauses over different sub-patterns,
+   so together they cover the whole class instead of all describing its most common case.
+
+It is rule-based like a decision tree, adds up evidence like logistic regression, and works
+on bits, which keeps inference cheap and the learned rules readable.
 
 ## Literals, clauses and votes
 
@@ -39,13 +52,21 @@ net votes wins.
 While **learning**, an empty clause (no included literals) evaluates to True so that it can
 start memorising; while **predicting** it evaluates to False.
 
+A clause may include both `x` and `NOT x`. Such a clause can never match, so it receives only
+Type Ib (forget) feedback until one of the two literals is dropped. Contradictions disappear
+without a special rule.
+
 ## Memory: Tsetlin automata
 
 Every (clause, literal) pair owns a **Tsetlin automaton** whose state is an integer in
 `[0, 2N-1]`. States `>= N` mean the literal is *included* (memorised) in the clause, states
 `< N` mean it is *excluded* (forgotten). `N` (`n_states`) is the memory depth: deep states
 are hard to change, states near the boundary flip easily. Automata start just below the
-boundary (`N-1`), "about to be memorised but currently forgotten".
+boundary (`N-1`), "about to be memorised but currently forgotten". The starting point does
+not decide where learning ends up: the outcome is a probability distribution over clauses that
+does not depend on the initial state (see [Why a Tsetlin machine learns what it
+learns](why-it-learns.md)). `init="random"` is therefore a valid alternative to the default
+`init="boundary"`.
 
 
 Think of each automaton as a token on a track: rewards push it towards *remember*,
@@ -96,9 +117,39 @@ matches, every False literal that is currently excluded moves one step towards i
   <figcaption>The same clause, <em>Sunny</em>, under each kind of feedback. <strong>Type I</strong> (an example of its own class): true literals step towards remember, false ones occasionally towards forget. <strong>Type II</strong> (a look-alike from another class): false literals step towards remember, so the clause stops matching. Both end at <em>Sunny AND Weekend</em> by different routes.</figcaption>
 </figure>
 
+### Specificity as a frequency threshold
+
 Larger `s` means forgetting is rarer, so clauses keep more literals and become more
-specific. `T` controls how many clauses cooperate on each example; larger `T` needs more
-clauses.
+specific. The book's breast-cancer example shows the arithmetic. Take a literal that is true
+for 2 of 3 patients of the clause's class, and a memorise/forget pair of 0.2/0.8. Per pass over
+the three patients it moves up `2 × 0.2 = 0.4` steps and down `1 × 0.8 = 0.8` steps on average,
+so it drifts out of the clause. With 0.5/0.5 it moves up 1.0 and down 0.5, so it stays. In
+the library's terms: a literal survives in a clause roughly when it is true in more than about
+`1/s` of the examples that train the clause. [Why a Tsetlin machine learns what it
+learns](why-it-learns.md) makes this exact.
+
+`T` controls how many clauses cooperate on each example; larger `T` needs more clauses.
+
+### How clauses coordinate
+
+No clause knows about the others. They coordinate only through the shared vote sum, and the
+book's Section 1.6 lists three effects:
+
+* **Examples are prioritised by how far they are from the margin.** With `T = 2`, the
+  probability that a clause of the example's class gets feedback is `(T - v)/2T`:
+
+    | vote sum `v` of the true class | -2 | -1 | 0 | 1 | 2 |
+    |---|---|---|---|---|---|
+    | chance each clause is updated | 1 | 0.75 | 0.5 | 0.25 | 0 |
+
+    Misclassified examples get the most attention; solved ones get none.
+* **Type II only reaches clauses that voted wrongly.** A clause that does not match an
+  example of another class is left alone, so correct clauses are shielded.
+* **Good clauses are memorised deepest.** A clause that matches most of its class and never
+  votes wrongly gets the most Type Ia and no Type II, so its literals sit far from the boundary.
+  Clauses that keep being disrupted stay shallow, which leaves them free to move to a better
+  pattern. Duplicate clauses are not waste: two copies of a good clause add their votes and
+  help the class reach the margin.
 
 ## Variants implemented
 

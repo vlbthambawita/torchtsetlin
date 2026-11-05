@@ -51,7 +51,9 @@ print(model.rules()[:3])                        # ['IF x0 AND NOT x1 THEN 1', ..
 
 * [Installation](getting-started/installation.md) and the [quick start](getting-started/quickstart.md).
 * [How a Tsetlin machine learns](concepts/tsetlin-machine.md) — the algorithm, in the vocabulary of the book *An Introduction to Tsetlin Machines*.
+* [Why it learns what it learns](concepts/why-it-learns.md) — the book's Markov-chain analysis: what `s`, `n_states` and `T` do to the learned clauses.
 * [Batched vs sequential feedback](concepts/batching.md) — what `model.update` does with a mini-batch and how to choose a batch size.
+* [Confidence and composites](concepts/confidence.md) — reading confidence from the vote sum and combining several machines.
 * The [API reference](api/models.md).
 
 ## Acknowledgements
