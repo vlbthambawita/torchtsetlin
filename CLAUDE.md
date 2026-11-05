@@ -210,7 +210,12 @@ paper in `source_documents/papers/`) is the source of truth, and `build_catalog.
 `datasets.json`, `results.csv`, `README.md` and the SQLite database `docs/assets/literature/literature.db`
 (committed; a git-ignored copy goes to `space/`). Edit the records and re-run the script; never
 hand-edit the generated files. The "best value" direction per metric comes from `_DIRECTION` in
-that script. `docs/literature.md` queries the database in the browser with sql.js
+that script. Since 2026-11-05 the database also has the schema-v2 fields (task family,
+canonical metric, clause count + scope, T, s, ..., tables `task_details` and `vocab`): they come
+from the records when present, otherwise from the reviewable proposal CSVs in
+`benchmarks/literature/mappings/` (written by `propose_mappings.py`, controlled values in
+`vocab.json`), and each row's `v2_source` says which (`record` / `reviewed` / `proposed`). Plan
+and status: `plans/literature-db-v2.md`. `docs/literature.md` queries the database in the browser with sql.js
 (`docs/javascripts/literature.js`). Keep ranking queries on narrow columns and join the long
 text only for the drawn page: dragging `notes`/`config` through the window functions made every
 regroup about 3× slower. The same database also backs the Gradio app in `space/app.py`, deployed

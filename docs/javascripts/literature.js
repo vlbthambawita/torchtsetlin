@@ -71,6 +71,99 @@
     }
   }
 
+  /* ------------------------------------------------------------ facet counts
+   * The number next to a filter option says how many rows you would get by picking it,
+   * given every *other* active filter (a faceted count), in the unit of that tab: papers and
+   * results, table rows, datasets or papers. Selects keep a fixed option order (from
+   * UNIVERSE) and disable options that would match nothing; datalists list only matches. */
+  const UNIVERSE = {};
+  const plural = (n, unit) => `${Number(n).toLocaleString()} ${unit}${n === 1 ? "" : "s"}`;
+  const UNITS = {
+    results: (c) => `${plural(c.p, "paper")} · ${plural(c.n, "result")}`,
+    best: (c) => plural(c.n, "row"),
+    datasets: (c) => plural(c.n, "dataset"),
+    papers: (c) => plural(c.n, "paper"),
+  };
+
+  // Faceted counts for one column: `from` is a FROM/subquery with `col` in it.
+  function facetCounts(from, col, conds, params, measure) {
+    const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+    const rows = all(`SELECT ${col} AS v, ${measure} FROM ${from} ${where} GROUP BY 1`, params);
+    const total = one(`SELECT ${measure} FROM ${from} ${where}`, params);
+    return { map: new Map(rows.map((r) => [r.v, r])), total };
+  }
+
+  function renderFacet(id, counts, label) {
+    const el = $(id);
+    if (el.tagName === "SELECT") {
+      const cur = el.value;
+      el.innerHTML = "";
+      el.add(new Option(`any — ${label(counts.total)}`, ""));
+      for (const v of UNIVERSE[id]) {
+        const c = counts.map.get(v);
+        const o = new Option(`${v} — ${c ? label(c) : "no matches"}`, v);
+        o.disabled = !c && v !== cur;
+        el.add(o);
+      }
+      el.value = cur;
+    } else {  // <datalist>: the browser shows `label` next to the value
+      el.innerHTML = "";
+      const rows = [...counts.map.values()].filter((r) => r.v != null && r.v !== "")
+        .sort((a, b) => b.n - a.n || String(a.v).localeCompare(String(b.v)));
+      for (const r of rows) {
+        const o = document.createElement("option");
+        o.value = r.v;
+        o.label = label(r);
+        el.appendChild(o);
+      }
+    }
+  }
+
+  /* Filter definitions per tab: [key, chip label, input id, condition(value) -> [sql, params]].
+   * A condition returns null when its input is empty. */
+  function condsOf(defs, skip) {
+    const conds = [], params = [];
+    for (const [key, , , make] of defs) {
+      if (key === skip) continue;
+      const c = make();
+      if (c) { conds.push(c[0]); params.push(...c[1]); }
+    }
+    return { conds, params };
+  }
+  function textC(col, id, exact) {
+    return () => {
+      const c = [], p = [];
+      textCond(col, $(id).value, c, p, exact);
+      return c.length ? [c[0], p] : null;
+    };
+  }
+  const eqC = (col, id) => () => ($(id).value ? [`${col} = ?`, [$(id).value]] : null);
+  const likeC = (expr, id) => () => ($(id).value.trim() ? [`${expr} LIKE ?`, [`%${$(id).value.trim()}%`]] : null);
+  const boxC = (sql, id) => () => ($(id).checked ? [sql, []] : null);
+
+  // Removable chips for the active filters, so the current selection is always visible.
+  function chips(prefix, defs, rerun) {
+    const box = $(`${prefix}-chips`);
+    const active = defs.filter(([, , id]) => {
+      const el = $(id);
+      return el.type === "checkbox" ? el.checked : el.value.trim() !== "";
+    });
+    box.innerHTML = active.map(([, name, id]) => {
+      const el = $(id);
+      const text = el.type === "checkbox" ? name : `${name}: ${el.value.trim()}`;
+      return `<button type="button" class="lit-chip" data-clear="${esc(id)}" title="Remove this filter">`
+        + `${esc(text)} <span aria-hidden="true">×</span></button>`;
+    }).join("");
+    box.hidden = !active.length;
+    box.onclick = (e) => {
+      const b = e.target.closest("[data-clear]");
+      if (!b) return;
+      const el = $(b.dataset.clear);
+      if (el.type === "checkbox") el.checked = false; else el.value = "";
+      rerun();
+    };
+  }
+
   // --------------------------------------------------------- paged table view
   /* A table whose rows come from a SQL source: `count()` and `page(limit, offset, order)`.
    * columns: [{key, title, render(row) -> html, sort: sql expression | undefined, cls}] */
@@ -219,26 +312,71 @@
       + `${esc(r.metric)} = ${num(r.value)}${unit(r.unit)}` + dl([
       ["Paper", `${paperCell(r)} (${esc(r.year)})`], ["⚠ Caution", esc(r.caution)],
       ["TM variants in paper", esc(r.tm_variants)], ["Config", esc(r.config)],
+      ["Structured (schema v2)", v2Detail(r)],
       ["Source", esc(r.source_location)], ["Notes", esc(r.notes)],
       ["Extraction notes (paper)", esc(one("SELECT extraction_notes AS x FROM papers WHERE paper_id = ?", [r.paper_id]).x)],
       ["Record", `<code>benchmarks/literature/papers/${esc(r.paper_id)}.json</code>`]])),
   });
 
+  const R_FILTERS = [
+    ["dataset", "Dataset", "r-dataset", textC("dataset", "r-dataset", EXACT.dataset)],
+    ["metric", "Metric", "r-metric", textC("metric", "r-metric", EXACT.metric)],
+    ["task_family", "Task", "r-task", eqC("task_family", "r-task")],
+    ["data_type", "Data type", "r-dtype", eqC("data_type", "r-dtype")],
+    ["split_key", "Split", "r-split", eqC("split_key", "r-split")],
+    ["category", "Category", "r-category", eqC("category", "r-category")],
+    ["search", "Search", "r-search", likeC("search", "r-search")],
+    ["tm", "TM models only", "r-tm", boxC("is_tm = 1", "r-tm")],
+    ["proposed", "Proposed models only", "r-proposed", boxC("is_proposed = 1", "r-proposed")],
+    ["flag", "Hide ⚠ flagged", "r-flag", boxC("caution IS NULL", "r-flag")],
+    ["best", "★ Best per group only", "r-best", () => null],
+  ];
+  const R_FACETS = [["r-task", "task_family"], ["r-dtype", "data_type"], ["r-split", "split_key"], ["r-category", "category"],
+    ["r-datasets", "dataset"], ["r-metrics", "metric"]];
+
+  // Schema-v2 fields of one result and its dataset usage, with their provenance.
+  const SOURCE_NOTE = {
+    proposed: '<span class="lit-badge" title="Parsed automatically from the text fields; not reviewed yet">proposed</span>',
+    reviewed: '<span class="lit-badge lit-proposed">reviewed</span>',
+    record: '<span class="lit-badge lit-proposed">from record</span>',
+  };
+  function v2Detail(r) {
+    const x = one(`SELECT metric_canonical, metric_qualifier, averaging, metric_kind, statistic, n_runs, n_clauses,
+        clauses_scope, T, s, epochs, n_states, state_bits, max_included_literals, patch_size, weighted,
+        implementation, v2_source FROM results WHERE id = ?`, [r.id]);
+    const u = one(`SELECT task_family, setting_tags, label_type, n_classes, modality, booleanization_method,
+        booleanization_bits, v2_source FROM dataset_usages WHERE paper_id = ? AND dataset_id = ? LIMIT 1`,
+    [r.paper_id, r.dataset]) || {};
+    const parts = [
+      ["task", u.task_family], ["setting", u.setting_tags], ["labels", u.label_type], ["classes", u.n_classes],
+      ["modality", u.modality],
+      ["Booleanization", u.booleanization_method && u.booleanization_method
+        + (u.booleanization_bits ? ` (${u.booleanization_bits})` : "")],
+      ["metric", x.metric_canonical && [x.metric_canonical, x.averaging, x.metric_qualifier].filter(Boolean).join(", ")],
+      ["statistic", x.statistic], ["runs", x.n_runs],
+      ["clauses", x.n_clauses != null && `${num(x.n_clauses)}${x.clauses_scope ? ` ${x.clauses_scope.replace("_", " ")}` : ""}`],
+      ["T", x.T], ["s", x.s], ["epochs", x.epochs], ["states", x.n_states], ["state bits", x.state_bits],
+      ["literal budget", x.max_included_literals], ["patch", x.patch_size], ["weighted", x.weighted ? "yes" : null],
+      ["implementation", x.implementation],
+    ].filter(([, v]) => v != null && v !== "" && v !== false);
+    if (!parts.length) return "";
+    const src = [u.v2_source, x.v2_source].includes("proposed") ? "proposed"
+      : [u.v2_source, x.v2_source].includes("reviewed") ? "reviewed" : "record";
+    return parts.map(([k, v]) => `${esc(k)} <b>${esc(typeof v === "number" ? num(v) : v)}</b>`).join(" · ")
+      + ` ${SOURCE_NOTE[src]}`;
+  }
+
   function runResults() {
     const t0 = performance.now();
     const group = $("r-group").value;
     const g = GROUPS.has(group) && group ? group : "''";
-    const conds = [], params = [];
-    textCond("dataset", $("r-dataset").value, conds, params, EXACT.dataset);
-    textCond("metric", $("r-metric").value, conds, params, EXACT.metric);
-    for (const [col, id] of [["data_type", "r-dtype"], ["split_key", "r-split"], ["category", "r-category"]]) {
-      if ($(id).value) { conds.push(`${col} = ?`); params.push($(id).value); }
+    const { conds, params } = condsOf(R_FILTERS);
+    for (const [id, col] of R_FACETS) {
+      const f = condsOf(R_FILTERS, col);
+      renderFacet(id, facetCounts("base", col, f.conds, f.params,
+        "COUNT(*) AS n, COUNT(DISTINCT paper_id) AS p"), UNITS.results);
     }
-    if ($("r-tm").checked) conds.push("is_tm = 1");
-    if ($("r-proposed").checked) conds.push("is_proposed = 1");
-    if ($("r-flag").checked) conds.push("caution IS NULL");
-    const q = $("r-search").value.trim();
-    if (q) { conds.push("search LIKE ?"); params.push(`%${q}%`); }
+    chips("r", R_FILTERS, runResults);
     const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
     // Rank over narrow rows only (ids, keys, values); the long text columns are joined in
     // for the one page that is drawn.
@@ -257,11 +395,12 @@
              n_cmp, group_size, metric_size,
              (better IS NOT NULL AND n_cmp > 1 AND value = best_v) AS is_best
       FROM k`, params);
-    const stats = one("SELECT COUNT(*) AS n, COALESCE(SUM(is_best), 0) AS b FROM cur");
+    const stats = one("SELECT COUNT(*) AS n, COALESCE(SUM(is_best), 0) AS b, COUNT(DISTINCT paper) AS p FROM cur");
     if ($("r-best").checked) db.run("DELETE FROM cur WHERE NOT is_best");
     resultsTable.set(joinedSource("cur", RESULTS_ORDER, "c.is_best, c.grp, c.n_cmp"));
     const shown = $("r-best").checked ? stats.b : stats.n;
-    $("r-summary").textContent = `${shown.toLocaleString()} rows · ${stats.b.toLocaleString()} best values (★)`
+    $("r-summary").textContent = `${plural(shown, "result")} from ${plural(stats.p, "paper")}`
+      + ` · ${stats.b.toLocaleString()} best values (★)`
       + ` · ${(performance.now() - t0).toFixed(0)} ms · click a row for its config and notes`
       + " · click a column title to sort";
   }
@@ -293,14 +432,28 @@
     },
   });
 
+  const B_FILTERS = [
+    ["dataset", "Dataset", "b-dataset", textC("dataset", "b-dataset", EXACT.dataset)],
+    ["metric", "Metric", "b-metric", textC("metric", "b-metric", EXACT.metric)],
+    ["data_type", "Data type", "b-dtype", eqC("data_type", "b-dtype")],
+    ["flag", "Hide ⚠ flagged", "b-flag", boxC("caution IS NULL", "b-flag")],
+    ["tm", "Rank TM models only", "b-tm", boxC("is_tm = 1", "b-tm")],
+  ];
+  const B_FACETS = [["b-dtype", "data_type"], ["b-datasets", "dataset"], ["b-metrics", "metric"]];
+
   function runBest() {
-    const conds = ["better IS NOT NULL", "value IS NOT NULL"], params = [];
-    textCond("dataset", $("b-dataset").value, conds, params, EXACT.dataset);
-    textCond("metric", $("b-metric").value, conds, params, EXACT.metric);
-    if ($("b-dtype").value) { conds.push("data_type = ?"); params.push($("b-dtype").value); }
-    if ($("b-flag").checked) conds.push("caution IS NULL");
-    const tmOnly = $("b-tm").checked;
-    if (tmOnly) conds.push("is_tm = 1");
+    const minN = Math.max(1, +$("b-min").value || 1);
+    const rankable = ["better IS NOT NULL", "value IS NOT NULL"];
+    const { conds: fc, params } = condsOf(B_FILTERS);
+    const conds = rankable.concat(fc);
+    // A facet counts the rows this tab would show: dataset x metric x unit x split groups.
+    for (const [id, col] of B_FACETS) {
+      const f = condsOf(B_FILTERS, col);
+      const groups = `(SELECT dataset, data_type, metric FROM base WHERE ${rankable.concat(f.conds).join(" AND ")}
+        GROUP BY dataset, metric, unit, split_key HAVING COUNT(*) >= ${minN})`;
+      renderFacet(id, facetCounts(groups, col, [], f.params, "COUNT(*) AS n"), UNITS.best);
+    }
+    chips("b", B_FILTERS, runBest);
     const key = "dataset, metric, unit, split_key";
     db.run("DROP TABLE IF EXISTS temp.best");
     db.run(`CREATE TEMP TABLE best AS
@@ -317,7 +470,7 @@
       FROM a JOIN base ba ON ba.id = a.id
       LEFT JOIN t ON t.dataset = a.dataset AND t.metric = a.metric AND t.unit = a.unit
                  AND t.split_key = a.split_key
-      LEFT JOIN base bt ON bt.id = t.id`, params.concat([Math.max(1, +$("b-min").value || 1)]));
+      LEFT JOIN base bt ON bt.id = t.id`, params.concat([minN]));
     const n = one("SELECT COUNT(*) AS n FROM best").n;
     bestTable.set(tempSource("best", "n DESC, dataset, metric"));
     $("b-summary").textContent = `${n.toLocaleString()} dataset × metric × unit × split rows`
@@ -328,8 +481,9 @@
   const datasetsTable = pagedTable("d", [
     { key: "dataset_id", title: "Dataset", sort: "dataset_id" },
     { key: "data_type", title: "Type", sort: "data_type" },
-    { key: "tasks", title: "Tasks" },
-    { key: "n_classes", title: "Classes", sort: "n_classes", cls: "lit-num" },
+    { key: "task_families", title: "Task" },
+    { key: "tasks", title: "Tasks (as reported)" },
+    { key: "n_classes", title: "Classes", sort: "n_classes_max", cls: "lit-num" },
     { key: "input_shape_or_features", title: "Input" },
     { key: "sizes", title: "Train / val / test (as reported)" },
     { key: "n_papers", title: "Papers", sort: "n_papers", cls: "lit-num" },
@@ -340,17 +494,19 @@
     size: 50,
     onRow: (r) => {
       const uses = all(`SELECT p.title, p.year, p.url, u.name_in_paper, u.task, u.train_size, u.val_size,
-                               u.test_size, u.split_as_reported, u.booleanization, u.notes
+                               u.test_size, u.split_as_reported, u.booleanization, u.notes, u.task_family,
+                               u.n_classes, u.booleanization_method
                         FROM dataset_usages u JOIN papers p ON p.paper_id = u.paper_id
                         WHERE u.dataset_id = ? ORDER BY p.year`, [r.dataset_id]);
       detail("d", `<strong><code>${esc(r.dataset_id)}</code></strong> ${link(r.download_url, "download")}`
         + ` · <button type="button" class="lit-linkbtn" id="d-show">show its ${r.n_results} results</button>`
         + `<table class="lit-table lit-inner"><thead><tr><th>Paper</th><th>Name in paper</th><th>Task</th>`
-        + `<th>Train / val / test</th><th>Split as reported</th><th>Booleanization</th><th>Notes</th></tr></thead><tbody>`
+        + `<th>Classes</th><th>Train / val / test</th><th>Split as reported</th><th>Booleanization</th><th>Notes</th></tr></thead><tbody>`
         + uses.map((u) => `<tr><td>${u.url ? link(u.url, u.title) : esc(u.title)} (${esc(u.year)})</td>`
-          + `<td>${esc(u.name_in_paper)}</td><td>${esc(u.task)}</td>`
+          + `<td>${esc(u.name_in_paper)}</td><td>${esc(u.task)}${u.task_family ? `<br><span class="lit-muted">${esc(u.task_family)}</span>` : ""}</td>`
+          + `<td class="lit-num">${u.n_classes == null ? "–" : num(u.n_classes)}</td>`
           + `<td>${[u.train_size, u.val_size, u.test_size].map((v) => (v == null ? "–" : num(v))).join(" / ")}</td>`
-          + `<td>${esc(u.split_as_reported)}</td><td>${esc(u.booleanization)}</td><td>${esc(u.notes)}</td></tr>`).join("")
+          + `<td>${esc(u.split_as_reported)}</td><td>${esc(u.booleanization)}${u.booleanization_method ? `<br><span class="lit-muted">${esc(u.booleanization_method)}</span>` : ""}</td><td>${esc(u.notes)}</td></tr>`).join("")
         + "</tbody></table>");
       $("d-show").onclick = () => {
         resetResults(false);
@@ -361,14 +517,17 @@
     },
   });
 
+  const D_FILTERS = [
+    ["search", "Search", "d-search", likeC("(d.dataset_id || ' ' || COALESCE(d.tasks, '') || ' ' "
+      + "|| COALESCE(d.names_in_papers, '') || ' ' || COALESCE(d.tm_variants, ''))", "d-search")],
+    ["data_type", "Data type", "d-dtype", eqC("d.data_type", "d-dtype")],
+  ];
+
   function runDatasets() {
-    const conds = [], params = [];
-    const q = $("d-search").value.trim();
-    if (q) {
-      conds.push("(d.dataset_id || ' ' || COALESCE(d.tasks, '') || ' ' || COALESCE(d.names_in_papers, '') || ' ' || COALESCE(d.tm_variants, '')) LIKE ?");
-      params.push(`%${q}%`);
-    }
-    if ($("d-dtype").value) { conds.push("d.data_type = ?"); params.push($("d-dtype").value); }
+    const { conds, params } = condsOf(D_FILTERS);
+    const f = condsOf(D_FILTERS, "data_type");
+    renderFacet("d-dtype", facetCounts("datasets d", "d.data_type", f.conds, f.params, "COUNT(*) AS n"), UNITS.datasets);
+    chips("d", D_FILTERS, runDatasets);
     db.run("DROP TABLE IF EXISTS temp.ds");
     db.run(`CREATE TEMP TABLE ds AS SELECT d.*,
         (SELECT COUNT(*) FROM results r WHERE r.dataset_id = d.dataset_id) AS n_results,
@@ -410,14 +569,17 @@
     },
   });
 
+  const P_FILTERS = [
+    ["search", "Search", "p-search", likeC("(title || ' ' || COALESCE(authors, '') || ' ' || COALESCE(tm_variants, '') "
+      + "|| ' ' || COALESCE(new_feature, '') || ' ' || COALESCE(venue, ''))", "p-search")],
+    ["category", "Category", "p-category", eqC("category", "p-category")],
+  ];
+
   function runPapers() {
-    const conds = [], params = [];
-    const q = $("p-search").value.trim();
-    if (q) {
-      conds.push("(title || ' ' || COALESCE(authors, '') || ' ' || COALESCE(tm_variants, '') || ' ' || COALESCE(new_feature, '') || ' ' || COALESCE(venue, '')) LIKE ?");
-      params.push(`%${q}%`);
-    }
-    if ($("p-category").value) { conds.push("category = ?"); params.push($("p-category").value); }
+    const { conds, params } = condsOf(P_FILTERS);
+    const f = condsOf(P_FILTERS, "category");
+    renderFacet("p-category", facetCounts("papers", "category", f.conds, f.params, "COUNT(*) AS n"), UNITS.papers);
+    chips("p", P_FILTERS, runPapers);
     db.run("DROP TABLE IF EXISTS temp.pp");
     db.run(`CREATE TEMP TABLE pp AS SELECT p.*,
         (SELECT COUNT(*) FROM results r WHERE r.paper_id = p.paper_id) AS n_results,
@@ -460,26 +622,15 @@
   }
 
   function resetResults(run = true) {
-    for (const id of ["r-dataset", "r-metric", "r-dtype", "r-split", "r-category", "r-search"]) $(id).value = "";
+    for (const id of ["r-dataset", "r-metric", "r-task", "r-dtype", "r-split", "r-category", "r-search"]) $(id).value = "";
     for (const id of ["r-tm", "r-proposed", "r-flag", "r-best"]) $(id).checked = false;
     $("r-group").value = "dataset";
     if (run) runResults();
   }
 
-  function fill(id, rows) {
-    const el = $(id);
-    for (const { v, n } of rows) {
-      if (v == null || v === "") continue;
-      const o = document.createElement("option");
-      o.value = v;
-      if (el.tagName === "SELECT") o.textContent = `${v} (${n})`;
-      el.appendChild(o);
-    }
-  }
-
   function wire() {
     const later = debounce(runResults, 150);
-    for (const id of ["r-group", "r-dtype", "r-split", "r-category", "r-tm", "r-proposed", "r-flag", "r-best"]) {
+    for (const id of ["r-group", "r-task", "r-dtype", "r-split", "r-category", "r-tm", "r-proposed", "r-flag", "r-best"]) {
       $(id).addEventListener("change", runResults);
     }
     for (const id of ["r-dataset", "r-metric", "r-search"]) $(id).addEventListener("input", later);
@@ -526,29 +677,28 @@
              r.std_or_range, r.split, ${SPLIT_KEY} AS split_key, r.better, r.model, r.is_tm,
              r.is_proposed, r.config, r.source_location, r.notes, r.paper_id, p.title AS paper,
              p.year, p.category, p.url AS paper_url, p.caution, p.tm_variants, d.data_type,
+             COALESCE((SELECT GROUP_CONCAT(DISTINCT u.task_family) FROM dataset_usages u
+                       WHERE u.paper_id = r.paper_id AND u.dataset_id = r.dataset_id), '(no dataset)') AS task_family,
              r.model || ' ' || p.title || ' ' || COALESCE(r.config, '') || ' ' || COALESCE(r.notes, '')
                || ' ' || COALESCE(r.source_location, '') AS search
       FROM results r JOIN papers p ON p.paper_id = r.paper_id
       LEFT JOIN datasets d ON d.dataset_id = r.dataset_id`);
     db.run("CREATE UNIQUE INDEX temp.base_id ON base(id)");
-    for (const c of ["dataset", "metric", "data_type", "split_key", "category"]) {
+    for (const c of ["dataset", "metric", "data_type", "split_key", "category", "task_family"]) {
       db.run(`CREATE INDEX temp.base_${c} ON base(${c})`);
     }
 
-    const counts = (sql) => all(sql);
-    const ds = counts("SELECT dataset AS v, COUNT(*) AS n FROM base GROUP BY 1 ORDER BY n DESC, v");
-    const metrics = counts("SELECT metric AS v, COUNT(*) AS n FROM base GROUP BY 1 ORDER BY n DESC, v");
-    ds.forEach(({ v }) => EXACT.dataset.add(String(v).toLowerCase()));
-    metrics.forEach(({ v }) => EXACT.metric.add(String(v).toLowerCase()));
-    fill("lit-datasets", ds);
-    fill("lit-metrics", metrics);
-    const dtypes = counts("SELECT data_type AS v, COUNT(*) AS n FROM base WHERE data_type IS NOT NULL GROUP BY 1 ORDER BY n DESC");
-    for (const id of ["r-dtype", "b-dtype"]) fill(id, dtypes);
-    fill("d-dtype", counts("SELECT data_type AS v, COUNT(*) AS n FROM datasets WHERE data_type IS NOT NULL GROUP BY 1 ORDER BY n DESC"));
-    fill("r-split", counts("SELECT split_key AS v, COUNT(*) AS n FROM base GROUP BY 1 ORDER BY n DESC"));
-    const cats = counts("SELECT category AS v, COUNT(*) AS n FROM papers GROUP BY 1 ORDER BY n DESC");
-    fill("r-category", counts("SELECT category AS v, COUNT(*) AS n FROM base GROUP BY 1 ORDER BY n DESC"));
-    fill("p-category", cats);
+    const values = (sql) => all(sql).map((r) => r.v).filter((v) => v != null && v !== "");
+    values("SELECT DISTINCT dataset AS v FROM base").forEach((v) => EXACT.dataset.add(String(v).toLowerCase()));
+    values("SELECT DISTINCT metric AS v FROM base").forEach((v) => EXACT.metric.add(String(v).toLowerCase()));
+    // Fixed option order for the selects: most results (or datasets / papers) first.
+    const byCount = (col, from) => values(`SELECT ${col} AS v FROM ${from} GROUP BY 1 ORDER BY COUNT(*) DESC, 1`);
+    UNIVERSE["r-dtype"] = UNIVERSE["b-dtype"] = byCount("data_type", "base");
+    UNIVERSE["r-split"] = byCount("split_key", "base");
+    UNIVERSE["r-category"] = byCount("category", "base");
+    UNIVERSE["r-task"] = byCount("task_family", "base");
+    UNIVERSE["d-dtype"] = byCount("data_type", "datasets");
+    UNIVERSE["p-category"] = byCount("category", "papers");
 
     wire();
     const n = one("SELECT (SELECT COUNT(*) FROM papers) AS p, (SELECT COUNT(*) FROM datasets) AS d, (SELECT COUNT(*) FROM results) AS r");

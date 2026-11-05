@@ -36,13 +36,15 @@ browser, and only one page of rows is drawn at a time.
             <option value="">Nothing (whole selection)</option>
           </select>
         </label>
-        <label>Dataset <input id="r-dataset" list="lit-datasets" placeholder="any"></label>
-        <label>Metric <input id="r-metric" list="lit-metrics" placeholder="any"></label>
+        <label>Dataset <input id="r-dataset" list="r-datasets" placeholder="any"></label>
+        <label>Metric <input id="r-metric" list="r-metrics" placeholder="any"></label>
+        <label>Task <select id="r-task"><option value="">any</option></select></label>
         <label>Data type <select id="r-dtype"><option value="">any</option></select></label>
         <label>Split <select id="r-split"><option value="">any</option></select></label>
         <label>Paper category <select id="r-category"><option value="">any</option></select></label>
         <label>Search <input id="r-search" type="search" placeholder="model, paper, config, notes…"></label>
       </div>
+      <p class="lit-hint lit-legend">Numbers in the lists: how many papers and results you get by picking that option, given the other filters.</p>
       <div class="lit-toggles">
         <label><input id="r-tm" type="checkbox"> TM models only</label>
         <label><input id="r-proposed" type="checkbox"> Proposed models only</label>
@@ -55,6 +57,7 @@ browser, and only one page of rows is drawn at a time.
       </div>
     </aside>
     <div class="lit-main">
+      <div id="r-chips" class="lit-chips" hidden></div>
       <p id="r-summary" class="lit-status"></p>
       <div id="r-detail" class="lit-detail" hidden></div>
       <div id="r-table" class="lit-scroll"></div>
@@ -67,11 +70,12 @@ browser, and only one page of rows is drawn at a time.
       <p class="lit-hint">One row per dataset × metric × unit × split: the best reported value, and
       the best value from a Tsetlin-machine model.</p>
       <div class="lit-fields">
-        <label>Dataset <input id="b-dataset" list="lit-datasets" placeholder="any"></label>
+        <label>Dataset <input id="b-dataset" list="b-datasets" placeholder="any"></label>
         <label>Data type <select id="b-dtype"><option value="">any</option></select></label>
-        <label>Metric <input id="b-metric" list="lit-metrics" placeholder="any"></label>
+        <label>Metric <input id="b-metric" list="b-metrics" placeholder="any"></label>
         <label>Min. results per row <input id="b-min" type="number" min="1" value="2"></label>
       </div>
+      <p class="lit-hint lit-legend">Numbers in the lists: how many table rows you get by picking that option, given the other filters.</p>
       <div class="lit-toggles">
         <label><input id="b-flag" type="checkbox" checked> Hide ⚠ flagged papers</label>
         <label><input id="b-tm" type="checkbox"> Rank TM models only</label>
@@ -79,6 +83,7 @@ browser, and only one page of rows is drawn at a time.
       </div>
     </aside>
     <div class="lit-main">
+      <div id="b-chips" class="lit-chips" hidden></div>
       <p id="b-summary" class="lit-status"></p>
       <div id="b-table" class="lit-scroll"></div>
       <div id="b-pager" class="lit-pager"></div>
@@ -91,9 +96,11 @@ browser, and only one page of rows is drawn at a time.
         <label>Search <input id="d-search" type="search" placeholder="name, task, TM variant…"></label>
         <label>Data type <select id="d-dtype"><option value="">any</option></select></label>
       </div>
+      <p class="lit-hint lit-legend">Numbers in the lists: how many datasets you get by picking that option, given the other filters.</p>
     </aside>
     <div class="lit-main">
       <p class="lit-hint">Click a dataset for how each paper used it (sizes, splits, Booleanization).</p>
+      <div id="d-chips" class="lit-chips" hidden></div>
       <div id="d-detail" class="lit-detail" hidden></div>
       <div id="d-table" class="lit-scroll"></div>
       <div id="d-pager" class="lit-pager"></div>
@@ -106,8 +113,10 @@ browser, and only one page of rows is drawn at a time.
         <label>Search <input id="p-search" type="search" placeholder="title, author, TM variant, feature…"></label>
         <label>Category <select id="p-category"><option value="">any</option></select></label>
       </div>
+      <p class="lit-hint lit-legend">Numbers in the lists: how many papers you get by picking that option, given the other filters.</p>
     </aside>
     <div class="lit-main">
+      <div id="p-chips" class="lit-chips" hidden></div>
       <div id="p-detail" class="lit-detail" hidden></div>
       <div id="p-table" class="lit-scroll"></div>
       <div id="p-pager" class="lit-pager"></div>
@@ -133,8 +142,10 @@ ORDER BY accuracy DESC;</textarea>
     <div id="s-pager" class="lit-pager"></div>
   </section>
 
-  <datalist id="lit-datasets"></datalist>
-  <datalist id="lit-metrics"></datalist>
+  <datalist id="r-datasets"></datalist>
+  <datalist id="r-metrics"></datalist>
+  <datalist id="b-datasets"></datalist>
+  <datalist id="b-metrics"></datalist>
 </div>
 
 ## How the ranking works
@@ -163,9 +174,18 @@ of clusters, are never ranked.
 | Table | Columns |
 |---|---|
 | `papers` | `paper_id`, `title`, `authors`, `year`, `venue`, `arxiv_id`, `doi`, `url`, `code_url`, `category`, `feature_type`, `tm_variants`, `new_feature`, `caution`, `extraction_notes`, `pdf` |
-| `datasets` | `dataset_id`, `data_type`, `tasks`, `n_classes`, `input_shape_or_features`, `download_url`, `download_url_source`, `n_papers`, `tm_variants`, `names_in_papers` |
-| `dataset_usages` | `paper_id`, `dataset_id`, `name_in_paper`, `task`, `train_size`, `val_size`, `test_size`, `split_as_reported`, `booleanization`, `notes` |
-| `results` | `id`, `paper_id`, `dataset_id`, `model`, `is_tm`, `is_proposed`, `metric`, `value`, `unit`, `std_or_range`, `split`, `better` (`higher`/`lower`), `config`, `source_location`, `notes` |
+| `datasets` | `dataset_id`, `data_type`, `tasks`, `n_classes` (every class count used, e.g. `4, 20`), `n_classes_min`, `n_classes_max`, `task_families`, `modality`, `input_shape_or_features`, `download_url`, `download_url_source`, `n_papers`, `tm_variants`, `names_in_papers` |
+| `dataset_usages` | `paper_id`, `dataset_id`, `usage_index`, `name_in_paper`, `task`, `task_family`, `setting_tags`, `label_type`, `n_classes`, `modality`, `synthetic`, `train_size`, `val_size`, `test_size`, `split_as_reported`, `booleanization`, `booleanization_method`, `booleanization_bits`, `notes`, `v2_source` |
+| `results` | `id`, `paper_id`, `dataset_id`, `model`, `is_tm`, `is_proposed`, `metric`, `metric_canonical`, `metric_qualifier`, `averaging`, `metric_kind`, `value`, `unit`, `std_or_range`, `split`, `statistic`, `n_runs`, `better` (`higher`/`lower`), `config`, `n_clauses`, `clauses_scope`, `T`, `s`, `epochs`, `n_states`, `state_bits`, `max_included_literals`, `patch_size`, `weighted`, `implementation`, `source_location`, `notes`, `v2_source` |
+| `task_details` | `paper_id`, `usage_index`, `dataset_id`, `task_family`, `key`, `value`, `source`: task-specific attributes such as `n_classes`, `label_type`, `subtype` (forecasting) and `target` (regression) |
+| `vocab` | `field`, `value`: the allowed values of every controlled field |
+
+The structured fields (task family through `implementation`) are **schema v2**. `v2_source` says where
+they come from: `record` (written in the paper record), `reviewed` (a proposal a person accepted) or
+`proposed` (parsed automatically from the free-text fields by
+`benchmarks/literature/propose_mappings.py`, not reviewed yet). At present every value is `proposed`.
+Clause counts are stored as reported: `clauses_scope` says whether a count is per class or total,
+and is empty when the paper's text did not say.
 
 The data is generated: `benchmarks/literature/papers/*.json` holds one record per paper (the source
 of truth), and `python benchmarks/literature/build_catalog.py` rebuilds the database. Edit the
