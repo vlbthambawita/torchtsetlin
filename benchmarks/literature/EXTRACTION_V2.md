@@ -30,8 +30,13 @@ the CSVs or the database. If the existing record is wrong, report it under `corr
   hyper-parameter (clauses, T, s, p, ...) picked as the best of several test-set results with no
   validation set. `false` only when the paper says selection used a validation set / CV inside the
   training data, or the settings were fixed in advance. Otherwise `"not_reported"`.
+- `n_states` is the number of states **per action** (N; the automaton has 2N states). If the paper
+  prints the total (2N), store N and list it in `inferred` ("paper prints 2N = 300").
 - `split.protocol`: `random_holdout` only if the paper says the split is random; a bare
   "90%/10%" is `"not_reported"` (a split ratio does not say how it was drawn).
+- Each correction has a `kind`: `contradicted` (the PDF states something different) or `unsupported`
+  (the record states something the PDF does not say, e.g. a well-known class count). Use
+  `unsupported` sparingly: a standard fact about a public dataset (IMDb is binary) is not worth one.
 - **Inferred values must be labelled.** If you fill a value that the paper does not state for that row,
   but that follows from it (e.g. "Table 3 at 8000 clauses has exactly the Table 4 accuracies, so it
   used the Table 1 settings"), keep it and list it in that entry's `inferred` object: field name ->
@@ -93,7 +98,7 @@ the CSVs or the database. If the existing record is wrong, report it under `corr
     }
   ],
   "corrections": [
-    {"where": "results[12].value", "record": 98.1, "pdf": 98.2, "location": "Table 3", "note": ""}
+    {"where": "results[12].value", "kind": "contradicted", "record": 98.1, "pdf": 98.2, "location": "Table 3", "note": ""}
   ],
   "notes": "anything a later reader needs: ambiguities, what was not found"
 }

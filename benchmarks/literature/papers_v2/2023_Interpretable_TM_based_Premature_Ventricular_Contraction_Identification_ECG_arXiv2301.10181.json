@@ -1,0 +1,94 @@
+{
+  "paper_id": "2023_Interpretable_TM_based_Premature_Ventricular_Contraction_Identification_ECG_arXiv2301.10181",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-9"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "hyperparameters_complete": "Sec. 4.1, p. 4: 5000 clauses, T=5000, s=1.5, 150 epochs; clause scope, number of TA states, implementation and the amplitude scaling of the Boolean image are not given",
+      "interpretability_evidence": "Sec. 4.3-4.4, Figs. 5-6: per-pixel include maps of all positive/negative-polarity clauses per class, and local-log-density heatmaps (Eq. 6) compared with VGG16 Grad-CAM"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mit-bih-arrhythmia",
+      "task_family": "classification",
+      "setting_tags": ["interpretability"],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 3,
+        "label_type": "multiclass",
+        "class_balance": "imbalanced, majority 86.4% (Non-PVC 38161, PVCR 3965, PVCL 2054 of 44180 beats)",
+        "discretized_from": "AAMI 5 beat classes (N, S, V, F, Q): N/S/F/Q merged into Non-PVC, V split into PVCR (right-ventricle origin) and PVCL (left-ventricle origin)"
+      },
+      "preprocessing": [
+        {"step": "other", "params": "lead II, 360 Hz; 11 recordings excluded for failing quality criteria, 36 recordings / subjects kept (paper says 48 recordings, 47 subjects)"},
+        {"step": "denoising", "params": "'Bior 2.6' wavelet, 9-level decomposition; d1, d2 and a9 coefficients set to 0, then reconstruction (removes power-line interference and baseline wander)"},
+        {"step": "windowing", "params": "beat segmentation at the MIT-BIH R-peak annotations: 320 samples (144 before, 176 after), QRS apex aligned to the same position"}
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": null,
+        "n_bins": 100,
+        "threshold": null,
+        "n_boolean_features": 32000,
+        "n_literals": 64000,
+        "fit_on": "not_reported",
+        "description": "Each segmented beat is drawn as a Boolean 100 (amplitude) x 320 (time) image and flattened row by row into a 1 x 32000 vector; how amplitudes are scaled onto the 100 rows is not stated."
+      },
+      "split": {"protocol": "k_fold_cv", "k_folds": 9, "validation_used_for": "not_reported"},
+      "evidence": {
+        "n_classes": "Sec. 2.1, p. 2",
+        "class_balance": "Sec. 2.1, p. 2 (counts); percentage computed 38161/44180",
+        "preprocessing": "Sec. 2.1-2.2, pp. 2-3; Fig. 2",
+        "booleanization": "Sec. 2.2, p. 3 (last paragraph); Sec. 3, p. 3 (32,000 inputs, 64,000 literals)",
+        "split": "Sec. 4.1, p. 3 and Sec. 4.2, p. 4: 36 subjects divided randomly into 9 folds of 4 subjects (patient-wise), 9-fold cross-validation; Fig. 4"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3, 4, 5, 6],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {"model": "Sec. 4.1, pp. 3-4: 1-D CNN of Baloglu et al. 2019, Adam, categorical cross-entropy, lr 1e-3, decay 1e-4, batch 64, 100 epochs, PyTorch", "values": "Table 1, p. 5"},
+      "inferred": {}
+    },
+    {
+      "result_indices": [7, 8, 9, 10, 11, 12, 13],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {"model": "Sec. 4.1, p. 4: VGG16 (2-D CNN) on the beat images; training settings only stated for 'the CNN model'", "values": "Table 1, p. 5"},
+      "inferred": {}
+    },
+    {
+      "result_indices": [14, 15, 16, 17, 18, 19, 20],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 5000, "clauses_scope": "not_reported", "T": 5000, "s": 1.5, "epochs": 150,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": null,
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported", "hardware": "Linux server (Ubuntu 20.04.4), NVIDIA GeForce 'GTX 3090' (24 GB)"
+      },
+      "evidence": {"tm_config": "Sec. 4.1, p. 4", "values": "Table 1, p. 5", "hardware": "Sec. 4.1, p. 4"},
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Single results table (Table 1); precision/recall are per class, accuracy is overall 3-class. How the 9 folds are aggregated (mean over folds vs pooled predictions) is not stated, nor whether the 150-epoch TM number is the final epoch; no validation set or hyper-parameter search is described. Clause scope is ambiguous: Sec. 3 says q x n clauses with n per class, but '5000 clauses' is not qualified. Modality recorded as time_series (ECG beats), although the TM input is a rendered 2-D Boolean image (VGG16 also uses images). The paper's counts are internally inconsistent: 48 recordings minus 11 excluded would be 37, but 36 recordings/subjects are used. Class imbalance (86% Non-PVC) is not addressed by any balancing step. Figures 5-6 (interpretability maps, heatmaps) carry no numbers."
+}

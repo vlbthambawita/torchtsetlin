@@ -1,0 +1,859 @@
+{
+  "paper_id": "2023_TM_Embedding_TM_Autoencoder_Logical_Expressions_arXiv2301.00709",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-9"
+  },
+  "paper": {
+    "primary_task_family": "representation_learning",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "p. 1 footnote 1 and p. 5 footnote 5 (github.com/cair/tmu)",
+      "hyperparameters_complete": "TM n/T/s/r/u given (Sec. 5.1); number of memory states, vocabulary size, run count, BiLSTM and FastText settings, embedding dims of baselines not given",
+      "interpretability_evidence": "Sec. 5.3 and Fig. 6: clauses linked to 8 target words (e.g. heart/surgery share [went AND hospital]); Fig. 7 t-SNE of 400 SimLex-999 words; at most 10% of clauses per word"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "one-billion-word",
+      "task_family": "representation_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "intrinsic: word similarity on WS-353, SimLex-999, MEN, MTurk-287, MTurk-771, RG-65 (Spearman, Kendall, cosine vs human scores) and word categorization on AP, BLESS, ESSLLI (KMeans purity); extrinsic: embeddings as input to an attention BiLSTM on R8, R52, TREC, SUBJ, SST-2, SST-5 (accuracy, macro-F1)"
+      },
+      "preprocessing": [
+        {
+          "step": "tokenization",
+          "params": "each document represented as the set of its words D subset of V (e.g. 'The actor was brilliant' -> {actor, brilliant, the, was}); tokenizer, casing and stop-word handling not stated"
+        },
+        {
+          "step": "vocabulary_cap",
+          "params": "target vocabulary V of m unique words; size m not stated; the One Billion Word vocabulary covers about 80% of the vocabulary needed by the downstream classification tasks"
+        },
+        {
+          "step": "resampling",
+          "params": "Algorithm 1: per round and target word, random target q_k in {0,1} (balances the data), u=25 random documents with (q=1) or without (q=0) the word are ORed into one example; r=2000 rounds -> 2000 examples per word"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each vocabulary word is a propositional variable that is 1 if it occurs in the (ORed union of u=25) documents and 0 otherwise; the autoencoder uses no negated literals, and the target word's own input is masked (set to 1) and frozen."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1 'Input and Output', p. 3; Sec. 4 Pre-processing Eq. (8), p. 5; Algorithm 1, p. 4",
+        "preprocessing": "Sec. 4, p. 5; Algorithm 1, p. 4; Sec. 5.1 'Embedding Datasets', p. 5; Sec. 5.2, p. 6 (80% vocabulary)",
+        "embedding_dim": "Algorithm 1 lines 13-15 (E = clip(W,0,T), B = W>0, row k = word k) with n = 600 clauses, Sec. 5.1 p. 5",
+        "downstream_eval": "Sec. 5.1, p. 5; Tables 1-3",
+        "setting_tags": "Sec. 5.3 and Fig. 6 (clauses per target word)"
+      },
+      "inferred": {
+        "embedding_dim": "not printed as a dimension; each embedding is row k of the output-by-clause weight matrix W (Eq. 2, Alg. 1), so its length is the clause count n = 600. The intro's '500 truth values' is only an example."
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "ws-353",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "simlex-999",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "men",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "mturk-287",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "mturk-771",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "rg-65",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 600,
+        "downstream_eval": "word similarity: cosine similarity of word embeddings (Eq. 9) compared with human-scored pair similarities via Spearman, Kendall and cosine similarity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation', p. 5; Sec. 5.2, p. 5; Table 1",
+        "split": "Sec. 5.1: evaluation-only benchmark of human-scored word pairs, no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 7,
+      "dataset_id": "ap-categorization",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 600,
+        "downstream_eval": "word categorization: sklearn KMeans clustering of the word embeddings, scored by cluster purity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation' and footnote 3, p. 5; Table 2",
+        "split": "Sec. 5.1: evaluation-only categorization benchmark"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 8,
+      "dataset_id": "bless",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 600,
+        "downstream_eval": "word categorization: sklearn KMeans clustering of the word embeddings, scored by cluster purity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation' and footnote 3, p. 5; Table 2",
+        "split": "Sec. 5.1: evaluation-only categorization benchmark"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 9,
+      "dataset_id": "esslli",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 600,
+        "downstream_eval": "word categorization: sklearn KMeans clustering of the word embeddings, scored by cluster purity"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 5.1 'Intrinsic Evaluation' and footnote 3, p. 5; Table 2",
+        "split": "Sec. 5.1: evaluation-only categorization benchmark"
+      },
+      "inferred": {
+        "embedding_dim": "TM embedding length = n = 600 clauses (see usage 0)"
+      }
+    },
+    {
+      "usage_index": 10,
+      "dataset_id": "r8",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    },
+    {
+      "usage_index": 11,
+      "dataset_id": "trec",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    },
+    {
+      "usage_index": 12,
+      "dataset_id": "r52",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    },
+    {
+      "usage_index": 13,
+      "dataset_id": "subj",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    },
+    {
+      "usage_index": 14,
+      "dataset_id": "sst-2",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    },
+    {
+      "usage_index": 15,
+      "dataset_id": "sst-5",
+      "task_family": "classification",
+      "setting_tags": [
+        "transfer"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "imbalanced (paper: 'datasets are not completely balanced'; not quantified)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "words mapped to pre-trained embeddings (GloVe 6B 300d, TM purely logical embedding B from One Billion Word, or TMhybrid) fed to an attention-based BiLSTM (Adam, cross-entropy)"
+        },
+        {
+          "step": "other",
+          "params": "about 20% of the task vocabulary is missing from One Billion Word: embedded randomly for TM, replaced by the GloVe vectors for TMhybrid"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. 5.1 'Extrinsic Evaluation', p. 5; Sec. 5.2, p. 6",
+        "class_balance": "Sec. 5.2, p. 7",
+        "split": "Sec. 5.1 only says 'six standard text classification datasets from SentEval'; split not described"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        6,
+        7,
+        8,
+        18,
+        19,
+        20,
+        30,
+        31,
+        32,
+        42,
+        43,
+        44,
+        54,
+        55,
+        56,
+        66,
+        67,
+        68,
+        74,
+        78,
+        82
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 600,
+        "clauses_scope": "total",
+        "T": 1200,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.1 'Embedding Datasets', p. 5 (r=2000 rounds, u=25, n=600, T=1200, s=5.0)",
+        "clauses_scope": "Sec. 3.1 'Clause Pool': one pool of n clauses shared by all outputs (Coalesced TM), integer weight per output",
+        "weighted": "Sec. 3.1 'Weights', Eq. (2)",
+        "implementation": "footnotes 1 and 5: implementation at github.com/cair/tmu",
+        "statistic": "no run count or averaging stated for any table"
+      },
+      "inferred": {
+        "epochs": "training length is r = 2000 rounds of Algorithm 1 (one example per vocabulary word per round), not epochs; left not_reported"
+      }
+    },
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        12,
+        13,
+        14,
+        24,
+        25,
+        26,
+        36,
+        37,
+        38,
+        48,
+        49,
+        50,
+        60,
+        61,
+        62,
+        72,
+        76,
+        80
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 5.1, p. 5 and footnote 6: gensim Skip-Gram, 10 passes, window 5, 5 negative samples, separate input/output embeddings, trained on One Billion Word; embedding dimension not stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        3,
+        4,
+        5,
+        15,
+        16,
+        17,
+        27,
+        28,
+        29,
+        39,
+        40,
+        41,
+        51,
+        52,
+        53,
+        63,
+        64,
+        65,
+        73,
+        77,
+        81
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 5.1 and footnote 6: gensim FastText trained on One Billion Word; hyper-parameters not stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        9,
+        10,
+        11,
+        21,
+        22,
+        23,
+        33,
+        34,
+        35,
+        45,
+        46,
+        47,
+        57,
+        58,
+        59,
+        69,
+        70,
+        71,
+        75,
+        79,
+        83
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 5.1 and footnote 6: glove-python, 30 epochs, window 10, lr 0.05, trained on One Billion Word; dimension not stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        84,
+        85,
+        90,
+        91,
+        96,
+        97,
+        102,
+        103,
+        108,
+        109,
+        114,
+        115
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 5.1 'Extrinsic Evaluation'/'Embedding Datasets', p. 5; Table 3. BiLSTM size, epochs, learning rate not stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        86,
+        87,
+        92,
+        93,
+        98,
+        99,
+        104,
+        105,
+        110,
+        111,
+        116,
+        117
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 600,
+        "clauses_scope": "total",
+        "T": 1200,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.1 'Embedding Datasets', p. 5 (r=2000 rounds, u=25, n=600, T=1200, s=5.0)",
+        "clauses_scope": "Sec. 3.1 'Clause Pool': one pool of n clauses shared by all outputs (Coalesced TM), integer weight per output",
+        "weighted": "Sec. 3.1 'Weights', Eq. (2)",
+        "implementation": "footnotes 1 and 5: implementation at github.com/cair/tmu",
+        "statistic": "no run count or averaging stated for any table",
+        "model": "Sec. 5.2, p. 6: purely logical embedding B (W>0) from One Billion Word, 20% missing words embedded randomly; classifier is an attention BiLSTM, not a TM",
+        "selection_on_test": "Sec. 5.2, p. 6 'we keep our experimental setup from above' (TM settings not tuned per task), but BiLSTM epoch/model selection not described"
+      },
+      "inferred": {
+        "epochs": "training length is r = 2000 rounds of Algorithm 1 (one example per vocabulary word per round), not epochs; left not_reported",
+        "tm_config": "Sec. 5.2 says this is the TM embedding trained on One Billion Word with the setup of Sec. 5.1"
+      }
+    },
+    {
+      "result_indices": [
+        88,
+        89,
+        94,
+        95,
+        100,
+        101,
+        106,
+        107,
+        112,
+        113,
+        118,
+        119
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 600,
+        "clauses_scope": "total",
+        "T": 1200,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.1 'Embedding Datasets', p. 5 (r=2000 rounds, u=25, n=600, T=1200, s=5.0)",
+        "clauses_scope": "Sec. 3.1 'Clause Pool': one pool of n clauses shared by all outputs (Coalesced TM), integer weight per output",
+        "weighted": "Sec. 3.1 'Weights', Eq. (2)",
+        "implementation": "footnotes 1 and 5: implementation at github.com/cair/tmu",
+        "statistic": "no run count or averaging stated for any table",
+        "model": "Sec. 5.2, p. 6: TM embedding with the ~20% randomly embedded words replaced by GloVe vectors; whether E or B was used for the TM part is not restated"
+      },
+      "inferred": {
+        "epochs": "training length is r = 2000 rounds of Algorithm 1 (one example per vocabulary word per round), not epochs; left not_reported",
+        "tm_config": "TMhybrid reuses the TM embedding of the second configuration (Sec. 5.2), i.e. the Sec. 5.1 setup"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "All 120 record values checked against Tables 1-3: no mismatches. Embedding dimension (600) is inferred from the clause count; the TM is a Coalesced TM with a shared pool of n=600 clauses, so clauses_scope='total'. Training length is r=2000 rounds of Algorithm 1 (one example per word per round, u=25 ORed documents), not epochs. Number of TA states not stated (Fig. 2 shows 4 positions only as illustration). Vocabulary size m and its selection are not stated, only that One Billion Word covers ~80% of the downstream vocabulary. Classification n_classes/label_type are not stated in the paper (record uses standard values) and splits are only 'standard SentEval datasets'. Intrinsic usages are typed representation_learning (embedding evaluation); categorization uses KMeans purity with an unstated number of clusters. No run counts, seeds or variance are given for any table, so statistic/n_runs are not_reported. Record category 'generative_sequence' fits poorly: the paper is representation learning."
+}

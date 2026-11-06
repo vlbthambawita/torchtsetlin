@@ -1,0 +1,669 @@
+{
+  "paper_id": "2024_IMPACT_In_Memory_Computing_Y_Flash_Coalesced_TM_Inference_arXiv2412.05327",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-27 (pp. 25-27 are references, skimmed)"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper; 'Data Accessibility. No additional data are available for this article' (p. 24)",
+      "hyperparameters_complete": "clauses (Sec. 3, Table 5) and MNIST epochs (p. 19) given; T, s, booleanization thresholds never stated",
+      "interpretability_evidence": "interpretability claimed (p. 3) but no rules or clause analysis shown; Fig. 9 only shows TA state values for encoding"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": 1,
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 784,
+        "n_literals": 1568,
+        "fit_on": "not_reported",
+        "description": "28x28 grayscale pixels to K = 2x28x28 = 1568 Boolean literals (one bit per pixel plus negation); threshold/method not stated."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Sec. 3, p. 8 ('K = 2 x 28 x 28 Boolean literals and 10 classes')",
+        "split": "Sec. 5, p. 19 ('The MNIST dataset, comprising 10,000 test images')"
+      },
+      "inferred": {
+        "bits_per_feature": "K = 2x28x28 literals for 28x28 pixels -> 1 bit per pixel",
+        "split.protocol": "10,000 test images = the standard MNIST test set; the paper does not name the train split"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "iris",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {
+        "n_classes": 3,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": 4,
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 16,
+        "n_literals": 32,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2",
+        "bits_per_feature": "16 Boolean features / 4 Iris features (Iris has 4 measurements; 150 flowers, 3 species per p. 22)"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "cifar-2",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "balanced",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 1024,
+        "n_literals": 2048,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22",
+        "class_balance": "p. 21 ('2 classes of images, each containing 6,000 color images')"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "google-speech-commands",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 6,
+      "modality": "audio",
+      "synthetic": false,
+      "domain": "speech",
+      "task_detail": {
+        "n_classes": 6,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 377,
+        "n_literals": 754,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": 1,
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 784,
+        "n_literals": 1568,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2",
+        "bits_per_feature": "784 Boolean features for 28x28 pixels"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "emg-data-for-gestures",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 7,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 7,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 96,
+        "n_literals": 192,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "gesture-phase-segmentation",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 5,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 5,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 212,
+        "n_literals": 424,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2"
+      }
+    },
+    {
+      "usage_index": 7,
+      "dataset_id": "human-activity",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 6,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 6,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 816,
+        "n_literals": 1632,
+        "fit_on": "not_reported",
+        "description": "Not described for this dataset; Sec. 2(a) p. 4 only says in general that features are encoded to bits with thresholds and a design-chosen number of bits, each bit taken with its negation as literals. Table 5 gives the literal count."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_literals": "Table 5, p. 22",
+        "n_classes": "Table 5, p. 22"
+      },
+      "inferred": {
+        "n_boolean_features": "literals = each Boolean bit plus its negation (Sec. 2(a), p. 4; MNIST K = 2x28x28), so Boolean features = literals / 2"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 25,
+        "n_states": 128,
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "IMPACT in-memory inference on Y-Flash memristor crossbars (two-terminal Y-Flash, 180 nm CMOS, 3.159 um2/device). Clause crossbar tile 2048x500 in Boolean mode: TA include -> HCS ~2.5 uS (>2.4 uS), exclude -> LCS ~1 nS (programmed with 1 ms pulses, mean 7 pulses); literal '1' applied as floating Z, literal '0' as VR = 2 V; column current summed (Kirchhoff) into a latch current-sense amplifier (VDD 1.2 V, threshold 4.1 uA, 5 ns read: 2 ns delay + 2.5 ns SE + 500 ps discharge). Class crossbar tile 500x10 in analog tunable mode: signed weights shifted to unipolar 0-419 and mapped to uniform conductance segments over 1 nS-2.5 uS; pre-tune (500 us pulses, +-20 segments, <=10 pulses) then fine-tune (50 us pulses, +-5 segments, <=6 pulses); argmax over class currents. Trained in software (CoTM, 25 epochs), then mapped; CSA designed/simulated in Cadence (corner + 2000-sample Monte Carlo), Y-Flash variability from a compact model checked against a measured 12x8 (96-device) array. Energy/area numbers in Table 4 (energy per datapoint averaged over the 10,000 test images). Inference only."
+      },
+      "evidence": {
+        "n_clauses": "Sec. 3, p. 8 ('number of clauses specified in the design to be 500'); class tile 500x10",
+        "clauses_scope": "Sec. 2(a), p. 3-5: CoTM clauses are shared across classes, weight matrix W is classes x clauses (one 500-clause pool)",
+        "epochs": "Sec. 4(b), p. 19 ('same as that achieved in the software training within 25 epochs')",
+        "n_states": "Sec. 4(b), p. 17 ('TA states' values ... range between 1 and 256'; include if > 128)",
+        "weighted": "Sec. 2(a), p. 5 weight matrix; Sec. 4(b), p. 18 weights 0-419",
+        "result 0": "Sec. 4(b), p. 19 ('push the accuracy to 96.31%'); abstract/Table 6 round to 96.3",
+        "results 2-9": "Table 4, p. 22; Table 6, p. 23; Sec. 5, pp. 19-20",
+        "statistic": "no run count; energy/datapoint is an average over the 10,000 test images (Sec. 5, p. 20), not over runs"
+      },
+      "inferred": {
+        "n_states": "states 1-256 = 2N with boundary 128 -> N = 128 states per action",
+        "clauses_scope": "CoTM shares one clause pool across all classes, so 500 counts all clauses"
+      }
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 25,
+        "n_states": 128,
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "IMPACT in-memory inference on Y-Flash memristor crossbars (two-terminal Y-Flash, 180 nm CMOS, 3.159 um2/device). Clause crossbar tile 2048x500 in Boolean mode: TA include -> HCS ~2.5 uS (>2.4 uS), exclude -> LCS ~1 nS (programmed with 1 ms pulses, mean 7 pulses); literal '1' applied as floating Z, literal '0' as VR = 2 V; column current summed (Kirchhoff) into a latch current-sense amplifier (VDD 1.2 V, threshold 4.1 uA, 5 ns read: 2 ns delay + 2.5 ns SE + 500 ps discharge). Class crossbar tile 500x10 in analog tunable mode: signed weights shifted to unipolar 0-419 and mapped to uniform conductance segments over 1 nS-2.5 uS; pre-tune (500 us pulses, +-20 segments, <=10 pulses) fine-tune NOT applied for this row (pre-tuning only, 10 pulses program+erase); argmax over class currents. Trained in software (CoTM, 25 epochs), then mapped; CSA designed/simulated in Cadence (corner + 2000-sample Monte Carlo), Y-Flash variability from a compact model checked against a measured 12x8 (96-device) array. Energy/area numbers in Table 4 (energy per datapoint averaged over the 10,000 test images). Inference only."
+      },
+      "evidence": {
+        "result": "Sec. 4(b), p. 19 ('accuracy of 96.2% ... after a total of 10 pulses (program + erase), even without fine-tuning')",
+        "tm_config": "same trained CoTM as results[0] (Sec. 3, p. 8; Sec. 4(b), p. 17-19)"
+      },
+      "inferred": {
+        "n_states": "states 1-256 = 2N with boundary 128 -> N = 128",
+        "clauses_scope": "CoTM shared clause pool"
+      }
+    },
+    {
+      "result_indices": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "values": "Table 6, p. 23 (numbers quoted from refs [24], [25], [26], [29])"
+      }
+    },
+    {
+      "result_indices": [
+        18
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 12,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        19
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        20
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 300,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        21
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 300,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 300,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 800,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "in_memory",
+        "hardware": "Mapped onto the IMPACT Y-Flash architecture (multiple clause/class crossbar tiles where the model exceeds one 2048x500 / 500x10 array, Sec. 5, p. 21, Fig. 14); whether the accuracy is measured after hardware mapping or is the software accuracy is not stated; no energy/area given."
+      },
+      "evidence": {
+        "n_clauses": "Table 5, p. 22",
+        "result": "Table 5, p. 22",
+        "clauses_scope": "CoTM shared clause pool (Sec. 2(a))"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM shares one clause pool across classes, so the Table 5 count is the total"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Hardware paper: the CoTM is trained in software (training script by a third person, acknowledgements p. 25) and only inference is mapped onto Y-Flash crossbars. MNIST is the only dataset with full mapping, tuning-pulse analysis and energy/area numbers; Table 5 lists 7 more datasets with classes/clauses/literals/accuracy only, no split, epochs, T, s or booleanization, and it does not say whether those accuracies are post-mapping. 'Human Activity' and 'Gesture Phase' are not further identified (record's dataset ids kept); modality/domain for EMG, Gesture Phase and Human Activity are dataset-level judgements, not from the paper. MNIST tile is 2048x500 but Table 4 sizes energy/area for 500x1568. The paper's include rule wording (p. 17) is garbled ('exceeds half of 128' vs '<= 128 exclude'); boundary 128 used. No run counts, seeds or selection protocol are stated anywhere. Table 6 baselines on CIFAR-10/100 ([27],[28],[30],[31]) are not in the record (as its extraction_notes say). Table 6 lists [27] as DNN while the text (p. 22) calls it BCNN on PCM; abstract says DNN-based PCM."
+}

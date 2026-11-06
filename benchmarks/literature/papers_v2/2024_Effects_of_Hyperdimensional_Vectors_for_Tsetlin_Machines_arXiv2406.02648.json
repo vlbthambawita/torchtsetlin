@@ -1,0 +1,448 @@
+{
+  "paper_id": "2024_Effects_of_Hyperdimensional_Vectors_for_Tsetlin_Machines_arXiv2406.02648",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-9"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "no code link in the paper",
+      "hyperparameters_complete": "Table I says 'identical parameters' but lists none; only RbE (s=1) and HVSize/NBits values for some figure experiments are given; no clauses, T, epochs, splits",
+      "interpretability_evidence": "Fig. 3, p. 3: an exported MNIST clause interpreted as row/column/patch hyperliterals",
+      "seeds_stated": "no seeds"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "trec",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "tokenization",
+          "params": "input mapped to HV tokens; what a token is (word or otherwise) is not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "each token gets a random sparse binary HV of HVSize bits with NBits set; tokens bundled by OR (binding = cyclic shift). TREC sweeps HVSize (heatmap, Fig. 11) and NBits 4/8/16 (Figs. 9-11); best cell HVSize 1024, NBits 8. Table I HV size not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. II 'Hypervectors', p. 2; Sec. III p. 4; Figs. 9-11 captions",
+        "dataset": "Sec. III p. 3 (5500 question-answer pairs)"
+      },
+      "inferred": {
+        "label_type": "TREC question classification has more than two classes by dataset definition (refs [9],[28]); the paper never states the class count or which label granularity is used"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "hiv-moleculenet",
+      "task_family": "classification",
+      "setting_tags": [
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "graph",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, 39,684 inactive vs 1,443 active (~96.5% majority)",
+        "discretized_from": "three labels CI/CA/CM, CA+CM merged into Active"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "ECFP6 fingerprints, length 4096, radius 3 bond-lengths"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "each ECFP6 bit position gets its own random sparse binary HV; a compound is the bitwise OR of the HVs of its present bit positions. Swept HVSize x NBits (Fig. 13 heatmap; Figs. 14/15 NBits 4 and 32; HVSizes mentioned 1024 and 8192). Vanilla TM uses the 4096 ECFP6 bits directly. Table I HV size not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. III 'Classification of Compounds', p. 5",
+        "task_detail": "p. 4",
+        "preprocessing": "p. 5 [11]"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "tokenization",
+          "params": "input mapped to HV tokens; tokenization not described"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "sparse binary HV tokens (HVSize bits, NBits set) bundled by OR. Sweeps: HVSize (Fig. 5, best 8192 with NBits 4) and NBits (Fig. 6, HVSize 10000, best NBits 4). Table I HV size not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. II p. 2; Sec. III p. 4; Figs. 5-6",
+        "dataset": "Sec. III p. 3 (25000 reviews, cites Kaushik et al. [8])"
+      },
+      "inferred": {
+        "label_type": "IMDB sentiment is binary by dataset definition; the paper does not state classes"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 8192,
+        "n_literals": 16384,
+        "fit_on": "not_reported",
+        "description": "each image patch gets an HV (HVPat) that is bound (cyclic shift) with its row (HVRow) and column (HVCol) HVs and bundled by OR; part of a token aligned with rows/columns. HVSize swept (Fig. 16, incl. 1024). Clause-reduction experiment: HVTM with 16384 literals vs 785 for vanilla TM. Patch size, pixel binarisation and NBits not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. II, Fig. 2 description, p. 2; Sec. III 'Image Classification', p. 6-7",
+        "n_literals": "p. 7 (16384 literals vs 785)"
+      },
+      "inferred": {
+        "n_boolean_features": "16384 literals = 2 x 8192 hyperfeatures (literals are features plus negations, Sec. II p. 3); this applies to the clause-count experiment (Figs. 17/18), not necessarily to Table I"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I caption: 'identical parameters for both', none listed"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        2,
+        3
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I; p. 6 text ('stable balanced accuracy (86.52%)' at higher HVSizes, Fig. 14)",
+        "statistic": "HV sweeps repeated 5 times with means in Fig. 13 (p. 5), but not said for the Table I numbers"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        4,
+        10
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": 1,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "s": "RbE = s set to 1 (Sec. I, p. 1); 'Using RbE further improves accuracy to 89.67% (Fig. 7)', p. 4",
+        "statistic": "p. 4: 'highest'/'maximum accuracy' for the IMDB figures"
+      },
+      "inferred": {
+        "tm_config": "result 4 (Table I HVTM IMDB) equals the RbE maximum 89.67 of Fig. 7, so it is that run",
+        "statistic": "text reports the maximum of accuracy-vs-epoch curves; no validation set mentioned",
+        "selection_on_test": "maximum over epochs (and best of HV settings) on evaluation data with no validation set"
+      }
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I, 'identical parameters' to HVTM, none listed"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "p. 4: 'highest accuracy rate achieved was 88.1% with HVSize of 8192 and NBits as 4 (Fig. 5)'"
+      },
+      "inferred": {
+        "selection_on_test": "best HVSize and best epoch picked from test curves, no validation set mentioned",
+        "statistic": "'highest accuracy' read off accuracy-vs-epoch curves"
+      }
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "p. 4: 'without RbE the maximum accuracy was 88.42%' (Fig. 8)"
+      },
+      "inferred": {
+        "selection_on_test": "maximum over epochs/settings, no validation set mentioned",
+        "tm_config": "s is not 1 (no RbE) but its value is not given"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "p. 4 / Fig. 11 caption: 'heatmap of maximum accuracy for each NBits and HVSize'; best cell HVSize 1024, NBits 8"
+      },
+      "inferred": {
+        "selection_on_test": "best cell of a heatmap of maximum accuracies, no validation set mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        6,
+        7
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "n_runs": "p. 6: 'each experimental condition was evaluated using five or more ensemble runs' (exact count not given)",
+        "tm_config": "Table I, none listed"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "datasets[0].n_classes",
+      "record": 6,
+      "pdf": "not_reported",
+      "location": "Sec. III p. 3",
+      "note": "the paper never states the TREC class count or granularity (record notes it is assumed)"
+    },
+    {
+      "where": "datasets[0].booleanization / datasets[2].booleanization",
+      "record": "words as (random) sparse HV tokens bundled by OR",
+      "pdf": "HV tokens bundled by OR; the token unit (words) is not stated",
+      "location": "Sec. II p. 2, Sec. III p. 3-4",
+      "note": "'words' is an assumption"
+    },
+    {
+      "where": "datasets[3].notes",
+      "record": "5+ ensemble runs per condition",
+      "pdf": "five or more ensemble runs for the HVSize/NBits/clause sweeps",
+      "location": "p. 6",
+      "note": "not stated for the Table I MNIST numbers"
+    }
+  ],
+  "notes": "Almost no TM hyper-parameters are given: Table I claims identical parameters for HVTM and TM without listing them; no clause counts, T, epochs, splits or seeds. HV size (HVSize) and density (NBits = number of True bits per token) are swept in figures only (values not extractable as text). Results 4 and 10 are the same number (89.67, IMDB HVTM with RbE). The TREC Table I value 95.6 differs from the heatmap best 96.8 (result 11); which setting Table I used is not said. The XOR illustration (Fig. 4) has no numbers. References [14]-[49] are unrelated to the body text (copied bibliography)."
+}

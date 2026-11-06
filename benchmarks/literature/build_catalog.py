@@ -459,8 +459,9 @@ def task_details(papers):
 
 
 def corrections(sidecars):
-    return [(pid, c.get("where"), json.dumps(c.get("record")), json.dumps(c.get("pdf")), c.get("location"),
-             c.get("note"), "open") for pid, sc in sidecars.items() for c in sc.get("corrections", [])]
+    return [(pid, c.get("where"), c.get("kind"), json.dumps(c.get("record")), json.dumps(c.get("pdf")),
+             c.get("location"), c.get("note"), "open")
+            for pid, sc in sidecars.items() for c in sc.get("corrections", [])]
 
 
 # Sidecar fields with a controlled vocabulary (EXTRACTION_V2.md).
@@ -573,7 +574,7 @@ CREATE TABLE results (
     v2_source TEXT, metric_source TEXT
 );
 CREATE TABLE corrections (
-    paper_id TEXT REFERENCES papers(paper_id), location_in_record TEXT, record_value TEXT,
+    paper_id TEXT REFERENCES papers(paper_id), location_in_record TEXT, kind TEXT, record_value TEXT,
     pdf_value TEXT, pdf_location TEXT, note TEXT, status TEXT
 );
 CREATE TABLE task_details (
@@ -661,7 +662,7 @@ def write_sqlite(papers, catalog, path, sidecars):
           r["_v2"].metric_source)
          for i, (pid, r) in enumerate(zip(pids, rows))])
     con.executemany("INSERT INTO task_details VALUES (?,?,?,?,?,?,?)", task_details(papers))
-    con.executemany("INSERT INTO corrections VALUES (?,?,?,?,?,?,?)", corrections(sidecars))
+    con.executemany("INSERT INTO corrections VALUES (?,?,?,?,?,?,?,?)", corrections(sidecars))
     vocab = json.loads((HERE / "vocab.json").read_text())
     con.executemany("INSERT INTO vocab VALUES (?,?)",
                     [(k, v) for k, vs in vocab.items() if not k.startswith("_") for v in vs])

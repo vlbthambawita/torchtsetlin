@@ -1,0 +1,906 @@
+{
+  "paper_id": "2024_Optimized_Toolbox_for_Advanced_Image_Processing_with_TM_Composites_arXiv2406.00704",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "Sec. IV p. 5 footnote 2 (github.com/cair/An-Optimized-Toolbox-...)",
+      "hyperparameters_complete": "Table III gives clauses, window, weighting, T, s, epochs at 2,000 clauses; scaled T for 4,000-64,000 clauses, thermometer levels, threshold block sizes/C, Canny/HOG parameters, TA states and implementation are not given",
+      "seeds_stated": "no seeds or repeated runs mentioned",
+      "interpretability_evidence": "no clauses, rules or analyses shown"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "cifar-10",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "balanced"
+      },
+      "preprocessing": [
+        {
+          "step": "augmentation",
+          "params": "horizontal flip of every training image, appended to the originals (100,000 training images); 'Augmented' specialists only, test set unchanged"
+        },
+        {
+          "step": "feature_extraction",
+          "params": "Canny edge detection (Gaussian filter, Sobel, NMS, double threshold, hysteresis) per RGB channel; HOG descriptor (n x n cells, m x m block normalisation; sizes not given)"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Differs per specialist TM (seven techniques): Canny edge map, adaptive mean, adaptive Gaussian and Otsu thresholding (each per RGB channel), HOG thresholded at 0.1, evenly spaced colour thermometers, and novel adaptive colour thermometers (multilevel-thresholding thresholds).",
+        "specialists": [
+          {
+            "specialist": "10x10 (Augmented) Canny Edge Detection",
+            "method": "other",
+            "description": "Canny edge detection per RGB channel; edge pixel = 1, else 0; Canny thresholds not given"
+          },
+          {
+            "specialist": "10x10 (Augmented) Adaptive Mean Thresholding",
+            "method": "adaptive_threshold",
+            "description": "per-channel threshold = neighbourhood mean - C; block size and C not given"
+          },
+          {
+            "specialist": "5x5 (Augmented) Adaptive Gaussian Thresholding",
+            "method": "adaptive_threshold",
+            "description": "per-channel threshold = Gaussian-weighted neighbourhood mean - C; block size and C not given"
+          },
+          {
+            "specialist": "10x10 (Augmented) Otsu's Thresholding",
+            "method": "otsu",
+            "description": "Otsu threshold computed per image and per RGB channel; pixel > t* -> 1"
+          },
+          {
+            "specialist": "(Augmented) Histogram of Oriented Gradients",
+            "method": "fixed_threshold",
+            "threshold": 0.1,
+            "description": "HOG descriptor element >= 0.1 -> 1, else 0; cell/block sizes not given"
+          },
+          {
+            "specialist": "3x3/4x4/5x5 (Augmented) Color Thermometers",
+            "method": "thermometer",
+            "n_bins": "not_reported",
+            "description": "t evenly spaced thresholds over [0,255] per RGB channel, 3*t bits per pixel; t for the experiments not given (Table I example uses 8 levels)"
+          },
+          {
+            "specialist": "3x3/4x4/5x5 (Augmented) Adaptive Color Thermometers",
+            "method": "thermometer",
+            "n_bins": "not_reported",
+            "description": "thermometer encoding with n thresholds placed by recursive multilevel thresholding (mean +- k*std, Arora et al.) instead of evenly; n and k not given; computed per image (fit_on not stated)"
+          }
+        ]
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. III-A..G pp. 3-5; Table I",
+        "preprocessing": "Sec. III p. 3; Sec. IV-A p. 5",
+        "split": "Sec. IV-A p. 5 '50 000 training images and 10 000 test images'",
+        "class_balance": "Sec. IV-A p. 5 '6 000 images' per class",
+        "validation_used_for": "Sec. IV-B: Optuna selection by 'highest accuracy', evaluation data not stated"
+      },
+      "inferred": {
+        "split": "the 50,000/10,000 train/test partition stated in Sec. IV-A is CIFAR-10's standard split"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1
+      ],
+      "label": "specialist 10x10 (Augmented) Canny Edge Detection, 64,000 clauses",
+      "booleanization": "Canny edge map per RGB channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 10.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=1500 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        2,
+        3
+      ],
+      "label": "specialist 5x5 (Augmented) Adaptive Gaussian Thresholding, 64,000 clauses",
+      "booleanization": "adaptive Gaussian threshold per RGB channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 3.5,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "5x5",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=2500 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        4,
+        5
+      ],
+      "label": "specialist 10x10 (Augmented) Adaptive Mean Thresholding, 64,000 clauses",
+      "booleanization": "adaptive mean threshold per RGB channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 10.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=500 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        6,
+        7
+      ],
+      "label": "specialist 10x10 (Augmented) Otsu's Thresholding, 64,000 clauses",
+      "booleanization": "Otsu threshold per RGB channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 10.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        8,
+        11
+      ],
+      "label": "specialist 3x3 (Augmented) Color Thermometers, 64,000 clauses",
+      "booleanization": "evenly spaced colour thermometer, t levels per channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "3x3",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        9,
+        12
+      ],
+      "label": "specialist 4x4 (Augmented) Color Thermometers, 64,000 clauses",
+      "booleanization": "evenly spaced colour thermometer, t levels per channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        10,
+        13
+      ],
+      "label": "specialist 5x5 (Augmented) Color Thermometers, 64,000 clauses",
+      "booleanization": "evenly spaced colour thermometer, t levels per channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "5x5",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        14,
+        15
+      ],
+      "label": "specialist (Augmented) Histogram of Oriented Gradients, 64,000 clauses",
+      "booleanization": "HOG descriptor thresholded at >= 0.1",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 10.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "32x32",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=50 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        16,
+        19
+      ],
+      "label": "specialist 3x3 (Augmented) Adaptive Color Thermometers, 64,000 clauses",
+      "booleanization": "multilevel-thresholding (adaptive) colour thermometer",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "3x3",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        17,
+        20
+      ],
+      "label": "specialist 4x4 (Augmented) Adaptive Color Thermometers, 64,000 clauses",
+      "booleanization": "multilevel-thresholding (adaptive) colour thermometer",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        18,
+        21
+      ],
+      "label": "specialist 5x5 (Augmented) Adaptive Color Thermometers, 64,000 clauses",
+      "booleanization": "multilevel-thresholding (adaptive) colour thermometer",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "5x5",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (window, weighted, s, epochs at 2,000 clauses); Sec. IV-B p. 6 'we reuse the hyperparameters found for 2 000 clauses for the remaining configurations'; Table IV (64,000 column)",
+        "T": "Sec. IV p. 5 'we change the clause size and scale the feedback threshold (T) thereafter'; Table III gives T=3000 only for 2,000 clauses, the scaled value is not printed",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna TPE, 50 trials x 5 epochs, 'highest accuracy was selected' plus 'manual experimentation'; the data the accuracy was measured on is not stated, no validation set mentioned"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')",
+        "s": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6 (only T is scaled)",
+        "patch_size": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "weighted": "Table III value for 2,000 clauses, reused per Sec. IV-B p. 6",
+        "epochs": "Table III (250) for 2,000 clauses, reused per Sec. IV-B p. 6; Fig. 3 x-axis runs to 250"
+      }
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "label": "TM Composite of all 22 specialists, 2000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "label": "TM Composite of all 22 specialists, 4000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "label": "TM Composite of all 22 specialists, 8000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        25
+      ],
+      "label": "TM Composite of all 22 specialists, 16000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        26
+      ],
+      "label": "TM Composite of all 22 specialists, 32000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        27
+      ],
+      "label": "TM Composite of all 22 specialists, 64000 clauses each",
+      "booleanization": "all seven, one per specialist (see usage booleanization.specialists)",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "n_clauses": "Table IV column header (clauses per TM Specialist, Sec. IV-B p. 6)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "epochs": "Table III; Fig. 3 (250 epochs)",
+        "hardware": "Sec. IV p. 5",
+        "tm_config": "T, s, window and weighting differ per specialist (Table III), so null = not a single value; T is scaled with clauses (Sec. IV p. 5) by an unstated rule"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class'); the count is per specialist TM, 22 specialists in the composite",
+        "epochs": "Table III gives 250 epochs for every specialist, reused for all clause counts (Sec. IV-B p. 6)"
+      }
+    },
+    {
+      "result_indices": [
+        28
+      ],
+      "label": "specialist 10x10 Canny Edge Detection, 2,000 clauses",
+      "booleanization": "Canny edge map per RGB channel",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 1500,
+        "s": 10.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (exact 2,000-clause settings)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna 'highest accuracy' selection, data not stated"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')"
+      }
+    },
+    {
+      "result_indices": [
+        29
+      ],
+      "label": "specialist 4x4 Augmented Color Thermometers, 2,000 clauses",
+      "booleanization": "evenly spaced colour thermometer, t levels per channel; trained on flip-augmented 100,000 images",
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 3000,
+        "s": 5.0,
+        "epochs": 250,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100"
+      },
+      "evidence": {
+        "tm_config": "Table III (exact 2,000-clause settings)",
+        "statistic": "Sec. IV p. 5 'mean of the last 25 epochs with sample variance'; Table IV caption",
+        "hardware": "Sec. IV p. 5",
+        "selection_on_test": "Sec. IV-B p. 5: Optuna 'highest accuracy' selection, data not stated"
+      },
+      "inferred": {
+        "clauses_scope": "Tables II-IV print only 'Clauses'; Sec. II-B (p. 2) defines the hyper-parameter n as the number of clauses per class ('A TM utilizes a group of n conjunctive clauses for each class')"
+      }
+    },
+    {
+      "result_indices": [
+        30
+      ],
+      "label": "cited: Drop Clause CTM (Sharma et al. 2023)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 60000,
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Sec. V p. 6: 'Drop Clause technique for the TM using 60 000 clauses ... adaptive Gaussian thresholding ... CTM'"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        31
+      ],
+      "label": "cited: TM Composites (Granmo 2023)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Sec. V p. 7: '2 000 clauses per TM Specialist' (four specialists: HOG, adaptive Gaussian thresholding, color thermometers)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        32
+      ],
+      "label": "cited: CTM (Mathisen & Smørvik 2020, modified CIFAR-10)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": "not_reported",
+      "evidence": {
+        "tm_config": "Sec. V p. 6 gives only the architecture (CTM) and accuracy"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[0..21].config (T=...)",
+      "record": "e.g. '64,000 clauses (T scaled from 2,000-clause setting), ... T=1500'",
+      "pdf": "T for 64,000 clauses not reported",
+      "location": "Sec. IV p. 5; Table III; Sec. IV-B p. 6",
+      "note": "The T values in the record are Table III's 2,000-clause values; the paper says T is scaled with the clause count but never prints the scaled T or the rule, so the record's 'T=<value>' at 64,000 clauses is not what was used."
+    },
+    {
+      "where": "results[8..13,16..21].config",
+      "record": "no convolution window given",
+      "pdf": "3x3 / 4x4 / 5x5 windows",
+      "location": "Table III",
+      "note": "Window is in the specialist name and Table III; record config omits it (minor)."
+    }
+  ],
+  "notes": "Single dataset (CIFAR-10), 8 pages. All Table IV values in the record match the PDF; '±' is sample variance s^2 over the last 25 of 250 epochs, not std. Hyper-parameters (window, weighted, T, s) were searched with Optuna (TPE, 50 trials of 5 epochs, ranges in Table II) at 2,000 clauses plus 'manual experimentation' and reused for 4,000-64,000 clauses and for the augmented variants, except that T is 'scaled' by an unstated rule. Whether the Optuna 'highest accuracy' was measured on the test set is not stated and no validation set is mentioned, so selection_on_test is not_reported (it would be true if the test set was used). Augmentation (horizontal flips) applies only to 'Augmented' specialists; the composite combines both augmented and non-augmented specialists. Clause counts are per specialist TM and read as per class from Sec. II-B. Implementation library is not named (cair GitHub repo); hardware NVIDIA DGX H100. Composite normalisation alpha_t (Eq. 4) uses max-min class sums over the input set, unlabelled. Fig. 3 (composite accuracy per epoch) is figure-only. Each configs entry carries a free-text 'booleanization' for the specialist(s) it covers. Cited baselines (results 30-32) were not re-run."
+}

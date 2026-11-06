@@ -1,0 +1,836 @@
+{
+  "paper_id": "2023_TMComposites_Plug_and_Play_Collaboration_Between_Specialized_TMs_arXiv2309.04801",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "p. 1 footnote (github.com/cair/Plug-and-Play-Collaboration-Between-Specialized-Tsetlin-Machines)",
+      "hyperparameters_complete": "Table 1 gives clauses, T, s, literal budget; epochs in Table 2 caption; HoG patch/encoding, number of TA states, implementation, batch/seed not given",
+      "seeds_stated": "no seeds or repetitions mentioned",
+      "interpretability_evidence": "Figs. 3-4 show example images at low/high confidence, no clauses or rules"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "uncertainty"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "Histogram of Gradients (HoG specialist only; setup from github.com/hudara/cifar-10)"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Differs per specialist TM: Adaptive Gaussian Thresholding per colour channel (10x10 Thresholding TM), 8-level thermometer per colour channel (3x3/4x4 Color Thermometer TMs), Histogram of Gradients (HoG TM).",
+        "specialists": [
+          {
+            "specialist": "10x10 Thresholding",
+            "method": "adaptive_threshold",
+            "description": "Adaptive Gaussian Thresholding (OpenCV) per colour channel"
+          },
+          {
+            "specialist": "3x3 / 4x4 Color Thermometers",
+            "method": "thermometer",
+            "n_bins": 8,
+            "description": "8-level thermometer encoding per colour channel"
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "method": "other",
+            "description": "Histogram of Gradients features; setup reused from github.com/hudara/cifar-10, details not given"
+          }
+        ]
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4 (Thresholding, footnote 1; Color Thermometers ref. [6]; HoG footnote 2); Fig. 1",
+        "setting_tags": "Sec. 4 p. 4: accuracy vs confidence (max class sum), Figs. 2-4",
+        "split": "no split described; Sec. 4 p. 4 mentions the 10 000 CIFAR-100 test images"
+      },
+      "inferred": {}
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "cifar-10",
+      "task_family": "classification",
+      "setting_tags": [
+        "uncertainty"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "Histogram of Gradients (HoG specialist only; setup from github.com/hudara/cifar-10)"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Differs per specialist TM: Adaptive Gaussian Thresholding per colour channel (10x10 Thresholding TM), 8-level thermometer per colour channel (3x3/4x4 Color Thermometer TMs), Histogram of Gradients (HoG TM).",
+        "specialists": [
+          {
+            "specialist": "10x10 Thresholding",
+            "method": "adaptive_threshold",
+            "description": "Adaptive Gaussian Thresholding (OpenCV) per colour channel"
+          },
+          {
+            "specialist": "3x3 / 4x4 Color Thermometers",
+            "method": "thermometer",
+            "n_bins": 8,
+            "description": "8-level thermometer encoding per colour channel"
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "method": "other",
+            "description": "Histogram of Gradients features; setup reused from github.com/hudara/cifar-10, details not given"
+          }
+        ]
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4 (Thresholding, footnote 1; Color Thermometers ref. [6]; HoG footnote 2); Fig. 1",
+        "setting_tags": "Sec. 4 p. 4: accuracy vs confidence (max class sum), Figs. 2-4",
+        "split": "no split described; Sec. 4 p. 4 mentions the 10 000 CIFAR-100 test images"
+      },
+      "inferred": {}
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "cifar-100",
+      "task_family": "classification",
+      "setting_tags": [
+        "uncertainty"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 100,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 100,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "Histogram of Gradients (HoG specialist only; setup from github.com/hudara/cifar-10)"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Differs per specialist TM: Adaptive Gaussian Thresholding per colour channel (10x10 Thresholding TM), 8-level thermometer per colour channel (3x3/4x4 Color Thermometer TMs), Histogram of Gradients (HoG TM).",
+        "specialists": [
+          {
+            "specialist": "10x10 Thresholding",
+            "method": "adaptive_threshold",
+            "description": "Adaptive Gaussian Thresholding (OpenCV) per colour channel"
+          },
+          {
+            "specialist": "3x3 / 4x4 Color Thermometers",
+            "method": "thermometer",
+            "n_bins": 8,
+            "description": "8-level thermometer encoding per colour channel"
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "method": "other",
+            "description": "Histogram of Gradients features; setup reused from github.com/hudara/cifar-10, details not given"
+          }
+        ]
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4 (Thresholding, footnote 1; Color Thermometers ref. [6]; HoG footnote 2); Fig. 1",
+        "setting_tags": "Sec. 4 p. 4: accuracy vs confidence (max class sum), Figs. 2-4",
+        "split": "no split described; Sec. 4 p. 4 mentions the 10 000 CIFAR-100 test images"
+      },
+      "inferred": {}
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "label": "specialist 10x10 Thresholding, cifar-10",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 500,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "label": "specialist 10x10 Thresholding, cifar-100",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": 4000,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "label": "specialist 10x10 Thresholding, fashion-mnist",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 2000,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "10x10",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "label": "specialist 3x3 Color Thermometers, cifar-10",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 1500,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "3x3",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "label": "specialist 3x3 Color Thermometers, cifar-100",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": 12000,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "3x3",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "label": "specialist 3x3 Color Thermometers, fashion-mnist",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "3x3",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "label": "specialist 4x4 Color Thermometers, cifar-10",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 1500,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        7
+      ],
+      "label": "specialist 4x4 Color Thermometers, cifar-100",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": 12000,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "label": "specialist 4x4 Color Thermometers, fashion-mnist",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 2.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "4x4",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists"
+      }
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "label": "specialist Histogram of Gradients, cifar-10",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 50,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "not_reported",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists",
+        "weighted": "Table 1 lists 'clauses' for HoG versus 'weighted clauses' for the other specialists"
+      }
+    },
+    {
+      "result_indices": [
+        10
+      ],
+      "label": "specialist Histogram of Gradients, cifar-100",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": 400,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "not_reported",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists",
+        "weighted": "Table 1 lists 'clauses' for HoG versus 'weighted clauses' for the other specialists"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "label": "specialist Histogram of Gradients, fashion-mnist",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 200,
+        "s": 10.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": "not_reported",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5) incl. caption 'budget of 32 literals'; patch size from specialist name (Fig. 1, Table 2) and Sec. 4 p. 4",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'",
+        "epochs": "Table 2 caption"
+      },
+      "inferred": {
+        "clauses_scope": "Table 1 prints only '2K/16K/8K clauses'; Sec. 2 defines n as clauses per class and Sec. 4 (p. 4) states 'weighted clauses per class' for the same specialists",
+        "weighted": "Table 1 lists 'clauses' for HoG versus 'weighted clauses' for the other specialists"
+      }
+    },
+    {
+      "result_indices": [
+        12,
+        15,
+        18,
+        21,
+        24
+      ],
+      "label": "TM Composites, cifar-10",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "composite": "sum over member TMs of class sums divided by alpha_t = max-min class sum over the input set (Eq. 7-8); no fine-tuning",
+        "members": [
+          {
+            "specialist": "10x10 Thresholding",
+            "n_clauses": 2000,
+            "clauses_scope": "per_class",
+            "T": 500,
+            "s": 10.0,
+            "weighted": true,
+            "patch_size": "10x10",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "3x3 Color Thermometers",
+            "n_clauses": 2000,
+            "clauses_scope": "per_class",
+            "T": 1500,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "3x3",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "4x4 Color Thermometers",
+            "n_clauses": 2000,
+            "clauses_scope": "per_class",
+            "T": 1500,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "4x4",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "n_clauses": 2000,
+            "clauses_scope": "per_class",
+            "T": 50,
+            "s": 10.0,
+            "weighted": false,
+            "patch_size": "not_reported",
+            "max_included_literals": 32
+          }
+        ]
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5); composite rule Sec. 3, Eqs. 6-8, p. 3",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'"
+      },
+      "inferred": {
+        "n_clauses": "every member uses the same printed clause count for this dataset (Table 1); it is the per-member count, T/s/weighted/patch differ per member (see members)",
+        "clauses_scope": "as for the specialists: Sec. 2 / Sec. 4 'clauses per class'",
+        "members": "composite members' settings taken from Table 1, assumed equal to the standalone specialists of Table 2"
+      }
+    },
+    {
+      "result_indices": [
+        13,
+        16,
+        19,
+        22,
+        25
+      ],
+      "label": "TM Composites, cifar-100",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "composite": "sum over member TMs of class sums divided by alpha_t = max-min class sum over the input set (Eq. 7-8); no fine-tuning",
+        "members": [
+          {
+            "specialist": "10x10 Thresholding",
+            "n_clauses": 16000,
+            "clauses_scope": "per_class",
+            "T": 4000,
+            "s": 10.0,
+            "weighted": true,
+            "patch_size": "10x10",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "3x3 Color Thermometers",
+            "n_clauses": 16000,
+            "clauses_scope": "per_class",
+            "T": 12000,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "3x3",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "4x4 Color Thermometers",
+            "n_clauses": 16000,
+            "clauses_scope": "per_class",
+            "T": 12000,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "4x4",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "n_clauses": 16000,
+            "clauses_scope": "per_class",
+            "T": 400,
+            "s": 10.0,
+            "weighted": false,
+            "patch_size": "not_reported",
+            "max_included_literals": 32
+          }
+        ]
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5); composite rule Sec. 3, Eqs. 6-8, p. 3",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'"
+      },
+      "inferred": {
+        "n_clauses": "every member uses the same printed clause count for this dataset (Table 1); it is the per-member count, T/s/weighted/patch differ per member (see members)",
+        "clauses_scope": "as for the specialists: Sec. 2 / Sec. 4 'clauses per class'",
+        "members": "composite members' settings taken from Table 1, assumed equal to the standalone specialists of Table 2"
+      }
+    },
+    {
+      "result_indices": [
+        14,
+        17,
+        20,
+        23,
+        26
+      ],
+      "label": "TM Composites, fashion-mnist",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": null,
+        "s": null,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 32,
+        "patch_size": null,
+        "weighted": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "composite": "sum over member TMs of class sums divided by alpha_t = max-min class sum over the input set (Eq. 7-8); no fine-tuning",
+        "members": [
+          {
+            "specialist": "10x10 Thresholding",
+            "n_clauses": 8000,
+            "clauses_scope": "per_class",
+            "T": 2000,
+            "s": 10.0,
+            "weighted": true,
+            "patch_size": "10x10",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "3x3 Color Thermometers",
+            "n_clauses": 8000,
+            "clauses_scope": "per_class",
+            "T": 6000,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "3x3",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "4x4 Color Thermometers",
+            "n_clauses": 8000,
+            "clauses_scope": "per_class",
+            "T": 6000,
+            "s": 2.5,
+            "weighted": true,
+            "patch_size": "4x4",
+            "max_included_literals": 32
+          },
+          {
+            "specialist": "Histogram of Gradients",
+            "n_clauses": 8000,
+            "clauses_scope": "per_class",
+            "T": 200,
+            "s": 10.0,
+            "weighted": false,
+            "patch_size": "not_reported",
+            "max_included_literals": 32
+          }
+        ]
+      },
+      "evidence": {
+        "tm_config": "Table 1 (p. 5); composite rule Sec. 3, Eqs. 6-8, p. 3",
+        "statistic": "Table 2 caption 'Accuracy after 100 epochs'"
+      },
+      "inferred": {
+        "n_clauses": "every member uses the same printed clause count for this dataset (Table 1); it is the per-member count, T/s/weighted/patch differ per member (see members)",
+        "clauses_scope": "as for the specialists: Sec. 2 / Sec. 4 'clauses per class'",
+        "members": "composite members' settings taken from Table 1, assumed equal to the standalone specialists of Table 2"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[9].model / results[9..11].config",
+      "record": "Convolutional TM specialist: Histogram of Gradients",
+      "pdf": "Histogram of Gradients (TM specialist)",
+      "location": "Table 1, Table 2, Sec. 4 footnote 2",
+      "note": "The paper never says the HoG specialist is convolutional or gives a window size; it only says it reuses the setup of github.com/hudara/cifar-10. 'Convolutional' is not reported for HoG."
+    }
+  ],
+  "notes": "Single-model paper, 8 pages. Table 2 values all match the record. Statistic is 'accuracy after 100 epochs' (final epoch); number of runs not stated. Internal inconsistency: Sec. 4 p. 4 describes the CIFAR-100 Thresholding TM of Fig. 2 with 8 000 weighted clauses per class, T=2000, s=10.0, whereas Table 1 gives 16K clauses, T=4000 for CIFAR-100; the Color Thermometer TM of Fig. 4 (dataset not named) uses 8 000 clauses, T=6000, s=2.5, 4x4 window. Table 1/2 settings are used here. The composite normalizer alpha_t (Eq. 7) is the max-min class sum over 'the input set X', i.e. computed over the evaluated (test) inputs, unlabelled; labels are not used. Epoch-by-epoch curves (Figs. 5-6) and confidence-vs-accuracy curves (Figs. 2-4) are figures only and not extracted. Fashion-MNIST is grayscale, so 'per colour channel' presumably means a single channel there (not stated). Implementation library not named (cair code repo)."
+}

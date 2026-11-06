@@ -1,0 +1,99 @@
+{
+  "paper_id": "2024_In_Memory_Learning_Automata_Architecture_using_Y_Flash_Cell_arXiv2408.09456",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-5"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "no code or repository link anywhere in the paper",
+      "seeds_stated": "no seeds or repeated runs mentioned",
+      "hyperparameters_complete": "Sec. II-B, p. 3 gives only 2N = 300 TA states, DC threshold +-15, 0.5 ms pulse width and 5000 training points; number of clauses, T, s, epochs and XOR feature count are not given",
+      "primary_task_family": "Sec. II-B, p. 3: TM trained on the XOR problem dataset (classification); the paper reports no classification metric"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "xor",
+      "task_family": "classification",
+      "setting_tags": ["hardware"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported", "discretized_from": null},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "'the TM is trained using the XOR problem dataset'; the generator, noise level and feature count are not described"
+      },
+      "split": {"protocol": "none", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "dataset": "Sec. II-B, p. 3",
+        "split": "Sec. II-B, p. 3: only 'the training process, which involved 5000 data points'; no test or validation evaluation reported"
+      },
+      "inferred": {
+        "n_classes": "XOR is a two-class Boolean problem; the paper does not print the class count",
+        "booleanization": "XOR inputs are Boolean by construction; the paper says nothing about encoding",
+        "split": "protocol 'none' because the paper only records TA trajectories during training and evaluates nothing on held-out data"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": 150,
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "in_memory",
+        "hardware": "Each Tsetlin Automaton mapped onto the analog conductance of one Y-Flash floating-gate memristor (two transistors, read SR 0.6 um / Vth ~0.3 V and injection SI 0.3 um / Vth ~1.5 V, shared drain and floating gate, commercial 180 nm CMOS, two-terminal mode with sources shorted, self-selecting, no selector). An accumulating divergence counter sums TA state changes over training points and issues a blind program/erase pulse (0.5 ms width in this experiment) when it crosses +-15, then resets. Simulated with a compact Y-Flash model including D2D and C2C variation [14]. 8 TAs shown, 5000 training points, 2N = 300 TA states (decision boundary 150); 19 pulses to track the trajectories; max included TA 2.33 uS, min excluded TA 23.2 nS."
+      },
+      "evidence": {
+        "tm_config": "Sec. II-B, p. 3 ('decision boundary for the TA was set at 150 states (2N = 300)', '+-15 in this experiment', 'pulse width of 0.5 ms')",
+        "hardware": "Sec. II-A, pp. 2-3; Sec. II-B, p. 3; Fig. 4, Fig. 5",
+        "implementation": "Sec. II, p. 2: 'a compact Y-Flash model is employed, considering both D2D and C2C variations'; abstract: 'Through comprehensive simulations'",
+        "statistic": "Fig. 5 caption: state transitions of eight TAs during the learning procedure (one training run shown)"
+      },
+      "inferred": {
+        "n_states": "paper prints 2N = 300 with the decision boundary at 150; recorded as N = 150 states per action",
+        "statistic": "only one training run's trajectories are shown; no repetition mentioned",
+        "n_runs": "same as statistic"
+      }
+    },
+    {
+      "result_indices": [1, 2, 3],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": null,
+      "evidence": {
+        "values": "Table II, p. 4",
+        "statistic": "Sec. III, p. 4: average power/energy per pulse derived from the 40 conductance states of Fig. 3 (program/erase, 200 us pulse) and a 5 ns read pulse (Fig. 2); averaging is over pulses/states, not over runs"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Device/mapping study: no accuracy, latency or throughput. Table II reports a single Y-Flash device's average power and energy per pulse (read 2 V/40 states, program 5 V/40 states, erase 8 V/32 states); results 1-3 are device-level (tm_config null). It is not clear whether the Table II and C2C/D2D numbers are measurements on fabricated devices or come from the compact model of [14]: Sec. II says a compact model is used, Sec. III says 'we performed the cycling performance test'. Inconsistency in the paper: Fig. 6 caption says LCS/HCS distributions over 100 cycles while the text says 250 cycles; the record follows the text. Erase states in Table II are 32 although the text speaks of 40 states for both modes. Whether the XOR dataset is the noisy XOR variant is not stated."
+}

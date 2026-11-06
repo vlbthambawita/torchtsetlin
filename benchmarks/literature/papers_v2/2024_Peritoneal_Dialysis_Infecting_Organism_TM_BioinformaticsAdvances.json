@@ -1,0 +1,767 @@
+{
+  "paper_id": "2024_Peritoneal_Dialysis_Infecting_Organism_TM_BioinformaticsAdvances",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-16"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "Abstract and Data availability, p. 1/15: github.com/anatoliy-gorbenko/biomarkers-visualization (tools and anonymized data)",
+      "seeds_stated": "only the MICE imputation seed (500) is given, Sec. 2.3.1; no TM/CV seeds",
+      "hyperparameters_complete": "C, T, s and bins given (Tables 1-3); epochs, TA states, s for the 2/3-range models, ANN training details not given",
+      "interpretability_evidence": "Figs. 2-3 and 5-8: clause stencils with per-clause TP/FP; Sec. 3.5 feature ranking from clause occurrences; Fig. 9 / Table 4 minimal biomarker sets"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "pd-peritonitis-biomarkers-5class",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 5,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 5,
+        "label_type": "multiclass",
+        "class_balance": "imbalanced, majority 25.6% (no growth 19, Gram-negative 17, streptococcal 15, CNS 21, other Gram-positive 10 of 82)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "imputation",
+          "params": "MICE (R package mice v3.17.0), one imputation, random forest per column, seed 500, max 50 iterations; applied to the whole dataset before cross-validation (not stated explicitly whether fitted per fold)"
+        },
+        {
+          "step": "resampling",
+          "params": "RandomOverSampler (imblearn) on minority classes inside each training fold only"
+        },
+        {
+          "step": "feature_selection",
+          "params": "manual: 'soluble' subset = 39 soluble ELISA biomarkers (Zym excluded) + TotalCellCount = 40 features; all flow-cytometry cellular markers dropped"
+        }
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 4,
+        "n_bins": 4,
+        "threshold": "equal-width intervals of each biomarker's measured [min, max] range",
+        "n_boolean_features": 196,
+        "n_literals": 392,
+        "fit_on": "not_reported",
+        "description": "Each biomarker's measured range (max - min) split into equal-width intervals, one-hot encoded; 4 intervals x 49 biomarkers = 196 Boolean features for the full dataset (the soluble-subset rows use 40 biomarkers, i.e. 160 features)."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. 3.2 i)-iv), p. 4 (class counts); Table 1 footnote (five classes)",
+        "class_balance": "counts from Sec. 3.2, p. 4; percentage computed 21/82",
+        "preprocessing": "Sec. 2.3.1 (imputation, p. 3), Sec. 2.3.3 (oversampling, pp. 3-4), Sec. 3.6 p. 7 and Table 1 (soluble subset)",
+        "booleanization": "Sec. 2.3.2, p. 3 (equal-width bins over measured max-min range, one-hot; 4 intervals x 49 biomarkers = 196 Boolean features); Table 1 footnote: 4 biomarker ranges, 39 200 TAs",
+        "split": "Sec. 2.3.3, pp. 3-4: stratified five-fold cross-validation, 80% train / 20% validation per fold, RandomOverSampler inside training folds; reported 'validation' = held-out CV fold, no separate test set",
+        "patient_wise": "Sec. 2.1, p. 2: 82 patients and 82 samples (one sample per patient), so the folds are effectively patient-wise; not stated as such"
+      },
+      "inferred": {
+        "n_boolean_features": "196 is stated for the full dataset; the soluble subset (40 biomarkers x 4) would be 160, not stated"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "pd-peritonitis-step1-nogrowth-vs-culturepos",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority 76.8% (culture-positive 63 vs no growth 19 of 82)",
+        "discretized_from": "hierarchical step 1 of the 5 organism groups; all 82 episodes: no growth vs culture-positive (5-class labels merged)"
+      },
+      "preprocessing": [
+        {
+          "step": "imputation",
+          "params": "MICE (R package mice v3.17.0), one imputation, random forest per column, seed 500, max 50 iterations; applied to the whole dataset before cross-validation (not stated explicitly whether fitted per fold)"
+        },
+        {
+          "step": "resampling",
+          "params": "RandomOverSampler (imblearn) on minority classes inside each training fold only"
+        },
+        {
+          "step": "feature_selection",
+          "params": "manual: 'soluble' subset = 39 soluble ELISA biomarkers (Zym excluded) + TotalCellCount = 40 features; all flow-cytometry cellular markers dropped"
+        },
+        {
+          "step": "feature_selection",
+          "params": "for the minimized models only: biomarkers ranked by |occurrences in target-class clauses - occurrences in opposing-class clauses| and added greedily until a target accuracy (90/95/99-100%) is reached (Sec. 3.5, Table 4)"
+        }
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 4,
+        "n_bins": 4,
+        "threshold": "equal-width intervals of each biomarker's measured [min, max] range",
+        "n_boolean_features": 160,
+        "n_literals": 320,
+        "fit_on": "not_reported",
+        "description": "Equal-width one-hot binning of each soluble biomarker's measured range; Table 2 compares 2, 3 and 4 intervals (6400 / 9600 / 12 800 TAs, i.e. 80 / 120 / 160 Boolean features); Table 3 and the minimized models use 4 intervals."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "class_balance": "Sec. 3.2 i)-iv), p. 4; percentage computed",
+        "preprocessing": "Sec. 2.3.1, 2.3.3, 3.5-3.6; Table 2 footnote (soluble biomarkers excl. Zym, incl. TotalCellCount)",
+        "booleanization": "Sec. 2.3.2, p. 3 (equal-width bins over measured max-min range, one-hot; 4 intervals x 49 biomarkers = 196 Boolean features); Table 2 header (2/3/4 ranges = 6400/9600/12 800 TAs)",
+        "split": "Sec. 2.3.3, pp. 3-4: stratified five-fold cross-validation, 80% train / 20% validation per fold, RandomOverSampler inside training folds; reported 'validation' = held-out CV fold, no separate test set",
+        "validation_used_for": "Fig. 1 caption, Sec. 3.2 p. 5: s 'optimized individually at each step for maximum performance'; Table 3",
+        "patient_wise": "one sample per patient (82/82), folds effectively patient-wise; not stated"
+      },
+      "inferred": {
+        "n_boolean_features": "12 800 TAs = 2 classes x 20 clauses x 2 x 160 literals -> 40 biomarkers x 4 bins",
+        "validation_used_for": "s chosen for maximum performance with no data outside the 5 CV folds, so the reported validation folds were used for tuning"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "pd-peritonitis-step2-gramneg-vs-grampos",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority 73.0% (Gram-positive 46 vs Gram-negative 17 of 63)",
+        "discretized_from": "hierarchical step 2 of the 5 organism groups; culture-positive subset only: Gram-negative vs Gram-positive"
+      },
+      "preprocessing": [
+        {
+          "step": "imputation",
+          "params": "MICE (R package mice v3.17.0), one imputation, random forest per column, seed 500, max 50 iterations; applied to the whole dataset before cross-validation (not stated explicitly whether fitted per fold)"
+        },
+        {
+          "step": "resampling",
+          "params": "RandomOverSampler (imblearn) on minority classes inside each training fold only"
+        },
+        {
+          "step": "feature_selection",
+          "params": "manual: 'soluble' subset = 39 soluble ELISA biomarkers (Zym excluded) + TotalCellCount = 40 features; all flow-cytometry cellular markers dropped"
+        },
+        {
+          "step": "feature_selection",
+          "params": "for the minimized models only: biomarkers ranked by |occurrences in target-class clauses - occurrences in opposing-class clauses| and added greedily until a target accuracy (90/95/99-100%) is reached (Sec. 3.5, Table 4)"
+        }
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 4,
+        "n_bins": 4,
+        "threshold": "equal-width intervals of each biomarker's measured [min, max] range",
+        "n_boolean_features": 160,
+        "n_literals": 320,
+        "fit_on": "not_reported",
+        "description": "Equal-width one-hot binning of each soluble biomarker's measured range; Table 2 compares 2, 3 and 4 intervals (6400 / 9600 / 12 800 TAs, i.e. 80 / 120 / 160 Boolean features); Table 3 and the minimized models use 4 intervals."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "class_balance": "Sec. 3.2 i)-iv), p. 4; percentage computed",
+        "preprocessing": "Sec. 2.3.1, 2.3.3, 3.5-3.6; Table 2 footnote (soluble biomarkers excl. Zym, incl. TotalCellCount)",
+        "booleanization": "Sec. 2.3.2, p. 3 (equal-width bins over measured max-min range, one-hot; 4 intervals x 49 biomarkers = 196 Boolean features); Table 2 header (2/3/4 ranges = 6400/9600/12 800 TAs)",
+        "split": "Sec. 2.3.3, pp. 3-4: stratified five-fold cross-validation, 80% train / 20% validation per fold, RandomOverSampler inside training folds; reported 'validation' = held-out CV fold, no separate test set",
+        "validation_used_for": "Fig. 1 caption, Sec. 3.2 p. 5: s 'optimized individually at each step for maximum performance'; Table 3",
+        "patient_wise": "one sample per patient (82/82), folds effectively patient-wise; not stated"
+      },
+      "inferred": {
+        "n_boolean_features": "12 800 TAs = 2 classes x 20 clauses x 2 x 160 literals -> 40 biomarkers x 4 bins",
+        "validation_used_for": "s chosen for maximum performance with no data outside the 5 CV folds, so the reported validation folds were used for tuning"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "pd-peritonitis-step3-strep-vs-nonstrep",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority 67.4% (non-streptococcal 31 vs streptococcal 15 of 46)",
+        "discretized_from": "hierarchical step 3 of the 5 organism groups; Gram-positive subset only: streptococcal (Streptococcus, Enterococcus) vs non-streptococcal"
+      },
+      "preprocessing": [
+        {
+          "step": "imputation",
+          "params": "MICE (R package mice v3.17.0), one imputation, random forest per column, seed 500, max 50 iterations; applied to the whole dataset before cross-validation (not stated explicitly whether fitted per fold)"
+        },
+        {
+          "step": "resampling",
+          "params": "RandomOverSampler (imblearn) on minority classes inside each training fold only"
+        },
+        {
+          "step": "feature_selection",
+          "params": "manual: 'soluble' subset = 39 soluble ELISA biomarkers (Zym excluded) + TotalCellCount = 40 features; all flow-cytometry cellular markers dropped"
+        },
+        {
+          "step": "feature_selection",
+          "params": "for the minimized models only: biomarkers ranked by |occurrences in target-class clauses - occurrences in opposing-class clauses| and added greedily until a target accuracy (90/95/99-100%) is reached (Sec. 3.5, Table 4)"
+        }
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 4,
+        "n_bins": 4,
+        "threshold": "equal-width intervals of each biomarker's measured [min, max] range",
+        "n_boolean_features": 160,
+        "n_literals": 320,
+        "fit_on": "not_reported",
+        "description": "Equal-width one-hot binning of each soluble biomarker's measured range; Table 2 compares 2, 3 and 4 intervals (6400 / 9600 / 12 800 TAs, i.e. 80 / 120 / 160 Boolean features); Table 3 and the minimized models use 4 intervals."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "class_balance": "Sec. 3.2 i)-iv), p. 4; percentage computed",
+        "preprocessing": "Sec. 2.3.1, 2.3.3, 3.5-3.6; Table 2 footnote (soluble biomarkers excl. Zym, incl. TotalCellCount)",
+        "booleanization": "Sec. 2.3.2, p. 3 (equal-width bins over measured max-min range, one-hot; 4 intervals x 49 biomarkers = 196 Boolean features); Table 2 header (2/3/4 ranges = 6400/9600/12 800 TAs)",
+        "split": "Sec. 2.3.3, pp. 3-4: stratified five-fold cross-validation, 80% train / 20% validation per fold, RandomOverSampler inside training folds; reported 'validation' = held-out CV fold, no separate test set",
+        "validation_used_for": "Fig. 1 caption, Sec. 3.2 p. 5: s 'optimized individually at each step for maximum performance'; Table 3",
+        "patient_wise": "one sample per patient (82/82), folds effectively patient-wise; not stated"
+      },
+      "inferred": {
+        "n_boolean_features": "12 800 TAs = 2 classes x 20 clauses x 2 x 160 literals -> 40 biomarkers x 4 bins",
+        "validation_used_for": "s chosen for maximum performance with no data outside the 5 CV folds, so the reported validation folds were used for tuning"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "pd-peritonitis-step4-cns-vs-othergrampos",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority 67.7% (CNS 21 vs other Gram-positive 10 of 31)",
+        "discretized_from": "hierarchical step 4 of the 5 organism groups; non-streptococcal Gram-positive subset only: coagulase-negative Staphylococcus vs other (S. aureus, Corynebacterium, others)"
+      },
+      "preprocessing": [
+        {
+          "step": "imputation",
+          "params": "MICE (R package mice v3.17.0), one imputation, random forest per column, seed 500, max 50 iterations; applied to the whole dataset before cross-validation (not stated explicitly whether fitted per fold)"
+        },
+        {
+          "step": "resampling",
+          "params": "RandomOverSampler (imblearn) on minority classes inside each training fold only"
+        },
+        {
+          "step": "feature_selection",
+          "params": "manual: 'soluble' subset = 39 soluble ELISA biomarkers (Zym excluded) + TotalCellCount = 40 features; all flow-cytometry cellular markers dropped"
+        },
+        {
+          "step": "feature_selection",
+          "params": "for the minimized models only: biomarkers ranked by |occurrences in target-class clauses - occurrences in opposing-class clauses| and added greedily until a target accuracy (90/95/99-100%) is reached (Sec. 3.5, Table 4)"
+        }
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 4,
+        "n_bins": 4,
+        "threshold": "equal-width intervals of each biomarker's measured [min, max] range",
+        "n_boolean_features": 160,
+        "n_literals": 320,
+        "fit_on": "not_reported",
+        "description": "Equal-width one-hot binning of each soluble biomarker's measured range; Table 2 compares 2, 3 and 4 intervals (6400 / 9600 / 12 800 TAs, i.e. 80 / 120 / 160 Boolean features); Table 3 and the minimized models use 4 intervals."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "class_balance": "Sec. 3.2 i)-iv), p. 4; percentage computed",
+        "preprocessing": "Sec. 2.3.1, 2.3.3, 3.5-3.6; Table 2 footnote (soluble biomarkers excl. Zym, incl. TotalCellCount)",
+        "booleanization": "Sec. 2.3.2, p. 3 (equal-width bins over measured max-min range, one-hot; 4 intervals x 49 biomarkers = 196 Boolean features); Table 2 header (2/3/4 ranges = 6400/9600/12 800 TAs)",
+        "split": "Sec. 2.3.3, pp. 3-4: stratified five-fold cross-validation, 80% train / 20% validation per fold, RandomOverSampler inside training folds; reported 'validation' = held-out CV fold, no separate test set",
+        "validation_used_for": "Fig. 1 caption, Sec. 3.2 p. 5: s 'optimized individually at each step for maximum performance'; Table 3",
+        "patient_wise": "one sample per patient (82/82), folds effectively patient-wise; not stated"
+      },
+      "inferred": {
+        "n_boolean_features": "12 800 TAs = 2 classes x 20 clauses x 2 x 160 literals -> 40 biomarkers x 4 bins",
+        "validation_used_for": "s chosen for maximum performance with no data outside the 5 CV folds, so the reported validation folds were used for tuning"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 1 header (C=20, T=3, s=3) and footnote (4 ranges, 39 200 TAs); Sec. 2.2, p. 3: basic MulticlassTsetlinMachine from pyTsetlinMachineParallel v0.2.1; C=20 clauses per class (10 positive + 10 negative)",
+        "statistic": "Table 1 footnote: mean and std over five folds of stratified K-fold CV",
+        "selection_on_test": "Sec. 2.2, p. 3: T and s 'set to their optimum values as described (Tarasyuk et al. 2023)'; not said whether s=3 was tuned on these folds"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        16,
+        17
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. 2.2, p. 3: ANN from Zhang et al. 2017 with 40 000 hidden neurons",
+        "values": "Sec. 3.1, p. 4 (36.62 +- 8.49% validation, 100% train; Supplementary Table S5)"
+      },
+      "inferred": {
+        "statistic": "36.62 +- 8.49 is a mean+-std over folds like Table 1"
+      }
+    },
+    {
+      "result_indices": [
+        18,
+        22,
+        26,
+        30,
+        34,
+        38,
+        42,
+        46
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (2 ranges, 6400 TAs; 20 clauses per class); Sec. 3.2, p. 5: C=20, T=3 kept constant, s optimized per step but its value for 2/3 ranges is not given",
+        "statistic": "Table 2 footnote: mean and std over five folds",
+        "selection_on_test": "Fig. 1 caption and Sec. 3.2, p. 5: s optimized 'for maximum performance' at each step"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned for maximum performance with only the 5 CV folds available; reported validation = the folds"
+      }
+    },
+    {
+      "result_indices": [
+        19,
+        23,
+        27,
+        31,
+        35,
+        39,
+        43,
+        47
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (3 ranges, 9600 TAs); Sec. 3.2, p. 5: C=20, T=3; s per step not given for 3 ranges",
+        "statistic": "Table 2 footnote: mean and std over five folds",
+        "selection_on_test": "Fig. 1 caption and Sec. 3.2, p. 5"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned for maximum performance with only the 5 CV folds available"
+      }
+    },
+    {
+      "result_indices": [
+        20,
+        24,
+        50,
+        51,
+        52
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 2.4,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 step 1: (C, T, s) = (20, 3, 2.4), 4 ranges, 12 800 TAs",
+        "statistic": "Table 3 footnote: average over five folds of stratified K-fold CV",
+        "selection_on_test": "Sec. 3.2, p. 5: 'Optimal s-values were identified experimentally for each binary classification step (Table 3)'"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned per step for maximum performance with no data outside the 5 CV folds",
+        "tm_config": "Table 2 4-range accuracies equal Table 3 accuracies, so the Table 2 4-range rows used the Table 3 s"
+      }
+    },
+    {
+      "result_indices": [
+        28,
+        32,
+        53,
+        54,
+        55
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 step 2: (C, T, s) = (20, 3, 3), 4 ranges, 12 800 TAs",
+        "statistic": "Table 3 footnote: average over five folds of stratified K-fold CV",
+        "selection_on_test": "Sec. 3.2, p. 5: 'Optimal s-values were identified experimentally for each binary classification step (Table 3)'"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned per step for maximum performance with no data outside the 5 CV folds",
+        "tm_config": "Table 2 4-range accuracies equal Table 3 accuracies, so the Table 2 4-range rows used the Table 3 s"
+      }
+    },
+    {
+      "result_indices": [
+        36,
+        40,
+        56,
+        57,
+        58
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 4,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 step 3: (C, T, s) = (20, 3, 4), 4 ranges, 12 800 TAs",
+        "statistic": "Table 3 footnote: average over five folds of stratified K-fold CV",
+        "selection_on_test": "Sec. 3.2, p. 5: 'Optimal s-values were identified experimentally for each binary classification step (Table 3)'"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned per step for maximum performance with no data outside the 5 CV folds",
+        "tm_config": "Table 2 4-range accuracies equal Table 3 accuracies, so the Table 2 4-range rows used the Table 3 s"
+      }
+    },
+    {
+      "result_indices": [
+        44,
+        48,
+        59,
+        60,
+        61
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 5,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 step 4: (C, T, s) = (20, 3, 5), 4 ranges, 12 800 TAs",
+        "statistic": "Table 3 footnote: average over five folds of stratified K-fold CV",
+        "selection_on_test": "Sec. 3.2, p. 5: 'Optimal s-values were identified experimentally for each binary classification step (Table 3)'"
+      },
+      "inferred": {
+        "selection_on_test": "s tuned per step for maximum performance with no data outside the 5 CV folds",
+        "tm_config": "Table 2 4-range accuracies equal Table 3 accuracies, so the Table 2 4-range rows used the Table 3 s"
+      }
+    },
+    {
+      "result_indices": [
+        21,
+        25,
+        29,
+        33,
+        37,
+        41,
+        45,
+        49
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. 2.2, p. 3: ANN (Zhang et al. 2017) with 13 000 hidden neurons for binary classification",
+        "statistic": "Table 2 footnote: mean and std over five folds",
+        "values": "Table 2 rightmost column"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        62
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 3,
+        "s": 2.4,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 5 caption (4 ranges, minimized clauses and soluble biomarkers); Sec. 3.5, p. 7: 'top-performing TM from five-fold cross-validation at each classification step'; Sec. 3.7, pp. 8-9: precision-based pruning until accuracy stays above 90/95/99%",
+        "statistic": "Sec. 3.5, p. 7: one top-performing fold model per step",
+        "values": "Fig. 5 caption"
+      },
+      "inferred": {
+        "tm_config": "the pruned model starts from the top-performing Table 3 model of that step, so s = Table 3 value; clause count after pruning only in the figure",
+        "selection_on_test": "best fold model chosen by its CV performance, then biomarkers and clauses pruned until a target accuracy is met; the data the final accuracy is measured on is not stated"
+      }
+    },
+    {
+      "result_indices": [
+        63
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 3,
+        "s": 3,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 6 caption (4 ranges, minimized clauses and soluble biomarkers); Sec. 3.5, p. 7: 'top-performing TM from five-fold cross-validation at each classification step'; Sec. 3.7, pp. 8-9: precision-based pruning until accuracy stays above 90/95/99%",
+        "statistic": "Sec. 3.5, p. 7: one top-performing fold model per step",
+        "values": "Fig. 6 caption"
+      },
+      "inferred": {
+        "tm_config": "the pruned model starts from the top-performing Table 3 model of that step, so s = Table 3 value; clause count after pruning only in the figure (text: 6 Gram-positive + 10 Gram-negative clauses, Sec. 3.7 p. 8-9)",
+        "selection_on_test": "best fold model chosen by its CV performance, then biomarkers and clauses pruned until a target accuracy is met; the data the final accuracy is measured on is not stated"
+      }
+    },
+    {
+      "result_indices": [
+        64
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 3,
+        "s": 4,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 caption (4 ranges, minimized clauses and soluble biomarkers); Sec. 3.5, p. 7: 'top-performing TM from five-fold cross-validation at each classification step'; Sec. 3.7, pp. 8-9: precision-based pruning until accuracy stays above 90/95/99%",
+        "statistic": "Sec. 3.5, p. 7: one top-performing fold model per step",
+        "values": "Fig. 7 caption"
+      },
+      "inferred": {
+        "tm_config": "the pruned model starts from the top-performing Table 3 model of that step, so s = Table 3 value; clause count after pruning only in the figure",
+        "selection_on_test": "best fold model chosen by its CV performance, then biomarkers and clauses pruned until a target accuracy is met; the data the final accuracy is measured on is not stated"
+      }
+    },
+    {
+      "result_indices": [
+        65
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 3,
+        "s": 5,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 8 caption (4 ranges, minimized clauses and soluble biomarkers); Sec. 3.5, p. 7: 'top-performing TM from five-fold cross-validation at each classification step'; Sec. 3.7, pp. 8-9: precision-based pruning until accuracy stays above 90/95/99%",
+        "statistic": "Sec. 3.5, p. 7: one top-performing fold model per step",
+        "values": "Fig. 8 caption"
+      },
+      "inferred": {
+        "tm_config": "the pruned model starts from the top-performing Table 3 model of that step, so s = Table 3 value; clause count after pruning only in the figure",
+        "selection_on_test": "best fold model chosen by its CV performance, then biomarkers and clauses pruned until a target accuracy is met; the data the final accuracy is measured on is not stated"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "82 PD patients, one effluent sample each; no independent test set: all 'validation' numbers are held-out folds of a stratified 5-fold CV with RandomOverSampler inside training folds. Imputation (MICE/RF) and the min-max bin edges are described as dataset-level preprocessing before CV (fit_on left not_reported since not stated). Table 1 footnote states 4 ranges and 39 200 TAs for both the full and the soluble subset; 39 200 = 5 x 20 x 2 x 196 fits only the 49-biomarker full set (the 40-biomarker soluble set would be 32 000) - a paper inconsistency, the record copies the caption. The record's datasets[0].booleanization mentions 2/3/4 intervals; the 5-class experiments (Table 1) only used 4. T=3 follows the authors' sqrt(C/2) rule; s for the 2- and 3-range binary models is not reported. The minimized-model accuracies (Figs. 5-8) come from a single best fold model after biomarker selection and clause pruning to a target accuracy; the evaluation data is not stated. Table 4 (minimal biomarker counts) and Table 3 train P/R/F1 are not in the record. Epochs/TA states not reported."
+}

@@ -1,0 +1,485 @@
+{
+  "paper_id": "2023_Generating_Bayesian_Network_Models_from_Data_Using_TM_arXiv2305.10538",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-13"
+  },
+  "paper": {
+    "primary_task_family": "structure_learning",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "feature_importance",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "interpretability_evidence": "Figs. 5-7 global feature strengths; Tables II, VI, VII top features",
+      "hyperparameters_complete": "Tables III and V give clauses/T/s/max literals; epochs, rounds and L missing"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "bn-asia",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "medical",
+      "task_detail": {
+        "n_nodes": "not_reported",
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network); ground-truth network from which data is sampled"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each feature with d levels is represented by d literals in thermometer form, e.g. low/medium/high -> (1,0,0)/(1,1,0)/(1,1,1); L (total number of literals) is not given numerically."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 3",
+        "synthetic": "Sec. V-A, p. 8 ('four networks we simulate data from')",
+        "task_detail.graph_type": "Sec. IV, p. 3",
+        "split": "Sec. V-A, p. 8: networks are generated from the data and compared to ground truth; no held-out set"
+      },
+      "inferred": {
+        "booleanization": "Sec. IV describes this encoding generically for the method ('For example, a feature with values low, medium, high ...'); not restated per network"
+      },
+      "notes": "Node count not stated (paper only calls it 'a small simplified version'); sample size not stated."
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "bn-child",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "medical",
+      "task_detail": {
+        "n_nodes": "not_reported",
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network); ground-truth network from which data is sampled"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each feature with d levels is represented by d literals in thermometer form, e.g. low/medium/high -> (1,0,0)/(1,1,0)/(1,1,1); L (total number of literals) is not given numerically."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 3",
+        "synthetic": "Sec. V-A, p. 8 ('four networks we simulate data from')",
+        "task_detail.graph_type": "Sec. IV, p. 3",
+        "split": "Sec. V-A, p. 8: networks are generated from the data and compared to ground truth; no held-out set"
+      },
+      "inferred": {
+        "booleanization": "Sec. IV describes this encoding generically for the method ('For example, a feature with values low, medium, high ...'); not restated per network"
+      },
+      "notes": "Node count not stated (paper: medium 20-50 node networks do best, Child among the best; Fig. 9 shows the network). Sample size not stated."
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "bn-insurance",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "finance",
+      "task_detail": {
+        "n_nodes": 27,
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network); ground-truth network from which data is sampled"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each feature with d levels is represented by d literals in thermometer form, e.g. low/medium/high -> (1,0,0)/(1,1,0)/(1,1,1); L (total number of literals) is not given numerically."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 3",
+        "synthetic": "Sec. V-A, p. 8 ('four networks we simulate data from')",
+        "task_detail.graph_type": "Sec. IV, p. 3",
+        "split": "Sec. V-A, p. 8: networks are generated from the data and compared to ground truth; no held-out set",
+        "task_detail.n_nodes": "Sec. V, p. 5: '27 nodes, of which 15 are observable, and over 1400 parameters'",
+        "train_size": "Sec. V, p. 5: 5000 simulated samples, balanced per-variable training subsets"
+      },
+      "inferred": {
+        "booleanization": "Sec. IV describes this encoding generically for the method ('For example, a feature with values low, medium, high ...'); not restated per network"
+      },
+      "notes": "Sec. V walk-through uses 5000 samples; whether Sec. V-A's 10 repeats also use 5000 samples is not stated."
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "bn-diabetes",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "medical",
+      "task_detail": {
+        "n_nodes": "> 100",
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network); ground-truth network from which data is sampled"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each feature with d levels is represented by d literals in thermometer form, e.g. low/medium/high -> (1,0,0)/(1,1,0)/(1,1,1); L (total number of literals) is not given numerically."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 3",
+        "synthetic": "Sec. V-A, p. 8 ('four networks we simulate data from')",
+        "task_detail.graph_type": "Sec. IV, p. 3",
+        "split": "Sec. V-A, p. 8: networks are generated from the data and compared to ground truth; no held-out set",
+        "task_detail.n_nodes": "Sec. V-A, p. 8: 'The very large network (> 100 nodes)'"
+      },
+      "inferred": {
+        "booleanization": "Sec. IV describes this encoding generically for the method ('For example, a feature with values low, medium, high ...'); not restated per network"
+      },
+      "notes": "n_nodes as printed ('> 100'), exact count not stated."
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "kaggle-supply-chain-makeup",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "n_nodes": 23,
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network), no ground truth"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "continuous variables discretized to low/medium/high/very high; categorical values ranked by frequency (least frequent = 1, ...)"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": "not_reported",
+        "n_bins": 4,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous variables attributed to low, medium, high, very high; categorical variables ranked by value frequency; conversion of these levels to literals not restated (Sec. IV gives thermometer literals generically)."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "task_detail.n_nodes": "Sec. VI, p. 8: '23 different variables'; 100 observations",
+        "booleanization": "Sec. VI, p. 9",
+        "n_bins": "Sec. VI, p. 9 (four levels)"
+      },
+      "inferred": {},
+      "notes": "Qualitative only (Table VI top features, Fig. 12 network). TM ensemble of five models in Table V (clauses 42/80/66/85/42, T 14/37/35/10/35, s 7.2/7.4/8.7/9.4/11.3, max literals 18/32/27/85/42); no record results attach to it."
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "bank-customer-churn",
+      "task_family": "structure_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "finance",
+      "task_detail": {
+        "n_nodes": 15,
+        "n_edges": "not_reported",
+        "graph_type": "DAG (Bayesian network), no ground truth"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "not described for this data set"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "task_detail.n_nodes": "Sec. VII, p. 10: '15 features, of which 4 are parameters, 10 observable, and 1 label'"
+      },
+      "inferred": {},
+      "notes": "Qualitative only (Table VII, Fig. 13). Paper says 4 parameters on p. 10 but names three (Geography, Gender, Age) on p. 11. Sample size, TM config, encoding not stated."
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        5,
+        10,
+        15
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": 25,
+        "s": 9.4,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 25,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III, p. 8",
+        "statistic": "Sec. V-A, p. 8: 'generate 10 networks from each model ... The average of these scores is then recorded'",
+        "selection_on_test": "Sec. V-A, p. 8: 5 randomly chosen parameterizations 'to remove any chance that we could be overfitting'; all five reported",
+        "weighted": "Sec. II, p. 2 (coalesced TM with clause weights, Glimsdal and Granmo 2021)",
+        "clauses_scope": "Sec. II, p. 2: one shared clause pool for all outputs"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool across output classes, so the printed count is the pool size"
+      },
+      "notes": "Model I: clauses printed as 'L + 12' with L = total number of literals, L not given numerically, so n_clauses is not_reported. Text says clauses are a random integer between 1 and 3 times L, which 'L + k' does not match. Rounds N (Alg. 1) and epochs per round not stated for this study."
+    },
+    {
+      "result_indices": [
+        1,
+        6,
+        11,
+        16
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": 21,
+        "s": 11.2,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 33,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III, p. 8",
+        "statistic": "Sec. V-A, p. 8: 'generate 10 networks from each model ... The average of these scores is then recorded'",
+        "selection_on_test": "Sec. V-A, p. 8: 5 randomly chosen parameterizations 'to remove any chance that we could be overfitting'; all five reported",
+        "weighted": "Sec. II, p. 2 (coalesced TM with clause weights, Glimsdal and Granmo 2021)",
+        "clauses_scope": "Sec. II, p. 2: one shared clause pool for all outputs"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool across output classes, so the printed count is the pool size"
+      },
+      "notes": "Model II: clauses printed as 'L + 34' with L = total number of literals, L not given numerically, so n_clauses is not_reported. Text says clauses are a random integer between 1 and 3 times L, which 'L + k' does not match. Rounds N (Alg. 1) and epochs per round not stated for this study."
+    },
+    {
+      "result_indices": [
+        2,
+        7,
+        12,
+        17
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": 30,
+        "s": 6.7,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 7,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III, p. 8",
+        "statistic": "Sec. V-A, p. 8: 'generate 10 networks from each model ... The average of these scores is then recorded'",
+        "selection_on_test": "Sec. V-A, p. 8: 5 randomly chosen parameterizations 'to remove any chance that we could be overfitting'; all five reported",
+        "weighted": "Sec. II, p. 2 (coalesced TM with clause weights, Glimsdal and Granmo 2021)",
+        "clauses_scope": "Sec. II, p. 2: one shared clause pool for all outputs"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool across output classes, so the printed count is the pool size"
+      },
+      "notes": "Model III: clauses printed as 'L + 23' with L = total number of literals, L not given numerically, so n_clauses is not_reported. Text says clauses are a random integer between 1 and 3 times L, which 'L + k' does not match. Rounds N (Alg. 1) and epochs per round not stated for this study."
+    },
+    {
+      "result_indices": [
+        3,
+        8,
+        13,
+        18
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": 10,
+        "s": 9.8,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 55,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III, p. 8",
+        "statistic": "Sec. V-A, p. 8: 'generate 10 networks from each model ... The average of these scores is then recorded'",
+        "selection_on_test": "Sec. V-A, p. 8: 5 randomly chosen parameterizations 'to remove any chance that we could be overfitting'; all five reported",
+        "weighted": "Sec. II, p. 2 (coalesced TM with clause weights, Glimsdal and Granmo 2021)",
+        "clauses_scope": "Sec. II, p. 2: one shared clause pool for all outputs"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool across output classes, so the printed count is the pool size"
+      },
+      "notes": "Model IV: clauses printed as 'L + 58' with L = total number of literals, L not given numerically, so n_clauses is not_reported. Text says clauses are a random integer between 1 and 3 times L, which 'L + k' does not match. Rounds N (Alg. 1) and epochs per round not stated for this study."
+    },
+    {
+      "result_indices": [
+        4,
+        9,
+        14,
+        19
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": 42,
+        "s": 12.6,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 5,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III, p. 8",
+        "statistic": "Sec. V-A, p. 8: 'generate 10 networks from each model ... The average of these scores is then recorded'",
+        "selection_on_test": "Sec. V-A, p. 8: 5 randomly chosen parameterizations 'to remove any chance that we could be overfitting'; all five reported",
+        "weighted": "Sec. II, p. 2 (coalesced TM with clause weights, Glimsdal and Granmo 2021)",
+        "clauses_scope": "Sec. II, p. 2: one shared clause pool for all outputs"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool across output classes, so the printed count is the pool size"
+      },
+      "notes": "Model V: clauses printed as 'L + 92' with L = total number of literals, L not given numerically, so n_clauses is not_reported. Text says clauses are a random integer between 1 and 3 times L, which 'L + k' does not match. Rounds N (Alg. 1) and epochs per round not stated for this study."
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[*].notes / datasets[0..3].split_as_reported",
+      "record": "average over 10 sampled data sets",
+      "pdf": "'generate 10 networks from each model' and average the similarity scores",
+      "location": "Sec. V-A, p. 8",
+      "note": "The paper says 10 networks are generated per model (TM parameterization); it does not say 10 separate data sets are sampled. Possibly the same thing, but not stated."
+    },
+    {
+      "where": "datasets[5].input_shape_or_features",
+      "record": "15 features (4 parameters, 10 observable, 1 label 'Exited')",
+      "pdf": "same text, but p. 11 names only three parameters (Geography, Gender, Age)",
+      "location": "Sec. VII, pp. 10-11",
+      "note": "internal inconsistency in the paper, record copies p. 10"
+    }
+  ],
+  "notes": "Only quantitative results: Table IV normalized graph-kernel similarity to ground truth (mean of 10 generated networks per model). No baselines, no held-out data. Clause counts printed as L + k (Table III) contradict the text's '1 to 3 times L'; left not_reported. Insurance walk-through (Sec. V) uses 5000 samples with 20 rounds (5 for Age); Sec. V-A sample sizes not stated. Asia/Child node counts not stated in the paper (record's 8/20 are bnlearn values). Supply chain ensemble (Table V) has no record results."
+}

@@ -1,0 +1,1058 @@
+{
+  "paper_id": "2023_Drop_Clause_AAAI_camera_ready",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-9"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "p. 1 footnote 1: https://github.com/Anonymous-2491/Drop-Clause-Interpretable-TM",
+      "seeds_stated": "no seeds mentioned anywhere",
+      "hyperparameters_complete": "pp. 3-4 give clauses, T, s per dataset and the swept p; epochs, TA states, patch size/stride and weighting details are not given (supplementary material not included)",
+      "interpretability_evidence": "p. 5 and Fig. 1 (MR example clauses C0, C2, C4 and the 100 most frequent negated features); Fig. 2 (CIFAR-10 heatmaps). Clause literals are only in the figures."
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 3: 50,000 reviews split in half for training and testing"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "reuters-21578-r8",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 8,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 8,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 3: 5,485 train / 2,189 test"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "reuters-21578-r52",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 52,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 52,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 3: 6,532 train / 2,568 test"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "mr",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "stemming",
+          "params": "word features shown as stems, e.g. 'witti', 'terrif', 'intellig'"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 3: 'train-test split as in (Tang, Qu, and Mei 2015)', 10,662 samples",
+        "preprocessing": "p. 5 (stemmed MR word features 'NOT witti', 'NOT terrif', 'NOT intellig')",
+        "setting_tags": "p. 5, 'Natural Language Sentiment Analysis' and Fig. 1 (word-level patterns on MR)"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "trec",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 6,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 6,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 3: 5,500 train / 500 test"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in Granmo et al. (2019); parameters not given",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Binarized with the adaptive Gaussian thresholding procedure of Granmo et al. (2019), 1 bit per pixel per channel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4, 'Image Classification'",
+        "split": "p. 4: 60,000 train / 10,000 test",
+        "n_boolean_features": "28x28 gray-scale, 1 bit per pixel (p. 4)"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in Granmo et al. (2019); parameters not given",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Binarized with the adaptive Gaussian thresholding procedure of Granmo et al. (2019), 1 bit per pixel per channel."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4, 'Image Classification'",
+        "split": "p. 4: split and sizes not stated",
+        "n_boolean_features": "28x28 gray-scale, 1 bit per pixel (p. 4)"
+      }
+    },
+    {
+      "usage_index": 7,
+      "dataset_id": "cifar-10",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in Granmo et al. (2019); parameters not given",
+        "n_boolean_features": 3072,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Binarized with the adaptive Gaussian thresholding procedure of Granmo et al. (2019), 1 bit per pixel per channel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4, 'Image Classification'",
+        "split": "p. 4: 50,000 train, another 10,000 for testing",
+        "n_boolean_features": "32x32 colour, 1 bit per pixel per channel (p. 4)",
+        "setting_tags": "p. 5-6, 'Image Classification' heatmaps and Fig. 2 (CIFAR-10 patterns)"
+      }
+    },
+    {
+      "usage_index": 8,
+      "dataset_id": "cifar-100",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 100,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 100,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in Granmo et al. (2019); parameters not given",
+        "n_boolean_features": 3072,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Binarized with the adaptive Gaussian thresholding procedure of Granmo et al. (2019), 1 bit per pixel per channel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4, 'Image Classification'",
+        "split": "p. 4: 50,000 train, another 10,000 for testing",
+        "n_boolean_features": "32x32 colour, 1 bit per pixel per channel (p. 4)"
+      }
+    },
+    {
+      "usage_index": 9,
+      "dataset_id": "mnist-c",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in Granmo et al. (2019); parameters not given",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Same as MNIST: adaptive Gaussian thresholding (Granmo et al. 2019), 1 bit per pixel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4",
+        "split": "p. 7: trained on standard MNIST training data without augmentation; each test image corrupted with probability 0.5 by one of 15 MNIST-C corruptions chosen uniformly",
+        "setting_tags": "p. 7, 'Enhanced Robustness', Table 9"
+      },
+      "inferred": {
+        "booleanization": "MNIST-C is corrupted MNIST and the models are the MNIST CTMs (Table 9 clean accuracies equal Table 2), so the MNIST binarization applies"
+      }
+    },
+    {
+      "usage_index": 10,
+      "dataset_id": "mr-perturbed",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "stemming",
+          "params": "word features shown as stems, e.g. 'witti', 'terrif', 'intellig'"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Simple bag-of-words tokens, without additional pretrained world knowledge (word2vec, GloVe or BERT features)."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "p. 4 ('our model only relies on simple bag-of-words tokens')",
+        "split": "p. 7: trained on standard MR training data; each test sentence perturbed with probability 0.5 (one random word swapped for its most similar GloVe word)",
+        "setting_tags": "p. 7, Table 8",
+        "preprocessing": "p. 5 (stemmed MR word features)"
+      },
+      "inferred": {
+        "preprocessing": "perturbed MR test set is evaluated with the MR models"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "not_reported",
+        "T": 8000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (IMDb: 10,000 clauses, T=8,000, s=2.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "not_reported",
+        "T": 8000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (IMDb: 10,000 clauses, T=8,000, s=2.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP",
+        "selection_on_test": "p. 3: best p per dataset found from the test results of Table 1 ('compare the best found configuration'); no validation set"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        5,
+        6,
+        7,
+        8,
+        10,
+        11,
+        12,
+        13
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 3000,
+        "clauses_scope": "not_reported",
+        "T": 2000,
+        "s": 7.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (R8/R52: 3,000 clauses, T=2,000, s=7.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        9,
+        14
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 3000,
+        "clauses_scope": "not_reported",
+        "T": 2000,
+        "s": 7.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (R8/R52: 3,000 clauses, T=2,000, s=7.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP",
+        "selection_on_test": "p. 3: best p per dataset found from the test results of Table 1 ('compare the best found configuration'); no validation set"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 5000,
+        "clauses_scope": "not_reported",
+        "T": 4000,
+        "s": 6.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (MR: 5,000 clauses, T=4,000, s=6.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        19
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 5000,
+        "clauses_scope": "not_reported",
+        "T": 4000,
+        "s": 6.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (MR: 5,000 clauses, T=4,000, s=6.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP",
+        "selection_on_test": "p. 3: best p per dataset found from the test results of Table 1 ('compare the best found configuration'); no validation set"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        20,
+        21,
+        22,
+        24
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 5000,
+        "clauses_scope": "not_reported",
+        "T": 4000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (TREC: 5,000 clauses, T=4,000, s=2.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 5000,
+        "clauses_scope": "not_reported",
+        "T": 4000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (TREC: 5,000 clauses, T=4,000, s=2.0); weighted: p. 3 ('For NLP, we use TM with weighted clauses'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 1; no averaging or run count stated for NLP",
+        "selection_on_test": "p. 3: best p per dataset found from the test results of Table 1 ('compare the best found configuration'); no validation set"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Footnote 3 (p. 3): sklearn default parameters (Tables 3 and 6; footnote 4 says the same methods are used for images)",
+        "selection_on_test": "fixed in advance: sklearn defaults"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Tables 4, 5, 7 and p. 5 text (ViN): results of cited deep-learning models"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        64,
+        65,
+        67,
+        68,
+        69,
+        70,
+        72,
+        73
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "not_reported",
+        "T": 6400,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (MNIST: 8,000 clauses, T=6,400, s=5.0; Fashion-MNIST 'same parameters as the MNIST dataset'); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 2; no averaging stated for non-best p"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    },
+    {
+      "result_indices": [
+        66,
+        71
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "not_reported",
+        "T": 6400,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (MNIST: 8,000 clauses, T=6,400, s=5.0; Fashion-MNIST 'same parameters as the MNIST dataset')",
+        "statistic": "p. 4: 'Peak accuracy on MNIST is 99.45% (±0.25%), and on Fashion-MNIST it is 92.5% (±0.25%)'; 'averaged over 100 runs' is attached only to the CIFAR sentence",
+        "selection_on_test": "p. 4: best p chosen from the test results of Table 2 and reported as 'Peak accuracy'; no validation set"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    },
+    {
+      "result_indices": [
+        74,
+        75,
+        76,
+        78,
+        79,
+        80,
+        81,
+        83
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 60000,
+        "clauses_scope": "not_reported",
+        "T": 48000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (CIFAR-10/100: 60,000 clauses, T=48,000, s=10.0); implementation: p. 3 ('The DC implementation is written in PyCUDA'); hardware: p. 3",
+        "statistic": "Table 2; no averaging stated for non-best p"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    },
+    {
+      "result_indices": [
+        77,
+        82
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 60000,
+        "clauses_scope": "not_reported",
+        "T": 48000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (CIFAR-10/100: 60,000 clauses, T=48,000, s=10.0)",
+        "statistic": "p. 4: 'CIFAR-10 and CIFAR-100 peak at 75.1% (±0.4%) and 45.2% (±0.2%) respectively, averaged over 100 runs'",
+        "selection_on_test": "p. 4: best p chosen from the test results of Table 2 and reported as 'Peak accuracy'; no validation set; 'peak' values averaged over runs"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    },
+    {
+      "result_indices": [
+        108,
+        109
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 5000,
+        "clauses_scope": "not_reported",
+        "T": 4000,
+        "s": 6.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA RTX 3070 8GB GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 3 (MR settings); Table 8",
+        "statistic": "Table 8; not stated"
+      },
+      "inferred": {
+        "tm_config": "Table 8 clean MR accuracies (75.14, 78.67) equal Table 1 MR p=0 and p=0.75, so these are the Table 1 MR models"
+      }
+    },
+    {
+      "result_indices": [
+        110,
+        113
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Tables 8 and 9 baselines (BiLSTM; BNN = EEV-BNN MNIST-MLP per footnote 7)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        111,
+        112
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "not_reported",
+        "T": 6400,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (MNIST settings); Table 9",
+        "statistic": "Table 9; not stated"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights",
+        "tm_config": "Table 9 clean MNIST accuracies (99.3, 99.45) equal Table 2 MNIST p=0 and p=0.25, so these are the Table 2 MNIST models"
+      }
+    },
+    {
+      "result_indices": [
+        114,
+        115
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 60000,
+        "clauses_scope": "not_reported",
+        "T": 48000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "16 NVIDIA Tesla V100 TensorCore GPUs"
+      },
+      "evidence": {
+        "tm_config": "p. 4 (CIFAR settings; 'training time per epoch drops from 61.83s to 32.58s for CIFAR-10' with p=0.5); hardware: p. 3",
+        "statistic": "not stated"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    },
+    {
+      "result_indices": [
+        116
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 60000,
+        "clauses_scope": "not_reported",
+        "T": 48000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "one NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "p. 4 ('1.5s per 1000 images on one NVIDIA Tesla V100 GPU'); p not stated for this timing",
+        "statistic": "not stated"
+      },
+      "inferred": {
+        "weighted": "p. 5 ('we extract the top k weighted clauses per class in patch form') implies the CTM clauses carry weights"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[47].model, results[54].model, results[58].model",
+      "record": "BERT",
+      "pdf": "BERT-Large",
+      "location": "Table 4 header (p. 4)",
+      "note": "Table 4 column header reads 'BERT' with 'LARGE' on the second line directly under it (word positions x=223 / x=221); the running text on p. 3 calls the same comparison just 'BERT (Devlin et al. 2019)'."
+    }
+  ],
+  "notes": "AAAI-23 camera-ready version (9 pages incl. references; the supplementary material it refers to is not in the PDF). Text extracted with pymupdf; figures not visible. Drop clause probability p is the swept variable (0, 0.1, 0.25, 0.5, 0.75) within each config group; it is not a tm_config field. Clause counts are as printed ('we use 10,000 clauses'); the paper never says whether they are per class or total (p. 3 only says p=0.75 'is equivalent of dropping 75% of the total clauses per class'), so clauses_scope is not_reported. Implementation is 'custom' (PyCUDA, p. 3). CTM weighting is inferred from 'top k weighted clauses per class' (p. 5). Unlike the arXiv version, no patch size is given (Fig. 2 caption has none). There is no validation set: the best p per dataset is picked from the test results in Tables 1/2 and used as 'TM (DC)' in Tables 3-9, so the best-p rows have selection_on_test=true; other p rows are not_reported. 'averaged over 100 runs' (p. 4) is grammatically attached only to the CIFAR-10/100 sentence, so MNIST/F-MNIST best-p rows have statistic not_reported despite their ± values. MNIST-C (111-112) uses the p chosen on clean MNIST test data; left not_reported. Paper-internal inconsistency: p. 7 says the MR drop for DC TM is 1.45%, but Table 8 gives 78.67-77.12 = 1.55. p. 3 text says 'Table 2 displays the comparison results' for the ML baselines, which are actually Table 3. Not in the record (omission, not an error): NLP inference time 'less than 2.3s per 1000 samples on average on an NVIDIA GTX 1080 GPU' (p. 3). Table 3/4/5/6/7 TM columns duplicate Table 1/2 values."
+}

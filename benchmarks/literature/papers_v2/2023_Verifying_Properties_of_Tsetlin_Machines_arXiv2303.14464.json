@@ -1,0 +1,592 @@
+{
+  "paper_id": "2023_Verifying_Properties_of_Tsetlin_Machines_arXiv2303.14464",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-12"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "Sec. IV, p. 6: https://github.com/bimalb58/Logical-Tsetlin-Machine-Robustness",
+      "seeds_stated": "no seeds mentioned",
+      "hyperparameters_complete": "N, T, s and 400 iterations given (Tables I, II, Sec. IV-D); number of TA states, implementation and MNIST-c epochs not given; 'limit of the maximum size of monomials to 2000' is ambiguous",
+      "interpretability_evidence": "Example 1 (p. 1): illustrative sentiment monomials quoted from [21]; Appendix VII-B toy example. No rules from the trained models are shown",
+      "primary_task_family": "verification of trained classifiers; the underlying tasks are image and sentiment classification"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness",
+        "verification"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding as in [5] (CTM paper)",
+        "n_boolean_features": 784,
+        "n_literals": 1568,
+        "fit_on": "not_reported",
+        "description": "Images are binarized using an adaptive Gaussian thresholding procedure as proposed in [5]; 1 bit per pixel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 6; 1 bit per pixel: Appendix VII-A, p. 9; 784 = 28x28 bit flips: Sec. IV-B, p. 7",
+        "split": "Sec. IV, p. 6: 60,000 train / 10,000 test",
+        "verification_subset": "Sec. IV-B, p. 6: robustness on 20 randomly selected MNIST images per class (200), each per-class TsM of the team checked; SAT solver Glucose, 300 s timeout per instance",
+        "validation_used_for": "no validation set mentioned"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness",
+        "verification"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "5,000 most frequent words"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "The text is binarized using bags-of-words including the 5,000 most frequent words."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV, p. 6; 5000 binary input features: Sec. IV-B, p. 7",
+        "split": "Sec. IV, p. 6: 25,000 train / 25,000 test",
+        "verification_subset": "Sec. IV-B, p. 7: robustness on 100 test instances correctly classified by both models at eps=0; similarity (Table V) on a test set of 100 instances; equivalence of Models 2 and 3 checked (not equivalent)",
+        "validation_used_for": "no validation set mentioned"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "mnist-c",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "not stated for this dataset"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "split": "Sec. IV-D a), p. 7: trained on standard MNIST training data; test images drawn from MNIST-c with probability p (one of 15 corruptions uniformly), else clean MNIST test",
+        "booleanization": "not stated for the MNIST-c experiment"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "mnist-back-image",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness",
+        "verification"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "not stated for this dataset"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "split": "Sec. IV-D b), p. 7: train/test sizes not stated; 200 randomly selected test images (20 per class) for robustness, Glucose, 300 s timeout",
+        "booleanization": "not stated for MNIST-back-image"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        15,
+        16,
+        17
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 25,
+        "s": 10,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table I; 400 iterations: Sec. IV-A, p. 6 ('All models in Tables I and II were trained with 400 iterations of Algorithm 1')",
+        "clauses_scope": "Sec. IV-B, p. 6: one TsM per target class; N = num. of monomials of a TsM (Algorithm 1, Sec. II-B)",
+        "hardware": "Sec. IV, p. 6",
+        "selection_on_test": "Sec. IV-A: three models with N = 500/1000/2000 all reported, none selected",
+        "robustness": "Table III, model 1",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "paper says '400 iterations of Algorithm 1'; read as 400 passes over the training data (Algorithm 1's loop draws one example per step, so 400 single-example steps is implausible)",
+        "tm_config.clauses_scope": "multiclass model is a team of one TsM per class and N is the monomial count of one TsM",
+        "statistic": "every number refers to one named trained model (Model 1/2/3); no repetitions mentioned",
+        "selection_on_test": "all trained variants reported; no choice among them"
+      }
+    },
+    {
+      "result_indices": [
+        3,
+        4,
+        5,
+        18,
+        19,
+        20
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 25,
+        "s": 10,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table I; 400 iterations: Sec. IV-A, p. 6 ('All models in Tables I and II were trained with 400 iterations of Algorithm 1')",
+        "clauses_scope": "Sec. IV-B, p. 6: one TsM per target class; N = num. of monomials of a TsM (Algorithm 1, Sec. II-B)",
+        "hardware": "Sec. IV, p. 6",
+        "selection_on_test": "Sec. IV-A: three models with N = 500/1000/2000 all reported, none selected",
+        "robustness": "Table III, model 2",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "paper says '400 iterations of Algorithm 1'; read as 400 passes over the training data (Algorithm 1's loop draws one example per step, so 400 single-example steps is implausible)",
+        "tm_config.clauses_scope": "multiclass model is a team of one TsM per class and N is the monomial count of one TsM",
+        "statistic": "every number refers to one named trained model (Model 1/2/3); no repetitions mentioned",
+        "selection_on_test": "all trained variants reported; no choice among them"
+      }
+    },
+    {
+      "result_indices": [
+        6,
+        7,
+        8,
+        21,
+        22,
+        23
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 50,
+        "s": 10,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table I; 400 iterations: Sec. IV-A, p. 6 ('All models in Tables I and II were trained with 400 iterations of Algorithm 1')",
+        "clauses_scope": "Sec. IV-B, p. 6: one TsM per target class; N = num. of monomials of a TsM (Algorithm 1, Sec. II-B)",
+        "hardware": "Sec. IV, p. 6",
+        "selection_on_test": "Sec. IV-A: three models with N = 500/1000/2000 all reported, none selected",
+        "robustness": "Table III, model 3",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "paper says '400 iterations of Algorithm 1'; read as 400 passes over the training data (Algorithm 1's loop draws one example per step, so 400 single-example steps is implausible)",
+        "tm_config.clauses_scope": "multiclass model is a team of one TsM per class and N is the monomial count of one TsM",
+        "statistic": "every number refers to one named trained model (Model 1/2/3); no repetitions mentioned",
+        "selection_on_test": "all trained variants reported; no choice among them"
+      }
+    },
+    {
+      "result_indices": [
+        9,
+        10,
+        24,
+        25,
+        26
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": 1280,
+        "s": 20,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table II; 400 iterations: Sec. IV-A, p. 6",
+        "selection_on_test": "Sec. IV-A, p. 6: 'The choice of the parameters for training the models is based on a recent paper [21]'",
+        "clauses_scope": "Sec. II-B / Algorithm 1: a binary TsM has n monomials, n/2 per polarity",
+        "hardware": "Sec. IV, p. 6",
+        "robustness": "Table IV, model 1",
+        "avg_literals": "Table II: 225 literals per monomial on average",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "'400 iterations of Algorithm 1' read as 400 epochs",
+        "tm_config.clauses_scope": "binary task = one TsM whose n monomials are split n/2 positive, n/2 negative (paper formalism); the implementation is not named, so the count could be per class if a 2-class multiclass TM was used",
+        "statistic": "numbers refer to individual named trained models"
+      }
+    },
+    {
+      "result_indices": [
+        11,
+        12,
+        27,
+        28,
+        29,
+        33,
+        34,
+        35
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": 1280,
+        "s": 2,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table II; 400 iterations: Sec. IV-A, p. 6",
+        "selection_on_test": "Sec. IV-A, p. 6: 'The choice of the parameters for training the models is based on a recent paper [21]'",
+        "clauses_scope": "Sec. II-B / Algorithm 1: a binary TsM has n monomials, n/2 per polarity",
+        "hardware": "Sec. IV, p. 6",
+        "robustness": "Table IV, model 2",
+        "similarity": "Table V, model 2 & model 3 (both N=1000, T=1280, s=2; Table II caption)",
+        "avg_literals": "Table II: 173 (model 2) / 175 (model 3) literals per monomial",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "'400 iterations of Algorithm 1' read as 400 epochs",
+        "tm_config.clauses_scope": "binary task = one TsM whose n monomials are split n/2 positive, n/2 negative (paper formalism); the implementation is not named, so the count could be per class if a 2-class multiclass TM was used",
+        "statistic": "numbers refer to individual named trained models",
+        "result_indices": "results 33-35 compare Model 2 and Model 3, which have identical hyper-parameters (Table II caption), so they share this config"
+      }
+    },
+    {
+      "result_indices": [
+        13,
+        14
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": 1280,
+        "s": 2,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table II; 400 iterations: Sec. IV-A, p. 6",
+        "selection_on_test": "Sec. IV-A, p. 6: 'The choice of the parameters for training the models is based on a recent paper [21]'",
+        "clauses_scope": "Sec. II-B / Algorithm 1: a binary TsM has n monomials, n/2 per polarity",
+        "hardware": "Sec. IV, p. 6",
+        "avg_literals": "Table II: 175 literals per monomial",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "'400 iterations of Algorithm 1' read as 400 epochs",
+        "tm_config.clauses_scope": "binary task = one TsM whose n monomials are split n/2 positive, n/2 negative (paper formalism); the implementation is not named, so the count could be per class if a 2-class multiclass TM was used",
+        "statistic": "numbers refer to individual named trained models"
+      }
+    },
+    {
+      "result_indices": [
+        30,
+        31,
+        32
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": 1280,
+        "s": null,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table II; 400 iterations: Sec. IV-A, p. 6",
+        "selection_on_test": "Sec. IV-A, p. 6: 'The choice of the parameters for training the models is based on a recent paper [21]'",
+        "clauses_scope": "Sec. II-B / Algorithm 1: a binary TsM has n monomials, n/2 per polarity",
+        "hardware": "Sec. IV, p. 6",
+        "similarity": "Table V, model 1 & model 2",
+        "s": "pair of models: Model 1 has s=20, Model 2 has s=2 (Table II); s set to null because no single value applies",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "'400 iterations of Algorithm 1' read as 400 epochs",
+        "tm_config.clauses_scope": "binary task = one TsM whose n monomials are split n/2 positive, n/2 negative (paper formalism); the implementation is not named, so the count could be per class if a 2-class multiclass TM was used",
+        "statistic": "numbers refer to individual named trained models"
+      }
+    },
+    {
+      "result_indices": [
+        36,
+        38,
+        40,
+        42
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 6400,
+        "s": 5,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-D a), p. 7: 'state-of-the-art TsM for MNIST (with N = 8000, T = 6400, and s = 5.)'",
+        "values": "Table VI",
+        "selection_on_test": "settings taken from the state of the art, fixed in advance"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "multiclass TsM = one TsM per class (Sec. IV-B)",
+        "selection_on_test": "hyper-parameters adopted from prior work, not tuned here"
+      }
+    },
+    {
+      "result_indices": [
+        37,
+        39,
+        41,
+        43
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. IV-D a): BNN trained with the same hyperparameters as in [9] (Jia & Rinard 2020), Table VI",
+        "selection_on_test": "hyper-parameters fixed by [9]"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        44,
+        46,
+        48,
+        50
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 25,
+        "s": 10,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "AMD Ryzen 7 5800X CPU @3.80GHz (8 logical cores), Nvidia GeForce GTX 1070, 32GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-D b), p. 7: 'TsM (with N = 1000, T = 25, and s = 10) after 400 iterations was 81.56%'",
+        "robustness": "Table VII (TsM columns)",
+        "hardware": "Sec. IV, p. 6",
+        "epochs": "paper: '400 iterations of Algorithm 1' (one example per step); not clearly epochs (review 2026-11-06)"
+      },
+      "inferred": {
+        "tm_config.epochs": "'400 iterations' read as 400 epochs",
+        "tm_config.clauses_scope": "multiclass TsM = one TsM per class (Sec. IV-B)",
+        "statistic": "one trained model"
+      }
+    },
+    {
+      "result_indices": [
+        45,
+        47,
+        49,
+        51
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. IV-D b) and Table VII: BNN numbers quoted from Narodytska et al. [12], not re-run, different hardware"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[38].notes, results[40].notes, results[42].notes",
+      "record": "p=0 is clean MNIST test",
+      "pdf": "these rows are p=0.25 / 0.5 / 0.75, i.e. corrupted MNIST-c test images with probability p",
+      "location": "Table VI; Sec. IV-D a)",
+      "note": "note copied from the p=0 row; should be empty or state the corruption probability"
+    },
+    {
+      "where": "datasets[1].split_as_reported",
+      "record": "verification on 100 test instances",
+      "pdf": "robustness (Table IV) on 100 test instances that were correctly classified by both models at eps=0",
+      "location": "Sec. IV-B, p. 7",
+      "note": "selection criterion missing from the record"
+    }
+  ],
+  "notes": "Verification metrics: 'eps-robust' (Tables III, IV, VII) counts test instances for which the SAT solver (Glucose, 300 s timeout per instance) proved that no perturbation of at most eps flipped input bits changes the classification; 'solved' counts instances decided within the timeout (either a counterexample found or robustness proven), so eps-robust <= solved, and unsolved instances are neither. For MNIST the check is run on each per-class TsM of the trained team (Sec. IV-B). Table VII '% eps-rob' is eps-robust divided by solved (e.g. 145/200 = 72.5%, 14/116 = 12.07%). 'eps-similar' (Table V) counts instances for which two models give the same classification on the input and all inputs within Hamming distance eps (eps=0 = agreement on the unperturbed input). Equivalence of IMDB Models 2 and 3 was checked and they were found not equivalent (Sec. IV-C, no numeric result). Average SAT solve times are in Tables III and IV but not in the record. '400 iterations of Algorithm 1' is read as 400 epochs (inferred). 'We set the limit of the maximum size of monomials to 2000' (Sec. IV-A) is ambiguous (could be a max-literals budget or the max N tried) and is not mapped to max_included_literals. The TM implementation is not named; pyTsetlinMachine [7] is cited only as the state of the art for multiclass TsMs. Hardware lists a GTX 1070 GPU but which parts used it is not stated. MNIST-c and MNIST-back-image booleanization and epochs (MNIST-c) are not stated. MNIST-back-image TsM robust count 145/200 at eps=1, 14/116 at eps=3, 0/34 at eps=5 (Table VII). BNN MNIST-back-image numbers are quoted from Narodytska et al. 2018."
+}

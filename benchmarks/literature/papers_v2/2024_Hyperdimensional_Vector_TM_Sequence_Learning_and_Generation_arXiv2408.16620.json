@@ -1,0 +1,392 @@
+{
+  "paper_id": "2024_Hyperdimensional_Vector_TM_Sequence_Learning_and_Generation_arXiv2408.16620",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-14"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "hyperparameters_complete": "UCR per-dataset TM configs not given (random search); forecasting epochs and Q not given"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "ucr-archive-128",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": "varies per dataset (128 datasets)",
+        "label_type": "binary and multiclass across datasets",
+        "class_balance": "varies; some datasets highly imbalanced (Sec. 4)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "windowing",
+          "params": "overlapping N-grams, N=3"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": null,
+        "n_bins": 50,
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "Interval embedding of each scalar into one of Q=50 random HVs, N-gram (N=3) binding of cyclically shifted (position-perturbed) HVs with Gram vectors via XOR, then majority bundling of all N-gram HVs into one binary HV of dimension D=5000 fed to the TM"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.3 Alg. 1-2, Fig. 1; Sec. 4 p. 7 (D=5000, N-gram 3, Q=50)",
+        "split": "Sec. 4/4.1: no split described; compares with UCR archive [7] benchmark accuracies",
+        "validation_used_for": "Sec. 4 p. 7: top-10 configs, maximum accuracy reported; no validation set mentioned"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x D, standard TM literal count; not printed",
+        "split.validation_used_for": "no validation set mentioned; configs ranked by reported (test) accuracy"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "synthetic-harmonic-series",
+      "task_family": "regression",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "time_series",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "next value of the series (normalised to [-1,1]), predicted as quantised class by a Q-class TM combined with associative-memory forecast",
+        "target_range": "[-1, 1]",
+        "output_dim": 1,
+        "subtype": "forecasting",
+        "horizon": "24 steps (recursive)",
+        "output_modality": "time_series",
+        "conditioning": "autoregressive_context",
+        "mechanism": "recursive generation: associative-memory retrieval (min Hamming distance over stored N-gram HVs) plus Q-class HVTM prediction of the next quantised value, combined; each new value fed back as context",
+        "output_length_or_size": "24 steps ahead",
+        "eval_kind": "mean forecast error vs ground truth over 24 steps, 50 sampled series"
+      },
+      "preprocessing": [
+        {
+          "step": "normalize",
+          "params": "each series scaled to [-1,1]"
+        },
+        {
+          "step": "windowing",
+          "params": "overlapping N-grams (N=3/5/7) of the history"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": null,
+        "n_bins": "not_reported",
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "N-gram HV of the last N values (interval embedding into Q random HVs, cyclic-shift position perturbation, XOR binding with Gram vectors), D=5000; label is the quantised next value (Q-class TM); N-gram 3/5/7 in Table 1"
+      },
+      "split": {
+        "protocol": "temporal",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.3, Alg. 1-2, Sec. 4.2.1 p. 11 (D=5000)",
+        "task_detail": "Sec. 4.2, p. 10; Sec. 4.2.1 p. 11-12",
+        "split": "Sec. 4.2.1 p. 11: first 220 observations encoded/learned, then 24-step-ahead generation",
+        "preprocessing": "Sec. 4.2.1 p. 12 'normalized between [-1,1]'",
+        "generator": "Sec. 4.2.1 p. 11: s(t)=a sin(2pi t) cos(2pi b t + c t)+sin(2pi+t), a,b,c~U[0,1]"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x D, standard TM literal count; not printed",
+        "split.protocol": "train on history, forecast following 24 steps; 220-observation history stated only for illustrated examples"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "synthetic-ar1",
+      "task_family": "regression",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "time_series",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "next value of the series (normalised to [-1,1]), predicted as quantised class by a Q-class TM combined with associative-memory forecast",
+        "target_range": "[-1, 1]",
+        "output_dim": 1,
+        "subtype": "forecasting",
+        "horizon": "24 steps (recursive)",
+        "output_modality": "time_series",
+        "conditioning": "autoregressive_context",
+        "mechanism": "recursive generation: associative-memory retrieval (min Hamming distance over stored N-gram HVs) plus Q-class HVTM prediction of the next quantised value, combined; each new value fed back as context",
+        "output_length_or_size": "24 steps ahead",
+        "eval_kind": "mean forecast error vs ground truth over 24 steps, 50 sampled series"
+      },
+      "preprocessing": [
+        {
+          "step": "normalize",
+          "params": "each series scaled to [-1,1]"
+        },
+        {
+          "step": "windowing",
+          "params": "overlapping N-grams (N=3/5/7) of the history"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": null,
+        "n_bins": "not_reported",
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "N-gram HV of the last N values (interval embedding into Q random HVs, cyclic-shift position perturbation, XOR binding with Gram vectors), D=5000; label is the quantised next value (Q-class TM); N-gram 3/5/7 in Table 1"
+      },
+      "split": {
+        "protocol": "temporal",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.3, Alg. 1-2, Sec. 4.2.1 p. 11 (D=5000)",
+        "task_detail": "Sec. 4.2, p. 10; Sec. 4.2.1 p. 11-12",
+        "split": "Sec. 4.2.1 p. 11: first 220 observations encoded/learned, then 24-step-ahead generation",
+        "preprocessing": "Sec. 4.2.1 p. 12 'normalized between [-1,1]'",
+        "generator": "Table 1, coefficients 0.2/0.4/0.7"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x D, standard TM literal count; not printed",
+        "split.protocol": "train on history, forecast following 24 steps; 220-observation history stated only for illustrated examples"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "synthetic-sar1",
+      "task_family": "regression",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "time_series",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "next value of the series (normalised to [-1,1]), predicted as quantised class by a Q-class TM combined with associative-memory forecast",
+        "target_range": "[-1, 1]",
+        "output_dim": 1,
+        "subtype": "forecasting",
+        "horizon": "24 steps (recursive)",
+        "output_modality": "time_series",
+        "conditioning": "autoregressive_context",
+        "mechanism": "recursive generation: associative-memory retrieval (min Hamming distance over stored N-gram HVs) plus Q-class HVTM prediction of the next quantised value, combined; each new value fed back as context",
+        "output_length_or_size": "24 steps ahead",
+        "eval_kind": "mean forecast error vs ground truth over 24 steps, 50 sampled series"
+      },
+      "preprocessing": [
+        {
+          "step": "normalize",
+          "params": "each series scaled to [-1,1]"
+        },
+        {
+          "step": "windowing",
+          "params": "overlapping N-grams (N=3/5/7) of the history"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": null,
+        "n_bins": "not_reported",
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "N-gram HV of the last N values (interval embedding into Q random HVs, cyclic-shift position perturbation, XOR binding with Gram vectors), D=5000; label is the quantised next value (Q-class TM); N-gram 3/5/7 in Table 1"
+      },
+      "split": {
+        "protocol": "temporal",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.3, Alg. 1-2, Sec. 4.2.1 p. 11 (D=5000)",
+        "task_detail": "Sec. 4.2, p. 10; Sec. 4.2.1 p. 11-12",
+        "split": "Sec. 4.2.1 p. 11: first 220 observations encoded/learned, then 24-step-ahead generation",
+        "preprocessing": "Sec. 4.2.1 p. 12 'normalized between [-1,1]'",
+        "generator": "Table 1, coefficients 0.1;0.7 and 0.3;0.7"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x D, standard TM literal count; not printed",
+        "split.protocol": "train on history, forecast following 24 steps; 220-observation history stated only for illustrated examples"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "synthetic-arma11",
+      "task_family": "regression",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "time_series",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "next value of the series (normalised to [-1,1]), predicted as quantised class by a Q-class TM combined with associative-memory forecast",
+        "target_range": "[-1, 1]",
+        "output_dim": 1,
+        "subtype": "forecasting",
+        "horizon": "24 steps (recursive)",
+        "output_modality": "time_series",
+        "conditioning": "autoregressive_context",
+        "mechanism": "recursive generation: associative-memory retrieval (min Hamming distance over stored N-gram HVs) plus Q-class HVTM prediction of the next quantised value, combined; each new value fed back as context",
+        "output_length_or_size": "24 steps ahead",
+        "eval_kind": "mean forecast error vs ground truth over 24 steps, 50 sampled series"
+      },
+      "preprocessing": [
+        {
+          "step": "normalize",
+          "params": "each series scaled to [-1,1]"
+        },
+        {
+          "step": "windowing",
+          "params": "overlapping N-grams (N=3/5/7) of the history"
+        }
+      ],
+      "booleanization": {
+        "method": "hypervector",
+        "bits_per_feature": null,
+        "n_bins": "not_reported",
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": 10000,
+        "fit_on": "not_reported",
+        "description": "N-gram HV of the last N values (interval embedding into Q random HVs, cyclic-shift position perturbation, XOR binding with Gram vectors), D=5000; label is the quantised next value (Q-class TM); N-gram 3/5/7 in Table 1"
+      },
+      "split": {
+        "protocol": "temporal",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.3, Alg. 1-2, Sec. 4.2.1 p. 11 (D=5000)",
+        "task_detail": "Sec. 4.2, p. 10; Sec. 4.2.1 p. 11-12",
+        "split": "Sec. 4.2.1 p. 11: first 220 observations encoded/learned, then 24-step-ahead generation",
+        "preprocessing": "Sec. 4.2.1 p. 12 'normalized between [-1,1]'",
+        "generator": "Table 1, coefficients 0.7;-0.1"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x D, standard TM literal count; not printed",
+        "split.protocol": "train on history, forecast following 24 steps; 220-observation history stated only for illustrated examples"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "statistic": "best_of_n",
+      "n_runs": 20,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Sec. 4 p. 7: per-dataset winning config not reported; random search over clauses [100,2000], max literals [10,100], s [10,20], T [0,100]; 10 epochs, final-epoch accuracy",
+        "statistic": "Sec. 4 p. 7: 20 random configs, top 10 taken, maximum accuracy reported",
+        "weighted": "Sec. 3 p. 5-6: coalesced clause-sharing TM with per-class clause weights [5]",
+        "max_included_literals": "Sec. 3 p. 6, sparse TM literal cap [6]"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced architecture shares one clause pool among all classes (Sec. 3), so the count is the pool size",
+        "selection_on_test": "max accuracy over random configs with no validation set mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "statistic": "mean",
+      "n_runs": 50,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": 100,
+        "s": 15,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 50,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Sec. 4.2.1 p. 11 (1000 clauses, threshold 100, specificity 15, max 50 literals)",
+        "statistic": "Sec. 4.2.1 p. 12: 'sample from each model 50 times'; Table 1 caption: values with standard errors",
+        "selection_on_test": "Sec. 4.2.1 p. 11: settings chosen from the classification experiments; all N-gram columns reported"
+      },
+      "inferred": {
+        "clauses_scope": "coalesced shared clause pool (Sec. 3)",
+        "tm_config": "the setup paragraph states it for the harmonic series; 'we again use' wording and no other setup given, so assumed for all Table 1 rows",
+        "weighted": "coalesced weighted architecture of Sec. 3 used 'throughout'"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "UCR result is only an aggregate statement (~78% of 128 datasets within 2 pp of or better than best ED/DTW benchmark); per-dataset accuracies are only in Figs. 4-6 (not extractable as text). Train/test split for UCR is not described (presumably official UCR splits, not stated). Forecast setup text says N=5 but Table 1 reports N-gram 3/5/7; quantisation Q for forecasting is not stated; training epochs for forecasting not stated; error metric only loosely defined (upper bound sqrt(48)/24 suggests an RMS-type error over 24 steps). Figure captions disagree with Table 1 (ARMA .9/-.1 in Fig. 12 vs 0.7/-0.1 in Table 1; SAR seasonal coefficient .4 in Fig. 13b not in Table 1). Forecast usages are recorded as regression/forecasting; task_detail also carries the generation keys because the forecasts are recursive autoregressive sequence generation. The 'max 32 bits for each automata' in Sec. 5.1 is a hypothetical memory estimate, not a reported state width."
+}

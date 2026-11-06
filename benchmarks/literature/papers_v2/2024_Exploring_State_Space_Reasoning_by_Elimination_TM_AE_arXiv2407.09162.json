@@ -1,0 +1,1470 @@
+{
+  "paper_id": "2024_Exploring_State_Space_Reasoning_by_Elimination_TM_AE_arXiv2407.09162",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "representation_learning",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "hyperparameters_complete": "T, s, clauses given (Tables I-III); epochs only for Table III (25) and the state-space plots; number of states N = 2048 only for the One Billion Word analysis; train/test splits, vocabulary sizes, Booleanization and run counts of the classification experiments not given",
+      "interpretability_evidence": "Sec. IV p. 4 (clause words for 'queen', Fig. 3), Figs. 4-9 TA state distributions, Table III counts of original vs negated literals in 50 positive clauses",
+      "primary_task_family": "abstract and contributions 1-2 (TM-AE single-word embedding, state-space analysis); classification (Tables I-III) is contribution 3"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "one-billion-word",
+      "task_family": "representation_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": "not_reported",
+        "downstream_eval": "none quantitative: per-target-word TM-AE (skip-gram-like, one TM per target word) is used only to plot the TA state distribution of original vs negated literals under varying epochs/s/T (Figs. 4-9) and to list example clause words for the target word 'queen'; no similarity/analogy benchmark and no downstream use of the embeddings"
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "vocabulary of 40k words (m = 40000 features); how the vocabulary was chosen (frequency cut-off, casing, stop words) not stated"
+        },
+        {
+          "step": "resampling",
+          "params": "Algorithm 1: per round a random target q in {0,1}; q=1 draws documents containing the target word, q=0 documents without it; r rounds (value not stated)"
+        },
+        {
+          "step": "windowing",
+          "params": "window size u = 25: union of u randomly selected documents forms one example X"
+        },
+        {
+          "step": "other",
+          "params": "target words: one TM-AE trained per individual target word (example 'queen'); number/selection of target words not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 40000,
+        "n_literals": 80000,
+        "fit_on": "not_reported",
+        "description": "Each vocabulary word is 1 if present in the union of the u selected documents, 0 otherwise; the negation of every feature is appended, giving a 2m-literal vector X (indices above 40000 are negated literals)."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. III p. 2-3, Algorithm 1 line 10 (p. 3), Sec. IV p. 4 (X of size 2m), Sec. V p. 5 (index 40000 borderline)",
+        "preprocessing": "Sec. V p. 5 ('30M samples and a vocabulary size of 40k words', N = 2048, u = 25); Algorithm 1 p. 3",
+        "downstream_eval": "Sec. IV p. 4 ('queen' clauses), Sec. V p. 5-6, Figs. 4-9",
+        "split": "Sec. V p. 5: only used for state-space analysis, no accuracy reported",
+        "embedding_dim": "Sec. IV p. 4: embedding is a set of weighted clauses; no vector length given"
+      },
+      "inferred": {
+        "n_literals": "2m with m = 40000 (Sec. IV 'expands the size of the X vector to 2 x m', Sec. V index 40000 borderline)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "artificial-text-classification",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "not_reported",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described; randomly generated data with a set number of features, noise level and unique characterising features per class (values not stated)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "synthetic": "Sec. V p. 6 ('randomly generated with specific parameters, including the number of features, training examples, test examples, noise level, and unique characterising features per class')"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described for the classification experiments (only 'IMDB dataset consists of 50k users' reviews for movies'); Table III counts original vs negated features in clauses, so literals include negations."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "modality": "Sec. V p. 6 ('50k users' reviews for movies')",
+        "setting_tags": "Table III (original vs negated features in 50 positive weighted clauses)"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "20-newsgroups",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described ('news articles from various categories')."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "modality": "Sec. V p. 6"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=1, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=2, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 3.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=3, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=5, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=10, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 20.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=20, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 10000,
+        "s": 50.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'artificial-text-classification' (T, clauses) and column s=50, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        7
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=1, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=2, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 3.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=3, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        10
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=5, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=10, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        12
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 20.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=20, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        13
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "T": 10000,
+        "s": 50.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row 'imdb' (T, clauses) and column s=50, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        14
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=1, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        15
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 2.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=2, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        16
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 3.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=3, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        17
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=5, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        18
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=10, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        19
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 20.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=20, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        20
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16000,
+        "s": 50.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table I row '20-newsgroups' (T, clauses) and column s=50, p. 7; footnote 1 p. 2 (Boosting of True Positive Feedback, s=1 allowed)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        21
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 4,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=4, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 8,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=8, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 16,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=16, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 32,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=32, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        25
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 64,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=64, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        26
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 128,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=128, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        27
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 256,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'artificial-text-classification' (s = 5.0, clauses) and column T=256, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        28
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 4,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=4, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        29
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 8,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=8, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        30
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 16,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=16, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        31
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 32,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=32, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        32
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 64,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=64, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        33
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 128,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=128, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        34
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "T": 256,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row 'imdb' (s = 5.0, clauses) and column T=256, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        35
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 4,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=4, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        36
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 8,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=8, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        37
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 16,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=16, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        38
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 32,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=32, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        39
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 64,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=64, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        40
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 128,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=128, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        41
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "T": 256,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "weighted": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table II row '20-newsgroups' (s = 5.0, clauses) and column T=256, p. 7",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        42
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "T": 256,
+        "s": 1.0,
+        "epochs": 25,
+        "weighted": true,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III Setup (s, T) column and text below it, p. 7 ('25 epochs of 50 positive weighted clauses'); total clause count not given (50 positive clauses were inspected)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        43
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "T": 128,
+        "s": 3.0,
+        "epochs": 25,
+        "weighted": true,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III Setup (s, T) column and text below it, p. 7 ('25 epochs of 50 positive weighted clauses'); total clause count not given (50 positive clauses were inspected)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        44
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "T": 32,
+        "s": 10.0,
+        "epochs": 25,
+        "weighted": true,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III Setup (s, T) column and text below it, p. 7 ('25 epochs of 50 positive weighted clauses'); total clause count not given (50 positive clauses were inspected)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        45
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "T": 8,
+        "s": 50.0,
+        "epochs": 25,
+        "weighted": true,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "implementation": "not_reported",
+        "hardware": null,
+        "clauses_scope": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table III Setup (s, T) column and text below it, p. 7 ('25 epochs of 50 positive weighted clauses'); total clause count not given (50 positive clauses were inspected)",
+        "statistic": "no run count, seed or averaging stated anywhere (Sec. V, Tables I-III)"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "datasets[3].n_classes",
+      "record": 20,
+      "pdf": "not_reported",
+      "location": "Sec. V p. 6",
+      "note": "PDF only says 'news articles from various categories'; 20 is the standard dataset size (record notes already flag this)."
+    },
+    {
+      "where": "datasets[2].n_classes",
+      "record": 2,
+      "pdf": "not_reported",
+      "location": "Sec. V p. 6",
+      "note": "PDF only says '50k users' reviews for movies'; binary sentiment is standard knowledge, not stated."
+    },
+    {
+      "where": "datasets[2].booleanization / datasets[3].booleanization",
+      "record": "bag-of-words presence with negated features",
+      "pdf": "not_reported",
+      "location": "Sec. V p. 6",
+      "note": "The PDF describes Booleanization only for the TM-AE (One Billion Word) input; the classification datasets' encoding is not stated (Table III implies negated literals for IMDB)."
+    },
+    {
+      "where": "datasets[1].booleanization",
+      "record": "already Boolean",
+      "pdf": "not_reported",
+      "location": "Sec. V p. 6",
+      "note": "Generator described only by its parameter names; that the data are Boolean is plausible but not stated."
+    }
+  ],
+  "notes": "Classification results (Tables I-III) are single numbers per setting with no run count, epochs (Tables I-II), split or validation stated; the abstract headline 90.62% IMDB is the best of the Table I s-sweep evaluated on the reported (test) accuracy, so the headline is test-selected, but each table row itself is just one sweep point -> selection_on_test left not_reported. Which TM variant is used for classification is not said beyond footnote 1 (TM with Boosting of True Positive Feedback); clause scope (per class vs total) not stated. Table III: 'counted the number of original and negated features present in 25 epochs of 50 positive weighted clauses' read as training for 25 epochs and inspecting 50 positive clauses. State-space experiments on One Billion Word (no numeric results): N = 2048, u = 25, epochs 5/100/200 with T = 3200, s = 5.0 (Fig. 4); 25 epochs with s in {3,10,20,40,100} (Fig. 5), T in {2,20,75,200,5000} (Fig. 6); Fig. 8 s in {1,5,20,100}; Fig. 9 T in {2,20,200,3200,5000}. Figures are not readable as text. Embedding dimension of the single-word TM-AE is not given (embedding = set of weighted clauses). All record result values match Tables I-III."
+}
