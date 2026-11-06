@@ -1,0 +1,69 @@
+{
+  "paper_id": "2020_Low_Latency_Asynchronous_Logic_Design_for_Inference_at_the_Edge_arXiv2012.03402",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-4"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "primary_task_family": "Sec. II, p. 2: single-class TM classifier, thresholded vote sum decides class membership; Sec. IV-C, p. 3",
+      "code_available": "no code or repository link anywhere in the paper",
+      "hyperparameters_complete": "no clause count, feature count, T, s or epochs given; only an eight-input population count (Sec. IV-B, p. 3) and the synthesis setup (Sec. IV-D)",
+      "seeds_stated": "no seeds or repeated runs mentioned"
+    }
+  },
+  "usages": [],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported", "clauses_scope": "not_reported", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "asic",
+        "hardware": "Inference-only datapath (clause evaluation with OR-mask + AND tree, 8-input dual-rail population counts for positive/negative votes, 1-of-3 encoded asynchronous magnitude comparator); TA actions abstracted to primary input e. Synthesized with Synopsys Design Compiler for UMC LL 65 nm low-leakage library, nominal 1.2 V supply, TT corner; post-synthesis results. Compared: single-rail synchronous (flip-flops, clock period = latency) vs proposed dual-rail QDI early-propagative self-timed design with reduced completion detection (C-elements as latches)."
+      },
+      "evidence": {
+        "tm_config": "Sec. IV and IV-A..C, pp. 2-3; Fig. 2",
+        "hardware": "Sec. IV-D, p. 3; Table I, p. 4",
+        "statistic": "Table I reports one post-synthesis result per design; 'Avg.' columns average over operands, not over runs",
+        "T": "inference-only datapath: T, s, epochs, TA states not applicable (TA actions are external inputs, Sec. II/IV, p. 2)"
+      },
+      "inferred": {
+        "statistic": "one synthesis per design/library is reported and no repetitions are mentioned; deterministic post-synthesis numbers",
+        "weighted": "Sec. II and IV: votes are plain population counts of clause outputs, no clause weights",
+        "implementation": "standard-cell synthesis to 65 nm silicon libraries (no fabrication or FPGA)"
+      }
+    },
+    {
+      "result_indices": [15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported", "clauses_scope": "not_reported", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "asic",
+        "hardware": "Same inference datapath (single-rail synchronous vs proposed dual-rail self-timed), synthesized with Synopsys Design Compiler for the FULL DIFFUSION 65 nm custom subthreshold standard-cell library (full-diffusion sizing, non-minimum-length transistors), TT corner, nominal 1.2 V; Table I at 1.2 V. Fig. 3 additionally sweeps the dual-rail datapath from 0.25 V to 1.2 V (latency ~1e2 to ~1e6 ps, figure only); C-elements built from four simple gates (no AOI32 cells)."
+      },
+      "evidence": {
+        "tm_config": "Sec. IV and IV-A..C, pp. 2-3; Fig. 2",
+        "hardware": "Sec. IV-D, p. 3; Table I and Fig. 3, p. 4",
+        "statistic": "Table I reports one post-synthesis result per design"
+      },
+      "inferred": {
+        "statistic": "one synthesis per design/library is reported and no repetitions are mentioned; deterministic post-synthesis numbers",
+        "weighted": "Sec. II and IV: votes are plain population counts of clause outputs, no clause weights",
+        "implementation": "standard-cell synthesis to 65 nm silicon libraries (no fabrication or FPGA)"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Pure hardware paper: no dataset, no accuracy, no training; the record correctly has no datasets, so usages is empty. All 30 record values match Table I (p. 4). Table I area columns have no unit in the paper. The 'Avg. Inferences (Millions s^-1)' column is recorded as 'average throughput'. The datapath size is not stated: the population count is eight-input (Sec. IV-B), which would allow up to 8 votes per polarity, but the number of clauses and features is never given, so n_clauses is not_reported. Text says dual-rail average throughput is worsened, which holds for UMC LL (300 vs 480) but not for FULL DIFFUSION (510 vs 410) in Table I - an inconsistency in the paper, not in the record. The record's split='test' on these hardware rows is not meaningful (no data split exists). Fig. 3 latency-vs-voltage curve not extractable as text. Datapath is a single-class (binary) TM classifier; T/s/epochs/TA states are null because the inference-only circuit takes TA exclude actions as primary inputs."
+}

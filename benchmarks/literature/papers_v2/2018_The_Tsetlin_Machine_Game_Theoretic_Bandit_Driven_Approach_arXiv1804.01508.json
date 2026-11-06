@@ -1,0 +1,461 @@
+{
+  "paper_id": "2018_The_Tsetlin_Machine_Game_Theoretic_Bandit_Driven_Approach_arXiv1804.01508",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-42"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "p. 1 footnote (github.com/cair/TsetlinMachine, github.com/cair/pyTsetlinMachine)",
+      "seeds_stated": "Sec. 5, p. 28: 'different random number streams', no seeds given",
+      "hyperparameters_complete": "clauses, s, T, states, epochs per dataset given (Sec. 5.1-5.5); baseline hyper-parameters, A&A input encoding, Iris/Digits bit encoding and clause scope not given",
+      "interpretability_evidence": "Table 1 (digit '1' clause bit pattern), Table 14 (Noisy XOR clauses)"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "iris",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {
+        "n_classes": 3,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": 4,
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 16,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The four float inputs are transformed into one consecutive sequence of 16 bits, four bits per float; the encoding scheme is not specified."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 5.1, pp. 28-29",
+        "split": "Sec. 5.1, p. 29: 80% training, 1000 random train/test partitions; test set of 30 examples",
+        "n_classes": "Sec. 5.1, p. 28"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "uci-digits",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": 3,
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 192,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The 64 input (pixel) features are transformed into a sequence of 192 bits, 3 bits per pixel, removing the individual pixel value structure; the encoding scheme is not specified."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 5.2, pp. 29-30",
+        "split": "Sec. 5.2, p. 30: 80% training; 100 runs",
+        "setting_tags": "Table 1, p. 5 and Sec. 5.2, p. 30 (clause bit pattern for digit '1')",
+        "modality": "Sec. 5.2, p. 30 ('3 bits per pixel')"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "axis-and-allies",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "games",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described: inputs are the starting forces (0-10 tanks, 0-20 infantry per player/territory); outputs are 20 bits of the optimal attack, of which bit 5 is reported."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "synthetic": "Sec. 5.3, p. 31: dataset produced with an Axis & Allies simulator from randomly assigned starting forces",
+        "split": "Sec. 5.3, p. 31: 25% training / 75% test, 100 random partitions of 10 000 positions",
+        "label_type": "Sec. 5.3, p. 31: prediction of output bit 5 among 20 output bits"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "noisy-xor",
+      "task_family": "classification",
+      "setting_tags": [
+        "robustness",
+        "interpretability"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 12,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Twelve binary inputs (two related to y by XOR, ten random); 40% of training outputs inverted, test outputs unperturbed."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 5.4, p. 32",
+        "split": "Sec. 5.4, p. 32: 50% of 10 000 examples for training; 100 replications (Sec. 5.4, p. 33)",
+        "setting_tags": "Sec. 5.4, p. 32 ('to examine robustness towards noise'); Table 14 (learned clauses)"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": 0.3,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Pixel values larger than 0.3 are replaced with 1, values below or equal to 0.3 with 0."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 5.5, p. 33",
+        "split": "Sec. 5.5, p. 33: original 60 000 training / 10 000 test examples"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        5
+      ],
+      "statistic": "mean",
+      "n_runs": 1000,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 300,
+        "clauses_scope": "not_reported",
+        "T": 10,
+        "s": 3.0,
+        "epochs": 500,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.1, p. 29 (300 clauses, s=3.0, T=10, 100 states, 500 epochs; Multi-Class TM with Boosting of True Positive Feedback, footnote 3); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
+        "statistic": "Sec. 5.1, p. 29: accuracy after the final epoch, mean with 95% CI across 1000 runs (Tables 6, 7)",
+        "selection_on_test": "Sec. 5.1, p. 29: last configuration used 'to avoid overfitting to the test set'"
+      }
+    },
+    {
+      "result_indices": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "statistic": "mean",
+      "n_runs": 1000,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 6; Sec. 5.1, p. 29 (1000 runs, same random number streams, Sec. 5, p. 28)"
+      }
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "not_reported",
+        "T": 10,
+        "s": 3.0,
+        "epochs": 300,
+        "n_states": 1000,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.2, p. 30 (1000 clauses, s=3.0, T=10, 1000 states, 300 epochs; Multi-Class TM with Boosting of True Positive Feedback, footnote 5); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
+        "statistic": "Sec. 5.2, p. 30: accuracy after the final epoch, mean with 95% CI across 100 runs (Table 8)"
+      }
+    },
+    {
+      "result_indices": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 8; Sec. 5.2, p. 30"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "not_reported",
+        "T": 10,
+        "s": 40.0,
+        "epochs": 200,
+        "n_states": 1000,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.3, p. 31 (10 000 clauses, s=40.0, T=10, 1000 states, 200 epochs); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
+        "statistic": "Sec. 5.3, p. 31: accuracy after the final epoch, mean with 95% CI across 100 runs (Table 11)"
+      }
+    },
+    {
+      "result_indices": [
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 11; Sec. 5.3, p. 31"
+      }
+    },
+    {
+      "result_indices": [
+        17
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 20,
+        "clauses_scope": "not_reported",
+        "T": 15,
+        "s": 3.9,
+        "epochs": 200,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.4, p. 33 (20 clauses, s=3.9, T=15, 100 states, 200 epochs; Multi-Class TM, footnote 7); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
+        "statistic": "Sec. 5.4, p. 33: accuracy after the final epoch, mean with 95% CI across 100 replications (Table 15)",
+        "selection_on_test": "Sec. 5, p. 28 / Fig. 7: s=3.9 chosen from a plot of mean accuracy over s; whether that accuracy is test accuracy is not stated"
+      }
+    },
+    {
+      "result_indices": [
+        18,
+        19,
+        20,
+        21
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 15; Sec. 5.4, p. 33"
+      }
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "statistic": "mean",
+      "n_runs": 50,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 40000,
+        "clauses_scope": "total",
+        "T": 50,
+        "s": 10.0,
+        "epochs": 400,
+        "n_states": 256,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 5.5, pp. 33-34 (40 000 clauses, 4000 per class, s=10.0, T=50, 256 states, 400 epochs; Multi-Class TM with Boosting of True Positive Feedback, footnote 9); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
+        "implementation": "Sec. 5.5, p. 33: reproducible with github.com/cair/fast-tsetlin-machine-with-mnist-demo",
+        "statistic": "Sec. 5.5, pp. 34-35: accuracy after the final epoch, mean across 50 runs (Table 16)"
+      },
+      "inferred": {
+        "implementation": "paper says results can be reproduced with the author's fast-tsetlin-machine-with-mnist-demo (own C/Cython code), not that this code produced them"
+      }
+    },
+    {
+      "result_indices": [
+        23,
+        24,
+        25,
+        26,
+        27,
+        29
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 16 / Sec. 5.5, p. 35: taken from yann.lecun.com/exdb/mnist (in italic)"
+      }
+    },
+    {
+      "result_indices": [
+        28,
+        30,
+        31
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Sec. 5.5, p. 35: trained by the author on the binarized MNIST; runs not stated"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[0].config",
+      "record": "300 clauses, s=3.0, T=10, 100 states, 500 epochs, last epoch reported, 1000 runs",
+      "pdf": "also Multi-Class TM with Boosting of True Positive Feedback",
+      "location": "Sec. 5.1, p. 29, footnote 3",
+      "note": "omission: boosting is recorded only for MNIST but is also used for Iris"
+    },
+    {
+      "where": "results[6].config",
+      "record": "1000 clauses, s=3.0, T=10, 1000 states, 300 epochs, 100 runs",
+      "pdf": "also Multi-Class TM with Boosting of True Positive Feedback",
+      "location": "Sec. 5.2, p. 30, footnote 5",
+      "note": "omission: boosting also used for Binary Digits"
+    }
+  ],
+  "notes": "Pages 6-27 (TM definition and theory) skimmed; Sec. 5 (pp. 27-35) and Sec. 6-7 read fully. Clause scope: the Multi-Class TM sums n/2 positive and n/2 negative clauses per class (Eq. 63), but the experiments print a single count ('300 clauses', '1000 clauses', '20 clauses') without scope; only MNIST says '40 000 clauses, 4000 clauses per class', so only MNIST is scoped (total). A&A: 10 000 clauses for predicting output bit 5 of 20; whether one TM per output bit was used is not stated, so scope not_reported. n_states is the paper's 'each Tsetlin Automaton has K states' (whether this is N or 2N in Fig. 1 terms is not stated). MNIST internal inconsistency: text says 40 000 clauses with T=50, while the Fig. 10 legend lists 40 000 clauses with Threshold=100 (and 20 000 with 50, 10 000 with 25); the text value is used. Hyper-parameters were tuned by 'relatively light grid searches' (Sec. 5, p. 28) on unspecified data; no validation set is described, so validation_used_for and baseline selection_on_test are not_reported. Binary Digits: the paper cites the UCI Pen-Based dataset (10 992 instances) but describes 64 pixel features, which matches the 8x8 optical digits; modality set to image following the paper's 'pixel' wording. Iris/Digits n_literals would be 2x the bit count but is not printed. Figures 7, 9 and 10 (s sweep, data-size sweep, MNIST curves for 10k/20k/40k clauses) are not in the record and values there are only visible in plots."
+}

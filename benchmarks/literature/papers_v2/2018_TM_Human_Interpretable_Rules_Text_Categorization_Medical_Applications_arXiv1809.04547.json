@@ -1,0 +1,451 @@
+{
+  "paper_id": "2018_TM_Human_Interpretable_Rules_Text_Categorization_Medical_Applications_arXiv1809.04547",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-05",
+    "pages_read": "1-10"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "p. 6, Experiments intro (github.com/cair/TextUnderstandingTsetlinMachine)",
+      "interpretability_evidence": "Figs. 1, 3, 4 and pp. 3-6: example clauses for Allergy (e.g. 'reacts' AND 'Voltaren' AND NOT 'not') in a worked walkthrough; no systematic analysis of learned rules",
+      "hyperparameters_complete": "TM clauses/T/s/states/epochs given per dataset (pp. 7-8); clause scope, state bits, tuning data and baseline settings not given"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "20-newsgroups",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 4,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 4,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "modified 20 Newsgroups ('19997' version), 16,000 documents, sub-categories grouped into 4 classes: computers, recreation, science, politics (as Xu et al. 2016)"
+        },
+        {
+          "step": "tokenization",
+          "params": "Weka StringToWordVector: cleaning, tokenization into unigrams and quadrigrams (stated for the Weka experiments, i.e. 20 Newsgroups and clinical; described as replicating the TM configuration)"
+        },
+        {
+          "step": "feature_selection",
+          "params": "InfoGainAttributeEval; 8006 selected features of 25,840 (a second TM run used all 25,840)"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 8006,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each vocabulary term is a propositional variable that is 1 if the term is present in the document and 0 if absent."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 10,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 'Representing Text as Propositional Variables', p. 3; Fig. 1",
+        "n_boolean_features": "Sec. 'The 20 Newsgroups Dataset', p. 7",
+        "preprocessing": "Sec. Experimental Setup, pp. 6-7; footnote 2, p. 7",
+        "n_classes": "Sec. 'The 20 Newsgroups Dataset', p. 7; footnote 2",
+        "split": "p. 7: 10-fold CV repeated 10 times, 80%-20% split"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "NLP preprocessing in Python (NLTK, scikit-learn); details not given for IMDb"
+        },
+        {
+          "step": "feature_selection",
+          "params": "5000 selected features (selection method not stated for IMDb)"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each selected term is a propositional variable that is 1 if present in the review and 0 if absent."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 'Representing Text as Propositional Variables', p. 3",
+        "n_boolean_features": "Sec. 'The IMDb Dataset', p. 7",
+        "split": "p. 7: authors' published 50%-50% train/test split (Maas et al. 2011)",
+        "preprocessing": "Sec. Experimental Setup, p. 6"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "sshf-ehr-allergy",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "not_reported",
+      "n_classes": "not_reported",
+      "modality": "text",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "not_reported",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "tokenization",
+          "params": "Weka StringToWordVector: cleaning, tokenization into unigrams and quadrigrams (stated for the Weka experiments, i.e. 20 Newsgroups and clinical; described as replicating the TM configuration)"
+        },
+        {
+          "step": "other",
+          "params": "38,876 term features used; whether InfoGain selection was applied is not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 38876,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each term of the EHR vocabulary is a propositional variable marking presence/absence in the document (Fig. 1 shows the bit-vector representation of sentences from this dataset)."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 10,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 'Representing Text as Propositional Variables', p. 3; Fig. 1 caption",
+        "n_boolean_features": "Sec. 'The Clinical Dataset', p. 8",
+        "split": "p. 7: 10-fold CV repeated 10 times, 90%-10% split",
+        "domain": "p. 6: authentic EHRs from a hospital (Berge, Granmo, and Tveit 2017)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "p. 6: 'mean percentage, with 95% confidence intervals'; p. 7: 10-fold CV repeated 10 times",
+        "tm_config": "Weka v3.9 baselines, Sec. Experimental Setup p. 6"
+      }
+    },
+    {
+      "result_indices": [
+        21,
+        22,
+        23
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1600,
+        "clauses_scope": "not_reported",
+        "T": 25,
+        "s": 8.0,
+        "epochs": 100,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "Intel i7-8700K 12-core CPU, 64GB RAM, Ubuntu 18.04 (GPU model not stated; GPU version 5-15x faster than CPU)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 'The 20 Newsgroups Dataset', p. 7",
+        "n_states": "p. 7 '100 states'; Fig. 3 / p. 4 'N=100 states per action'",
+        "statistic": "p. 7 (results from the final epoch, p. 7 IMDb paragraph 'Similar to the 20 Newsgroups dataset'), mean over 10x10-fold CV",
+        "implementation": "Sec. Experimental Setup, p. 6: Python/Cython or CUDA C++ Multi-Class Tsetlin Machine (own code, github.com/cair/TextUnderstandingTsetlinMachine)",
+        "hardware": "Sec. Experimental Setup, p. 6",
+        "weighted": "p. 3 vote-sum equation, unweighted clause outputs"
+      }
+    },
+    {
+      "result_indices": [
+        87
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 25,
+        "s": 8.0,
+        "epochs": 100,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "Intel i7-8700K 12-core CPU, 64GB RAM, Ubuntu 18.04 (GPU model not stated; GPU version 5-15x faster than CPU)"
+      },
+      "evidence": {
+        "tm_config": "p. 7: no feature selection, 25,840 features, 5168 and 10,336 clauses, 'the other parameters were kept the same'",
+        "implementation": "Sec. Experimental Setup, p. 6: Python/Cython or CUDA C++ Multi-Class Tsetlin Machine (own code, github.com/cair/TextUnderstandingTsetlinMachine)"
+      }
+    },
+    {
+      "result_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "p. 7: 'the results in the table are mean scores from 100 independent runs, together with 95% confidence intervals'",
+        "tm_config": "scikit-learn / Keras / TensorFlow baselines, p. 6"
+      }
+    },
+    {
+      "result_indices": [
+        57,
+        58,
+        59,
+        88
+      ],
+      "statistic": "mean",
+      "n_runs": 100,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "not_reported",
+        "T": 20,
+        "s": 27.0,
+        "epochs": 200,
+        "n_states": 500,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "Intel i7-8700K 12-core CPU, 64GB RAM, Ubuntu 18.04 (GPU model not stated; GPU version 5-15x faster than CPU)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 'The IMDb Dataset', pp. 7",
+        "statistic": "p. 7: final epoch; mean of 100 independent runs",
+        "implementation": "Sec. Experimental Setup, p. 6: Python/Cython or CUDA C++ Multi-Class Tsetlin Machine (own code, github.com/cair/TextUnderstandingTsetlinMachine)",
+        "hardware": "Sec. Experimental Setup, p. 6"
+      }
+    },
+    {
+      "result_indices": [
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "p. 7: 10-fold CV repeated 10 times; p. 6 mean with 95% CI",
+        "tm_config": "Weka v3.9 baselines (CVParameterSelection autotuning), StarSpace; pp. 6, 8"
+      }
+    },
+    {
+      "result_indices": [
+        84,
+        85,
+        86
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "not_reported",
+        "T": 25,
+        "s": 3.0,
+        "epochs": 100,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "Intel i7-8700K 12-core CPU, 64GB RAM, Ubuntu 18.04 (GPU model not stated; GPU version 5-15x faster than CPU)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 'The Clinical Dataset', p. 8",
+        "implementation": "Sec. Experimental Setup, p. 6: Python/Cython or CUDA C++ Multi-Class Tsetlin Machine (own code, github.com/cair/TextUnderstandingTsetlinMachine)",
+        "hardware": "Sec. Experimental Setup, p. 6"
+      }
+    },
+    {
+      "result_indices": [
+        89
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "not_reported",
+        "T": 25,
+        "s": 3.0,
+        "epochs": 2000,
+        "n_states": 100,
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "custom",
+        "hardware": "Intel i7-8700K 12-core CPU, 64GB RAM, Ubuntu 18.04 (GPU model not stated; GPU version 5-15x faster than CPU)"
+      },
+      "evidence": {
+        "statistic": "p. 8: peak accuracy 79.1% in epoch 294 of an extended 2000-epoch run, 'possibly reflecting temporary overfitting on the test set'",
+        "tm_config": "p. 8; clauses/T/s/states taken from the clinical configuration in the same paragraph, only epochs (2000) stated for this run"
+      }
+    },
+    {
+      "result_indices": [
+        90,
+        91,
+        92,
+        93
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "pp. 7-8: values cited from the literature (Wang & Manning 2012; Miyato et al. 2016; Sachan et al. 2018; Xu et al. 2016), not re-run"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "PDF read via text extraction (pages 1-10, incl. references); figures 1-4 and Tables 1-2 are images whose content is described in the text. Clause counts (1600, 10000, 500, 5168/10336) are printed without saying per class or total, so clauses_scope is not_reported. '100 states' / '500 states' are N = states per action (Fig. 3). n_runs=10 for the CV datasets means 10 repetitions of 10-fold CV (100 fold evaluations). Hyper-parameters were tuned by manual grid search; the data used for tuning is not stated, hence selection_on_test not_reported. The text calls the 20 Newsgroups table 'Table 1' but it is captioned Table 3. Clinical n_classes is not stated (the running example is Allergy vs No Allergy). Unigram+quadrigram tokenization and InfoGain selection are stated for the Weka preprocessing that 'replicates the TM configuration'; it is not explicit which TM inputs contained quadrigrams, so booleanization is recorded as term presence. Text says run time in hours is reported for the clinical dataset, but Table 5 has no such column; GPU speed-up only as 5-15x."
+}

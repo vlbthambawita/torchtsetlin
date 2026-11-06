@@ -1,27 +1,187 @@
 {
   "_doc": "Controlled vocabularies for the literature records (schema v2, plans/literature-db-v2.md). build_catalog.py rejects values outside these lists. 'not_reported' is allowed wherever a value is: it means the paper does not say, while null means not extracted yet.",
-  "task_family": ["classification", "regression", "generation", "clustering", "representation_learning",
-                  "structure_learning", "recommendation_ranking", "anomaly_novelty_detection", "segmentation",
-                  "reinforcement_learning_games", "other"],
-  "label_type": ["binary", "multiclass", "multilabel", "ordinal"],
-  "regression_subtype": ["point", "ordinal", "forecasting"],
-  "generation_output": ["text", "image", "sequence", "time_series", "symbolic"],
-  "generation_conditioning": ["unconditional", "class", "prompt", "autoregressive_context"],
-  "modality": ["image", "text", "tabular", "time_series", "audio", "graph", "sequence", "multimodal"],
-  "setting_tags": ["federated", "decentralized", "robustness", "uncertainty", "interpretability", "counterfactual",
-                   "verification", "hardware", "privacy", "continual", "transfer", "imbalanced"],
-  "domain": ["medical", "nlp", "vision", "security", "speech", "games", "finance", "science", "recommender",
-             "generic"],
-  "booleanization_method": ["native_binary", "fixed_threshold", "adaptive_threshold", "otsu", "thermometer",
-                            "quantile_thermometer", "one_hot", "bag_of_words_presence", "n_gram_presence",
-                            "embedding_augmented", "gray_code", "fingerprint", "hypervector", "learned", "other"],
-  "fit_on": ["train", "all_data"],
-  "split_protocol": ["official", "random_holdout", "k_fold_cv", "leave_one_out", "temporal", "none"],
-  "clauses_scope": ["per_class", "total", "per_output"],
-  "statistic": ["mean", "median", "final_epoch", "peak_over_epochs", "best_of_n", "average_last_epochs", "single_run"],
-  "averaging": ["macro", "micro", "weighted", "binary", "per_class", "sample"],
-  "metric_kind": ["quality", "cost_time", "cost_energy", "cost_hardware", "cost_memory", "cost_communication",
-                  "interpretability", "count"],
-  "implementation": ["pyTsetlinMachine", "pyTsetlinMachineParallel", "PyTsetlinMachineCUDA", "tmu", "torchtsetlin",
-                     "green_tsetlin", "fpga", "asic", "in_memory", "custom"]
+  "task_family": [
+    "classification",
+    "regression",
+    "generation",
+    "clustering",
+    "representation_learning",
+    "structure_learning",
+    "recommendation_ranking",
+    "anomaly_novelty_detection",
+    "segmentation",
+    "reinforcement_learning_games",
+    "other"
+  ],
+  "label_type": [
+    "binary",
+    "multiclass",
+    "multilabel",
+    "ordinal"
+  ],
+  "regression_subtype": [
+    "point",
+    "ordinal",
+    "forecasting"
+  ],
+  "generation_output": [
+    "text",
+    "image",
+    "sequence",
+    "time_series",
+    "symbolic"
+  ],
+  "generation_conditioning": [
+    "unconditional",
+    "class",
+    "prompt",
+    "autoregressive_context"
+  ],
+  "modality": [
+    "image",
+    "text",
+    "tabular",
+    "time_series",
+    "audio",
+    "graph",
+    "sequence",
+    "multimodal"
+  ],
+  "setting_tags": [
+    "federated",
+    "decentralized",
+    "robustness",
+    "uncertainty",
+    "interpretability",
+    "counterfactual",
+    "verification",
+    "hardware",
+    "privacy",
+    "continual",
+    "transfer",
+    "imbalanced"
+  ],
+  "domain": [
+    "medical",
+    "nlp",
+    "vision",
+    "security",
+    "speech",
+    "games",
+    "finance",
+    "science",
+    "recommender",
+    "social",
+    "generic"
+  ],
+  "booleanization_method": [
+    "native_binary",
+    "fixed_threshold",
+    "adaptive_threshold",
+    "otsu",
+    "thermometer",
+    "quantile_thermometer",
+    "one_hot",
+    "bag_of_words_presence",
+    "n_gram_presence",
+    "embedding_augmented",
+    "gray_code",
+    "fingerprint",
+    "hypervector",
+    "learned",
+    "other"
+  ],
+  "fit_on": [
+    "train",
+    "all_data"
+  ],
+  "split_protocol": [
+    "official",
+    "random_holdout",
+    "k_fold_cv",
+    "leave_one_out",
+    "temporal",
+    "none"
+  ],
+  "clauses_scope": [
+    "per_class",
+    "total",
+    "per_output"
+  ],
+  "statistic": [
+    "mean",
+    "median",
+    "final_epoch",
+    "peak_over_epochs",
+    "best_of_n",
+    "average_last_epochs",
+    "single_run"
+  ],
+  "averaging": [
+    "macro",
+    "micro",
+    "weighted",
+    "binary",
+    "per_class",
+    "sample"
+  ],
+  "metric_kind": [
+    "quality",
+    "cost_time",
+    "cost_energy",
+    "cost_hardware",
+    "cost_memory",
+    "cost_communication",
+    "interpretability",
+    "count"
+  ],
+  "implementation": [
+    "pyTsetlinMachine",
+    "pyTsetlinMachineParallel",
+    "PyTsetlinMachineCUDA",
+    "tmu",
+    "torchtsetlin",
+    "green_tsetlin",
+    "fpga",
+    "asic",
+    "in_memory",
+    "custom"
+  ],
+  "interpretability_evidence": [
+    "rules_shown",
+    "clause_analysis",
+    "feature_importance",
+    "human_evaluation",
+    "none"
+  ],
+  "validation_used_for": [
+    "tuning",
+    "early_stopping",
+    "model_selection",
+    "none"
+  ],
+  "preprocessing_step": [
+    "resize",
+    "crop",
+    "grayscale",
+    "normalize",
+    "augmentation",
+    "stop_word_removal",
+    "stemming",
+    "lowercasing",
+    "tokenization",
+    "vocabulary_cap",
+    "feature_selection",
+    "windowing",
+    "imputation",
+    "resampling",
+    "denoising",
+    "feature_extraction",
+    "other"
+  ],
+  "hyperparameters_complete": [
+    "yes",
+    "partial",
+    "no"
+  ]
 }

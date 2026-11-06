@@ -173,17 +173,22 @@ of clusters, are never ranked.
 
 | Table | Columns |
 |---|---|
-| `papers` | `paper_id`, `title`, `authors`, `year`, `venue`, `arxiv_id`, `doi`, `url`, `code_url`, `category`, `feature_type`, `tm_variants`, `new_feature`, `caution`, `extraction_notes`, `pdf` |
+| `papers` | `paper_id`, `title`, `authors`, `year`, `venue`, `arxiv_id`, `doi`, `url`, `code_url`, `category`, `feature_type`, `tm_variants`, `new_feature`, `caution`, `extraction_notes`, `pdf`, `primary_task_family`, `code_available`, `seeds_stated`, `hyperparameters_complete`, `interpretability_evidence`, `v2_not_reported`, `v2_inferred`, `v2_source` |
 | `datasets` | `dataset_id`, `data_type`, `tasks`, `n_classes` (every class count used, e.g. `4, 20`), `n_classes_min`, `n_classes_max`, `task_families`, `modality`, `input_shape_or_features`, `download_url`, `download_url_source`, `n_papers`, `tm_variants`, `names_in_papers` |
-| `dataset_usages` | `paper_id`, `dataset_id`, `usage_index`, `name_in_paper`, `task`, `task_family`, `setting_tags`, `label_type`, `n_classes`, `modality`, `synthetic`, `train_size`, `val_size`, `test_size`, `split_as_reported`, `booleanization`, `booleanization_method`, `booleanization_bits`, `notes`, `v2_source` |
-| `results` | `id`, `paper_id`, `dataset_id`, `model`, `is_tm`, `is_proposed`, `metric`, `metric_canonical`, `metric_qualifier`, `averaging`, `metric_kind`, `value`, `unit`, `std_or_range`, `split`, `statistic`, `n_runs`, `better` (`higher`/`lower`), `config`, `n_clauses`, `clauses_scope`, `T`, `s`, `epochs`, `n_states`, `state_bits`, `max_included_literals`, `patch_size`, `weighted`, `implementation`, `source_location`, `notes`, `v2_source` |
+| `dataset_usages` | `paper_id`, `dataset_id`, `usage_index`, `name_in_paper`, `task`, `task_family`, `setting_tags`, `label_type`, `n_classes`, `modality`, `synthetic`, `domain`, `train_size`, `val_size`, `test_size`, `split_as_reported`, `split_protocol`, `k_folds`, `validation_used_for`, `preprocessing`, `booleanization`, `booleanization_method`, `booleanization_bits`, `booleanization_n_bins`, `booleanization_n_boolean_features`, `booleanization_n_literals`, `booleanization_fit_on`, `booleanization_threshold`, `notes`, `v2_not_reported`, `v2_inferred`, `v2_source` |
+| `results` | `id`, `paper_id`, `dataset_id`, `model`, `is_tm`, `is_proposed`, `metric`, `metric_canonical`, `metric_qualifier`, `averaging`, `metric_kind`, `value`, `unit`, `std_or_range`, `split`, `statistic`, `n_runs`, `selection_on_test`, `better` (`higher`/`lower`), `config`, `n_clauses`, `clauses_scope`, `T`, `s`, `epochs`, `n_states`, `state_bits`, `max_included_literals`, `patch_size`, `weighted`, `implementation`, `hardware`, `source_location`, `notes`, `v2_not_reported`, `v2_inferred`, `v2_source`, `metric_source` |
 | `task_details` | `paper_id`, `usage_index`, `dataset_id`, `task_family`, `key`, `value`, `source`: task-specific attributes such as `n_classes`, `label_type`, `subtype` (forecasting) and `target` (regression) |
+| `corrections` | `paper_id`, `location_in_record`, `record_value`, `pdf_value`, `pdf_location`, `note`, `status`: places where re-reading the PDF disagreed with the paper record |
 | `vocab` | `field`, `value`: the allowed values of every controlled field |
 
-The structured fields (task family through `implementation`) are **schema v2**. `v2_source` says where
-they come from: `record` (written in the paper record), `reviewed` (a proposal a person accepted) or
-`proposed` (parsed automatically from the free-text fields by
-`benchmarks/literature/propose_mappings.py`, not reviewed yet). At present every value is `proposed`.
+The structured fields (task family through `hardware`) are **schema v2**. `v2_source` says where
+they come from, strongest first: `record` (written in the paper record), `pdf` (re-read from the PDF,
+`benchmarks/literature/papers_v2/`), `reviewed` (a proposal a person accepted) or `proposed` (parsed
+automatically from the free-text fields by `benchmarks/literature/propose_mappings.py`, not reviewed
+yet). A row's `v2_source` is the weakest source among its fields; the metric name has its own
+`metric_source`. In text columns `not_reported` means the paper does not say; numeric columns are
+then empty and the field is listed in `v2_not_reported`. Values deduced rather than read are listed,
+with the reasoning, in `v2_inferred`.
 Clause counts are stored as reported: `clauses_scope` says whether a count is per class or total,
 and is empty when the paper's text did not say.
 

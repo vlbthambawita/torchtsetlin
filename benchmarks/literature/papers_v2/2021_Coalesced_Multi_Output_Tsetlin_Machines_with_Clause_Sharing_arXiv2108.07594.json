@@ -1,0 +1,2110 @@
+{
+  "paper_id": "2021_Coalesced_Multi_Output_Tsetlin_Machines_with_Clause_Sharing_arXiv2108.07594",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-23"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "p. 1 footnote (github.com/cair/PyCoalescedTsetlinMachineCUDA)",
+      "hyperparameters_complete": "Tables 2-4 give clauses, voting margin T and specificity s; N (TA states), patch size, epochs, Table 5 / IMDb / CIFAR10 configurations are not given",
+      "seeds_stated": "no seeds mentioned; 10 repetitions (Sec. 4, p. 11)",
+      "interpretability_evidence": "Table 1 shows hand-made example clauses only, no learned rules"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "noisy-2d-xor",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "image",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 16,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "4x4 binary images (already Boolean); random bits except a 2x2 patch in the upper-right corner that encodes the class; 40% of training outputs inverted."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 11",
+        "split": "Sec. 4, p. 11: 2500 training / 10 000 test examples",
+        "synthetic": "Sec. 4, p. 11"
+      },
+      "inferred": {
+        "n_boolean_features": "4x4 binary image = 16 bits"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding, window size 11, threshold value 2",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "MNIST binarized with an adaptive Gaussian thresholding procedure (window size 11, threshold value 2), 1 bit per pixel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 11",
+        "split": "Sec. 4, p. 11: 60 000 training and 10 000 test examples",
+        "n_boolean_features": "28x28 grayscale, 1 bit per pixel (Sec. 4, p. 11)"
+      },
+      "inferred": {
+        "n_boolean_features": "28x28 images at 1 bit per pixel"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "kuzushiji-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding, window size 11, threshold value 2",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Kuzushiji-MNIST binarized with an adaptive Gaussian thresholding procedure (window size 11, threshold value 2), 1 bit per pixel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 11",
+        "split": "Sec. 4, p. 11: 60 000 training and 10 000 test examples",
+        "n_boolean_features": "28x28 grayscale, 1 bit per pixel (Sec. 4, p. 11)"
+      },
+      "inferred": {
+        "n_boolean_features": "28x28 images at 1 bit per pixel"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "adaptive Gaussian thresholding, window size 11, threshold value 2",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Fashion-MNIST binarized with an adaptive Gaussian thresholding procedure (window size 11, threshold value 2), 1 bit per pixel."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 11",
+        "split": "Sec. 4, p. 11: 60 000 training and 10 000 test examples",
+        "n_boolean_features": "28x28 grayscale, 1 bit per pixel (Sec. 4, p. 11)"
+      },
+      "inferred": {
+        "n_boolean_features": "28x28 images at 1 bit per pixel"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "imdb-imbalanced",
+      "task_family": "classification",
+      "setting_tags": [
+        "imbalanced",
+        "robustness"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced: fraction 0.1-0.9 of the positive-sentiment training examples removed"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described for the experiment; Sec. 2 uses a set-of-words representation of IMDb reviews only as an illustrative example."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "task_detail": "Table 6 caption and Sec. 4 'Class Imbalance Robustness', p. 12",
+        "setting_tags": "Sec. 4, p. 12",
+        "booleanization": "Sec. 2.1, p. 4 (illustration only)"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "cifar-10-imbalanced",
+      "task_family": "classification",
+      "setting_tags": [
+        "imbalanced",
+        "robustness"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "imbalanced: class of rank r keeps 0.5^r of its training data (5000, 2500, ..., 10 examples)"
+      },
+      "preprocessing": [
+        {
+          "step": "resampling",
+          "params": "training data subsampled per class: 0.5^r of the data for the class of rank r"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described in the paper."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "task_detail": "Sec. 4, p. 12 and Table 7 (#examples per class)",
+        "preprocessing": "Sec. 4, p. 12"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        16,
+        17
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        7
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 12500,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 12500,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        10
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 25000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 25000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        12
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        13
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        14,
+        18,
+        19
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        15
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 5.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 2 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 2 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        20
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 2, 'Model Size (kB)' at 50 clauses per class"
+      },
+      "inferred": {
+        "implementation": "p. 1 footnote code",
+        "note": "model size is printed once per clause column, attributed to CoTM as in the record"
+      }
+    },
+    {
+      "result_indices": [
+        21,
+        37,
+        38
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        25
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        26
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        27
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        28
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        29
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 12500,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        30
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 12500,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        31
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 2500,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        32
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 2500,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        33
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        34
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        35,
+        39,
+        40
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        36
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 3 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 3 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 3 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        41
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 15.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 3, 'Model Size (kB)' at 50 clauses per class"
+      },
+      "inferred": {
+        "implementation": "p. 1 footnote code",
+        "note": "model size is printed once per clause column, attributed to CoTM as in the record"
+      }
+    },
+    {
+      "result_indices": [
+        42,
+        58,
+        59
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        43
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        44
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        45
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        46
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        47
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 250,
+        "clauses_scope": "per_class",
+        "T": 3125,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        48
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        49
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "per_class",
+        "T": 6250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        50
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        51
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 1250,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        52
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 2500,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        53
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 2500,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        54
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        55
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 5000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        56,
+        60,
+        61
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4 ('#Clauses per class', 'Voting Margin', 'Specificity'); hardware: Sec. 4, p. 11; convolutional CoTM per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'",
+        "implementation": "p. 1 footnote: github.com/cair/PyCoalescedTsetlinMachineCUDA (not in vocab -> custom)"
+      },
+      "inferred": {
+        "implementation": "source code of the paper is PyCoalescedTsetlinMachineCUDA (p. 1 footnote); not stated that this exact code produced the tables",
+        "statistic": "general statement in Sec. 4 p. 11 applied to timing rows too",
+        "weighted": "CoTM uses signed integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        57
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 10000,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 4 (same column settings for Weighted and Coalesced rows); 'Weighted Convolutional TM' per Table 4 caption",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "tm_config": "Table 4 prints one voting margin/specificity per clause column, shared by both rows",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)"
+      }
+    },
+    {
+      "result_indices": [
+        62
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 50,
+        "clauses_scope": "per_class",
+        "T": 625,
+        "s": 10.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Table 4, 'Model Size (kB)' at 50 clauses per class"
+      },
+      "inferred": {
+        "implementation": "p. 1 footnote code",
+        "note": "model size is printed once per clause column, attributed to CoTM as in the record"
+      }
+    },
+    {
+      "result_indices": [
+        63,
+        71,
+        85,
+        93
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 12: 'CoTM with 64 000 clauses'",
+        "statistic": "Table 5 row labels 'CoTM (Mean)' / 'CoTM (Peak)'; Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM has one shared clause pool and the paper gives no 'per class' qualifier here; 64 000 does not equal 10 x the largest per-class sweep (8K)",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)",
+        "implementation": "p. 1 footnote code",
+        "hardware": "Sec. 4, p. 11 'We ran the CoTM on a ... V100'"
+      }
+    },
+    {
+      "result_indices": [
+        64,
+        72,
+        86,
+        94
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": 10,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 64000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA Tesla V100 GPU"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 12: 'CoTM with 64 000 clauses'",
+        "statistic": "Table 5 row labels 'CoTM (Mean)' / 'CoTM (Peak)'; Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "clauses_scope": "CoTM has one shared clause pool and the paper gives no 'per class' qualifier here; 64 000 does not equal 10 x the largest per-class sweep (8K)",
+        "n_runs": "'All experiments are repeated 10 times' (Sec. 4, p. 11)",
+        "implementation": "p. 1 footnote code",
+        "hardware": "Sec. 4, p. 11 'We ran the CoTM on a ... V100'"
+      }
+    },
+    {
+      "result_indices": [
+        65,
+        73,
+        87,
+        95
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": "not_reported",
+      "evidence": {
+        "tm_config": "Table 5 'TM [20]': numbers copied from the Convolutional TM paper"
+      }
+    },
+    {
+      "result_indices": [
+        66,
+        67,
+        68,
+        69,
+        70,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        88,
+        89,
+        90,
+        91,
+        92,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Table 5: non-TM baselines cited from [14, 15, 25, 28, 43]"
+      }
+    },
+    {
+      "result_indices": [
+        104,
+        106,
+        108,
+        110,
+        112,
+        114,
+        116,
+        118,
+        120
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": "not_reported",
+      "evidence": {
+        "tm_config": "Table 6; no clauses, T or s given for IMDb",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "statistic": "general 'All experiments ... last 25 epochs' statement in Sec. 4, p. 11",
+        "n_runs": "same statement"
+      }
+    },
+    {
+      "result_indices": [
+        105,
+        107,
+        109,
+        111,
+        113,
+        115,
+        117,
+        119,
+        121
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": "not_reported",
+      "evidence": {
+        "tm_config": "Table 6; TM configuration not given",
+        "statistic": "Sec. 4, p. 11: 'All experiments are repeated 10 times and we report average results for the last 25 epochs'"
+      },
+      "inferred": {
+        "statistic": "general 'All experiments ... last 25 epochs' statement in Sec. 4, p. 11",
+        "n_runs": "same statement"
+      }
+    },
+    {
+      "result_indices": [
+        122,
+        124,
+        126,
+        128,
+        130,
+        132,
+        134,
+        136,
+        138,
+        140
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4, p. 12: 'mean F1 score over epochs 90-100, averaged over 10 independent trials'",
+        "tm_config": "Table 7; architecture/booleanization not described"
+      },
+      "inferred": {
+        "epochs": "F1 averaged over epochs 90-100, so training ran 100 epochs",
+        "weighted": "CoTM uses integer clause-output weights (Sec. 3.1)"
+      }
+    },
+    {
+      "result_indices": [
+        123,
+        125,
+        127,
+        129,
+        131,
+        133,
+        135,
+        137,
+        139,
+        141
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4, p. 12: 'mean F1 score over epochs 90-100, averaged over 10 independent trials'",
+        "tm_config": "Table 7; TM variant/configuration not described"
+      },
+      "inferred": {
+        "epochs": "F1 averaged over epochs 90-100, so training ran 100 epochs"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Tables 2-4 label both models with '#Clauses per class'. For the Weighted Convolutional TM this is a per-class count; for the CoTM, which has one shared clause pool, the paper still prints the count 'per class' and both models have the same model size (22 kB at 50), suggesting the CoTM pool is 10x the printed number, but the paper never states the pool size. Values kept as printed with clauses_scope per_class. Table 5's CoTM is described as 'CoTM with 64 000 clauses' (scope recorded as total; it is not stated whether Table 5 used a convolutional CoTM, nor T/s). Voting margins: Table 2 prints 25K at 2K clauses, Tables 3/4 print 2.5K; Table 4 prints 1.25K at 1K clauses vs 12.5K elsewhere; kept as printed. Timing rows in Tables 2-4 are printed once per clause column; attributed to CoTM as in the record (text: 'We ran the CoTM on a NVIDIA Tesla V100 GPU'). Number of TA states N, patch size and epochs for Tables 2-4 are not stated (Fig. 9 shows a single 100-epoch MNIST run). Table 6 also prints a 0.0 reduction at fraction 0.0 (not in the record). Table 5 also prints a CoTM 95th-percentile row (in the record's notes only). IMDb and CIFAR10 booleanization, TM settings and test-set sizes are not described."
+}

@@ -1,0 +1,205 @@
+{
+  "paper_id": "2022_Resilient_Biomedical_Systems_Design_Under_Noise_LogicML_Frontiers",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-19"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper; Data Availability Statement (p. 17) lists only dataset URLs",
+      "seeds_stated": "no seeds mentioned; Sec. 7.1 p. 13 says the training pipeline was run 100 times for the t-SNE plots only",
+      "hyperparameters_complete": "only clauses (100 per class) and Booleanization settings given (Tables 1, 2, 4; Sec. 8 p. 16); T, s, epochs, TA states and implementation never stated",
+      "interpretability_evidence": "Sec. 7.1, Figs. 16-19 (t-SNE of clause include/exclude vectors, Nash equilibrium analysis)"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "breast-cancer-wisconsin",
+      "task_family": "classification",
+      "setting_tags": ["robustness", "hardware"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority benign (proportion not stated)"
+      },
+      "preprocessing": [
+        {"step": "other", "params": "Gaussian attribute-noise injection at SNR -15..15 dB into selected test feature columns, all test features, or all training features (before Booleanization)"},
+        {"step": "feature_selection", "params": "Espresso logic minimiser on binarized quantile bins; 'don't care' Boolean columns removed (45 avg, Table 1; 47 avg, Table 2; 84-85 at -15 dB train noise, Sec. 8/Table 4)"}
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": null,
+        "n_bins": null,
+        "threshold": "fixed thresholds equally distributed over each feature's min-max range (baseline) vs feature-quantile bins",
+        "n_boolean_features": null,
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Two encodings compared: fixed thresholding with 10 bits per feature (300 Booleans) and the proposed quantile binning (10 bins -> 4-bit binary bin index in Sec. 5/Table 1; 8 bins in Table 2) followed by Espresso logic minimisation that drops redundant columns (about 45-85 Booleans)."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "booleanization": "Sec. 5 p. 8 (10 bits/feature, 300 Booleans; 10 bins, 4-bit); Table 1; Table 2 (8 bins, 47 avg); Sec. 3.1 p. 5 (fixed thresholds equally distributed)",
+        "fit_on": "Sec. 3.1 p. 5: test data use the quantiles found during training and drop the columns the minimiser did not use",
+        "class_balance": "Sec. 5 p. 8: 'skew of data points favoring the Benign class'",
+        "preprocessing": "Sec. 4 p. 6-8, Figs. 5-6",
+        "split": "Sec. 4 p. 7: 'We separated the data into testing and training data' (proportions not given)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "pima-diabetes",
+      "task_family": "classification",
+      "setting_tags": ["robustness", "hardware"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {"step": "other", "params": "Gaussian attribute-noise injection at SNR -15..15 dB into all test features (Fig. 11) or all training features (Figs. 14-15)"}
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": null,
+        "n_bins": null,
+        "threshold": "fixed thresholds equally distributed over each feature's range (baseline) vs feature-quantile bins",
+        "n_boolean_features": null,
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Fixed thresholding (80 Booleans) vs quantile binning with a binary bin index (6 bins -> 3 bits per feature in Fig. 11; 8 bins found optimal in Fig. 12; 24 Booleans in Table 4); Espresso used only in the 15 dB column of Table 3."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "booleanization": "Sec. 6 p. 11 (six bins, 3-bit); Fig. 12 text p. 11 (optimal 8 bins); Table 4 (80 vs 24 features); Table 3 column headers",
+        "fit_on": "Sec. 3.1 p. 5"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "parkinsons-uci",
+      "task_family": "classification",
+      "setting_tags": ["robustness", "hardware"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, more PD than healthy (195 recordings from 31 people, 23 with PD)"
+      },
+      "preprocessing": [
+        {"step": "other", "params": "Gaussian attribute-noise injection at SNR -15..15 dB into all test features or all training features"},
+        {"step": "feature_selection", "params": "Espresso logic minimiser removes 'don't care' Boolean columns (36 avg in Table 2; 49 at -15 dB train noise in Table 4)"}
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": null,
+        "n_bins": 6,
+        "threshold": "fixed thresholds equally distributed over each feature's range (baseline) vs feature-quantile bins",
+        "n_boolean_features": null,
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Fixed thresholding (220 Booleans) vs quantile binning with 6 bins (binary-coded bin index) + Espresso logic minimisation (about 36-49 Booleans)."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "booleanization": "Table 2 (220 fixed, 36 avg qb+Esp, 6 bins); Table 4 (49); Sec. 7.1 p. 14",
+        "class_balance": "Sec. 1.1 p. 3 (195 recordings, 31 people, 23 with PD); p. 14 'more malignant data points compared to benign'",
+        "fit_on": "Sec. 3.1 p. 5"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": "not_reported", "s": "not_reported", "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported", "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 1 caption: 'with 100 clauses per class'",
+        "statistic": "Table 1 gives value ± spread, but neither the statistic nor the number of runs is stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [4],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": "not_reported", "s": "not_reported", "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported", "hardware": "not_reported"
+      },
+      "evidence": {"tm_config": "Sec. 5 p. 9 text (75.6% at -15 dB); experiment summarised in Table 1 (100 clauses per class)"},
+      "inferred": {"tm_config": "the 75.6% sentence belongs to the Sec. 5 selective-noise experiment whose configuration Table 1 gives as 100 clauses per class"}
+    },
+    {
+      "result_indices": [5, 7, 9, 11, 13, 15, 17, 19, 21],
+      "statistic": null,
+      "n_runs": null,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": "not_reported", "s": "not_reported", "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported", "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. 8 p. 16: 'a TM that uses 100 clauses per class for all experiments'",
+        "statistic": "Table 3: parameter counts (= TA count, clauses x classes x Booleans x 2, Sec. 3.1 p. 5), a deterministic count, not a run statistic"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [6, 8, 10, 12, 14, 16, 18, 20, 22],
+      "statistic": null,
+      "n_runs": null,
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {"tm_config": "Sec. 8 p. 16: simple fully connected three-layer BNN built with LARQ (300, 256, 2 for Breast Cancer fixed thresholding); Table 3"},
+      "inferred": {}
+    },
+    {
+      "result_indices": [23, 24, 25, 26, 27, 28],
+      "statistic": null,
+      "n_runs": null,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": "not_reported", "s": "not_reported", "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "asic", "hardware": "estimate: energy per Boolean feature extrapolated from the TM ASIC of Wheeldon et al. (2020), scaled to the feature count; not measured"
+      },
+      "evidence": {
+        "tm_config": "Table 4 caption: 'All models used 100 clauses per class'",
+        "implementation": "Sec. 9 p. 16-17: energy extrapolated from the TM ASIC implementation of Wheeldon et al. (2020)"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Most accuracy/sensitivity/specificity results (SNR sweeps, clause sweep 20-200 in Fig. 9, TM vs BNN in Figs. 24-25) exist only in figures. No dataset sizes or train/test proportions are given; p. 17 says 'the Breast Cancer training set has 300 data points for fixed threshold', which appears to confuse data points with the 300 Boolean features, so no train size was taken from it. Booleanization differs per experiment, so bits_per_feature, n_bins (Breast Cancer, Pima) and n_boolean_features are null and the values are in the description: Breast Cancer uses 10 bins in Sec. 5/Table 1 but 8 bins in Table 2; Pima uses 6 bins in Fig. 11 while Fig. 12 finds 8 optimal. Paper-internal inconsistency: Breast Cancer Qbin+Esp at -15 dB is 84 features in the Sec. 8 text (consistent with 33.6k parameters in Table 3 = 100x2x84x2) but 85 in Table 4; Parkinson's 20k parameters in Table 3 implies 50 features vs 49 in Table 4. The BNN architecture (300, 256, 2) is stated only for Breast Cancer with fixed thresholding; other BNNs are described as the 'configuration closest to the TM complexity'. Text on p. 9 points to 'Figure 1' for the 75.6% accuracy and the specificity/sensitivity comparison, apparently meaning Figure 7. Energy values in Table 4 are estimates, not measurements; implementation=asic refers to the source of the energy model, not to how the TMs were trained."
+}

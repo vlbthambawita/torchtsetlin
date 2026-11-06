@@ -1,0 +1,669 @@
+{
+  "paper_id": "2019_The_Weighted_Tsetlin_Machine_arXiv1911.12607",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "p. 4 footnote 1 (github.com/adrianphoulady/weighted-tsetlin-machine-cpp; github.com/cair/pyTsetlinMachine)",
+      "hyperparameters_complete": "only clause counts and epochs given; T, s, weight learning rate gamma, number of TA states not reported",
+      "interpretability_evidence": "Table 4 and Fig. 3, p. 6 (per-class clause weight statistics/distribution); no rules shown",
+      "seeds_stated": "no seeds; MNIST single run (Sec. 4.1, p. 6)"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": 77,
+        "n_boolean_features": 784,
+        "n_literals": 1568,
+        "fit_on": null,
+        "description": "Pixels < 77 = ceil(0.3*255) become 0, >= 77 become 1; the text says '768 bits' but 28x28 = 784 and literals n = 2*28*28 = 1568."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4.1, p. 5",
+        "n_literals": "Sec. 4.1, p. 5 ('n = 2 * 28 * 28 = 1568')",
+        "split": "Sec. 4.1, p. 5 (60,000 train / 10,000 test)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "tokenization",
+          "params": "unigrams and bigrams as feature candidates"
+        },
+        {
+          "step": "feature_selection",
+          "params": "chi-square, k=5000"
+        }
+      ],
+      "booleanization": {
+        "method": "n_gram_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Binary vector of size 5,000 marking presence/absence of the chi-square-selected unigrams/bigrams."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4.2, p. 6",
+        "split": "Sec. 4.2, p. 6 (25,000 train / 25,000 test)"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "connect-4",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "games",
+      "task_detail": {
+        "n_classes": 3,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": 2,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 84,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Board as a 6x7x2 binary vector: first 6x7 bits mark player-one pieces, last 6x7 bits player-two pieces."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4.3, p. 7",
+        "split": "Sec. 4.3, p. 7 ('We assign 10% of the data to testing, keeping 90% for training'); random draw not stated (review 2026-11-06)"
+      },
+      "inferred": {}
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6: 'collected from the last 50 of 300 epochs of single-run training'",
+        "tm_config": "Table 3 caption (4,000 clauses per class); Sec. 4.1 p. 6 (300 epochs)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6 ('improving peak accuracy from 98.27% to 98.63%'); Table 3 maximum",
+        "tm_config": "Table 3 caption; Sec. 4.1 p. 6"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": 1,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6 (last 50 of 300 epochs, single run)",
+        "tm_config": "Table 3 caption"
+      },
+      "inferred": {
+        "statistic": "the 'last 50 of 300 epochs' sentence names the WTM; Table 3 reports TM and WTM side by side so the same protocol is assumed for the TM row"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6 ('peak accuracy from 98.27%')",
+        "tm_config": "Sec. 4.1, p. 5-6 (same number of clauses, 4,000 per class)"
+      },
+      "inferred": {
+        "epochs": "300 epochs stated for the WTM run of the same comparison"
+      }
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6 ('1.7 minutes versus 2 minutes per epoch when both employ binomial distribution based feedback')",
+        "tm_config": "Sec. 4.1, p. 5-6"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 6",
+        "tm_config": "Sec. 4.1, p. 5-6"
+      },
+      "inferred": {
+        "epochs": "300 epochs stated for the WTM run of the same comparison"
+      }
+    },
+    {
+      "result_indices": [
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table 5 and footnote 2, p. 6: baselines copied from yann.lecun.com/exdb/mnist and Granmo 2018"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        15
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 6 caption (25,000 clauses per class)",
+        "statistic": "Table 6 (Maximum/Minimum/Mean); abstract calls 90.37% a peak test accuracy"
+      },
+      "inferred": {
+        "statistic": "Table 6 maximum is called a 'peak test accuracy' in the abstract, so the table summarises per-epoch test accuracies of a run, as in Table 3; the epoch window is not stated"
+      }
+    },
+    {
+      "result_indices": [
+        16
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Abstract ('peak test accuracies of respectively 98.63%, 90.37%, and 87.91%'); Table 6 maximum",
+        "tm_config": "Table 6 caption"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        17
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 6 caption",
+        "statistic": "Table 6"
+      },
+      "inferred": {
+        "statistic": "same table and protocol as the WTM row (see result 15); epoch window not stated"
+      }
+    },
+    {
+      "result_indices": [
+        18
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 3200,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 30,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.2, p. 6 ('After 30 epochs of training, the WTM reached a peak testing accuracy of 89.54%')",
+        "tm_config": "Sec. 4.2, p. 6 ('3,200 class-clauses', 30 epochs)"
+      },
+      "inferred": {
+        "clauses_scope": "'class-clauses' read as clauses per class, matching Sec. 4.1 where '2,000 class-clauses' and '2,000 clauses per class' describe the same baseline"
+      }
+    },
+    {
+      "result_indices": [
+        19
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 30,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.2, p. 6",
+        "tm_config": "Sec. 4.2, p. 6 ('10,000 class-clauses', 30 epochs)"
+      },
+      "inferred": {
+        "clauses_scope": "'class-clauses' read as clauses per class (see result 18)"
+      }
+    },
+    {
+      "result_indices": [
+        20
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.2, p. 6-7 ('The average processing time per epoch was 16 minutes for the TM and 14 minutes for the WTM')",
+        "tm_config": "Sec. 4.2 / Table 6 caption"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        21
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.2, p. 7",
+        "tm_config": "Sec. 4.2 / Table 6 caption"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 1000,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 7 caption (25,000 clauses per class); Sec. 4.3 p. 7",
+        "statistic": "Sec. 4.3, p. 7"
+      },
+      "inferred": {
+        "statistic": "'last 200 epochs of 1,000 epochs' is stated for the 200-vs-10,000-clause comparison; Table 7 is introduced with 'again', so the same window is assumed",
+        "epochs": "same as statistic"
+      }
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "statistic": "peak_over_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 1000,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Abstract (peak test accuracy 87.91%); Table 7 maximum",
+        "tm_config": "Table 7 caption"
+      },
+      "inferred": {
+        "epochs": "1,000 epochs stated for the preceding Connect-4 comparison, assumed for Table 7"
+      }
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 1000,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 7 caption",
+        "statistic": "Sec. 4.3, p. 7"
+      },
+      "inferred": {
+        "statistic": "same window as result 22",
+        "epochs": "same as result 22"
+      }
+    },
+    {
+      "result_indices": [
+        25
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 1000,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.3, p. 7 ('the TM spent on average 105 seconds per epoch, while the WTM used 76 seconds')",
+        "tm_config": "Sec. 4.3 / Table 7 caption"
+      },
+      "inferred": {
+        "epochs": "same as result 22"
+      }
+    },
+    {
+      "result_indices": [
+        26
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 25000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 1000,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": false,
+        "implementation": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.3, p. 7",
+        "tm_config": "Sec. 4.3 / Table 7 caption"
+      },
+      "inferred": {
+        "epochs": "same as result 22"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[22].config",
+      "record": "25000 clauses/class, 1000 epochs, last 200 epochs",
+      "pdf": "'last 200 epochs of 1,000 epochs' is stated for the WTM-200 vs TM-10,000 clause comparison; Table 7 (25,000 clauses/class) does not restate its window",
+      "location": "Sec. 4.3, p. 7",
+      "note": "likely the same protocol ('again'), but it is an inference; marked inferred in configs"
+    }
+  ],
+  "notes": "Hyper-parameters T, s and the weight learning rate gamma are not reported anywhere; the only s-like value is p_s = 0.1 (s = 10) in the MNIST feedback-generation timing experiment with 2,000 clauses per class (Sec. 4.1, p. 5), which is not a tabulated result. Implementation for the experiments is not stated (footnote links both a C++ repo and pyTsetlinMachine), hardware not stated for timing rows. MNIST text says '768 bits' (typo for 784). Table 4 (weight statistics per class) and the WTM 500 vs TM 2,000 clause and Connect-4 WTM 200 vs TM 10,000 comparisons are not in the record's results. Table 5 lists WTM as 98.5 +- 0.0 (rounded). Baselines in Table 5 are quoted from external sources with no protocol."
+}

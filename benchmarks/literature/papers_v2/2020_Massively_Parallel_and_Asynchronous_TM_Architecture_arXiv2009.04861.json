@@ -1,0 +1,1247 @@
+{
+ "paper_id": "2020_Massively_Parallel_and_Asynchronous_TM_Architecture_arXiv2009.04861",
+ "extracted": {
+  "by": "agent",
+  "date": "2026-11-06",
+  "pages_read": "1-11"
+ },
+ "paper": {
+  "primary_task_family": "classification",
+  "code_available": true,
+  "seeds_stated": false,
+  "hyperparameters_complete": "partial",
+  "interpretability_evidence": "none",
+  "evidence": {
+   "code_available": "Sec. 4, p. 5 (github.com/cair/ICML-Massively-Parallel-and-Asynchronous-Tsetlin-Machine-Architecture)",
+   "hyperparameters_complete": "T/s/clauses given for BBC, 20NG, WSD, Bike Sharing (Fig. 5/6); SemEval/IMDb only clauses; BlogFeedback none; epochs only for novelty detection"
+  }
+ },
+ "usages": [
+  {
+   "usage_index": 0,
+   "dataset_id": "bike-sharing",
+   "task_family": "regression",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": false,
+   "domain": "generic",
+   "task_detail": {
+    "target": "total number of rental bikes (casual + registered), count",
+    "target_range": "not_reported",
+    "output_dim": 1,
+    "subtype": "point",
+    "horizon": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "not_reported",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Not described; 16 independent features (time of day, day of week, season, weather, ...)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "none"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.1, p. 6",
+    "split": "Sec. 4.1, p. 6: '80% of the samples for training and the rest for evaluation' (random or ordered not stated)"
+   }
+  },
+  {
+   "usage_index": 1,
+   "dataset_id": "blogfeedback",
+   "task_family": "regression",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": false,
+   "domain": "social",
+   "task_detail": {
+    "target": "number of blog post comments in the upcoming 24 hours, count",
+    "target_range": "not_reported",
+    "output_dim": 1,
+    "subtype": "point",
+    "horizon": "24 hours"
+   },
+   "preprocessing": [
+    {
+     "step": "other",
+     "params": "only the first 20,000 of 60,021 samples used"
+    }
+   ],
+   "booleanization": {
+    "method": "not_reported",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Not described; 281 features."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "none"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.1, p. 6",
+    "preprocessing": "Sec. 4.1, p. 6",
+    "split": "Sec. 4.1, p. 6: 80% train / rest evaluation of the first 20,000 samples"
+   }
+  },
+  {
+   "usage_index": 2,
+   "dataset_id": "bbc-sports",
+   "task_family": "anomaly_novelty_detection",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "normal_classes": "Cricket, Football (known); Rugby is the novel class",
+    "contamination": "not_reported"
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "not_reported",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Not described; the dataset has 4,613 terms. TM class vote sums are fed to an MLP (100, 30) novelty detector."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.2, p. 7"
+   }
+  },
+  {
+   "usage_index": 3,
+   "dataset_id": "20-newsgroups",
+   "task_family": "anomaly_novelty_detection",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "normal_classes": "comp.graphics, talk.politics.guns (known); rec.sport.baseball is the novel class",
+    "contamination": "not_reported"
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "not_reported",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Not described. TM class vote sums are fed to an MLP (100, 30) novelty detector."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.2, p. 7"
+   }
+  },
+  {
+   "usage_index": 4,
+   "dataset_id": "semeval-2010-task8",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": "SemEval 2010 Task 8 relations: Cause-Effect vs not"
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "n_gram_presence",
+    "bits_per_feature": 1,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Unigrams and bigrams used as features."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.3, p. 8",
+    "booleanization": "Sec. 4.3, p. 8 'we use unigrams and bigrams as features'"
+   },
+   "inferred": {
+    "booleanization.method": "paper says unigrams+bigrams are the features; a TM needs Boolean inputs, so presence encoding is implied but not stated"
+   }
+  },
+  {
+   "usage_index": 5,
+   "dataset_id": "imdb",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "n_gram_presence",
+    "bits_per_feature": 1,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Unigrams and bigrams used as features."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.3, p. 8",
+    "booleanization": "Sec. 4.3, p. 8 'we use unigrams and bigrams as features'"
+   },
+   "inferred": {
+    "booleanization.method": "paper says unigrams+bigrams are the features; presence encoding implied but not stated"
+   }
+  },
+  {
+   "usage_index": 6,
+   "dataset_id": "wsd-java",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "balanced",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "stop_word_removal",
+     "params": ""
+    },
+    {
+     "step": "stemming",
+     "params": "Porter stemmer"
+    },
+    {
+     "step": "vocabulary_cap",
+     "params": "3,000 most frequent terms"
+    }
+   ],
+   "booleanization": {
+    "method": "bag_of_words_presence",
+    "bits_per_feature": 1,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": 3000,
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Vocabulary of the 3,000 most frequent (stemmed) terms forms the feature space."
+   },
+   "split": {
+    "protocol": "official",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.4, p. 9 ('balanced dataset', senses: java (geographical location) vs java (computer language))",
+    "preprocessing": "Sec. 4.4, p. 9",
+    "booleanization": "Sec. 4.4, p. 9",
+    "split": "Sec. 4.4, p. 9: 3,726 train / 1,929 test, from the Loureiro et al. (2020) WSD evaluation framework"
+   },
+   "inferred": {
+    "booleanization.method": "vocabulary of terms as feature space; binary presence implied, not stated",
+    "booleanization.n_boolean_features": "equals the 3,000-term vocabulary",
+    "split.protocol": "fixed train/test sizes taken from the Loureiro et al. (2020) evaluation framework; 'official' not stated in words"
+   }
+  },
+  {
+   "usage_index": 7,
+   "dataset_id": "wsd-apple",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "balanced",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "stop_word_removal",
+     "params": ""
+    },
+    {
+     "step": "stemming",
+     "params": "Porter stemmer"
+    },
+    {
+     "step": "vocabulary_cap",
+     "params": "3,000 most frequent terms"
+    }
+   ],
+   "booleanization": {
+    "method": "bag_of_words_presence",
+    "bits_per_feature": 1,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": 3000,
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Vocabulary of the 3,000 most frequent (stemmed) terms forms the feature space."
+   },
+   "split": {
+    "protocol": "official",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail": "Sec. 4.4, p. 9 ('balanced dataset', senses: apple inc. (company) vs apple (fruit))",
+    "preprocessing": "Sec. 4.4, p. 9",
+    "booleanization": "Sec. 4.4, p. 9",
+    "split": "Sec. 4.4, p. 9: 1,784 train / 1,200 test, from the Loureiro et al. (2020) WSD evaluation framework"
+   },
+   "inferred": {
+    "booleanization.method": "vocabulary of terms as feature space; binary presence implied, not stated",
+    "booleanization.n_boolean_features": "equals the 3,000-term vocabulary",
+    "split.protocol": "fixed train/test sizes taken from the Loureiro et al. (2020) evaluation framework; 'official' not stated in words"
+   }
+  }
+ ],
+ "configs": [
+  {
+   "result_indices": [
+    0,
+    1,
+    6
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 5000,
+    "clauses_scope": "not_reported",
+    "T": 100,
+    "s": 15.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with 5,000 clauses, margin T of 100, and specificity s of 15.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    2,
+    3
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 5000,
+    "clauses_scope": "not_reported",
+    "T": 100,
+    "s": 15.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with 5,000 clauses, margin T of 100, and specificity s of 15.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    4,
+    5
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 5000,
+    "clauses_scope": "not_reported",
+    "T": 100,
+    "s": 15.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with 5,000 clauses, margin T of 100, and specificity s of 15.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    7,
+    8,
+    13
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "not_reported",
+    "T": 500,
+    "s": 25.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with a margin T of 500, 10,000 clauses and specificity s = 25.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    9,
+    10
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "not_reported",
+    "T": 500,
+    "s": 25.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with a margin T of 500, 10,000 clauses and specificity s = 25.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    11,
+    12
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "not_reported",
+    "T": 500,
+    "s": 25.0,
+    "epochs": 100,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.2, p. 7: '100 epochs with a margin T of 500, 10,000 clauses and specificity s = 25.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    14,
+    15,
+    20
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 40,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: '40 clauses per class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    16,
+    17
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 40,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: '40 clauses per class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    18,
+    19
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 40,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: '40 clauses per class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    21,
+    22,
+    27
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 7000,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: 'we assign 7,000 clauses to each class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    23,
+    24
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 7000,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: 'we assign 7,000 clauses to each class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    25,
+    26
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 7000,
+    "clauses_scope": "per_class",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.3, p. 8: 'we assign 7,000 clauses to each class'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    28,
+    29,
+    34
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    30,
+    31
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    32,
+    33
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0'; hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    35,
+    36,
+    41
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed TM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0' (both datasets); hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    37,
+    38
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0' (both datasets); hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    39,
+    40
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'number of clauses n, margin T, and specificity s used are 300, 50, 5.0' (both datasets); hardware/implementation: Sec. 4, p. 5 and footnote 3 (CPU baselines from github.com/cair/pyTsetlinMachine, with/without clause indexing)",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "n is defined in Sec. 2.1 as 'the number of clauses n assigned to each class'"
+   }
+  },
+  {
+   "result_indices": [
+    42,
+    45
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 1280,
+    "clauses_scope": "per_output",
+    "T": 1280,
+    "s": 1.5,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed RTM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.1, p. 7 '(employing T = 1280, s = 1.5, n = 1280)'",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {
+    "tm_config": "T=1280, s=1.5, n=1280 are stated for the Fig. 5/6 epoch curves; the next sentence reports Table 5 MAEs without restating settings",
+    "tm_config.clauses_scope": "RTM has a single output, so the n of Sec. 2 counts all clauses of that output"
+   }
+  },
+  {
+   "result_indices": [
+    43
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 1280,
+    "clauses_scope": "per_output",
+    "T": 1280,
+    "s": 1.5,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.1, p. 7 '(employing T = 1280, s = 1.5, n = 1280)'",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {
+    "tm_config": "T=1280, s=1.5, n=1280 are stated for the Fig. 5/6 epoch curves; the next sentence reports Table 5 MAEs without restating settings",
+    "tm_config.clauses_scope": "RTM has a single output, so the n of Sec. 2 counts all clauses of that output"
+   }
+  },
+  {
+   "result_indices": [
+    44
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 1280,
+    "clauses_scope": "per_output",
+    "T": 1280,
+    "s": 1.5,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.1, p. 7 '(employing T = 1280, s = 1.5, n = 1280)'",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {
+    "tm_config": "T=1280, s=1.5, n=1280 are stated for the Fig. 5/6 epoch curves; the next sentence reports Table 5 MAEs without restating settings",
+    "tm_config.clauses_scope": "RTM has a single output, so the n of Sec. 2 counts all clauses of that output"
+   }
+  },
+  {
+   "result_indices": [
+    46,
+    49
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "not_reported",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) (speed-up row: vs indexed RTM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core)"
+   },
+   "evidence": {
+    "tm_config": "No BlogFeedback hyper-parameters in the paper; implementation/hardware Sec. 4, p. 5",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    47
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "not_reported",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "No BlogFeedback hyper-parameters in the paper; implementation/hardware Sec. 4, p. 5",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    48
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "not_reported",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "pyTsetlinMachine",
+    "hardware": "Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "No BlogFeedback hyper-parameters in the paper; implementation/hardware Sec. 4, p. 5",
+    "statistic": "Table 5 caption: 'MAE with confidence interval ... calculated over 5 independent runs'; Sec. 4.1, p. 7 'mean value of the MAEs ... across 5 independent runs'"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    50
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 1280,
+    "clauses_scope": "per_output",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128) vs indexed RTM on Intel Xeon Platinum 8168 CPU @ 2.70 GHz, single core"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.1, p. 6: 'using 1280 clauses, the CUDA implementation is roughly 3.64 times faster than the indexed version' (Fig. 4)"
+   },
+   "inferred": {
+    "tm_config.clauses_scope": "RTM has a single output"
+   }
+  },
+  {
+   "result_indices": [
+    51,
+    53,
+    55,
+    57,
+    59,
+    61,
+    63,
+    65
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "not_reported",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Google Colab GPU (model not stated)"
+   },
+   "evidence": {
+    "tm_config": "Table 4; footnote 4, p. 5: 'Google's Colab is used to run the two CUDA models in the table'",
+    "statistic": "Table 4 caption: 'average of 5 experiments'"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    52,
+    54,
+    56,
+    58,
+    60,
+    62,
+    64,
+    66
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Table 4 caption: 'average of 5 experiments'; ThunderSVM on Google Colab (footnote 4)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    67,
+    68,
+    69,
+    70,
+    72,
+    73,
+    75,
+    76,
+    78,
+    79,
+    80,
+    81,
+    83,
+    84,
+    85,
+    86,
+    87,
+    89,
+    90,
+    91,
+    92,
+    95,
+    96,
+    97,
+    98
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Sec. 4.1-4.4: compiled from related literature, no protocol given"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    71,
+    74,
+    77,
+    82,
+    93,
+    99
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": "not_reported",
+   "evidence": {
+    "tm_config": "Sec. 4.2-4.4: TM numbers quoted from other papers (Bhattarai et al. 2021c; Saha et al. 2020; Yadav et al. 2021b); settings not given"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    88,
+    94
+   ],
+   "statistic": "mean",
+   "n_runs": 5,
+   "selection_on_test": false,
+   "tm_config": {
+    "n_clauses": 300,
+    "clauses_scope": "per_class",
+    "T": 50,
+    "s": 5.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": null,
+    "weighted": false,
+    "implementation": "custom",
+    "hardware": "Tesla V100 GPU (grid size 208, block size 128)"
+   },
+   "evidence": {
+    "tm_config": "Sec. 4.4, p. 9: 'Note that the latter TM results are from our current paper'; settings Sec. 4.4",
+    "statistic": "Table 3 caption: 'Mean and standard deviation are calculated over 5 independent runs'; speed-up = ratio of average execution times (CUDA vs indexed)"
+   },
+   "inferred": {
+    "tm_config": "paper says these TM numbers are its own; Java 97.53 equals the Table 3 TM CUDA mean, Apple 95.1 matches the Table 3 TM CUDA 95.01 up to rounding/typo",
+    "statistic": "same numbers as Table 3 TM CUDA means"
+   }
+  }
+ ],
+ "corrections": [
+  {
+   "where": "results[94].is_proposed",
+   "record": false,
+   "pdf": true,
+   "location": "Sec. 4.4, p. 9",
+   "note": "Paper: 'the latter TM results are from our current paper'; 97.53 is the Table 3 TM CUDA (proposed) Java mean, i.e. a duplicate of results[28], not a literature baseline."
+  },
+  {
+   "where": "results[88].is_proposed",
+   "record": false,
+   "pdf": true,
+   "location": "Sec. 4.4, p. 9",
+   "note": "Same as results[94]: the Apple 'TM: 95.1%' is this paper's own CUDA TM (Table 3 prints 95.01); duplicate of results[35]."
+  }
+ ],
+ "notes": "Table 3 (classification/novelty/WSD) and Table 5 (regression) compare the proposed asynchronous CUDA TM (Tesla V100) with single-core pyTsetlinMachine CPU TMs with and without clause indexing (Xeon Platinum 8168). Speed-ups are CUDA vs indexed. Table 4 timings (TM CUDA vs ThunderSVM) were run on Google Colab, GPU model not stated. Clause scope for BBC Sports (5,000) and 20 Newsgroup (10,000) is not stated (left not_reported). Bike Sharing settings T=1280, s=1.5, n=1280 are stated for Fig. 5/6; applied to Table 5 as an inference. Epoch counts only stated for the novelty-detection runs (100); Fig. 5/6 x-axes go to 100 epochs for Bike Sharing but this is not stated in text, so epochs left not_reported. No booleanization details for the regression or novelty datasets. Train/test split sizes not given for BBC, 20NG, SemEval, IMDb. The abstract says 'up to 50 times faster', while Table 5 reports 156.4x and 211.6x for the regression datasets. Figures 3, 4, 6-9 (MAE/time vs clauses/epochs) are curves without tabulated values and were not extracted. Sec. 4.5: up to 7,000 clauses and an extension to 15,000 clauses (Fig. 7, BBC Sports) with near-constant time. Table 5 ± values are called a 'confidence interval' in its caption (type not stated), unlike Table 3's standard deviations."
+}

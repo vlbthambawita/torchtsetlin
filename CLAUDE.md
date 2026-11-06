@@ -214,7 +214,11 @@ that script. Since 2026-11-05 the database also has the schema-v2 fields (task f
 canonical metric, clause count + scope, T, s, ..., tables `task_details` and `vocab`): they come
 from the records when present, otherwise from the reviewable proposal CSVs in
 `benchmarks/literature/mappings/` (written by `propose_mappings.py`, controlled values in
-`vocab.json`), and each row's `v2_source` says which (`record` / `reviewed` / `proposed`). Plan
+`vocab.json`), and each row's `v2_source` says which (`record` / `pdf` / `reviewed` / `proposed`).
+`pdf` values come from `papers_v2/<paper_id>.json` sidecars written by re-reading the PDF per
+`EXTRACTION_V2.md` (`build_catalog.py --check-v2 [ids]` validates them without writing; a full
+build refuses to run while any sidecar is invalid); record errors found that way go into the
+`corrections` table, not straight into the records. Plan
 and status: `plans/literature-db-v2.md`. `docs/literature.md` queries the database in the browser with sql.js
 (`docs/javascripts/literature.js`). Keep ranking queries on narrow columns and join the long
 text only for the drawn page: dragging `notes`/`config` through the window functions made every

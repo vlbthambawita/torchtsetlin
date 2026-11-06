@@ -1,0 +1,379 @@
+{
+  "paper_id": "2020_Closed_Form_Expressions_for_Global_and_Local_Interpretation_arXiv2007.13885",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-05",
+    "pages_read": "1-21"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "feature_importance",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "interpretability_evidence": "Eqns. 4-8; Figs. 4-17, 22-25 (global, range and local feature importance)",
+      "hyperparameters_complete": "only footnote 5, p. 11 (clause range 50-500, T = 2 x clauses) for the classification IWTMs"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "breast-cancer-wisconsin",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "v >= u_i for l chosen values u_1..u_l in the feature range; values not reported for this data set",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features encoded as l bits, bit i = 1 if v >= u_i (scheme of Abeyrathna et al. [19]); grid to follow the empirical distribution, l and u_i not given per data set."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1, p. 5 (general scheme; no per-data-set settings stated)",
+        "split": "Sec. 4.1, p. 7 ('constructed 10 times each, with a training set of 70 percent randomly chosen samples')",
+        "n_classes": "Sec. 4.1, p. 7 (benign or malign, 30 FNA features)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "credit-card-fraud",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "finance",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, 492 frauds of 284,807 (0.172%); training set balanced by undersampling",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "resampling",
+          "params": "train: 60% of fraud cases + equal number of randomly drawn non-fraud transactions"
+        }
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "v >= u_i for l chosen values u_1..u_l in the feature range; values not reported for this data set",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features encoded as l bits, bit i = 1 if v >= u_i (scheme of Abeyrathna et al. [19]); grid to follow the empirical distribution, l and u_i not given per data set."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1, p. 5 (general scheme; no per-data-set settings stated)",
+        "split": "Sec. 4.2.1, p. 10",
+        "class_balance": "Sec. 4.2.1, p. 10",
+        "preprocessing": "Sec. 4.2.1, p. 10"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "compas",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_selection",
+          "params": "second model with the race feature removed"
+        }
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "v >= u_i for l chosen values u_1..u_l in the feature range; values not reported for this data set",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features encoded as l bits, bit i = 1 if v >= u_i (scheme of Abeyrathna et al. [19]); grid to follow the empirical distribution, l and u_i not given per data set."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1, p. 5 (general scheme; no per-data-set settings stated)",
+        "preprocessing": "Sec. 4.2.2-4.2.3, pp. 10-12",
+        "n_classes": "Sec. 4.2.2, Figs. 10-11 (low vs high risk of re-offending)"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "california-housing",
+      "task_family": "regression",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "generic",
+      "task_detail": {
+        "target": "median house price per California census block group / district (paper states 'in million dollars')",
+        "target_range": "not_reported",
+        "output_dim": 1,
+        "subtype": "point",
+        "horizon": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "v >= u_i for l chosen values u_1..u_l in the feature range; values not reported for this data set",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features encoded as l bits, bit i = 1 if v >= u_i (scheme of Abeyrathna et al. [19]); grid to follow the empirical distribution, l and u_i not given per data set."
+      },
+      "split": {
+        "protocol": "k_fold_cv",
+        "k_folds": 5,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1, p. 5 (general scheme; no per-data-set settings stated)",
+        "target": "Sec. 4.2.4, p. 12",
+        "split": "Sec. 4.2.4, p. 15 ('one-standard deviation figures via 5-fold cross validation')"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "mice-protein-expression",
+      "task_family": "clustering",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {
+        "n_clusters": 10,
+        "embedding_dim": 3,
+        "downstream_eval": "qualitative only: visual comparison of 3-D scatter plots with tSNE, PCA and contrastive PCA; no quantitative metric"
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "v >= u_i for l chosen values u_1..u_l in the feature range; values not reported for this data set",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features encoded as l bits, bit i = 1 if v >= u_i (scheme of Abeyrathna et al. [19]); grid to follow the empirical distribution, l and u_i not given per data set."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 3.1, p. 5 (general scheme; no per-data-set settings stated)",
+        "n_clusters": "Sec. 4.3, p. 16 ('top 10 centroids')",
+        "embedding_dim": "Sec. 4.3, p. 16 (2 x/y coordinates + transparency as 3rd)",
+        "split": "Sec. 4.3, p. 16 (weighted TM trained on 70 percent of the 1080 samples)",
+        "n_classes": "Sec. 4.3, p. 16 (control vs trisomic labels used to train clauses)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 7 ('mean and variance ... constructed 10 times each')",
+        "tm_config": "Sec. 4, p. 7 (IWTM [20] used throughout; no hyper-parameters given)"
+      }
+    },
+    {
+      "result_indices": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Sec. 4.1, p. 7"
+      }
+    },
+    {
+      "result_indices": [
+        8,
+        9,
+        10
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Footnote 5, p. 11: clauses picked randomly three times between 50 and 500, T = 2 x clauses, best of three by accuracy",
+        "metric": "Sec. 4.2, p. 9 ('compare IWTM models to NAMs ... in terms of AUC'); Table 2 does not label the metric"
+      }
+    },
+    {
+      "result_indices": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "source": "Sec. 4.2, p. 9 ('adapted directly from [4]')"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Sec. 4.2.4, p. 15 ('average RMSE ... 5-fold cross validation')",
+        "tm_config": "p. 16 only says a 'low number of clauses' was used"
+      }
+    },
+    {
+      "result_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Sec. 4.2.4, p. 15; numbers taken from [4] Sec. 3.2.1",
+        "dnn": "Footnote 6, p. 16: 10 hidden layers x 100 ReLU units, Adam"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Hyper-parameters: only footnote 5 (Sec. 4.2.3) gives a rule for the COMPAS/credit-fraud IWTMs: number of clauses drawn randomly three times in [50, 500], T = twice the number of clauses, best of the three by accuracy (on which split is not said), so n_clauses/T are recorded as not_reported. s, epochs, implementation and Booleanization thresholds are never given. Table 1 reports 'mean and variance' (the +- may be a variance, not a std). Table 2 metric is unlabeled; text says AUC. Credit fraud: the text says testing is done 'on the remaining fraudulent transactions' only, which does not say where the negatives for the AUC come from. COMPAS split not stated. California housing target is described as 'median price of houses (in million dollars)'; Fig. 14 caption gives 4.52 million USD for one block. Mice protein: weighted TM trained one epoch on 70% of 1080 samples, Algorithm 1 with 10 centroids, 3-D output; no quantitative result. Fig. 4 caption says 'malign' while the text says benign (paper inconsistency). Figures were not inspected as images (text extraction only)."
+}

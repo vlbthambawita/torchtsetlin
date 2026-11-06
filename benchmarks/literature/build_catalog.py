@@ -261,12 +261,17 @@ def paper_url(p):
     return None
 
 
-# ------------------------------------------------------------------ schema v2 proposal layer
-# benchmarks/literature/mappings/*.csv (written by propose_mappings.py) supply v2 values for the
-# fields a record does not have yet. `review` column: blank = proposed, "ok" = reviewed,
-# "reject" = dropped. A value in the record itself always wins and is marked "record".
+# ------------------------------------------------------------------ schema v2 layers
+# Precedence per field: the paper record itself > the PDF pass (papers_v2/<paper_id>.json, see
+# EXTRACTION_V2.md) > a reviewed proposal > an automatic proposal (mappings/*.csv, written by
+# propose_mappings.py; `review` column: blank = proposed, "ok" = reviewed, "reject" = dropped).
+# Each row's `v2_source` is the weakest source among its fields. "not_reported" (the paper does not
+# say) is kept as text in text columns; numeric columns get NULL and the field name is listed in
+# `v2_not_reported`, so numeric comparisons never see a string.
 MAPPINGS = HERE / "mappings"
-_RANK = {"record": 0, "reviewed": 1, "proposed": 2}
+SIDECARS = HERE / "papers_v2"
+_RANK = {"record": 0, "pdf": 1, "reviewed": 2, "proposed": 3}
+NR = "not_reported"
 
 
 def _csv(name, key):
@@ -293,118 +298,252 @@ def _num(v, kind=float):
     return int(x) if kind is int else x
 
 
+def load_sidecars():
+    return {p.stem: json.loads(p.read_text()) for p in sorted(SIDECARS.glob("*.json"))} if SIDECARS.exists() else {}
+
+
 class Layer:
-    """Collects one row's v2 values and the weakest provenance among the sources used."""
+    """One row's v2 values, the weakest provenance used, and the fields reported as absent."""
 
     def __init__(self):
-        self.values, self.source = {}, None
+        self.values, self.source, self.not_reported, self.inferred = {}, None, [], []
+        self.metric_source = None  # canonical-metric fields are tracked apart (they map per metric name)
 
-    def put(self, key, value, source):
-        if value in (None, "", []):
+    def _src(self, source, attr="source"):
+        cur = getattr(self, attr)
+        if cur is None or _RANK[source] > _RANK[cur]:
+            setattr(self, attr, source)
+
+    def offer(self, key, candidates, attr="source"):
+        """candidates: (value, source) pairs, strongest first; the first usable one wins."""
+        for value, source in candidates:
+            if value is None or value == "" or value == []:
+                continue
+            if value == NR:
+                self.not_reported.append(key)
+            else:
+                self.values[key] = value
+            self._src(source, attr)
             return
-        self.values[key] = value
-        if self.source is None or _RANK[source] > _RANK[self.source]:
-            self.source = source
 
 
-def enrich_v2(papers):
-    """Attach `_v2` (values + provenance) to every dataset usage and result."""
+def _prop(row, col, conv=None):
+    """(value, source) of one proposal-CSV cell; a missing row yields nothing."""
+    if row is None:
+        return (None, "proposed")
+    return (conv(row[col]) if conv else row[col], row["_source"])
+
+
+def _sc_usage(sc, i):
+    return next((u for u in (sc or {}).get("usages", []) if u.get("usage_index") == i), {})
+
+
+def _sc_config(sc, i):
+    return next((c for c in (sc or {}).get("configs", []) if i in (c.get("result_indices") or [])), {})
+
+
+def enrich_v2(papers, sidecars):
+    """Attach `_v2` (a Layer) to every paper, dataset usage and result."""
     tasks = _csv("tasks.csv", lambda r: r["task"])
     dtypes = _csv("data_types.csv", lambda r: r["data_type"])
     uses = _csv("usages.csv", lambda r: (r["paper_id"], int(r["usage_index"])))
     metrics = _csv("metrics.csv", lambda r: r["metric"])
     configs = _csv("configs.csv", lambda r: (r["paper_id"], int(r["result_index"])))
     for p in papers:
-        pid = p["paper_id"]
+        pid, sc = p["paper_id"], sidecars.get(p["paper_id"])
+        P = Layer()
+        scp = (sc or {}).get("paper") or {}
+        for key in ("primary_task_family", "code_available", "seeds_stated", "hyperparameters_complete",
+                    "interpretability_evidence"):
+            P.offer(key, [(p.get(key), "record"), (scp.get(key), "pdf")])
+        p["_v2"] = P
         for i, d in enumerate(p.get("datasets", [])):
             L = Layer()
             t, dt, u = tasks.get(d.get("task")), dtypes.get(d.get("data_type")), uses.get((pid, i))
-            rec_bool = d.get("booleanization_v2") or {}
-            for key, rec, prop, src in [
-                ("task_family", d.get("task_family"), t and t["proposed_task_family"], t),
-                ("setting_tags", d.get("setting_tags"),
-                 t and [x for x in t["proposed_setting_tags"].split(";") if x], t),
-                ("label_type", d.get("label_type"), u and u["proposed_label_type"], u),
-                ("modality", d.get("modality"), dt and dt["proposed_modality"], dt),
-                ("synthetic", d.get("synthetic"), dt and {"True": True, "False": False}.get(dt["proposed_synthetic"]), dt),
-                ("booleanization_method", rec_bool.get("method"), u and u["proposed_booleanization_method"], u),
-                ("booleanization_bits", rec_bool.get("bits_per_feature"), u and _num(u["proposed_bits_or_bins"], int), u),
-            ]:
-                if rec not in (None, "", []):
-                    L.put(key, rec, "record")
-                elif src is not None:
-                    L.put(key, prop, src["_source"])
+            su = _sc_usage(sc, i)
+            sb, ss = su.get("booleanization") or {}, su.get("split") or {}
+            rb = d.get("booleanization_v2") or {}
+
+            L.offer("task_family", [(d.get("task_family"), "record"), (su.get("task_family"), "pdf"),
+                                    _prop(t, "proposed_task_family")])
+            L.offer("setting_tags", [(d.get("setting_tags"), "record"), (su.get("setting_tags"), "pdf"),
+                                     _prop(t, "proposed_setting_tags", lambda v: [x for x in v.split(";") if x])])
+            L.offer("label_type", [(d.get("label_type"), "record"), (su.get("label_type"), "pdf"),
+                                   _prop(u, "proposed_label_type")])
+            L.offer("modality", [(d.get("modality"), "record"), (su.get("modality"), "pdf"),
+                                 _prop(dt, "proposed_modality")])
+            L.offer("synthetic", [(d.get("synthetic"), "record"), (su.get("synthetic"), "pdf"),
+                                  _prop(dt, "proposed_synthetic", {"True": True, "False": False}.get)])
+            L.offer("domain", [(d.get("domain"), "record"), (su.get("domain"), "pdf")])
+            L.offer("booleanization_method", [(rb.get("method"), "record"), (sb.get("method"), "pdf"),
+                                              _prop(u, "proposed_booleanization_method")])
+            L.offer("booleanization_bits", [(rb.get("bits_per_feature"), "record"), (sb.get("bits_per_feature"), "pdf"),
+                                            _prop(u, "proposed_bits_or_bins", lambda v: _num(v, int))])
+            for key in ("n_bins", "n_boolean_features", "n_literals", "fit_on", "threshold"):
+                L.offer(f"booleanization_{key}", [(rb.get(key), "record"), (sb.get(key), "pdf")])
+            L.offer("preprocessing", [(d.get("preprocessing"), "record"), (su.get("preprocessing"), "pdf")])
+            L.offer("split_protocol", [((d.get("split") or {}).get("protocol"), "record"), (ss.get("protocol"), "pdf")])
+            L.offer("k_folds", [(ss.get("k_folds"), "pdf")])
+            L.offer("validation_used_for", [(ss.get("validation_used_for"), "pdf")])
+            L.inferred = sorted((su.get("inferred") or {}).keys())
+            L.task_detail = dict(su.get("task_detail") or {})
+            L.task_detail_source = "pdf" if su.get("task_detail") else None
             if t and t.get("note"):
                 L.values["task_note"] = t["note"]
             d["_v2"] = L
         for i, r in enumerate(p.get("results", [])):
             L = Layer()
             m, c = metrics.get(r.get("metric")), configs.get((pid, i))
+            scc = _sc_config(sc, i)
+            stc = scc.get("tm_config") if isinstance(scc.get("tm_config"), dict) else {}
             rec_m, rec_c = r.get("metric_canonical") or {}, r.get("tm_config") or {}
-            for key, rec, prop, src in [
-                ("metric_canonical", rec_m.get("name"), m and m["proposed_canonical"], m),
-                ("metric_qualifier", rec_m.get("qualifier"), m and m["proposed_qualifier"], m),
-                ("averaging", rec_m.get("averaging"), m and m["proposed_averaging"], m),
-                ("metric_kind", rec_m.get("kind"), m and m["proposed_kind"], m),
-                ("statistic", r.get("statistic"), (c and c["proposed_statistic"]) or (m and m["proposed_statistic"]),
-                 c if c and c["proposed_statistic"] else m),
-                ("n_runs", r.get("n_runs"), c and _num(c["proposed_n_runs"], int), c),
-                ("n_clauses", rec_c.get("n_clauses"), c and _num(c["proposed_n_clauses"], int), c),
-                ("clauses_scope", rec_c.get("clauses_scope"), c and c["proposed_clauses_scope"], c),
-                ("T", rec_c.get("T"), c and _num(c["proposed_T"]), c),
-                ("s", rec_c.get("s"), c and _num(c["proposed_s"]), c),
-                ("epochs", rec_c.get("epochs"), c and _num(c["proposed_epochs"], int), c),
-                ("n_states", rec_c.get("n_states"), c and _num(c["proposed_n_states"], int), c),
-                ("state_bits", rec_c.get("state_bits"), c and _num(c["proposed_state_bits"], int), c),
-                ("max_included_literals", rec_c.get("max_included_literals"),
-                 c and _num(c["proposed_max_included_literals"], int), c),
-                ("patch_size", rec_c.get("patch_size"), c and c["proposed_patch_size"], c),
-                ("weighted", rec_c.get("weighted"), c and ({"true": True}.get(c["proposed_weighted"])), c),
-                ("implementation", rec_c.get("implementation"), c and c["proposed_implementation"], c),
-            ]:
-                if rec not in (None, "", []):
-                    L.put(key, rec, "record")
-                elif src is not None:
-                    L.put(key, prop, src["_source"])
+
+            L.offer("metric_canonical", [(rec_m.get("name"), "record"), _prop(m, "proposed_canonical")], attr="metric_source")
+            L.offer("metric_qualifier", [(rec_m.get("qualifier"), "record"), _prop(m, "proposed_qualifier")], attr="metric_source")
+            L.offer("averaging", [(rec_m.get("averaging"), "record"), _prop(m, "proposed_averaging")], attr="metric_source")
+            L.offer("metric_kind", [(rec_m.get("kind"), "record"), _prop(m, "proposed_kind")], attr="metric_source")
+            L.offer("statistic", [(r.get("statistic"), "record"), (scc.get("statistic"), "pdf"),
+                                  _prop(c, "proposed_statistic"), _prop(m, "proposed_statistic")])
+            L.offer("n_runs", [(r.get("n_runs"), "record"), (scc.get("n_runs"), "pdf"),
+                               _prop(c, "proposed_n_runs", lambda v: _num(v, int))])
+            L.offer("selection_on_test", [(r.get("selection_on_test"), "record"), (scc.get("selection_on_test"), "pdf")])
+            L.inferred = sorted((scc.get("inferred") or {}).keys())
+            if scc.get("tm_config") == NR:
+                L.not_reported.append("tm_config")
+            ints = {"n_clauses", "epochs", "n_states", "state_bits", "max_included_literals"}
+            for key in ("n_clauses", "clauses_scope", "T", "s", "epochs", "n_states", "state_bits",
+                        "max_included_literals", "patch_size", "weighted", "implementation", "hardware"):
+                conv = (lambda v: _num(v, int)) if key in ints else _num if key in ("T", "s") else \
+                    (lambda v: {"true": True}.get(v)) if key == "weighted" else None
+                cand = [(rec_c.get(key), "record"), (stc.get(key), "pdf")]
+                if key != "hardware":
+                    cand.append(_prop(c, f"proposed_{key}", conv))
+                L.offer(key, cand)
             r["_v2"] = L
 
 
 def task_details(papers):
-    """Task-specific attributes as (paper, usage, family, key, value, source) rows."""
+    """Task-specific attributes as (paper, usage, dataset, family, key, value, source) rows."""
     out = []
     for p in papers:
         for i, d in enumerate(p.get("datasets", [])):
             if not d.get("dataset_id"):
                 continue
             L = d["_v2"]
-            fam, src = L.values.get("task_family"), L.source or "proposed"
-            base = (p["paper_id"], i, d["dataset_id"], fam)
-            detail = dict(d.get("task_detail") or {})  # record values first
+            fam = L.values.get("task_family")
+            detail = {k: (v, "record") for k, v in (d.get("task_detail") or {}).items()}
+            for k, v in L.task_detail.items():
+                detail.setdefault(k, (v, "pdf"))
+            weak = L.source or "proposed"
             nc = d.get("n_classes")
             if fam in ("classification", "segmentation", "anomaly_novelty_detection") and nc is not None:
-                detail.setdefault("n_classes", nc)
+                detail.setdefault("n_classes", (nc, "record"))
             if fam == "classification" and L.values.get("label_type"):
-                detail.setdefault("label_type", L.values["label_type"])
+                detail.setdefault("label_type", (L.values["label_type"], weak))
             if fam == "clustering" and nc is not None:
-                detail.setdefault("n_ground_truth_labels", nc)
+                detail.setdefault("n_ground_truth_labels", (nc, "record"))
             note = L.values.get("task_note", "")
             if "subtype = forecasting" in note:
-                detail.setdefault("subtype", "forecasting")
-                detail.setdefault("also_generates", "time_series")
+                detail.setdefault("subtype", ("forecasting", weak))
+                detail.setdefault("also_generates", ("time_series", weak))
             if "discretized_from" in note:
-                detail.setdefault("discretized_from", "regression target")
+                detail.setdefault("discretized_from", ("regression target", weak))
             if fam == "regression":
-                detail.setdefault("target", "not extracted yet")  # PDF pass; notes are not targets
-            for k, v in detail.items():
-                out.append(base + (k, str(v), "record" if k in (d.get("task_detail") or {}) else src))
+                detail.setdefault("target", ("not extracted yet", weak))
+            for k, (v, src) in detail.items():
+                if v is None:
+                    continue
+                out.append((p["paper_id"], i, d["dataset_id"], fam, k,
+                            v if isinstance(v, str) else json.dumps(v), src))
     return out
+
+
+def corrections(sidecars):
+    return [(pid, c.get("where"), json.dumps(c.get("record")), json.dumps(c.get("pdf")), c.get("location"),
+             c.get("note"), "open") for pid, sc in sidecars.items() for c in sc.get("corrections", [])]
+
+
+# Sidecar fields with a controlled vocabulary (EXTRACTION_V2.md).
+SIDECAR_VOCAB = {
+    "paper": {"primary_task_family": "task_family", "hyperparameters_complete": "hyperparameters_complete",
+              "interpretability_evidence": "interpretability_evidence"},
+    "usage": {"task_family": "task_family", "setting_tags": "setting_tags", "label_type": "label_type",
+              "modality": "modality", "domain": "domain", "booleanization.method": "booleanization_method",
+              "booleanization.fit_on": "fit_on", "split.protocol": "split_protocol",
+              "split.validation_used_for": "validation_used_for", "task_detail.subtype": "regression_subtype",
+              "task_detail.output_modality": "generation_output", "task_detail.conditioning": "generation_conditioning"},
+    "config": {"statistic": "statistic", "tm_config.clauses_scope": "clauses_scope",
+               "tm_config.implementation": "implementation"},
+}
+_NUMERIC = {"usage": ["n_classes", "booleanization.bits_per_feature", "booleanization.n_bins",
+                      "booleanization.n_boolean_features", "booleanization.n_literals", "split.k_folds"],
+            "config": ["n_runs", "tm_config.n_clauses", "tm_config.T", "tm_config.s", "tm_config.epochs",
+                       "tm_config.n_states", "tm_config.state_bits", "tm_config.max_included_literals"]}
+
+
+def check_sidecar(paper, sc, vocab):
+    """Errors in one papers_v2 file against its record and vocab.json (empty list = valid)."""
+    err, pid = [], paper["paper_id"]
+    if sc.get("paper_id") != pid:
+        err.append(f"paper_id is {sc.get('paper_id')!r}, expected {pid!r}")
+
+    def check(obj, level, where):
+        for field, voc in SIDECAR_VOCAB[level].items():
+            v = _get(obj, field)
+            for x in (v if isinstance(v, list) else [v]):
+                if x not in (None, NR) and x not in vocab[voc]:
+                    err.append(f"{where}: {field} = {x!r} not in vocab '{voc}'")
+        for field in _NUMERIC.get(level, []):
+            v = _get(obj, field)
+            if v not in (None, NR) and (isinstance(v, bool) or not isinstance(v, (int, float))):
+                err.append(f"{where}: {field} = {v!r} must be a number, {NR!r} or null")
+
+    check(sc.get("paper") or {}, "paper", "paper")
+    n_use = len(paper.get("datasets", []))
+    seen = {}
+    for u in sc.get("usages", []):
+        i = u.get("usage_index")
+        if not isinstance(i, int) or not 0 <= i < n_use:
+            err.append(f"usage_index {i!r} out of range 0..{n_use - 1}")
+            continue
+        if i in seen:
+            err.append(f"usage_index {i} appears twice")
+        seen[i] = u
+        if canon(u.get("dataset_id")) != paper["datasets"][i].get("dataset_id"):
+            err.append(f"usages[{i}]: dataset_id {u.get('dataset_id')!r} != record "
+                       f"{paper['datasets'][i].get('dataset_id')!r}")
+        check(u, "usage", f"usages[{i}]")
+    missing = sorted(set(range(n_use)) - set(seen))
+    if missing:
+        err.append(f"no usages entry for usage_index {missing}")
+    n_res, owner = len(paper.get("results", [])), {}
+    for g, c in enumerate(sc.get("configs", [])):
+        tc = c.get("tm_config")
+        if tc not in (None, NR) and not isinstance(tc, dict):
+            err.append(f"configs[{g}]: tm_config must be an object, {NR!r} or null")
+        for i in c.get("result_indices") or []:
+            if not isinstance(i, int) or not 0 <= i < n_res:
+                err.append(f"configs[{g}]: result_index {i!r} out of range 0..{n_res - 1}")
+            elif i in owner:
+                err.append(f"result_index {i} is in configs[{owner[i]}] and configs[{g}]")
+            else:
+                owner[i] = g
+        check(c, "config", f"configs[{g}]")
+    missing = sorted(set(range(n_res)) - set(owner))
+    if missing:
+        err.append(f"{len(missing)} result_index values in no configs group: {missing[:20]}"
+                   f"{' ...' if len(missing) > 20 else ''}")
+    return err
 
 
 SCHEMA = """
 CREATE TABLE papers (
     paper_id TEXT PRIMARY KEY, title TEXT, authors TEXT, year INTEGER, venue TEXT,
     arxiv_id TEXT, doi TEXT, url TEXT, code_url TEXT, category TEXT, feature_type TEXT,
-    tm_variants TEXT, new_feature TEXT, caution TEXT, extraction_notes TEXT, pdf TEXT
+    tm_variants TEXT, new_feature TEXT, caution TEXT, extraction_notes TEXT, pdf TEXT,
+    primary_task_family TEXT, code_available INTEGER, seeds_stated INTEGER,
+    hyperparameters_complete TEXT, interpretability_evidence TEXT, v2_not_reported TEXT, v2_inferred TEXT,
+    v2_source TEXT
 );
 CREATE TABLE datasets (
     dataset_id TEXT PRIMARY KEY, data_type TEXT, tasks TEXT, n_classes TEXT,
@@ -417,8 +556,10 @@ CREATE TABLE dataset_usages (
     name_in_paper TEXT, task TEXT, train_size INTEGER, val_size INTEGER, test_size INTEGER,
     split_as_reported TEXT, booleanization TEXT, notes TEXT,
     usage_index INTEGER, n_classes INTEGER, task_family TEXT, setting_tags TEXT, label_type TEXT,
-    modality TEXT, synthetic INTEGER, booleanization_method TEXT, booleanization_bits INTEGER,
-    v2_source TEXT
+    modality TEXT, synthetic INTEGER, domain TEXT, booleanization_method TEXT, booleanization_bits INTEGER,
+    booleanization_n_bins INTEGER, booleanization_n_boolean_features INTEGER, booleanization_n_literals INTEGER,
+    booleanization_fit_on TEXT, booleanization_threshold TEXT, preprocessing TEXT, split_protocol TEXT,
+    k_folds INTEGER, validation_used_for TEXT, v2_not_reported TEXT, v2_inferred TEXT, v2_source TEXT
 );
 CREATE TABLE results (
     id INTEGER PRIMARY KEY, paper_id TEXT REFERENCES papers(paper_id),
@@ -426,9 +567,14 @@ CREATE TABLE results (
     is_proposed INTEGER, metric TEXT, value REAL, unit TEXT, std_or_range TEXT, split TEXT,
     better TEXT, config TEXT, source_location TEXT, notes TEXT,
     metric_canonical TEXT, metric_qualifier TEXT, averaging TEXT, metric_kind TEXT, statistic TEXT,
-    n_runs INTEGER, n_clauses INTEGER, clauses_scope TEXT, T REAL, s REAL, epochs INTEGER,
+    n_runs INTEGER, selection_on_test INTEGER, n_clauses INTEGER, clauses_scope TEXT, T REAL, s REAL, epochs INTEGER,
     n_states INTEGER, state_bits INTEGER, max_included_literals INTEGER, patch_size TEXT,
-    weighted INTEGER, implementation TEXT, v2_source TEXT
+    weighted INTEGER, implementation TEXT, hardware TEXT, v2_not_reported TEXT, v2_inferred TEXT,
+    v2_source TEXT, metric_source TEXT
+);
+CREATE TABLE corrections (
+    paper_id TEXT REFERENCES papers(paper_id), location_in_record TEXT, record_value TEXT,
+    pdf_value TEXT, pdf_location TEXT, note TEXT, status TEXT
 );
 CREATE TABLE task_details (
     paper_id TEXT REFERENCES papers(paper_id), usage_index INTEGER,
@@ -452,11 +598,15 @@ def _int(v):
         return None
 
 
-USAGE_V2 = ["task_family", "setting_tags", "label_type", "modality", "synthetic", "booleanization_method",
-            "booleanization_bits"]
-RESULT_V2 = ["metric_canonical", "metric_qualifier", "averaging", "metric_kind", "statistic", "n_runs", "n_clauses",
-             "clauses_scope", "T", "s", "epochs", "n_states", "state_bits", "max_included_literals", "patch_size",
-             "weighted", "implementation"]
+PAPER_V2 = ["primary_task_family", "code_available", "seeds_stated", "hyperparameters_complete",
+            "interpretability_evidence"]
+USAGE_V2 = ["task_family", "setting_tags", "label_type", "modality", "synthetic", "domain", "booleanization_method",
+            "booleanization_bits", "booleanization_n_bins", "booleanization_n_boolean_features",
+            "booleanization_n_literals", "booleanization_fit_on", "booleanization_threshold", "preprocessing",
+            "split_protocol", "k_folds", "validation_used_for"]
+RESULT_V2 = ["metric_canonical", "metric_qualifier", "averaging", "metric_kind", "statistic", "n_runs",
+             "selection_on_test", "n_clauses", "clauses_scope", "T", "s", "epochs", "n_states", "state_bits",
+             "max_included_literals", "patch_size", "weighted", "implementation", "hardware"]
 
 
 def _v2row(layer, keys):
@@ -464,23 +614,27 @@ def _v2row(layer, keys):
         if isinstance(v, bool):
             return int(v)
         if isinstance(v, list):
-            return ", ".join(v)
+            return ", ".join(x if isinstance(x, str) else json.dumps(x) for x in v)
+        if isinstance(v, dict):
+            return json.dumps(v)
         return v
-    return [cell(layer.values.get(k)) for k in keys] + [layer.source]
+    return [cell(layer.values.get(k)) for k in keys] + [", ".join(layer.not_reported) or None,
+                                                       ", ".join(layer.inferred) or None, layer.source]
 
 
-def write_sqlite(papers, catalog, path):
+def write_sqlite(papers, catalog, path, sidecars):
     """The whole catalog as one SQLite file (rebuilt from scratch each run)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.unlink(missing_ok=True)
     con = sqlite3.connect(path)
     con.executescript(SCHEMA)
     con.executemany(
-        "INSERT INTO papers VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        f"INSERT INTO papers VALUES ({','.join('?' * (16 + len(PAPER_V2) + 3))})",
         [(p["paper_id"], p.get("title"), "; ".join(p.get("authors") or []), p.get("year"),
           p.get("venue"), p.get("arxiv_id"), p.get("doi"), paper_url(p), p.get("code_url"),
           p.get("category"), p.get("feature_type"), ", ".join(p.get("tm_variants_tested", [])),
-          p.get("new_feature"), p.get("caution"), p.get("extraction_notes"), p.get("pdf"))
+          p.get("new_feature"), p.get("caution"), p.get("extraction_notes"), p.get("pdf"),
+          *_v2row(p["_v2"], PAPER_V2))
          for p in papers])
     con.executemany(
         "INSERT INTO datasets VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -490,7 +644,7 @@ def write_sqlite(papers, catalog, path):
           e["n_papers"], ", ".join(e["tm_variants"]), "; ".join(e["names_in_papers"]))
          for e in catalog])
     con.executemany(
-        "INSERT INTO dataset_usages VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        f"INSERT INTO dataset_usages VALUES ({','.join('?' * (12 + len(USAGE_V2) + 3))})",
         [(p["paper_id"], d["dataset_id"], d.get("name_in_paper"), d.get("task"),
           _int(d.get("train_size")), _int(d.get("val_size")), _int(d.get("test_size")),
           d.get("split_as_reported"), d.get("booleanization"), d.get("notes"),
@@ -499,13 +653,15 @@ def write_sqlite(papers, catalog, path):
     rows = [r for p in papers for r in p.get("results", [])]
     pids = [p["paper_id"] for p in papers for _ in p.get("results", [])]
     con.executemany(
-        f"INSERT INTO results VALUES ({','.join('?' * (15 + len(RESULT_V2) + 1))})",
+        f"INSERT INTO results VALUES ({','.join('?' * (15 + len(RESULT_V2) + 4))})",
         [(i, pid, r["dataset_id"], r.get("model"), int(bool(r.get("is_tm"))),
           int(bool(r.get("is_proposed"))), r.get("metric"), r.get("value"), r.get("unit") or "",
           r.get("std_or_range"), r.get("split") or "", metric_direction(r.get("metric")),
-          r.get("config"), r.get("source_location"), r.get("notes"), *_v2row(r["_v2"], RESULT_V2))
+          r.get("config"), r.get("source_location"), r.get("notes"), *_v2row(r["_v2"], RESULT_V2),
+          r["_v2"].metric_source)
          for i, (pid, r) in enumerate(zip(pids, rows))])
     con.executemany("INSERT INTO task_details VALUES (?,?,?,?,?,?,?)", task_details(papers))
+    con.executemany("INSERT INTO corrections VALUES (?,?,?,?,?,?,?)", corrections(sidecars))
     vocab = json.loads((HERE / "vocab.json").read_text())
     con.executemany("INSERT INTO vocab VALUES (?,?)",
                     [(k, v) for k, vs in vocab.items() if not k.startswith("_") for v in vs])
@@ -562,7 +718,28 @@ def validate_v2(papers):
 def main():
     papers = load_papers()
     cover = validate_v2(papers)
-    enrich_v2(papers)
+    sidecars = load_sidecars()
+    vocab = json.loads((HERE / "vocab.json").read_text())
+    by_id = {p["paper_id"]: p for p in papers}
+    if "--check-v2" in sys.argv:  # used by the PDF-pass agents: validate sidecars, write nothing
+        ids = sys.argv[sys.argv.index("--check-v2") + 1:] or sorted(sidecars)
+        bad = 0
+        for pid in ids:
+            if pid not in sidecars:
+                print(f"{pid}: no file papers_v2/{pid}.json")
+                bad += 1
+                continue
+            errs = check_sidecar(by_id[pid], sidecars[pid], vocab) if pid in by_id else ["no such paper record"]
+            print(f"{pid}: {'OK' if not errs else f'{len(errs)} error(s)'}")
+            for e in errs:
+                print(f"  - {e}")
+            bad += bool(errs)
+        raise SystemExit(1 if bad else 0)
+    errs = [f"{pid}: {e}" for pid, sc in sidecars.items()
+            for e in (check_sidecar(by_id[pid], sc, vocab) if pid in by_id else ["no such paper record"])]
+    if errs:
+        raise SystemExit("papers_v2 errors (run --check-v2 <paper_id>):\n  " + "\n  ".join(errs))
+    enrich_v2(papers, sidecars)
     if "--coverage" in sys.argv:
         totals = {"usage": sum(len(p.get("datasets", [])) for p in papers),
                   "result": sum(len(p.get("results", [])) for p in papers)}
@@ -574,7 +751,7 @@ def main():
     (HERE / "datasets.json").write_text(json.dumps(catalog, indent=2, ensure_ascii=False) + "\n")
     write_results(papers, HERE / "results.csv")
     write_readme(papers, catalog, HERE / "README.md")
-    write_sqlite(papers, catalog, DOCS_DB)
+    write_sqlite(papers, catalog, DOCS_DB, sidecars)
     shutil.copyfile(DOCS_DB, HERE / "space" / "literature.db")
     n = sum(len(p.get("results", [])) for p in papers)
     print(f"{len(papers)} papers, {len(catalog)} datasets, {n} results")
