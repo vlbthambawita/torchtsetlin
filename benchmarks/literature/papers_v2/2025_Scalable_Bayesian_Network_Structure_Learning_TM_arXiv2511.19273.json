@@ -1,0 +1,725 @@
+{
+ "paper_id": "2025_Scalable_Bayesian_Network_Structure_Learning_TM_arXiv2511.19273",
+ "extracted": {
+  "by": "agent",
+  "date": "2026-11-06",
+  "pages_read": "1-13"
+ },
+ "paper": {
+  "primary_task_family": "structure_learning",
+  "code_available": false,
+  "seeds_stated": false,
+  "hyperparameters_complete": "partial",
+  "interpretability_evidence": "none",
+  "evidence": {
+   "code_available": "no code link anywhere in the paper",
+   "hyperparameters_complete": "Table 2 gives T, C, s, E per network size; n_states, WTM implementation, CI test type and alpha are missing",
+   "interpretability_evidence": "Fig. 1 shows only a toy illustration of clause-based variable importance; no learned rules or importances are reported",
+   "seeds_stated": "Sec. 7.1: 10 runs, no seeds"
+  }
+ },
+ "usages": [
+  {
+   "usage_index": 0,
+   "dataset_id": "bn-insurance",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "finance",
+   "task_detail": {
+    "n_nodes": 27,
+    "n_edges": 52,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 1008 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Insurance: car-insurance risk network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 1,
+   "dataset_id": "bn-water",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "science",
+   "task_detail": {
+    "n_nodes": 32,
+    "n_edges": 66,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 10083 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Water: waste-water treatment plant network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 2,
+   "dataset_id": "bn-alarm",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "medical",
+   "task_detail": {
+    "n_nodes": 37,
+    "n_edges": 46,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 509 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Alarm: patient-monitoring network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 3,
+   "dataset_id": "bn-barley",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "science",
+   "task_detail": {
+    "n_nodes": 48,
+    "n_edges": 84,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 114005 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Barley: agricultural (barley crop) network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 4,
+   "dataset_id": "bn-hailfinder",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "science",
+   "task_detail": {
+    "n_nodes": 56,
+    "n_edges": 66,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 2656 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Hailfinder: severe-weather forecasting network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 5,
+   "dataset_id": "bn-hepar2",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "medical",
+   "task_detail": {
+    "n_nodes": 70,
+    "n_edges": 123,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 1453 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Hepar2: liver-disorder diagnosis network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  },
+  {
+   "usage_index": 6,
+   "dataset_id": "bn-munin1",
+   "task_family": "structure_learning",
+   "setting_tags": [],
+   "label_type": null,
+   "n_classes": null,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "medical",
+   "task_detail": {
+    "n_nodes": 186,
+    "n_edges": 273,
+    "graph_type": "DAG (discrete Bayesian network from the bnlearn repository, 15622 parameters); learned skeleton compared with the ground-truth network"
+   },
+   "preprocessing": [
+    {
+     "step": "resampling",
+     "params": "WTM trained on a 'balanced' 80/20 train-test split (balancing method not stated); CI tests run on the unbalanced full 5,000 samples"
+    }
+   ],
+   "booleanization": {
+    "method": "one_hot",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "Every categorical variable with m values is one-hot encoded into m binary variables (Step 1, Sec. 4.1.1)."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "task_detail.n_nodes": "Table 3, p. 8",
+    "task_detail.n_edges": "Table 3, p. 8",
+    "booleanization": "Sec. 4.1.1, p. 5; Fig. 1",
+    "split": "Sec. 7.1, p. 8: 'balanced 80/20 train-test split' for the TM; full unbalanced data for CI tests",
+    "synthetic": "Sec. 7.1, p. 8: '6 benchmark Bayesian networks (Table 3), each with 5,000 complete samples'"
+   },
+   "inferred": {
+    "synthetic": "data are 5,000 samples from known benchmark BNs whose true DAG is the evaluation reference; the sampling procedure itself is not described",
+    "domain": "Munin1: EMG/neuromuscular diagnosis network (well-known bnlearn domain); the paper only says 'diverse domains'"
+   },
+   "notes": "Structure metrics (precision/recall/F1/SHD) are computed against the ground-truth DAG, not on a held-out set; the 80/20 split only concerns WTM training. Record train/test sizes 4000/1000 are 80/20 of 5,000; the 'balanced' split may change the actual counts (not stated)."
+  }
+ ],
+ "configs": [
+  {
+   "result_indices": [
+    4,
+    39,
+    74,
+    109,
+    144
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": true,
+   "tm_config": {
+    "n_clauses": 50,
+    "clauses_scope": "not_reported",
+    "T": 50,
+    "s": 5,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "MacBook Pro M3 (2.6 GHz, 16 GB RAM)",
+    "epochs": 2
+   },
+   "evidence": {
+    "tm_config": "Table 2, p. 8 (hyper-parameters by network size)",
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'; tables give mean +- std",
+    "weighted": "Sec. 3.3 and 4.1.2: a Weighted TM is trained per target variable",
+    "hardware": "Sec. 7.1, p. 8",
+    "selection_on_test": "Appendix A, p. 11 + Fig. 2: C (B in 10/50/100) and s (1/5/10) tuned on Insurance and Alarm by structure F1 and missing nodes against the true network; chosen C=50, s=5"
+   },
+   "inferred": {
+    "selection_on_test": "the evaluated network was one of the two tuning networks and the chosen C=50, s=5 lie in the region Fig. 2 describes as best; the evaluation reference (true DAG) is the same as in tuning, no validation data"
+   },
+   "notes": "WTM-constrained PC (proposed) on Insurance (<30 nodes). One WTM is trained per target variable (all other variables as inputs, top-2 variables kept, ~16 CI tests per target). Clause count 'C' in Table 2 has no stated scope (Sec. 3.1 defines n clauses per class for the generic TM, but Table 2/Sec. 6 just say C clauses). Implementation: 'implemented in Python', no WTM library named. CI test type and significance level are not reported. Table 4 means such as 219.33, 200.33, 677727.5 are multiples of 1/3 or 1/2, which is odd for a mean of 10 runs; n_runs kept as stated."
+  },
+  {
+   "result_indices": [
+    14,
+    49,
+    84,
+    119,
+    154
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": true,
+   "tm_config": {
+    "n_clauses": 50,
+    "clauses_scope": "not_reported",
+    "T": 50,
+    "s": 5,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "MacBook Pro M3 (2.6 GHz, 16 GB RAM)",
+    "epochs": 5
+   },
+   "evidence": {
+    "tm_config": "Table 2, p. 8 (hyper-parameters by network size)",
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'; tables give mean +- std",
+    "weighted": "Sec. 3.3 and 4.1.2: a Weighted TM is trained per target variable",
+    "hardware": "Sec. 7.1, p. 8",
+    "selection_on_test": "Appendix A, p. 11 + Fig. 2: C and s tuned on Insurance and Alarm by structure F1 against the true network"
+   },
+   "inferred": {
+    "selection_on_test": "the evaluated network was one of the two tuning networks and the chosen C=50, s=5 lie in the region Fig. 2 describes as best; the evaluation reference (true DAG) is the same as in tuning, no validation data"
+   },
+   "notes": "WTM-constrained PC (proposed) on Alarm (30-50 nodes). One WTM is trained per target variable (all other variables as inputs, top-2 variables kept, ~16 CI tests per target). Clause count 'C' in Table 2 has no stated scope (Sec. 3.1 defines n clauses per class for the generic TM, but Table 2/Sec. 6 just say C clauses). Implementation: 'implemented in Python', no WTM library named. CI test type and significance level are not reported. Table 4 means such as 219.33, 200.33, 677727.5 are multiples of 1/3 or 1/2, which is odd for a mean of 10 runs; n_runs kept as stated."
+  },
+  {
+   "result_indices": [
+    9,
+    19,
+    44,
+    54,
+    79,
+    89,
+    114,
+    124,
+    149,
+    159
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 50,
+    "clauses_scope": "not_reported",
+    "T": 50,
+    "s": 5,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "MacBook Pro M3 (2.6 GHz, 16 GB RAM)",
+    "epochs": 5
+   },
+   "evidence": {
+    "tm_config": "Table 2, p. 8 (hyper-parameters by network size)",
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'; tables give mean +- std",
+    "weighted": "Sec. 3.3 and 4.1.2: a Weighted TM is trained per target variable",
+    "hardware": "Sec. 7.1, p. 8",
+    "selection_on_test": "Appendix A: tuning used Insurance and Alarm only; how E per size bracket was chosen is not stated"
+   },
+   "inferred": {},
+   "notes": "WTM-constrained PC (proposed) on Water, Barley (30-50 nodes). One WTM is trained per target variable (all other variables as inputs, top-2 variables kept, ~16 CI tests per target). Clause count 'C' in Table 2 has no stated scope (Sec. 3.1 defines n clauses per class for the generic TM, but Table 2/Sec. 6 just say C clauses). Implementation: 'implemented in Python', no WTM library named. CI test type and significance level are not reported. Table 4 means such as 219.33, 200.33, 677727.5 are multiples of 1/3 or 1/2, which is odd for a mean of 10 runs; n_runs kept as stated."
+  },
+  {
+   "result_indices": [
+    24,
+    29,
+    34,
+    59,
+    64,
+    69,
+    94,
+    99,
+    104,
+    129,
+    134,
+    139,
+    164,
+    169,
+    174
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 50,
+    "clauses_scope": "not_reported",
+    "T": 50,
+    "s": 5,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "MacBook Pro M3 (2.6 GHz, 16 GB RAM)",
+    "epochs": 10
+   },
+   "evidence": {
+    "tm_config": "Table 2, p. 8 (hyper-parameters by network size)",
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'; tables give mean +- std",
+    "weighted": "Sec. 3.3 and 4.1.2: a Weighted TM is trained per target variable",
+    "hardware": "Sec. 7.1, p. 8",
+    "selection_on_test": "Appendix A: tuning used Insurance and Alarm only; how E per size bracket was chosen is not stated"
+   },
+   "inferred": {},
+   "notes": "WTM-constrained PC (proposed) on Hailfinder, Hepar2, Munin1 (>50 nodes). One WTM is trained per target variable (all other variables as inputs, top-2 variables kept, ~16 CI tests per target). Clause count 'C' in Table 2 has no stated scope (Sec. 3.1 defines n clauses per class for the generic TM, but Table 2/Sec. 6 just say C clauses). Implementation: 'implemented in Python', no WTM library named. CI test type and significance level are not reported. Table 4 means such as 219.33, 200.33, 677727.5 are multiples of 1/3 or 1/2, which is odd for a mean of 10 runs; n_runs kept as stated."
+  },
+  {
+   "result_indices": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60,
+    65,
+    70,
+    75,
+    80,
+    85,
+    90,
+    95,
+    100,
+    105,
+    110,
+    115,
+    120,
+    125,
+    130,
+    135,
+    140,
+    145,
+    150,
+    155,
+    160,
+    165,
+    170
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'",
+    "model": "Sec. 7.1, p. 7-8"
+   },
+   "inferred": {},
+   "notes": "Baseline PC-Stable (PCS) (pgmpy) on all 7 networks, Tables 4-7 and 11; CI test and significance level not reported."
+  },
+  {
+   "result_indices": [
+    1,
+    6,
+    11,
+    16,
+    21,
+    26,
+    31,
+    36,
+    41,
+    46,
+    51,
+    56,
+    61,
+    66,
+    71,
+    76,
+    81,
+    86,
+    91,
+    96,
+    101,
+    106,
+    111,
+    116,
+    121,
+    126,
+    131,
+    136,
+    141,
+    146,
+    151,
+    156,
+    161,
+    166,
+    171
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'",
+    "model": "Sec. 7.1, p. 7-8"
+   },
+   "inferred": {},
+   "notes": "Baseline Original PC (PCO) (pgmpy) on all 7 networks, Tables 4-7 and 11; CI test and significance level not reported."
+  },
+  {
+   "result_indices": [
+    2,
+    7,
+    12,
+    17,
+    22,
+    27,
+    32,
+    37,
+    42,
+    47,
+    52,
+    57,
+    62,
+    67,
+    72,
+    77,
+    82,
+    87,
+    92,
+    97,
+    102,
+    107,
+    112,
+    117,
+    122,
+    127,
+    132,
+    137,
+    142,
+    147,
+    152,
+    157,
+    162,
+    167,
+    172
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'",
+    "model": "Sec. 7.1, p. 7-8"
+   },
+   "inferred": {},
+   "notes": "Baseline HITON-PC (implementation not stated) on all 7 networks, Tables 4-7 and 11; CI test and significance level not reported."
+  },
+  {
+   "result_indices": [
+    3,
+    8,
+    13,
+    18,
+    23,
+    28,
+    33,
+    38,
+    43,
+    48,
+    53,
+    58,
+    63,
+    68,
+    73,
+    78,
+    83,
+    88,
+    93,
+    98,
+    103,
+    108,
+    113,
+    118,
+    123,
+    128,
+    133,
+    138,
+    143,
+    148,
+    153,
+    158,
+    163,
+    168,
+    173
+   ],
+   "statistic": "mean",
+   "n_runs": 10,
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "statistic": "Sec. 7.1, p. 8: 'Each algorithm was run ten times, with averaged results'",
+    "model": "Sec. 7.1, p. 7-8"
+   },
+   "inferred": {},
+   "notes": "Baseline FSMB-PC (implementation not stated) on all 7 networks, Tables 4-7 and 11; CI test and significance level not reported."
+  }
+ ],
+ "corrections": [],
+ "notes": "All 175 record values (Tables 4-7, 11) checked cell by cell against the PDF: no mismatches. Appendix Tables 8-10 (missing nodes, missing edges, wrong edges) are not in the record. Text says 'six benchmark Bayesian networks' but Table 3 and all result tables have seven. Tables 8-11 values are rounded ('rounded up for comparison'). Appendix A heatmaps (Fig. 2) are figure-only; values not extractable. Appendix A says 'three main hyperparameters' but names only clauses (B) and specificity (S); T and E were not tuned there. Sec. 7.2 prose 'TM performed only 1,428 CI tests' rounds Table 4's 1427.67."
+}

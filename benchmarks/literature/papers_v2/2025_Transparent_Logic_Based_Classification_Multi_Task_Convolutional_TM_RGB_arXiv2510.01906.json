@@ -1,0 +1,115 @@
+{
+  "paper_id": "2025_Transparent_Logic_Based_Classification_Multi_Task_Convolutional_TM_RGB_arXiv2510.01906",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-8"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper (pp. 1-8)",
+      "hyperparameters_complete": "Table II and Sec. IV-B give clauses, T, s, patch size (and q for CelebA); epochs, state bits, MNIST threshold value and implementation are not given",
+      "interpretability_evidence": "Sec. III (Algorithms 1-2), Sec. V, Figs. 6-10: local interpretations and global class representations built from clause literals, patch-count histograms"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": ["interpretability"],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {"n_classes": 10, "label_type": "multiclass", "class_balance": "not_reported", "discretized_from": null},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1, "n_bins": null, "threshold": "not_reported",
+        "n_boolean_features": 784, "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Images binarized with a single-value thresholding method (threshold value not given)."
+      },
+      "split": {"protocol": "official", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {"booleanization": "Sec. IV-A, p. 4", "split": "Sec. IV-A, p. 4 ('60,000 training samples and 10,000 test samples')", "n_classes": "Sec. IV-A"},
+      "inferred": {"n_boolean_features": "28x28 pixels, one bit per pixel from single-value thresholding (patch literals and position literals of the CTM not counted)"}
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "celeba",
+      "task_family": "classification",
+      "setting_tags": ["interpretability"],
+      "label_type": "multilabel",
+      "n_classes": 7,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {"n_classes": 7, "label_type": "multilabel", "class_balance": "balanced", "discretized_from": null},
+      "preprocessing": [
+        {"step": "other", "params": "balanced subset of 7 of the 40 attributes (Attractive, Heavy_Makeup, High_Cheekbones, Male, Mouth_Slightly_Open, Smiling, Wearing_Lipstick); subset size and balancing procedure not given"},
+        {"step": "resize", "params": "aligned faces scaled down to 64x64 RGB"}
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported", "n_bins": 8, "threshold": "not_reported",
+        "n_boolean_features": "not_reported", "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Thermometer encoding (ref. [27], TM composites toolbox) with 8 levels, applied separately to each colour channel."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "booleanization": "Sec. IV-B, p. 5 ('thermometer encoding scheme [27] with 8 levels ... separately for each color channel')",
+        "preprocessing": "Sec. IV-B, p. 5; attribute names from Fig. 7 / Fig. 9 labels",
+        "class_balance": "Sec. IV-B ('a balanced subset of 7 classes')",
+        "label_type": "Sec. IV-B ('multi-label/multi-output classification problem')"
+      },
+      "inferred": {}
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2500, "clauses_scope": "total", "T": 3125, "s": 10, "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": "10x10", "weighted": true,
+        "implementation": "not_reported", "hardware": null
+      },
+      "evidence": {"tm_config": "Table II; Sec. IV-A pp. 4-5 (multi-class Convolutional CoTM)", "weighted": "Sec. II-D: CoTM clauses carry per-class weights", "clauses_scope": "Sec. II-D: CoTM shares one clause set across all classes"},
+      "inferred": {"clauses_scope": "the model is a Coalesced (CoTM) model whose clauses are shared by all classes, so 2500 is the total", "weighted": "CoTM uses per-class clause weights (Sec. II-D, Algorithm 1)"}
+    },
+    {
+      "result_indices": [1, 2, 3, 4],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 25000, "clauses_scope": "total", "T": 40000, "s": 27, "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": "3x3", "weighted": true,
+        "implementation": "not_reported", "hardware": null
+      },
+      "evidence": {"tm_config": "Sec. IV-B, p. 5 (25000 clauses, T=40000, s=27, patch 3x3, q=4)", "statistic": "Table III; metrics averaged over the 7 classes", "selection_on_test": "Sec. IV-B: 'A hyperparameter search was performed' with no data split named"},
+      "inferred": {"clauses_scope": "Multi-output Convolutional CoTM shares one clause set across all outputs, so 25000 is the total", "weighted": "CoTM uses per-class clause weights (Sec. II-D)"}
+    },
+    {
+      "result_indices": [5, 6, 7, 8],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {"statistic": "Table III; Sec. IV-B pp. 5-6 (ResNet50, 7-neuron FC head, BCE + Adam, inputs standardised)"},
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {"where": "results[5..8].config", "kind": "unsupported", "record": "ImageNet-style ResNet50, final FC with 7 outputs, BCE + Adam, standardized inputs", "pdf": "a standard ResNet50 [28]; final layer replaced by a 7-neuron FC layer; BCE loss with Adam; inputs normalised to mean 0, std 1", "location": "Sec. IV-B, pp. 5-6", "note": "the paper never says 'ImageNet-style' and does not state whether the ResNet50 was ImageNet-pretrained"}
+  ],
+  "notes": "Hyper-parameter q=4 (probability of Type II feedback to false-label classes in the multi-output CoTM) used for CelebA; Fig. 11 compares q=1/4/7 over ~30 epochs (precision/recall/accuracy, data split not stated) - the figure's x-axis suggests about 30 training epochs but the final model's epoch count is not stated. A hyper-parameter search was performed for CelebA, but the paper does not say on which data, so selection_on_test is not_reported. CelebA subset size, train/test split and how the subset was balanced are not given. Table III metrics are the average of the per-class metrics (macro); AUROC/AUPRC use P=(1+v/T)/2 (Eq. 6). Thermometer bits per channel are ambiguous: 8 levels with the paper's Eq. 5 (B values -> B-1 bits) would be 7 bits, so bits_per_feature is left not_reported. The selected attributes are marked in Fig. 5 by bar colour (not visible in the text); the names come from Fig. 7/9 labels. No std or number of runs reported. Implementation (tmu or other) not named."
+}

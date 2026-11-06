@@ -1,0 +1,119 @@
+{
+  "paper_id": "2026_Enhanced_Cervical_Cancer_Classification_Convolutional_TM_DiscoverAI",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-28"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "Code availability statement p. 26: 'Not applicable'; no repository linked",
+      "seeds_stated": "no random seeds mentioned anywhere (pp. 1-28)",
+      "hyperparameters_complete": "Table 1 p. 16 and Sec. 3.7.2 p. 16 give clauses (200/class), automata states (100), s = 3.9, 20 epochs, threshold 0.5; T, patch size, TM library and the early-stopping criterion are not given",
+      "interpretability_evidence": "Table 4 p. 21: four 'representative' clauses, one per class, 'shown in simplified ... form' and 'illustrative rather than exhaustive'; Sec. 4.6.1 global clause discussion is qualitative"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mendeley-lbc-pap-smear",
+      "task_family": "classification",
+      "setting_tags": ["interpretability", "transfer", "imbalanced"],
+      "label_type": "multiclass",
+      "n_classes": 4,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 4,
+        "label_type": "multiclass",
+        "class_balance": "imbalanced, majority NILM (123 of 193 = 64% in the Table 2 support; HSIL 33, LSIL 22, SCC 15)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {"step": "other", "params": "manual quality control: removal of duplicates, corrupted files and images of inadequate diagnostic quality (number removed not stated)"},
+        {"step": "denoising", "params": "background noise suppression and debris filtering (method not stated)"},
+        {"step": "other", "params": "contrast enhancement and 'cell-focused segmentation' (methods not stated)"},
+        {"step": "resize", "params": "299 x 299 pixels (InceptionV3 input)"},
+        {"step": "normalize", "params": "pixel intensities scaled to [0, 1]"},
+        {"step": "augmentation", "params": "class-aware, minority classes only, training folds only: random rotations, horizontal flips, zooming, shearing, mild intensity scaling (magnitudes and target counts not stated); no undersampling of NILM"},
+        {"step": "feature_extraction", "params": "ImageNet-pretrained InceptionV3, top classification layers removed, frozen (no fine-tuning); d-dimensional output vector, d not stated"}
+      ],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": 2,
+        "threshold": 0.5,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Each InceptionV3 feature value x_i is mapped to 1 if x_i >= theta = 0.5 and to 0 otherwise (Eq. 3), giving a binary vector of length d."
+      },
+      "split": {"protocol": "k_fold_cv", "k_folds": 10, "validation_used_for": "not_reported"},
+      "evidence": {
+        "n_classes": "Sec. 3.1 p. 8 (NILM, LSIL, HSIL, SCC)",
+        "class_balance": "Sec. 3.1 p. 8 ('NILM constituting the majority class and HSIL and SCC representing minority classes'); Table 2 support column",
+        "preprocessing": "Sec. 3.2 p. 9; Sec. 3.7.1 p. 16; Sec. 3.5 p. 14 (frozen backbone)",
+        "booleanization": "Sec. 3.3.3 Eq. 3 pp. 10-12; Sec. 3.7.1 p. 16 (theta = 0.5); Table 1",
+        "split": "Sec. 3.2 p. 9 and Sec. 3.7.3 p. 16: stratified 10-fold CV, patient-level separation (963 images, 460 patients), augmentation only inside training folds; the held-out fold is called the 'validation' fold",
+        "setting_tags": "transfer: frozen ImageNet InceptionV3 (Sec. 3.7.1); imbalanced: Sec. 3.2 balancing by augmentation; interpretability: Sec. 3.4, 4.6, Table 4"
+      },
+      "inferred": {
+        "bits_per_feature": "single threshold per feature (Eq. 3) gives 1 bit / 2 bins",
+        "fit_on": "null: the threshold is a fixed constant, not fitted to data"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200, "clauses_scope": "per_class", "T": "not_reported", "s": 3.9, "epochs": 20,
+        "n_states": 100, "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": "not_reported", "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "Intel Core i7 2.50 GHz, 16 GB RAM, NVIDIA GeForce MX150 (2 GB), Windows 11; Python 3.12, TensorFlow 2.16.0, Keras 3.4.1"
+      },
+      "evidence": {
+        "tm_config": "Table 1 p. 16; Sec. 3.7.2 p. 16 (200 clauses per class, TA with 100 states, s = 3.9, 20 epochs); Sec. 3.3.6 p. 13 ('20 epochs with early stopping'); Sec. 3.5 p. 14",
+        "statistic": "Table 3 p. 20 'Average' row over the 10 folds; Sec. 4.5 p. 20",
+        "n_runs": "Table 3: one value per fold, 10 folds",
+        "selection_on_test": "Sec. 3.3.6 mentions early stopping and Sec. 3.7.2 says 20 epochs were 'empirically determined', but neither the monitored data nor how s / clauses were chosen is stated; the only held-out data named are the CV 'validation' folds, which are also the evaluation folds",
+        "hardware": "Sec. 3.7.4 p. 17; Table 1"
+      },
+      "inferred": {
+        "n_states": "paper prints 'Tsetlin Automata with 100 states' (Table 1 'Automata states 100', described as 'Learning granularity'); Sec. 3.3.6 defines states 1..2N with 'N ... governing learning granularity', so 100 is read as N; a literal reading as the total 2N (N = 50) is possible"
+      }
+    },
+    {
+      "result_indices": [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200, "clauses_scope": "per_class", "T": "not_reported", "s": 3.9, "epochs": 20,
+        "n_states": 100, "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": "not_reported", "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "Intel Core i7 2.50 GHz, 16 GB RAM, NVIDIA GeForce MX150 (2 GB), Windows 11; Python 3.12, TensorFlow 2.16.0, Keras 3.4.1"
+      },
+      "evidence": {
+        "tm_config": "Table 1 p. 16 (single configuration stated for the study)",
+        "statistic": "Table 2 p. 17: one classification report over 193 samples (support); which partition it is (one fold? a separate hold-out?) is not stated",
+        "selection_on_test": "not stated, see the other group"
+      },
+      "inferred": {
+        "statistic": "a single classification report with integer supports summing to 193 is one evaluation of one model, so single_run",
+        "n_runs": "same reasoning as statistic",
+        "tm_config": "the paper states only one CTM configuration (Table 1), assumed to apply to Table 2 too",
+        "n_states": "as in the other group (100 read as N)"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Internal inconsistencies of the paper (not of the record): (1) Table 3 averages 99.96/99.00/98.97/98.98 with std 0.01/0.04/0.03/0.03, whereas Sec. 4.5, abstract, Table 5 and conclusions give precision 98.99, recall 98.96 and std 0.22/0.27/0.29/0.28; the record correctly stores the Table 3 values and notes the text values. (2) Accuracy 99.96% is far above the macro precision/recall ~99%, and Table 2 (support 193, ~20% of 963, not one tenth) gives 0.99 accuracy; Table 2's partition is unexplained and inconsistent with 10-fold CV. (3) Sec. 6 says 'absence of standard deviation or confidence intervals', although Table 3 gives std. (4) Figs. 5-6 show training/validation accuracy and 'cross-entropy loss' curves over epochs for a TM classifier; the loss definition for a TM is not explained, and the curves are only in figures. (5) The 'convolutional' TM operates on a 1-D binarised InceptionV3 embedding; no patch/window size is given, so what is convolved is unclear. (6) The 93.3% CNN baseline is attributed to Wu et al. [22] in Sec. 4.5, [40] in Sec. 5 and [41] in Table 5; Table 5 literature numbers are from other papers on possibly different datasets and are not encoded as results. (7) The number of images remaining after quality-control removal and the augmented training-set size are not stated. Table 4 clauses are 'simplified', 'illustrative' examples with feature indices (Feature_07..Feature_119) and qualitative clinical interpretations not linked to measured evidence. The TM implementation is not named (only TensorFlow/Keras)."
+}

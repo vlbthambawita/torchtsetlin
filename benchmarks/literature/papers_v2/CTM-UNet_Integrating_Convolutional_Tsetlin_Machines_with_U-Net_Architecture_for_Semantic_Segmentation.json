@@ -1,0 +1,142 @@
+{
+  "paper_id": "CTM-UNet_Integrating_Convolutional_Tsetlin_Machines_with_U-Net_Architecture_for_Semantic_Segmentation",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-7"},
+  "paper": {
+    "primary_task_family": "segmentation",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "p. 3 footnote 1 (github.com/yiliu-coding/CTM-UNet)",
+      "hyperparameters_complete": "Sec. III-B, p. 4: clauses per block, T=50, patch (3,3), optimizer/epochs given; s, number of TA states, binarization thresholds inside CTM blocks and clause weighting not given"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "camvid",
+      "task_family": "segmentation",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 2,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 2,
+        "resolution": "512x512 (all images resized)",
+        "per_pixel_or_patch": "per_pixel"
+      },
+      "preprocessing": [
+        {"step": "resize", "params": "all images resized to 512x512; no normalization"},
+        {"step": "augmentation", "params": "random rotation; brightness, saturation and hue adjustments"},
+        {"step": "other", "params": "32 CamVid classes merged into binary Sky (foreground) vs Background (all other classes); ignore index 255 for invalid/unknown pixels"}
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": 8,
+        "n_bins": null,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Each RGB value in [0,255] is converted to a vector of 8 binary values (binary expansion), so H x W x 3 becomes H x W x 24; inside every CTM block the conv-preprocessed features are binarized by a function phi 'using multiple thresholds' (thresholds not given)."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "n_classes": "Sec. III-D, p. 4 (class simplification to Sky vs Background)",
+        "resolution": "Sec. III-A, p. 3",
+        "per_pixel_or_patch": "Sec. II-E / Alg. 1, p. 3 (per-pixel feedback and per-pixel predicted mask)",
+        "preprocessing": "Sec. III-A, pp. 3-4; Sec. III-B 'Ignore index: 255'",
+        "booleanization": "Sec. III-A, pp. 3-4; Sec. II-B, p. 2 (phi with multiple thresholds); Sec. III-A p. 4 'binarization / featuring is performed in the CTM Block'",
+        "split": "Sec. III-A, p. 3: 'Following standard protocols' train 367 (80% of training data), val 92 (20%), test 233 (independent test set)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 50,
+        "s": "not_reported",
+        "epochs": 300,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "3x3",
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "statistic": "Table I and p. 4-5 text: mean±std with min/max 'across the test dataset' (statistics over test images of one trained model, not over runs)",
+        "tm_config": "Sec. III-B, p. 4: 'Number of clauses per CTM block is ~4 times of the number of channels, [256, 512, 1024, 2048]', 'Threshold T: 50', 'Patch sizes: (3, 3)', 'Epochs: 300 with early stopping (patience = 30)'",
+        "implementation": "Sec. IV, p. 6: 'hybrid UNet using CTM and Pytorch tensors'; own code, footnote 1 p. 3"
+      },
+      "inferred": {},
+      "notes": "n_clauses differs per CTM block ([256, 512, 1024, 2048] per block; the paper lists 4 values for a 5-level encoder plus decoder), so no single number is stored. epochs = 300 is the maximum with early stopping (patience 30); the training curves (Fig. 3) are said to converge after about 200 epochs. Other settings: Adam lr 1.5e-3, weight decay 1e-4, batch size 16 ('effective batch size with gradient accumulation: 4'), ReduceLROnPlateau (0.5, patience 5), dropout 0.3, batch norm on, Focal 0.7 + Dice 0.3 loss used only for monitoring."
+    },
+    {
+      "result_indices": [4, 5],
+      "statistic": null,
+      "n_runs": null,
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": 50,
+        "s": "not_reported",
+        "epochs": null,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "3x3",
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Tables II-IV, p. 6; Sec. III-E p. 5: memory 'calculated with H x W x C x DataSize', 1 bit vs FP32 for identical encoder-decoder structures"
+      },
+      "inferred": {"tm_config": "same CTM-UNet architecture as Table I (Table II); memory is an analytical estimate, not a measurement"},
+      "notes": "Analytical memory estimates (feature maps 9.44 MB, parameters 3.924 MB), computed from layer shapes at 1 bit per value; no run involved."
+    },
+    {
+      "result_indices": [2, 3],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {"statistic": "Table I: mean±std, min, max over the test set"},
+      "inferred": {},
+      "notes": "Standard UNet baseline, encoder [64,128,256,512,1024], decoder [512,256,128,64], 3x3 kernels (Table II); its training setup is not described separately."
+    },
+    {
+      "result_indices": [6, 7],
+      "statistic": null,
+      "n_runs": null,
+      "selection_on_test": null,
+      "tm_config": null,
+      "evidence": {"statistic": "Tables III-IV, p. 6: analytical FP32 estimates"},
+      "inferred": {},
+      "notes": "Analytical memory estimates for the FP32 UNet (292.35 MB feature maps, 125.58 MB parameters)."
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[4..7].split",
+      "kind": "unsupported",
+      "record": "test",
+      "pdf": "analytical estimate from layer shapes (H x W x C x DataSize); no data split involved",
+      "location": "Sec. III-E p. 5; Tables III-IV p. 6",
+      "note": "memory rows are calculated, not measured on the test split"
+    }
+  ],
+  "notes": "Only the binary Sky-vs-Background experiment has numbers (Table I); the model configuration lists 'Output classes: 32' and Table II '5 bit (32 classes)', but no 32-class result is reported. How the TM is combined with the U-Net: every U-Net conv block is replaced by a CTM block = standard Conv2D preprocessing -> binarization phi (multiple thresholds) -> CTM2D producing integer votes cast to float; encoder CTM block + max pooling, decoder upsample + binarize + CTMRefine2D, concatenated with skip and fused by a 1x1 conv; output head is a CTM1x1 (per-class CTM heads, one-vs-rest Type I/II feedback per pixel), logits = alpha * votes. Batch norm and dropout are also used; the paper says Adam with lr/weight decay, which is not explained for non-differentiable CTMs. Internal inconsistencies: (1) split 367+92+233 = 692 vs 701 images, and 367 called 80% of training data; (2) conclusion says '86.43% mIoU with 52% memory reduction' while Tables III/IV give 31x/32x and Table I labels it IoU of the binary task; (3) loss eq. has lambda1 on Dice but Sec. III-B gives lambda1 = 0.7 (Focal); (4) 'Batch size 16 (effective batch size with gradient accumulation: 4)'; (5) 'The validation results using the test set is shown in Table I' - it is not stated which set early stopping/ReduceLROnPlateau monitor; (6) a referenced 'Table ??' (operation counts) is missing. The UNet baseline at 99.99% acc/IoU is as printed."
+}

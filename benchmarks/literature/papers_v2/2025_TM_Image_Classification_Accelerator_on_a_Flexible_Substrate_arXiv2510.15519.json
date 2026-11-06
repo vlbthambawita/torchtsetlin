@@ -1,0 +1,142 @@
+{
+  "paper_id": "2025_TM_Image_Classification_Accelerator_on_a_Flexible_Substrate_arXiv2510.15519",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-7"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": true,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "no code or repository link anywhere in the paper",
+      "seeds_stated": "Sec. II-A, p. 2: N = 500 independent TM models, each from a different random seed (seed values not given)",
+      "hyperparameters_complete": "Sec. II-A, p. 2: T, s, clauses per class, E = 100 given for both models; booleanization, number of TA states, weighting and the compact model's number of seeds are not given"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "uci-optdigits",
+      "task_family": "classification",
+      "setting_tags": ["hardware"],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {"n_classes": 10, "label_type": "multiclass", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": 64,
+        "n_literals": 128,
+        "fit_on": "not_reported",
+        "description": "The paper only says the dataset has '8x8-bit input images' and the hardware receives a 64-bit input vector x; how the 0-16 grey levels of the UCI digits were binarized is not described."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "model_selection"},
+      "evidence": {
+        "n_classes": "Sec. II-A, p. 1: '10 output classes (digits 0-9)'",
+        "n_boolean_features": "Sec. II-B, p. 2: 'receives a 64-bit input vector x'",
+        "split": "Sec. II-A, p. 2: validation accuracy used to fix E and to select the best of 500 models; no train/validation/test sizes given",
+        "dataset": "ref. [13], UCI Optical Recognition of Handwritten Digits, doi 10.24432/C50P49"
+      },
+      "inferred": {
+        "n_literals": "64 inputs and their negations (Fig. 1 shows negated literals such as not x10); 2 x 64 = 128 is not printed"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0],
+      "statistic": "best_of_n",
+      "n_runs": 500,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": 10, "s": 3.0, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "Accuracy is the software validation accuracy of the trained model (training library not named), not measured on the device. The model is hard-wired into a 4-stage pipelined inference FlexIC (Pragmatic 600 nm IGZO, 8x8 mm2 die, ~6800 NAND2-eq gates, 9200 included TAs); designed and simulated, not reported as fabricated or measured."
+      },
+      "evidence": {
+        "tm_config": "Sec. II-A, p. 2: 'T = 10, s = 3.0, E = 100, 10 classes, 100 clauses per class'",
+        "statistic": "Sec. II-A, p. 2: 500 models, 'average accuracy of 98%, with the highest accuracy reaching 98.5%'; models with highest accuracy selected",
+        "epochs": "Sec. II-A, p. 2: E fixed by a pilot study on validation-accuracy plateau"
+      },
+      "inferred": {
+        "selection_on_test": "the reported 98.5% is the maximum over 500 seeds of the validation accuracy itself; no separate test set is reported, so the number is selected on the data it is reported on"
+      }
+    },
+    {
+      "result_indices": [1],
+      "statistic": "best_of_n",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 20, "clauses_scope": "per_class", "T": 5, "s": 1.8, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "Accuracy is the software validation accuracy of the trained model, not measured on the device. Model pruned to 559 included TAs and hard-wired into the compact FlexIC (Pragmatic 600 nm IGZO, 4x4 mm2 die, ~1420 NAND2-eq gates); designed and simulated."
+      },
+      "evidence": {
+        "tm_config": "Sec. II-A, p. 2: 'Compact model: 10 classes, 20 clauses per class, pruned to 559 TA ... T = 5, s = 1.8'",
+        "statistic": "Sec. II-A, p. 2: 'average accuracy is 89% while the highest is 93%'"
+      },
+      "inferred": {
+        "epochs": "Sec. II-A: E = 100 fixed 'for all subsequent experiments' and the compact model uses 'the same method'",
+        "statistic": "'the same method' (best of many seeds) and 'the highest is 93%'; number of seeds for the compact model not stated",
+        "selection_on_test": "best of several seeds on the same validation data it is reported on"
+      }
+    },
+    {
+      "result_indices": [2, 6],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100, "clauses_scope": "per_class", "T": 10, "s": 3.0, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "asic",
+        "hardware": "Full-scale TM inference FlexIC in Pragmatic's 600 nm IGZO thin-film process (unipolar logic, two metal layers), 8x8 mm2 die at ~10% placement density, ~6800 NAND2-eq gates; 64-bit input, 4-bit class index output; 4-stage pipeline (input regs, clause logic + adder tree, ArgMax, output regs); Verilog, Cadence Genus synthesis, Innovus P&R, Calibre DRC/LVS. Power/energy are post-synthesis estimates over a clock-period sweep (acceptable slack from 5 us); energy minimum at ~7 us. Not measured on silicon."
+      },
+      "evidence": {
+        "hardware": "Sec. II-B/II-C, pp. 2-3; Sec. III-B, pp. 4-5",
+        "area": "Sec. II-C, p. 3 and abstract: 8 mm x 8 mm",
+        "energy": "Fig. 9(a), p. 6 (value only in the figure)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [3, 4, 5, 7, 8],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 20, "clauses_scope": "per_class", "T": 5, "s": 1.8, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "asic",
+        "hardware": "Compact TM inference FlexIC in Pragmatic's 600 nm IGZO process, 4x4 mm2 die, ~1420 NAND2-eq gates (559 included TAs); same 4-stage pipeline. Post-synthesis: 1480 gates / 1.8 mW at 4 us clock-period constraint, 1290 gates / 1.3 mW at 15 us; power mostly static (pull-up resistors). Latency: output 3 clock cycles after input in RTL simulation; post-layout parasitic simulation worst-case propagation delay ~1.5 us at 100 kHz clock. Not measured on silicon."
+      },
+      "evidence": {
+        "hardware": "Sec. II-B/II-C, pp. 2-3; Sec. III, pp. 3-5",
+        "power": "Sec. III-B, p. 4",
+        "latency": "Sec. III-A, p. 3 and Fig. 3 caption ('RTL simulation of the compact design'); Fig. 4",
+        "energy": "Fig. 9(b), p. 6 (value only in the figure)"
+      },
+      "inferred": {
+        "epochs": "E = 100 fixed 'for all subsequent experiments' (Sec. II-A)"
+      }
+    }
+  ],
+  "corrections": [
+    {"where": "results[6].source_location", "kind": "contradicted", "record": "Sec. II-B", "pdf": "Sec. II-C", "location": "Sec. II-C, p. 3", "note": "Die sizes are stated in II-C 'Physical Implementation' (and the abstract); II-B is 'Design'."},
+    {"where": "results[7].source_location", "kind": "contradicted", "record": "Sec. II-B", "pdf": "Sec. II-C", "location": "Sec. II-C, p. 3", "note": "Same as results[6]."}
+  ],
+  "notes": "Hardware paper: two hard-wired TM inference FlexICs designed (synthesis, P&R, DRC/LVS, post-layout simulation); no fabricated-chip measurements are reported. All accuracies are software validation accuracies of the trained models; the paper never reports a test set or split sizes, and the reported accuracies are the best seed out of many on that validation data. Energy per inference (results 2, 3) exists only in Fig. 9 and could not be checked from text. Full-model power/area values are only in Figs. 6-8. Weighting is unclear: Fig. 1 shows +1/-1 clause polarities, but Sec. II-A mentions 'weight updates of the clause'; left not_reported. Training library not named. Internal inconsistency: Sec. II-B describes a four-stage pipeline, the Conclusion a 'three-stage pipelined RTL architecture' (latency is 3 clock cycles). The text also loosely calls the dataset 'MNIST' (Sec. I)."
+}

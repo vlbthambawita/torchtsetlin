@@ -319,7 +319,9 @@ class Layer:
         for value, source in candidates:
             if value is None or value == "" or value == []:
                 continue
-            if value == NR:
+            if value is _NA:
+                pass
+            elif value == NR:
                 self.not_reported.append(key)
             else:
                 self.values[key] = value
@@ -334,12 +336,26 @@ def _prop(row, col, conv=None):
     return (conv(row[col]) if conv else row[col], row["_source"])
 
 
+_NA = object()  # a sidecar's explicit null: "not applicable", which ends the fallback to proposals
+
+
+def _sp(obj, key):
+    """A sidecar value; an explicit null comes back as _NA, a missing key as None."""
+    if isinstance(obj, dict) and key in obj and obj[key] is None:
+        return _NA
+    return obj.get(key) if isinstance(obj, dict) else None
+
+
 def _sc_usage(sc, i):
     return next((u for u in (sc or {}).get("usages", []) if u.get("usage_index") == i), {})
 
 
 def _sc_config(sc, i):
     return next((c for c in (sc or {}).get("configs", []) if i in (c.get("result_indices") or [])), {})
+
+
+_TM_KEYS = ("n_clauses", "clauses_scope", "T", "s", "epochs", "n_states", "state_bits",
+            "max_included_literals", "patch_size", "weighted", "implementation", "hardware")
 
 
 def enrich_v2(papers, sidecars):
@@ -355,7 +371,7 @@ def enrich_v2(papers, sidecars):
         scp = (sc or {}).get("paper") or {}
         for key in ("primary_task_family", "code_available", "seeds_stated", "hyperparameters_complete",
                     "interpretability_evidence"):
-            P.offer(key, [(p.get(key), "record"), (scp.get(key), "pdf")])
+            P.offer(key, [(p.get(key), "record"), (_sp(scp, key), "pdf")])
         p["_v2"] = P
         for i, d in enumerate(p.get("datasets", [])):
             L = Layer()
@@ -364,27 +380,27 @@ def enrich_v2(papers, sidecars):
             sb, ss = su.get("booleanization") or {}, su.get("split") or {}
             rb = d.get("booleanization_v2") or {}
 
-            L.offer("task_family", [(d.get("task_family"), "record"), (su.get("task_family"), "pdf"),
+            L.offer("task_family", [(d.get("task_family"), "record"), (_sp(su, "task_family"), "pdf"),
                                     _prop(t, "proposed_task_family")])
-            L.offer("setting_tags", [(d.get("setting_tags"), "record"), (su.get("setting_tags"), "pdf"),
+            L.offer("setting_tags", [(d.get("setting_tags"), "record"), (_sp(su, "setting_tags"), "pdf"),
                                      _prop(t, "proposed_setting_tags", lambda v: [x for x in v.split(";") if x])])
-            L.offer("label_type", [(d.get("label_type"), "record"), (su.get("label_type"), "pdf"),
+            L.offer("label_type", [(d.get("label_type"), "record"), (_sp(su, "label_type"), "pdf"),
                                    _prop(u, "proposed_label_type")])
-            L.offer("modality", [(d.get("modality"), "record"), (su.get("modality"), "pdf"),
+            L.offer("modality", [(d.get("modality"), "record"), (_sp(su, "modality"), "pdf"),
                                  _prop(dt, "proposed_modality")])
-            L.offer("synthetic", [(d.get("synthetic"), "record"), (su.get("synthetic"), "pdf"),
+            L.offer("synthetic", [(d.get("synthetic"), "record"), (_sp(su, "synthetic"), "pdf"),
                                   _prop(dt, "proposed_synthetic", {"True": True, "False": False}.get)])
-            L.offer("domain", [(d.get("domain"), "record"), (su.get("domain"), "pdf")])
-            L.offer("booleanization_method", [(rb.get("method"), "record"), (sb.get("method"), "pdf"),
+            L.offer("domain", [(d.get("domain"), "record"), (_sp(su, "domain"), "pdf")])
+            L.offer("booleanization_method", [(rb.get("method"), "record"), (_sp(sb, "method"), "pdf"),
                                               _prop(u, "proposed_booleanization_method")])
-            L.offer("booleanization_bits", [(rb.get("bits_per_feature"), "record"), (sb.get("bits_per_feature"), "pdf"),
+            L.offer("booleanization_bits", [(rb.get("bits_per_feature"), "record"), (_sp(sb, "bits_per_feature"), "pdf"),
                                             _prop(u, "proposed_bits_or_bins", lambda v: _num(v, int))])
             for key in ("n_bins", "n_boolean_features", "n_literals", "fit_on", "threshold"):
-                L.offer(f"booleanization_{key}", [(rb.get(key), "record"), (sb.get(key), "pdf")])
-            L.offer("preprocessing", [(d.get("preprocessing"), "record"), (su.get("preprocessing"), "pdf")])
-            L.offer("split_protocol", [((d.get("split") or {}).get("protocol"), "record"), (ss.get("protocol"), "pdf")])
-            L.offer("k_folds", [(ss.get("k_folds"), "pdf")])
-            L.offer("validation_used_for", [(ss.get("validation_used_for"), "pdf")])
+                L.offer(f"booleanization_{key}", [(rb.get(key), "record"), (_sp(sb, key), "pdf")])
+            L.offer("preprocessing", [(d.get("preprocessing"), "record"), (_sp(su, "preprocessing"), "pdf")])
+            L.offer("split_protocol", [((d.get("split") or {}).get("protocol"), "record"), (_sp(ss, "protocol"), "pdf")])
+            L.offer("k_folds", [(_sp(ss, "k_folds"), "pdf")])
+            L.offer("validation_used_for", [(_sp(ss, "validation_used_for"), "pdf")])
             L.inferred = sorted((su.get("inferred") or {}).keys())
             L.task_detail = dict(su.get("task_detail") or {})
             L.task_detail_source = "pdf" if su.get("task_detail") else None
@@ -395,27 +411,30 @@ def enrich_v2(papers, sidecars):
             L = Layer()
             m, c = metrics.get(r.get("metric")), configs.get((pid, i))
             scc = _sc_config(sc, i)
-            stc = scc.get("tm_config") if isinstance(scc.get("tm_config"), dict) else {}
+            stc = scc.get("tm_config")
+            if stc is None and "tm_config" in scc:  # a baseline: no TM settings apply
+                stc = dict.fromkeys(_TM_KEYS)
+            elif stc == NR:
+                stc = dict.fromkeys(_TM_KEYS, NR)
+            elif not isinstance(stc, dict):
+                stc = {}
             rec_m, rec_c = r.get("metric_canonical") or {}, r.get("tm_config") or {}
 
             L.offer("metric_canonical", [(rec_m.get("name"), "record"), _prop(m, "proposed_canonical")], attr="metric_source")
             L.offer("metric_qualifier", [(rec_m.get("qualifier"), "record"), _prop(m, "proposed_qualifier")], attr="metric_source")
             L.offer("averaging", [(rec_m.get("averaging"), "record"), _prop(m, "proposed_averaging")], attr="metric_source")
             L.offer("metric_kind", [(rec_m.get("kind"), "record"), _prop(m, "proposed_kind")], attr="metric_source")
-            L.offer("statistic", [(r.get("statistic"), "record"), (scc.get("statistic"), "pdf"),
+            L.offer("statistic", [(r.get("statistic"), "record"), (_sp(scc, "statistic"), "pdf"),
                                   _prop(c, "proposed_statistic"), _prop(m, "proposed_statistic")])
-            L.offer("n_runs", [(r.get("n_runs"), "record"), (scc.get("n_runs"), "pdf"),
+            L.offer("n_runs", [(r.get("n_runs"), "record"), (_sp(scc, "n_runs"), "pdf"),
                                _prop(c, "proposed_n_runs", lambda v: _num(v, int))])
-            L.offer("selection_on_test", [(r.get("selection_on_test"), "record"), (scc.get("selection_on_test"), "pdf")])
+            L.offer("selection_on_test", [(r.get("selection_on_test"), "record"), (_sp(scc, "selection_on_test"), "pdf")])
             L.inferred = sorted((scc.get("inferred") or {}).keys())
-            if scc.get("tm_config") == NR:
-                L.not_reported.append("tm_config")
             ints = {"n_clauses", "epochs", "n_states", "state_bits", "max_included_literals"}
-            for key in ("n_clauses", "clauses_scope", "T", "s", "epochs", "n_states", "state_bits",
-                        "max_included_literals", "patch_size", "weighted", "implementation", "hardware"):
+            for key in _TM_KEYS:
                 conv = (lambda v: _num(v, int)) if key in ints else _num if key in ("T", "s") else \
                     (lambda v: {"true": True}.get(v)) if key == "weighted" else None
-                cand = [(rec_c.get(key), "record"), (stc.get(key), "pdf")]
+                cand = [(rec_c.get(key), "record"), (_sp(stc, key), "pdf")]
                 if key != "hardware":
                     cand.append(_prop(c, f"proposed_{key}", conv))
                 L.offer(key, cand)
@@ -482,11 +501,17 @@ _NUMERIC = {"usage": ["n_classes", "booleanization.bits_per_feature", "booleaniz
                        "tm_config.n_states", "tm_config.state_bits", "tm_config.max_included_literals"]}
 
 
+CORRECTION_KINDS = {"contradicted", "omitted", "unsupported"}
+
+
 def check_sidecar(paper, sc, vocab):
     """Errors in one papers_v2 file against its record and vocab.json (empty list = valid)."""
     err, pid = [], paper["paper_id"]
     if sc.get("paper_id") != pid:
         err.append(f"paper_id is {sc.get('paper_id')!r}, expected {pid!r}")
+    for i, c in enumerate(sc.get("corrections", [])):
+        if c.get("kind") not in CORRECTION_KINDS:
+            err.append(f"corrections[{i}]: kind = {c.get('kind')!r}, expected one of {sorted(CORRECTION_KINDS)}")
 
     def check(obj, level, where):
         for field, voc in SIDECAR_VOCAB[level].items():

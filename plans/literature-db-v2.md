@@ -1,7 +1,11 @@
 # Literature database v2: tasks, TM configuration, evaluation protocol
 
-Status (2026-11-05): §2 filter fix done; step 1 (vocabulary + validator) and step 2 (proposal CSVs) done,
-**waiting for the user's review of `benchmarks/literature/mappings/*.csv`**. HF Space: skipped for now.
+Status (2026-11-06): §2 filter fix done; steps 1-2 (vocabulary, validator, proposal CSVs) done; **step 3
+(PDF re-read) done for all 55 papers** (`papers_v2/`, spec `EXTRACTION_V2.md`): every result and usage now has
+`v2_source = pdf`, and 48 corrections to the records are in the `corrections` table (23 contradicted,
+6 omitted, 19 unsupported), all `open`. Next: decide which corrections to apply to `papers/*.json`; the
+blind second pass on ~20% of papers (agreement); the evaluation queries (§ Evaluation). The proposal CSVs
+now only matter for the metric-name fields. HF Space: skipped for now.
 
 Decisions (user, 2026-11-05): clause counts stored **as reported** (`n_clauses` + `clauses_scope`, no
 conversion); mechanical backfill first, then PDF re-read; filter-count fix now; Space later. Scope: `benchmarks/literature/` (records, `build_catalog.py`),

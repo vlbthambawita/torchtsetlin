@@ -1,0 +1,335 @@
+{
+  "paper_id": "2024_Pre_Sorted_Tsetlin_Machine_Genetic_K_Medoid_arXiv2403.09680",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-6"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "No code link anywhere in the paper; only the CAIR baseline repository [3] is cited",
+      "hyperparameters_complete": "Clauses (4000/class) and baseline epochs (100) given (Sec. 4); T, s, states, threshold X, K behind the table values and GA settings not given",
+      "interpretability_evidence": "Figs. 8-9 show class medoids (data, not learned clauses); no rule analysis"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "pre-sort (proposed method only): genetic maximum dispersion -> binary K-medoid per class (Hamming distance) -> genetic class alignment; K data subsets each trained by its own TM, K in {2,4,8,16,32}"
+        }
+      ],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Binarized 'using a simple thresholding method [4] ((< X set to 0), (>= X set to 1))'; X not given."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4",
+        "split": "Sec. 4, p. 5: '10 times using unique 80/20 train/test splits'; no validation set mentioned, early stopping checked accuracy by 'inference between each training cycle' (Sec. 4) / 'test accuracy reached 100%' (Sec. 6)",
+        "dataset": "FMNIST: 'Fashion MNIST dataset consisting of 28x28 graphical representations of common clothing items' (Sec. 4, p. 4)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "kuzushiji-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "pre-sort (proposed method only): genetic maximum dispersion -> binary K-medoid per class (Hamming distance) -> genetic class alignment; K data subsets each trained by its own TM, K in {2,4,8,16,32}"
+        }
+      ],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Binarized 'using a simple thresholding method [4] ((< X set to 0), (>= X set to 1))'; X not given."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4",
+        "split": "Sec. 4, p. 5: '10 times using unique 80/20 train/test splits'; no validation set mentioned, early stopping checked accuracy by 'inference between each training cycle' (Sec. 4) / 'test accuracy reached 100%' (Sec. 6)",
+        "dataset": "KMNIST: handwritten Japanese characters, 'contains class-overlap, multiple characters per class' (Sec. 4, p. 4)"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "emnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": "not_reported",
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": "not_reported",
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "pre-sort (proposed method only): genetic maximum dispersion -> binary K-medoid per class (Hamming distance) -> genetic class alignment; K data subsets each trained by its own TM, K in {2,4,8,16,32}"
+        }
+      ],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Binarized 'using a simple thresholding method [4] ((< X set to 0), (>= X set to 1))'; X not given."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4",
+        "split": "Sec. 4, p. 5: '10 times using unique 80/20 train/test splits'; no validation set mentioned, early stopping checked accuracy by 'inference between each training cycle' (Sec. 4) / 'test accuracy reached 100%' (Sec. 6)",
+        "dataset": "EMNIST: 'the Extended MNIST dataset' (Sec. 4, p. 4); split (letters/digits/balanced...) and class count not stated"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "pre-sort (proposed method only): genetic maximum dispersion -> binary K-medoid per class (Hamming distance) -> genetic class alignment; K data subsets each trained by its own TM, K in {2,4,8,16,32}"
+        }
+      ],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Binarized 'using a simple thresholding method [4] ((< X set to 0), (>= X set to 1))'; X not given."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "booleanization": "Sec. 4, p. 4",
+        "split": "Sec. 4, p. 5: '10 times using unique 80/20 train/test splits'; no validation set mentioned, early stopping checked accuracy by 'inference between each training cycle' (Sec. 4) / 'test accuracy reached 100%' (Sec. 6)",
+        "dataset": "MNIST: 'handwritten digits from 0 to 9' (Sec. 4, p. 4)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        2,
+        4,
+        6,
+        8,
+        10,
+        12,
+        14,
+        16,
+        18,
+        20,
+        22
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "single-threaded, first-gen M1 MacBook Pro"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 5: '4000 clauses per class were used for the baseline ... as suggested on the CAIR repository'; 'For the pre-sorted Tsetlin Machines, 4000 clauses per class were used in total across all distributed Tsetlin Machines (eg K=2, ~2000 clauses per class per machine)'; 'All runs were performed single-threaded on a first-gen M1 Macbook Pro'; implementation: 'written in C++ to match the Tsetlin Machine code provided on the main CAIR ... repository [3]' (Sec. 4, p. 4); baseline trained 'for 100 epochs, then running inference' (Sec. 4, p. 4)",
+        "statistic": "Sec. 4, p. 5: 'All dataset/medoid points were performed 10 times using unique 80/20 train/test splits of the datasets and the average (mean) is presented.'",
+        "selection_on_test": "Baseline is a single fixed configuration (4000 clauses/class from the CAIR repository suggestion, 100 epochs, Sec. 4); Tables 1-3 baseline rows"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        1,
+        7,
+        13,
+        19
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "single-threaded, first-gen M1 MacBook Pro"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 5: '4000 clauses per class were used for the baseline ... as suggested on the CAIR repository'; 'For the pre-sorted Tsetlin Machines, 4000 clauses per class were used in total across all distributed Tsetlin Machines (eg K=2, ~2000 clauses per class per machine)'; 'All runs were performed single-threaded on a first-gen M1 Macbook Pro'; implementation: 'written in C++ to match the Tsetlin Machine code provided on the main CAIR ... repository [3]' (Sec. 4, p. 4); number of medoids K for the table rows not stated (K in {2,4,8,16,32})",
+        "statistic": "Sec. 4, p. 5: 'All dataset/medoid points were performed 10 times using unique 80/20 train/test splits of the datasets and the average (mean) is presented.'",
+        "selection_on_test": "Table 1 shows 'Critical datapoints' (Sec. 5) out of the K sweep (2,4,8,16,32) without saying which K, no validation set; and training of pre-sorted TMs was stopped 'When 100% accuracy was reached' via 'an inference between each training cycle' (Sec. 4, p. 5), which Sec. 6 calls 'the test accuracy reached 100% ... testing for this condition and then terminating training'"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        3,
+        9,
+        15,
+        21
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "single-threaded, first-gen M1 MacBook Pro"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 5: '4000 clauses per class were used for the baseline ... as suggested on the CAIR repository'; 'For the pre-sorted Tsetlin Machines, 4000 clauses per class were used in total across all distributed Tsetlin Machines (eg K=2, ~2000 clauses per class per machine)'; 'All runs were performed single-threaded on a first-gen M1 Macbook Pro'; implementation: 'written in C++ to match the Tsetlin Machine code provided on the main CAIR ... repository [3]' (Sec. 4, p. 4)",
+        "statistic": "Sec. 4, p. 5: 'All dataset/medoid points were performed 10 times using unique 80/20 train/test splits of the datasets and the average (mean) is presented.' Also: 'The results presented show the fastest of these two methods for the pre-sort training time' (Sec. 4, p. 5)",
+        "selection_on_test": "Fastest of two strategies (100 epochs vs. stop at 100% test accuracy, which 'includes the inference time required to check the accuracy after each training epoch'); K of the 'critical datapoints' (Table 2) not stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        5,
+        11,
+        17,
+        23
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "custom",
+        "hardware": "single-threaded, first-gen M1 MacBook Pro"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4, p. 5: '4000 clauses per class were used for the baseline ... as suggested on the CAIR repository'; 'For the pre-sorted Tsetlin Machines, 4000 clauses per class were used in total across all distributed Tsetlin Machines (eg K=2, ~2000 clauses per class per machine)'; 'All runs were performed single-threaded on a first-gen M1 Macbook Pro'; implementation: 'written in C++ to match the Tsetlin Machine code provided on the main CAIR ... repository [3]' (Sec. 4, p. 4)",
+        "statistic": "Sec. 4, p. 5: 'All dataset/medoid points were performed 10 times using unique 80/20 train/test splits of the datasets and the average (mean) is presented.'",
+        "selection_on_test": "Table 3 'Critical datapoints' (Sec. 5); which K and which training strategy produced the timed model is not stated"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "datasets[*].split_as_reported",
+      "kind": "unsupported",
+      "record": "10 runs with unique random 80/20 train/test splits; mean reported",
+      "pdf": "'performed 10 times using unique 80/20 train/test splits of the datasets and the average (mean) is presented'",
+      "location": "Sec. 4, p. 5",
+      "note": "The paper says 'unique', not 'random'; how the splits were drawn is not stated."
+    }
+  ],
+  "notes": "Short 6-page arXiv preprint. Tables 1-3 report 'critical datapoints' from per-K curves (Figs. 10-12, not readable as text); the K (2,4,8,16,32) behind each pre-sorted value is never stated. Pre-sorted TMs were early-stopped when accuracy reached 100% on an inference between epochs, which Sec. 6 calls the test accuracy, and the training time is the faster of two strategies. Test-time routing of a datapoint to one of the K cluster TMs is not described (Sec. 6.1 says 'each datapoint only requires one smaller independent Tsetlin Machine for training and inference'), so the pre-sorted accuracies may use cluster/class information unavailable at test time. EMNIST variant and class count, dataset sizes, binarization threshold X, T and s are not stated. Pre-sorted training time is identical for EMNIST and MNIST (15.58 s) as printed. Pre-sorted epochs: at most 100 under strategy 1, fewer (e.g. 4-6) under strategy 2; left not_reported. Paper's TM description (Sec. 2.1) uses N for the total number of states (N=6 example split into two regions), but no N is given for the experiments."
+}

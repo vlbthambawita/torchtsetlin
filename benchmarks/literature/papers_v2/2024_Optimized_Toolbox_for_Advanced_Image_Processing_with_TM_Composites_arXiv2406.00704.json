@@ -892,14 +892,16 @@
       "record": "e.g. '64,000 clauses (T scaled from 2,000-clause setting), ... T=1500'",
       "pdf": "T for 64,000 clauses not reported",
       "location": "Sec. IV p. 5; Table III; Sec. IV-B p. 6",
-      "note": "The T values in the record are Table III's 2,000-clause values; the paper says T is scaled with the clause count but never prints the scaled T or the rule, so the record's 'T=<value>' at 64,000 clauses is not what was used."
+      "note": "The T values in the record are Table III's 2,000-clause values; the paper says T is scaled with the clause count but never prints the scaled T or the rule, so the record's 'T=<value>' at 64,000 clauses is not what was used.",
+      "kind": "contradicted"
     },
     {
       "where": "results[8..13,16..21].config",
       "record": "no convolution window given",
       "pdf": "3x3 / 4x4 / 5x5 windows",
       "location": "Table III",
-      "note": "Window is in the specialist name and Table III; record config omits it (minor)."
+      "note": "Window is in the specialist name and Table III; record config omits it (minor).",
+      "kind": "omitted"
     }
   ],
   "notes": "Single dataset (CIFAR-10), 8 pages. All Table IV values in the record match the PDF; '±' is sample variance s^2 over the last 25 of 250 epochs, not std. Hyper-parameters (window, weighted, T, s) were searched with Optuna (TPE, 50 trials of 5 epochs, ranges in Table II) at 2,000 clauses plus 'manual experimentation' and reused for 4,000-64,000 clauses and for the augmented variants, except that T is 'scaled' by an unstated rule. Whether the Optuna 'highest accuracy' was measured on the test set is not stated and no validation set is mentioned, so selection_on_test is not_reported (it would be true if the test set was used). Augmentation (horizontal flips) applies only to 'Augmented' specialists; the composite combines both augmented and non-augmented specialists. Clause counts are per specialist TM and read as per class from Sec. II-B. Implementation library is not named (cair GitHub repo); hardware NVIDIA DGX H100. Composite normalisation alpha_t (Eq. 4) uses max-min class sums over the input set, unlabelled. Fig. 3 (composite accuracy per epoch) is figure-only. Each configs entry carries a free-text 'booleanization' for the specialist(s) it covers. Cited baselines (results 30-32) were not re-run."

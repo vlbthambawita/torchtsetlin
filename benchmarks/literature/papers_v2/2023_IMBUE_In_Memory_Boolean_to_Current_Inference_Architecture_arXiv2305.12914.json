@@ -557,14 +557,16 @@
       "record": "12 Boolean features (576 TA cells / (2 classes x 12 clauses x 2))",
       "pdf": "24 Boolean features (576 TA cells / (12 total clauses x 2))",
       "location": "Table IV, p. 6; Fig. 2",
-      "note": "Table IV header says 'Clauses # total'; MNIST/K-MNIST/KWS TA cells equal total clauses x 2 x features (e.g. 3,136,000 = 2000 x 1568), and 18 CSAs = 12 clauses x ceil(48/32). The paper never states the Noisy XOR feature count, so either way it is a derivation; treating 12 as per-class contradicts the column header."
+      "note": "Table IV header says 'Clauses # total'; MNIST/K-MNIST/KWS TA cells equal total clauses x 2 x features (e.g. 3,136,000 = 2000 x 1568), and 18 CSAs = 12 clauses x ceil(48/32). The paper never states the Noisy XOR feature count, so either way it is a derivation; treating 12 as per-class contradicts the column header.",
+      "kind": "contradicted"
     },
     {
       "where": "datasets[4].booleanization",
       "record": "method of Lei et al. 2021 [13] (MFCC-based booleanization)",
       "pdf": "'booleanized using the method presented in [13]'",
       "location": "Sec. IV, p. 5",
-      "note": "'MFCC-based' is not stated in this paper (it comes from the cited work); minor."
+      "note": "'MFCC-based' is not stated in this paper (it comes from the cited work); minor.",
+      "kind": "unsupported"
     }
   ],
   "notes": "Hardware/in-memory inference paper: TMs are trained in software (training settings not reported) and their TA actions are mapped to a simulated 1T1R ReRAM crossbar. Accuracies in Table IV are those of the software TMs; energies are Python-simulated from Spectre-level per-cell power and CSA timing, not measured on silicon. Clause counts are as printed under 'Clauses # total'; TA-cell counts confirm total scope for MNIST, K-MNIST, F-MNIST and KWS-6. Splits are not stated for any dataset (MNIST-family official splits likely but not said). Variation studies (C2C 1000 cycles, D2D 10x10 crossbar, CSA corners and 2000-cycle Monte Carlo, Table III) and per-cell power (Table II) are not results in the record. Fig. 9 TOp/J bars for IMBUE on other datasets and for BNN [15], CBNN [16], Neuromorphic [14] are only in the figure; text gives ratios 5.28x/3.74x/12.99x/6.87x and 331 TOp/J for F-MNIST. CMOS TM baseline rows have selection_on_test null (energy, not a selected quality metric); their implementation is left not_reported because the paper only cites [9]."

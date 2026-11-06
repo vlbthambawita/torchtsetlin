@@ -1,0 +1,204 @@
+{
+  "paper_id": "2026_TRUST_Target_Confidence_Recourse_Probabilistic_TM_arXiv2606.18832",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-17"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": true,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "Sec. 7, p. 6: https://anonymous.4open.science/r/tm_counterfactual-6360/README.md (anonymous review link)",
+      "seeds_stated": "Sec. 7.1, p. 6-7: synthetic data seed = 42; BO repeated 10 times per query with seeds 42..51",
+      "hyperparameters_complete": "Sec. 7.1, p. 7: C=20, S=100, s=1.5, T=5, '50-80 epochs' (per-dataset epochs not given); whether C counts total or per-class clauses and whether S is N or 2N is not stated",
+      "interpretability_evidence": "Sec. 7.3, p. 8-9: learned rule 'Age <= 73 AND Positive lymph nodes <= 4' on Haberman, with literal-inclusion probability (~0.225 that the threshold tightens to <= 3) explaining why the tau=0.50 counterfactual is fragile"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "synthetic-2d-gaussian",
+      "task_family": "classification",
+      "setting_tags": ["counterfactual", "uncertainty", "interpretability", "robustness"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "balanced", "discretized_from": null},
+      "preprocessing": [
+        {"step": "resampling", "params": "training set (1200 after 80/20 split) subsampled to 400 instances via stratified k-means, to keep PTM training tractable"}
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "every unique training-set value of each continuous feature",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Each continuous feature is thresholded at all unique training-set values."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "synthetic": "Sec. 7.1, p. 6: 1500 samples (seed 42), Gaussians centred at (-2,-2) and (+2,+2), covariance 0.5 I2",
+        "class_balance": "Sec. 7.1, p. 6: 'two balanced datasets'",
+        "preprocessing": "Sec. 7.1, p. 6",
+        "booleanization": "Sec. 7.1 'PTM+BO', p. 7",
+        "split": "Sec. 7.1, p. 6 and Table 1: 80/20 stratified train/test (400 train after subsampling / 300 test); not said to be random",
+        "setting_tags": "Sec. 7.1, p. 7: counterfactual recourse at target confidence tau, PTM uncertainty via MC clause sampling, robustness under Gaussian perturbations"
+      },
+      "inferred": {"booleanization.method": "thresholds at every unique value of a feature give a thermometer-style encoding; the paper does not name it"}
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "synthetic-5d-mixed",
+      "task_family": "classification",
+      "setting_tags": ["counterfactual", "uncertainty", "interpretability", "robustness"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "balanced", "discretized_from": null},
+      "preprocessing": [
+        {"step": "resampling", "params": "training set (1200 after 80/20 split) subsampled to 400 instances via stratified k-means"}
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "every unique training-set value of each continuous feature",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Each continuous feature is thresholded at all unique training-set values."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "synthetic": "Sec. 7.1, p. 6: 1500 samples (seed 42), Normal, Laplace, clipped Cauchy, Uniform and Poisson marginals across five features",
+        "class_balance": "Sec. 7.1, p. 6: 'two balanced datasets'",
+        "preprocessing": "Sec. 7.1, p. 6",
+        "booleanization": "Sec. 7.1 'PTM+BO', p. 7",
+        "split": "Sec. 7.1, p. 6 and Table 1: 80/20 stratified (400 train after subsampling / 300 test); not said to be random"
+      },
+      "inferred": {"booleanization.method": "thresholds at every unique value of a feature give a thermometer-style encoding; the paper does not name it"}
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "iris",
+      "task_family": "classification",
+      "setting_tags": ["counterfactual", "uncertainty", "interpretability", "robustness"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported", "discretized_from": "3-class Iris relabelled as setosa vs non-setosa"},
+      "preprocessing": [
+        {"step": "normalize", "params": "MinMax scaling to [0, 1] of all features, applied before the 80/20 split"}
+      ],
+      "booleanization": {
+        "method": "quantile_thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "up to 20 quantile-spaced thresholds per feature",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each (MinMax-scaled) feature is thresholded at up to 20 quantile-spaced thresholds."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "discretized_from": "Sec. 7.1, p. 6: 'Iris (binary) (n=150, d=4) distinguishes setosa from non-setosa'",
+        "preprocessing": "Sec. 7.1, p. 6: 'All features are MinMax-scaled to [0, 1] before splitting 80/20 with stratification'",
+        "booleanization": "Sec. 7.1 'PTM+BO', p. 7",
+        "split": "Sec. 7.1, p. 6 and Table 1: 120/30 stratified; not said to be random"
+      },
+      "inferred": {}
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "haberman-survival",
+      "task_family": "classification",
+      "setting_tags": ["counterfactual", "uncertainty", "interpretability", "robustness"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported", "discretized_from": null},
+      "preprocessing": [
+        {"step": "normalize", "params": "MinMax scaling to [0, 1] of all features, applied before the 80/20 split"}
+      ],
+      "booleanization": {
+        "method": "quantile_thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "up to 20 quantile-spaced thresholds per feature",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Each (MinMax-scaled) feature is thresholded at up to 20 quantile-spaced thresholds."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "preprocessing": "Sec. 7.1, p. 6",
+        "booleanization": "Sec. 7.1 'PTM+BO', p. 7",
+        "split": "Sec. 7.1, p. 6 and Table 1: 244/62 stratified; not said to be random",
+        "setting_tags": "Sec. 7.3, p. 8-9: clause-level attribution of two Haberman counterfactuals"
+      },
+      "inferred": {}
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 26, 27, 28, 29, 30, 31, 40, 41, 42, 43, 44, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 20, "clauses_scope": "not_reported", "T": 5, "s": 1.5, "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "custom", "hardware": "laptop, 12th Gen Intel Core i5-1245U CPU, 16 GB RAM, no discrete GPU; ~1 min per query (2D, Iris, Haberman), up to 4 min per query (5D) for 300 BO trials x 10 repeats"
+      },
+      "evidence": {
+        "tm_config": "Sec. 7.1 'PTM+BO', p. 7: 'Default PTM hyperparameters are clauses C=20, automaton states S=100, precision s=1.5, threshold T=5, and trained for 50-80 epochs'",
+        "statistic": "Table 2 caption, p. 8: 'PTM+BO values are mean +/- std over 10 BO repeats per query'; Sec. 7.1: 10 class-0 test queries per dataset, seeds 42..51",
+        "selection_on_test": "Sec. 7.1, p. 7: default hyper-parameters and two pre-set targets tau=0.50 / 0.85, no tuning described",
+        "implementation": "Sec. 8, p. 9: 'research-oriented PTM framework rather than newer optimized TM implementations'",
+        "hardware": "Sec. 7.1 'Computational environment', p. 7"
+      },
+      "inferred": {
+        "selection_on_test": "the paper calls the settings 'default' and describes no search, so they were fixed in advance"
+      }
+    },
+    {
+      "result_indices": [0, 1, 2, 3, 16, 17, 18, 19, 32, 33, 34, 35, 48, 49, 50, 51],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Sec. 7.1 'Baseline methods', p. 7: Wachter (CARLA; lambda=0.5, lr=0.1, 1000 iterations) on a 50-10 ReLU ANN (softmax, Adam, 250 epochs, early stopping)",
+        "statistic": "Table 2 caption: 'Bold denotes the best mean value'; means over the 10 class-0 queries, no repeats or std given for baselines"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [4, 5, 6, 7, 20, 21, 22, 23, 36, 37, 38, 39, 52, 53, 54, 55],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Sec. 7.1 'Baseline methods', p. 7: GrowingSpheres (CARLA) on the same 50-10 ReLU ANN (Adam, 250 epochs, early stopping); no GrowingSpheres parameters given",
+        "statistic": "Table 2 caption: 'Bold denotes the best mean value'; no repeats or std given for baselines"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "No classification accuracy is reported for any model; Table 2 (p. 8) only has counterfactual-quality metrics, each a mean over Neval=10 randomly selected class-0 test queries per dataset: L1 / L2 = Manhattan / Euclidean distance between factual and counterfactual in the MinMax-scaled feature space (lower is better); Confidence = classifier's predicted probability of the target class at the counterfactual (PTM: 100 MC clause samples for final evaluation, 50 during BO); Robustness = fraction of 50 Gaussian-perturbed copies (sigma=0.01) that keep the target-class prediction; Success Rate (100% for all methods, text only, Sec. 7.2). PTM+BO = multi-objective Optuna TPE BO minimising (|p(x')-tau|, ||x'-x||_2), eps=0.1, 300 trials, 10 repeats per query (seeds 42..51); targets tau=0.50 and 0.85 are pre-set. Baselines run on a different classifier (ANN), so they are not like-for-like. TM config: C=20 clauses, but Appendix B describes a binary TM with m clauses split into m/2 positive and m/2 negative, and the paper never says whether C counts per class or in total, so clauses_scope is not_reported. 'Automaton states S=100' does not say whether it is N or 2N (Appendix B uses 2N states per TA), so n_states is not_reported. Epochs are given only as the range '50-80' with no per-dataset mapping, so epochs is not_reported. MinMax scaling is stated for the real-world datasets (before splitting, i.e. fitted on all data); for the synthetic sets only the metric space is called MinMax-scaled. Whether the quantile thresholds were computed on train only is not stated. Internal inconsistency: Appendix C (p. 17) says PTM+BO (tau=0.50) on Iris has L2 = 0.28, while Table 2 prints 0.366 +/- 0.046; the record follows Table 2. The ANN baselines use early stopping, but the data used for it is not stated. Robustness 1.000 entries in Table 2 carry no std."
+}

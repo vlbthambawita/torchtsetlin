@@ -1,0 +1,165 @@
+{
+  "paper_id": "2025_Uncertainty_Quantification_in_the_Tsetlin_Machine_arXiv2507.04175",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-11"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code or repository link anywhere in the paper",
+      "seeds_stated": "no seeds or number of repeats stated anywhere",
+      "hyperparameters_complete": "T/s/clauses given for single-pattern (p. 4), two-moons (p. 5) and CIFAR-10 (Sec. 3.2.1, p. 7); three-feature experiment gives only s in {1,2,5} (Fig. 2); no implementation, state bits/N or epochs for single-pattern beyond Fig. 1 axis",
+      "interpretability_evidence": "Fig. 4 (clause counts by region, two-moons), Fig. 8 (positive/negative clause counts per class for one CIFAR-10 sample), Fig. 9 (test images with lowest/highest active clause counts); no learned rules printed",
+      "primary_task_family": "probability score for (binary / one-vs-rest multiclass) classification predictions"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "single-pattern-noise",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "varies per run: P(y=1) from 0.0 to 1.0 (11 runs)"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1, "n_bins": null, "threshold": null,
+        "n_boolean_features": 3, "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "100 copies of one sample with three binary features x=[1,0,1]; label noise P(y=1) varied over 11 experiments."
+      },
+      "split": {"protocol": "none", "k_folds": null, "validation_used_for": "none"},
+      "evidence": {"booleanization": "Sec. 3.1, p. 4", "split": "Sec. 3.1, p. 4: only training data; class sums observed during training (Fig. 1)", "class_balance": "Sec. 3.1, p. 4; Fig. 1 legend"},
+      "inferred": {"n_literals": "6 literals would follow from 3 features but the paper does not print it"}
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "three-feature-cpt",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1, "n_bins": null, "threshold": null,
+        "n_boolean_features": 3, "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Three binary features A, B, C (8 unique patterns) with P(Y=1) per pattern given by a conditional probability table."
+      },
+      "split": {"protocol": "none", "k_folds": null, "validation_used_for": "none"},
+      "evidence": {"booleanization": "Sec. 3.1, pp. 4-5; Table 1", "split": "Sec. 3.1, p. 4-5: class sums observed during training (Fig. 2); no test set; sample count not stated"}
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "two-moons",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "balanced"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported", "n_bins": 64, "threshold": "64 uniform bins per feature, plus one extra bit at the training-data maximum",
+        "n_boolean_features": "not_reported", "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Each of the 2 continuous features divided into 64 uniform bins with thermometer encoding (bit=1 if value >= bin threshold); one additional bit per feature for the largest training value so out-of-domain values encode as all zeros / all ones."
+      },
+      "split": {"protocol": "none", "k_folds": null, "validation_used_for": "none"},
+      "evidence": {"booleanization": "Sec. 3.1.1, p. 5", "fit_on": "Sec. 3.1.1, p. 5: extra bit at 'the largest value of that feature in the training data'", "class_balance": "Sec. 3.1.1, p. 5 'The dataset was balanced and had 1000 samples in total'", "split": "Sec. 3.1.1, pp. 5-6: trained on the 1000 samples, evaluated only visually on a mesh grid (Fig. 3); no test split"}
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "cifar-10",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {"n_classes": 10, "label_type": "multiclass", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": 8, "n_bins": "not_reported", "threshold": "not_reported",
+        "n_boolean_features": "not_reported", "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "All images binarized using a thermometer encoding with resolution 8 for each colour channel, similar to Grønningsæter et al. (2024)."
+      },
+      "split": {"protocol": "official", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {"booleanization": "Sec. 3.2.1, p. 7", "split": "Sec. 3.2.1, p. 7: 50,000 training / 10,000 test samples"},
+      "inferred": {"bits_per_feature": "'resolution 8' read as 8 thermometer bits per colour channel"}
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 3],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 20000, "s": 20, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": 64,
+        "patch_size": "3x3", "weighted": true,
+        "implementation": "not_reported", "hardware": "HPC with 1.4 TB RAM, single Tesla V100-SXM3 GPU"
+      },
+      "evidence": {"tm_config": "Sec. 3.2.1, p. 7", "weighted": "Sec. 2.1, p. 2: 'In this paper, we use ... weights'", "hardware": "Sec. 3 intro, p. 4; Sec. 3.2.1 p. 7 (5 min/epoch, ~8 h total)", "statistic": "Sec. 3.2.1, p. 7: 'The model was trained for 100 epochs and achieved a test set accuracy of 65%'"},
+      "inferred": {"n_runs": "text describes a single model ('The model ... achieved'); no repeats mentioned", "statistic": "single model; whether 65% is final-epoch or best epoch is not stated"}
+    },
+    {
+      "result_indices": [1],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 20000, "s": 1.2, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": 64,
+        "patch_size": "3x3", "weighted": true,
+        "implementation": "not_reported", "hardware": "single Tesla V100-SXM3 GPU"
+      },
+      "evidence": {"tm_config": "Sec. 3.2.1, p. 7: 'exact same parameters except the parameter s = 1.2'", "weighted": "Sec. 2.1, p. 2"},
+      "inferred": {"n_runs": "single additional experiment described; no repeats mentioned"}
+    },
+    {
+      "result_indices": [2],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 20000, "s": 20, "epochs": 100,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": 64,
+        "patch_size": "3x3", "weighted": true,
+        "implementation": "not_reported", "hardware": "single Tesla V100-SXM3 GPU"
+      },
+      "evidence": {"tm_config": "Sec. 3.2.1, p. 7", "value": "Sec. 3.2.2, p. 7 and Fig. 7: accuracy 0.932 on the 1,231 of 10,000 test samples with normalized probability score >= 0.6"},
+      "inferred": {"tm_config": "Sec. 3.2.2 analyses the main s=20 model ('the low accuracy of only 65%', p. 7), so it uses the Sec. 3.2.1 main settings"}
+    },
+    {
+      "result_indices": [4],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": "not_reported",
+      "evidence": {"value": "Sec. 3.2, p. 6: cited result of the composite TM (Grønningsæter et al., 2024), not run here"},
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Mostly qualitative paper. The simulated experiments (single pattern: T=2000, s=1.0, 20 clauses, Fig. 1 up to ~300 epochs; three-feature CPT: s in {1,2,5}, other parameters not stated, Fig. 2 up to ~500 epochs; two moons: T=10,000, s=1.1, 1000 clauses, 15 epochs) report no results rows, so they have no configs group; their clause counts have unclear scope (binary task, no per-class statement). Weighted clauses are used throughout (Sec. 2.1). The 0.6 selective-prediction threshold and the s=20 vs s=1.2 choice are not described as tuned on test data, so selection_on_test is not_reported. The selective accuracy and sample counts (0.932, 1231) are also annotated in Fig. 7. Unique-clause counts 6/15/22 for s=1/2/5 (p. 5) and the normalized-score example 0.389 (Fig. 8) are not in the record. Simulated runs used a MacBook Pro M3 (8 cores, 16 GB)."
+}

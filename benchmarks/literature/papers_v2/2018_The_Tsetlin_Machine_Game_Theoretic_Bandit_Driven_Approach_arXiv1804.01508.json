@@ -237,6 +237,9 @@
         "tm_config": "Sec. 5.1, p. 29 (300 clauses, s=3.0, T=10, 100 states, 500 epochs; Multi-Class TM with Boosting of True Positive Feedback, footnote 3); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
         "statistic": "Sec. 5.1, p. 29: accuracy after the final epoch, mean with 95% CI across 1000 runs (Tables 6, 7)",
         "selection_on_test": "Sec. 5.1, p. 29: last configuration used 'to avoid overfitting to the test set'"
+      },
+      "inferred": {
+        "n_states": "paper prints 'K states' per automaton without saying N or 2N; stored as printed (review 2026-11-06)"
       }
     },
     {
@@ -278,6 +281,9 @@
       "evidence": {
         "tm_config": "Sec. 5.2, p. 30 (1000 clauses, s=3.0, T=10, 1000 states, 300 epochs; Multi-Class TM with Boosting of True Positive Feedback, footnote 5); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
         "statistic": "Sec. 5.2, p. 30: accuracy after the final epoch, mean with 95% CI across 100 runs (Table 8)"
+      },
+      "inferred": {
+        "n_states": "paper prints 'K states' per automaton without saying N or 2N; stored as printed (review 2026-11-06)"
       }
     },
     {
@@ -319,6 +325,9 @@
       "evidence": {
         "tm_config": "Sec. 5.3, p. 31 (10 000 clauses, s=40.0, T=10, 1000 states, 200 epochs); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
         "statistic": "Sec. 5.3, p. 31: accuracy after the final epoch, mean with 95% CI across 100 runs (Table 11)"
+      },
+      "inferred": {
+        "n_states": "paper prints 'K states' per automaton without saying N or 2N; stored as printed (review 2026-11-06)"
       }
     },
     {
@@ -362,6 +371,9 @@
         "tm_config": "Sec. 5.4, p. 33 (20 clauses, s=3.9, T=15, 100 states, 200 epochs; Multi-Class TM, footnote 7); weighted: Eq. 63 / Fig. 3 (unweighted 0/1 clause sums)",
         "statistic": "Sec. 5.4, p. 33: accuracy after the final epoch, mean with 95% CI across 100 replications (Table 15)",
         "selection_on_test": "Sec. 5, p. 28 / Fig. 7: s=3.9 chosen from a plot of mean accuracy over s; whether that accuracy is test accuracy is not stated"
+      },
+      "inferred": {
+        "n_states": "paper prints 'K states' per automaton without saying N or 2N; stored as printed (review 2026-11-06)"
       }
     },
     {
@@ -406,7 +418,8 @@
         "statistic": "Sec. 5.5, pp. 34-35: accuracy after the final epoch, mean across 50 runs (Table 16)"
       },
       "inferred": {
-        "implementation": "paper says results can be reproduced with the author's fast-tsetlin-machine-with-mnist-demo (own C/Cython code), not that this code produced them"
+        "implementation": "paper says results can be reproduced with the author's fast-tsetlin-machine-with-mnist-demo (own C/Cython code), not that this code produced them",
+        "n_states": "paper prints 'K states' per automaton without saying N or 2N; stored as printed (review 2026-11-06)"
       }
     },
     {
@@ -447,14 +460,16 @@
       "record": "300 clauses, s=3.0, T=10, 100 states, 500 epochs, last epoch reported, 1000 runs",
       "pdf": "also Multi-Class TM with Boosting of True Positive Feedback",
       "location": "Sec. 5.1, p. 29, footnote 3",
-      "note": "omission: boosting is recorded only for MNIST but is also used for Iris"
+      "note": "omission: boosting is recorded only for MNIST but is also used for Iris",
+      "kind": "omitted"
     },
     {
       "where": "results[6].config",
       "record": "1000 clauses, s=3.0, T=10, 1000 states, 300 epochs, 100 runs",
       "pdf": "also Multi-Class TM with Boosting of True Positive Feedback",
       "location": "Sec. 5.2, p. 30, footnote 5",
-      "note": "omission: boosting also used for Binary Digits"
+      "note": "omission: boosting also used for Binary Digits",
+      "kind": "omitted"
     }
   ],
   "notes": "Pages 6-27 (TM definition and theory) skimmed; Sec. 5 (pp. 27-35) and Sec. 6-7 read fully. Clause scope: the Multi-Class TM sums n/2 positive and n/2 negative clauses per class (Eq. 63), but the experiments print a single count ('300 clauses', '1000 clauses', '20 clauses') without scope; only MNIST says '40 000 clauses, 4000 clauses per class', so only MNIST is scoped (total). A&A: 10 000 clauses for predicting output bit 5 of 20; whether one TM per output bit was used is not stated, so scope not_reported. n_states is the paper's 'each Tsetlin Automaton has K states' (whether this is N or 2N in Fig. 1 terms is not stated). MNIST internal inconsistency: text says 40 000 clauses with T=50, while the Fig. 10 legend lists 40 000 clauses with Threshold=100 (and 20 000 with 50, 10 000 with 25); the text value is used. Hyper-parameters were tuned by 'relatively light grid searches' (Sec. 5, p. 28) on unspecified data; no validation set is described, so validation_used_for and baseline selection_on_test are not_reported. Binary Digits: the paper cites the UCI Pen-Based dataset (10 992 instances) but describes 64 pixel features, which matches the 8x8 optical digits; modality set to image following the paper's 'pixel' wording. Iris/Digits n_literals would be 2x the bit count but is not printed. Figures 7, 9 and 10 (s sweep, data-size sweep, MNIST curves for 10k/20k/40k clauses) are not in the record and values there are only visible in plots."

@@ -1,0 +1,171 @@
+{
+  "paper_id": "2025_AI_Based_Clinical_Rule_Discovery_for_NMIBC_Recurrence_arXiv2507.19803",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-5"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "rules_shown",
+    "evidence": {
+      "code_available": "no code or data link anywhere in the paper (pp. 1-5)",
+      "seeds_stated": "no random seeds for split, Optuna or TM stated (Sec. II-B)",
+      "hyperparameters_complete": "Sec. II-B, p. 2: clauses 80, T 38, s 4.0, 100 epochs given; tuned n_bins value, number of TA states, weighted/unweighted and clause scope not given",
+      "interpretability_evidence": "Sec. III-A, p. 2: clauses C149, C73 (recurrence) and C63 (no recurrence) printed as rules; Fig. 1 per-patient clause-activation heatmap and clause ranking by firing-frequency difference"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "photo-trial-nmibc-recurrence",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "imbalanced"
+      ],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "imbalanced, majority 60% (40% recurrence)",
+        "discretized_from": "recurrence within three years of TURBT (binary endpoint, time-to-recurrence ignored)"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "cohort exclusions instead of imputation: prior cystectomy before diagnosis confirmation, missing three-year follow-up, or incomplete peri-operative data removed (539 -> 330 patients)"
+        },
+        {
+          "step": "other",
+          "params": "class weights applied during training to address the recurrence imbalance (no resampling); total number of clinical features not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "clinically meaningful cut-offs for continuous features; number of bins (nbins) tuned by Optuna, tuned value not reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Continuous features (e.g. tumour count, hospital stay, EQ-5D score) discretised at clinically meaningful cut-offs and thermometer-encoded; categoricals (e.g. smoking status, surgeon grade) one-hot encoded; binary features expanded with their negations; all inside a scikit-learn ColumnTransformer pipeline."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "n_classes": "Sec. II-A, p. 2: primary endpoint recurrence within three years of TURBT",
+        "class_balance": "Sec. II-B, p. 2: 'stratified to preserve class balance (40% recurrence)'",
+        "preprocessing": "Sec. II-A, p. 1 (exclusion criteria, 539 -> 330); Sec. II-B, p. 2 'Class Imbalance'",
+        "booleanization": "Sec. II-B, p. 2 'Feature Transformation' and 'Pipeline and Optimisation'",
+        "split": "Sec. II-B, p. 2: 'split 80:20 (train:test), stratified'; 'The best pipeline was retrained on the entire training set and evaluated on the held-out test set'. Fig. 2 caption and Sec. III-B, p. 2-3 instead say bars are 'the average performance across cross-validated folds'",
+        "validation_used_for": "Sec. II-B, p. 2: Optuna, 50 TPE trials, tuned nbins, clauses, T, s, epochs; objective balanced accuracy with model simplicity"
+      },
+      "inferred": {
+        "validation_used_for": "the paper does not name a validation set, but says the best Optuna pipeline was 'retrained on the entire training set', so tuning used a part of (or CV within) the training data"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 80,
+        "clauses_scope": "not_reported",
+        "T": 38,
+        "s": 4.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": null,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachine",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Sec. II-B, p. 2 'Comparator Models': 80 clauses, T = 38, s = 4.0, 100 epochs; implementation 'Scikit-learn, PyTsetlinMachine, and Optuna'",
+        "statistic": "conflict: Sec. II-B says a single retrained model evaluated on the held-out test set; Fig. 2 caption / Sec. III-B say bars are averages across cross-validated folds (k and number of folds not given)",
+        "values": "Sec. III-B, p. 3 text: precision 0.83, recall 0.78, F1 0.80 (macro-averaged); F1 also in Abstract, Sec. IV, Sec. V",
+        "selection_on_test": "Sec. II-B, p. 2: Optuna (50 TPE trials) then 'retrained on the entire training set and evaluated on the held-out test set'"
+      },
+      "inferred": {
+        "selection_on_test": "tuning precedes retraining on the entire training set, so the test set was held out from the Optuna search; the tuning data itself is not named"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 80,
+        "clauses_scope": "not_reported",
+        "T": 38,
+        "s": 4.0,
+        "epochs": 140,
+        "n_states": "not_reported",
+        "state_bits": null,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachine",
+        "hardware": null
+      },
+      "evidence": {
+        "value": "Fig. 3 caption and Sec. III-C, p. 3: 'test accuracy stabilises at ~80%' over a 140-epoch learning curve (train ~98% from epoch 60)",
+        "tm_config": "epochs 140 from Fig. 3 caption; clauses/T/s from Sec. II-B"
+      },
+      "inferred": {
+        "tm_config": "the paper does not say the Fig. 3 run used the tuned 80-clause/T=38/s=4.0 model; assumed since it is 'the TM's learning curve' and only one TM configuration is reported, but it runs 140 epochs, not the tuned 100"
+      }
+    },
+    {
+      "result_indices": [
+        4,
+        5,
+        6
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "config": "Sec. II-B, p. 2 'Comparator Models': XGBoost n_estimators 50, max_depth 5, lr 0.1; LR L2 with class weighting; EORTC published scoring logic; 'trained on identical data splits'",
+        "values": "Abstract; Sec. III-B, p. 3 (EORTC 0.42); Sec. IV and V (0.78 / 0.60 / 0.42)",
+        "statistic": "same Fig. 2 'average across cross-validated folds' vs held-out-test conflict as the TM; how baseline hyper-parameters were chosen is not stated"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[3].config",
+      "kind": "contradicted",
+      "record": "80 clauses, T=38, s=4.0, 100 epochs (Optuna-tuned, 50 TPE trials)",
+      "pdf": "learning curve over 140 training epochs",
+      "location": "Fig. 3 caption; Sec. III-C, p. 3",
+      "note": "the ~80% test accuracy is read from a 140-epoch curve; the paper does not state that this run used the tuned 100-epoch configuration"
+    }
+  ],
+  "notes": "Short 5-page arXiv paper (pp. 4-5 mostly references). Internal inconsistency: Methods (Sec. II-B) describe a single stratified 80:20 train:test split with Optuna tuning and retraining on the full training set, but the Fig. 2 caption and Sec. III-B say each bar is the average across cross-validated folds (number of folds not given), so statistic and n_runs are not_reported. Fig. 2 bar heights are not readable from text; values come from the prose. Clause scope: '80 clauses' with no per-class/total qualifier; the printed clause indices C149 and C73 exceed 80, which hints at 80 per class x 2 classes = 160 total, but this is not stated, so kept not_reported. Number of input features, number of thermometer bins and Boolean feature count are not reported. Train/test sizes (~264/66) not stated. Class weights for a TM are mentioned without saying how they were applied in PyTsetlinMachine."
+}

@@ -1,0 +1,1450 @@
+{
+ "paper_id": "2025_The_Tsetlin_Machine_Goes_Deep_Graphs_arXiv2507.14874",
+ "extracted": {
+  "by": "agent",
+  "date": "2026-11-06",
+  "pages_read": "1-23"
+ },
+ "paper": {
+  "primary_task_family": "classification",
+  "code_available": false,
+  "seeds_stated": false,
+  "hyperparameters_complete": "partial",
+  "interpretability_evidence": "rules_shown",
+  "evidence": {
+   "code_available": "no code or repository link anywhere in the PDF",
+   "interpretability_evidence": "Sec. 3.1 learned clauses and Table 1; App. A.3 Table 13; Fig. 3 clause visualisation",
+   "hyperparameters_complete": "Tables 16-22 and App. A.4.5; missing: toy T/s, Amazon epochs/depth, MovieLens StdTM, GraphTM-1 and Sec. 3.7 scalability-study settings"
+  }
+ },
+ "usages": [
+  {
+   "usage_index": 0,
+   "dataset_id": "three-consecutive-a-sequences",
+   "task_family": "classification",
+   "setting_tags": [
+    "interpretability"
+   ],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "sequence",
+   "synthetic": true,
+   "domain": "generic",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "imbalanced, 13,330 positive / 26,670 negative (majority 67%)",
+    "discretized_from": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "each of the five letters is a node of a chain graph with left/right edge types; the letter is a node symbol in a Boolean hypervector. App. A.3 illustrates HV size 8 with 2 bits per symbol, but the sizes used in the actual run are not stated."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.1; App. A.3 'The input layer', p. 15",
+    "class_balance": "Sec. 3.1 p. 3",
+    "split": "Sec. 3.1: training with 1% noise, test noise free; sizes of train/test not stated"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 1,
+   "dataset_id": "mnist",
+   "task_family": "classification",
+   "setting_tags": [
+    "interpretability"
+   ],
+   "label_type": "multiclass",
+   "n_classes": 10,
+   "modality": "image",
+   "synthetic": false,
+   "domain": "vision",
+   "task_detail": {
+    "n_classes": 10,
+    "label_type": "multiclass",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "fixed_threshold",
+    "bits_per_feature": 1,
+    "n_bins": null,
+    "threshold": "not_reported",
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "binarized with a stationary threshold (value not stated); each image split into 10x10 patches, each patch plus its position encoded as a node of a disconnected graph (138 symbols, HV size 128, Table 16)"
+   },
+   "split": {
+    "protocol": "official",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.2 p. 4-5; Table 16",
+    "split": "App. A.4.1: 60,000 train / 10,000 test"
+   },
+   "inferred": {
+    "split.protocol": "60,000/10,000 is the standard MNIST train/test split"
+   }
+  },
+  {
+   "usage_index": 2,
+   "dataset_id": "fashion-mnist",
+   "task_family": "classification",
+   "setting_tags": [
+    "interpretability"
+   ],
+   "label_type": "multiclass",
+   "n_classes": 10,
+   "modality": "image",
+   "synthetic": false,
+   "domain": "vision",
+   "task_detail": {
+    "n_classes": 10,
+    "label_type": "multiclass",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "thermometer",
+    "bits_per_feature": "not_reported",
+    "n_bins": 8,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "thermometer encoding with eight bins (Gronningsaeter et al. 2024); 3x3 patches plus position as disconnected graph nodes (124 symbols, HV size 128, Table 16)"
+   },
+   "split": {
+    "protocol": "official",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.2 p. 4; Table 16",
+    "split": "App. A.4.1: 60,000 train / 10,000 test"
+   },
+   "inferred": {
+    "split.protocol": "60,000/10,000 is the standard Fashion-MNIST train/test split"
+   }
+  },
+  {
+   "usage_index": 3,
+   "dataset_id": "cifar-10",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "multiclass",
+   "n_classes": 10,
+   "modality": "image",
+   "synthetic": false,
+   "domain": "vision",
+   "task_detail": {
+    "n_classes": 10,
+    "label_type": "multiclass",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "augmentation",
+     "params": "training set expanded with horizontal flipping"
+    }
+   ],
+   "booleanization": {
+    "method": "adaptive_threshold",
+    "bits_per_feature": "not_reported",
+    "n_bins": 8,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "GraphTM: adaptive Gaussian thresholding AND colour thermometer encoding with 8 bins, given as multiple views of each image; CoTM: adaptive Gaussian thresholding only. 8x8 patches plus position as disconnected graph nodes (2,500 symbols, HV size 128, Table 16)"
+   },
+   "split": {
+    "protocol": "official",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.2 p. 4-5; Table 16",
+    "split": "App. A.4.1: 50,000 train / 10,000 test"
+   },
+   "inferred": {
+    "split.protocol": "50,000/10,000 is the standard CIFAR-10 train/test split"
+   }
+  },
+  {
+   "usage_index": 4,
+   "dataset_id": "mnist-superpixels",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "multiclass",
+   "n_classes": 10,
+   "modality": "graph",
+   "synthetic": false,
+   "domain": "vision",
+   "task_detail": {
+    "n_classes": 10,
+    "label_type": "multiclass",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "feature_extraction",
+     "params": "X/Y coordinates of the nearest neighbour and the neighbour count added as node features (+~3% and +~5% accuracy)"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": 8,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "superpixels are nodes, edges by k-NN spatial adjacency; node symbols are X/Y centroid, average grayscale intensity quantized to eight linear levels, nearest-neighbour coordinates and neighbour count, in a hypervector of size 128 (message HV 256, Table 17)"
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.3 p. 5; Table 17"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 5,
+   "dataset_id": "imdb",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "tokenization",
+     "params": "words (one word and its position per node)"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "each word (with its position) is a node of a fully connected graph; edge type = signed word distance (e.g. +2 / -2); node symbols in a hypervector of size 2048, message HV 1024 (Table 18). The standard TM uses the words without positional encoding; its Boolean input size is not stated."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.4 p. 5-6, Fig. 4; Table 18",
+    "label_type": "Sec. 3.4: 'converted into a binary classification problem when necessary'"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 6,
+   "dataset_id": "yelp-polarity",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "tokenization",
+     "params": "words (one word and its position per node)"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "each word (with its position) is a node of a fully connected graph; edge type = signed word distance (e.g. +2 / -2); node symbols in a hypervector of size 2048, message HV 1024 (Table 18). The standard TM uses the words without positional encoding; its Boolean input size is not stated."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.4 p. 5-6, Fig. 4; Table 18",
+    "label_type": "Sec. 3.4: 'converted into a binary classification problem when necessary'"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 7,
+   "dataset_id": "mpqa",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "tokenization",
+     "params": "words (one word and its position per node)"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "each word (with its position) is a node of a fully connected graph; edge type = signed word distance (e.g. +2 / -2); node symbols in a hypervector of size 2048, message HV 1024 (Table 18). The standard TM uses the words without positional encoding; its Boolean input size is not stated."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.4 p. 5-6, Fig. 4; Table 18",
+    "label_type": "Sec. 3.4: 'converted into a binary classification problem when necessary'"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 8,
+   "dataset_id": "scone-tangram",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "multiclass",
+   "n_classes": "not_reported",
+   "modality": "text",
+   "synthetic": false,
+   "domain": "nlp",
+   "task_detail": {
+    "n_classes": "not_reported",
+    "label_type": "multiclass",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "other",
+     "params": "modified version of the SCONE Tangram data (modification not detailed); 3- and 5-utterance examples"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "graph nodes are the states (object sequences) before and after each action; each natural-language action (utterance) is an edge between them; node HV size 256 (3 utterances) / 512 (5 utterances), message HV 256 (Table 19)"
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.5 p. 6, Fig. 5; Table 19"
+   },
+   "inferred": {
+    "label_type": "task is to name which of the images occupies position x, i.e. one of several items; the number of candidate classes is not stated"
+   }
+  },
+  {
+   "usage_index": 9,
+   "dataset_id": "amazon-sales",
+   "task_family": "classification",
+   "setting_tags": [
+    "robustness"
+   ],
+   "label_type": "not_reported",
+   "n_classes": "not_reported",
+   "modality": "graph",
+   "synthetic": false,
+   "domain": "recommender",
+   "task_detail": {
+    "n_classes": "not_reported",
+    "label_type": "not_reported",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "other",
+     "params": "dataset expanded tenfold with added noise at ratios 0.005-0.2"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": 256,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "customer, product and category are nodes linked by user-item and item-category edges; HV size 4096, HV bits 256, message size 256, message bits 2 (App. A.4.5). StdTM input encoding not stated."
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.6 p. 6-7, Fig. 6; App. A.4.5",
+    "task": "Sec. 3.6: labels are user-provided rankings or scores, metric accuracy"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 10,
+   "dataset_id": "movielens",
+   "task_family": "recommendation_ranking",
+   "setting_tags": [],
+   "label_type": "multilabel",
+   "n_classes": "not_reported",
+   "modality": "sequence",
+   "synthetic": false,
+   "domain": "recommender",
+   "task_detail": {},
+   "preprocessing": [],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": 64,
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "each user's training interaction history is a sequence of movie nodes with movie id and genre(s) as features, each linked to the items consumed before and after it; HV size 2096, HV bits 64 (Table 20); every item is a class, top-n classes by clause activation are the recommendations"
+   },
+   "split": {
+    "protocol": "temporal",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "App. A.5 p. 21; Table 20",
+    "split": "App. A.5: 20% of each user's interactions hidden as test via temporal hold out",
+    "label_type": "App. A.5: 'large, implicit, multi-label classification problem'"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 11,
+   "dataset_id": "ncbi-viral-genome",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "multiclass",
+   "n_classes": 5,
+   "modality": "sequence",
+   "synthetic": false,
+   "domain": "science",
+   "task_detail": {
+    "n_classes": 5,
+    "label_type": "multiclass",
+    "class_balance": "balanced (1,799 per class, 8,995 samples)",
+    "discretized_from": null
+   },
+   "preprocessing": [
+    {
+     "step": "other",
+     "params": "samples with non-standard nucleotides removed (only A, C, G, T kept)"
+    },
+    {
+     "step": "crop",
+     "params": "sequences truncated to the first 500 nucleotides (500-6,000 in the length study)"
+    },
+    {
+     "step": "feature_extraction",
+     "params": "3-mers"
+    }
+   ],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "sequence encoded with 3-mers as node symbols (64 symbols), HV size 512, message HV 512, depth 2 (Table 21); exact graph construction (nodes/edges) not described"
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.7 p. 7; Table 21",
+    "class_balance": "Sec. 3.7 p. 7"
+   },
+   "inferred": {}
+  },
+  {
+   "usage_index": 12,
+   "dataset_id": "multivalue-noisy-xor",
+   "task_family": "classification",
+   "setting_tags": [],
+   "label_type": "binary",
+   "n_classes": 2,
+   "modality": "tabular",
+   "synthetic": true,
+   "domain": "generic",
+   "task_detail": {
+    "n_classes": 2,
+    "label_type": "binary",
+    "class_balance": "not_reported",
+    "discretized_from": null
+   },
+   "preprocessing": [],
+   "booleanization": {
+    "method": "hypervector",
+    "bits_per_feature": "not_reported",
+    "n_bins": null,
+    "threshold": null,
+    "n_boolean_features": "not_reported",
+    "n_literals": "not_reported",
+    "fit_on": "not_reported",
+    "description": "two non-binary inputs x1, x2 in {0..n} (n = 500 symbols) are two nodes joined by a bi-directional edge; values are node symbols in a hypervector of size 2048, message HV 2048/4096/8192 (Table 22)"
+   },
+   "split": {
+    "protocol": "not_reported",
+    "k_folds": null,
+    "validation_used_for": "not_reported"
+   },
+   "evidence": {
+    "booleanization": "Sec. 3.8 p. 8; Table 22",
+    "split": "App. A.4.8: 50,000 train / 5,000 test; 1% noise"
+   },
+   "inferred": {}
+  }
+ ],
+ "configs": [
+  {
+   "result_indices": [
+    0,
+    1
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 4,
+    "clauses_scope": "total",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": 4,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": "not_reported",
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Sec. 3.1 p. 3 (2 layers, four clauses, four epochs, per-class clause weights shown)"
+   },
+   "inferred": {},
+   "notes": "GraphTM depth 2. T and s not stated."
+  },
+  {
+   "result_indices": [
+    2
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2500,
+    "clauses_scope": "total",
+    "T": 3125,
+    "s": 10.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": "10x10",
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16",
+    "statistic": "Sec. 3.2 p. 5: average accuracy over the final five of 30 epochs",
+    "clauses_scope": "Sec. 3 / App. A.2: GraphTM is built on the Coalesced TM, one clause pool shared by all classes"
+   },
+   "inferred": {},
+   "notes": "MNIST GraphTM, disconnected nodes: depth 1, HV size 128, 138 symbols. Spread (+/-) source not stated; number of runs not stated."
+  },
+  {
+   "result_indices": [
+    3
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2500,
+    "clauses_scope": "total",
+    "T": 3125,
+    "s": 10.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": "10x10",
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16 caption ('GraphTM and the CoTM'); Sec. 3.2 'identical hyperparameters'",
+    "statistic": "Sec. 3.2 p. 5"
+   },
+   "inferred": {},
+   "notes": "MNIST convolutional Coalesced TM baseline. Implementation library not stated."
+  },
+  {
+   "result_indices": [
+    4
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 40000,
+    "clauses_scope": "total",
+    "T": 15000,
+    "s": 10.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": "3x3",
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16",
+    "statistic": "Sec. 3.2 p. 5: average accuracy over the final five of 30 epochs",
+    "clauses_scope": "Sec. 3 / App. A.2: GraphTM is built on the Coalesced TM, one clause pool shared by all classes"
+   },
+   "inferred": {},
+   "notes": "F-MNIST GraphTM, disconnected nodes: depth 1, HV size 128, 124 symbols. Spread (+/-) source not stated; number of runs not stated."
+  },
+  {
+   "result_indices": [
+    5
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 40000,
+    "clauses_scope": "total",
+    "T": 15000,
+    "s": 10.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": null,
+    "patch_size": "3x3",
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16 caption ('GraphTM and the CoTM'); Sec. 3.2 'identical hyperparameters'",
+    "statistic": "Sec. 3.2 p. 5"
+   },
+   "inferred": {},
+   "notes": "F-MNIST convolutional Coalesced TM baseline. Implementation library not stated."
+  },
+  {
+   "result_indices": [
+    6
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 80000,
+    "clauses_scope": "total",
+    "T": 15000,
+    "s": 20.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 32,
+    "patch_size": "8x8",
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16",
+    "statistic": "Sec. 3.2 p. 5: average accuracy over the final five of 30 epochs",
+    "clauses_scope": "Sec. 3 / App. A.2: GraphTM is built on the Coalesced TM, one clause pool shared by all classes"
+   },
+   "inferred": {},
+   "notes": "CIFAR-10 GraphTM, disconnected nodes: depth 1, HV size 128, 2500 symbols. Spread (+/-) source not stated; number of runs not stated."
+  },
+  {
+   "result_indices": [
+    7
+   ],
+   "statistic": "average_last_epochs",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 80000,
+    "clauses_scope": "total",
+    "T": 15000,
+    "s": 20.0,
+    "epochs": 30,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 32,
+    "patch_size": "8x8",
+    "weighted": true,
+    "implementation": "not_reported",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 16 caption ('GraphTM and the CoTM'); Sec. 3.2 'identical hyperparameters'",
+    "statistic": "Sec. 3.2 p. 5"
+   },
+   "inferred": {},
+   "notes": "CIFAR-10 convolutional Coalesced TM baseline. Implementation library not stated."
+  },
+  {
+   "result_indices": [
+    8
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "total",
+    "T": 100000,
+    "s": 0.5,
+    "epochs": 50,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 32,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 17",
+    "n_clauses": "Table 4 prints '2000 clauses', Table 17 prints 60,000"
+   },
+   "inferred": {},
+   "notes": "MNIST Superpixel GraphTM: Table 17 gives depth 35, HV 128, message HV 256. n_clauses left not_reported because Table 4 header says 2000 clauses and Table 17 says 60,000. The value itself also disagrees in the PDF: Table 4 88.09 +/- 0.27 vs Sec. 3.3 text 89.24 +/- 1.34."
+  },
+  {
+   "result_indices": [
+    9,
+    10
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 4; values reported by Monti et al. 2017, not re-run"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    11,
+    15,
+    19
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "total",
+    "T": 100000,
+    "s": 15,
+    "epochs": 40,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 18"
+   },
+   "inferred": {
+    "tm_config": "Table 18 lists only depth 2; Table 5 / Sec. 3.4 present depth 1 as the same GraphTM with depth changed, so the other Table 18 values are taken to apply"
+   },
+   "notes": "GraphTM depth 1; HV 2048, message HV 1024. +/- spread source and run count not stated."
+  },
+  {
+   "result_indices": [
+    12,
+    16,
+    20
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "total",
+    "T": 100000,
+    "s": 15,
+    "epochs": 40,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 18"
+   },
+   "inferred": {},
+   "notes": "GraphTM depth 2; HV 2048, message HV 1024. +/- spread source and run count not stated."
+  },
+  {
+   "result_indices": [
+    13,
+    17,
+    21
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 5"
+   },
+   "inferred": {},
+   "notes": "GNN baseline; architecture not described."
+  },
+  {
+   "result_indices": [
+    14,
+    18,
+    22
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 10000,
+    "clauses_scope": "not_reported",
+    "T": 100000,
+    "s": 15,
+    "epochs": 40,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": "not_reported",
+    "implementation": "not_reported",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 18 (StdTM row)"
+   },
+   "inferred": {},
+   "notes": "Standard TM baseline; words without positional encoding."
+  },
+  {
+   "result_indices": [
+    23
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 850,
+    "clauses_scope": "total",
+    "T": 9000,
+    "s": 1,
+    "epochs": 50,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 19 (3 utterances)"
+   },
+   "inferred": {},
+   "notes": "Tangram 3 utterances: depth 6, HV 256, message HV 256."
+  },
+  {
+   "result_indices": [
+    24
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 800,
+    "clauses_scope": "total",
+    "T": 9000,
+    "s": 1,
+    "epochs": 50,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 19 (5 utterances)"
+   },
+   "inferred": {},
+   "notes": "Tangram 5 utterances: depth 12, HV 512, message HV 256."
+  },
+  {
+   "result_indices": [
+    25,
+    26,
+    27,
+    28,
+    29,
+    30
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 6; author-reported values from Guu et al. 2017, not re-run (Sec. 3.5)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    31,
+    32,
+    33,
+    34,
+    35,
+    36
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 7; App. A.4.5 (GCN 64/128/64, Adam lr 0.01)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    37,
+    38,
+    39,
+    40,
+    41,
+    42
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2000,
+    "clauses_scope": "total",
+    "T": 10000,
+    "s": 10.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "App. A.4.5"
+   },
+   "inferred": {},
+   "notes": "GraphTM: HV size 4096, HV bits 256, message size 256, message bits 2; depth and epochs not stated."
+  },
+  {
+   "result_indices": [
+    43,
+    44,
+    45,
+    46,
+    47,
+    48
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2000,
+    "clauses_scope": "not_reported",
+    "T": 10000,
+    "s": 10.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 32,
+    "patch_size": null,
+    "weighted": "not_reported",
+    "implementation": "not_reported",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "App. A.4.5"
+   },
+   "inferred": {},
+   "notes": "Standard TM baseline."
+  },
+  {
+   "result_indices": [
+    49
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2000,
+    "clauses_scope": "total",
+    "T": 10000,
+    "s": 10.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "value": "Sec. 3.6 p. 7"
+   },
+   "inferred": {
+    "tm_config": "App. A.4.5 gives one GraphTM setting for the recommendation experiment; the timing is taken to use it (noise ratio not stated)"
+   },
+   "notes": "Total time, CUDA."
+  },
+  {
+   "result_indices": [
+    50
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2000,
+    "clauses_scope": "not_reported",
+    "T": 10000,
+    "s": 10.0,
+    "epochs": "not_reported",
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 32,
+    "patch_size": null,
+    "weighted": "not_reported",
+    "implementation": "not_reported",
+    "hardware": "not_reported"
+   },
+   "evidence": {
+    "value": "Sec. 3.6 p. 7"
+   },
+   "inferred": {
+    "tm_config": "App. A.4.5 gives one StdTM setting for the recommendation experiment"
+   },
+   "notes": "Hardware for the StdTM timing (CPU or GPU) not stated."
+  },
+  {
+   "result_indices": [
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    75,
+    76,
+    77
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 23; ELLIOT implementations (App. A.5)"
+   },
+   "inferred": {}
+  },
+  {
+   "result_indices": [
+    57,
+    58,
+    59
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": "not_reported",
+   "evidence": {
+    "source": "Table 23"
+   },
+   "inferred": {},
+   "notes": "StdTM settings for MovieLens not given."
+  },
+  {
+   "result_indices": [
+    60,
+    61,
+    62
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 4096,
+    "clauses_scope": "total",
+    "T": 500,
+    "s": 5.0,
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 256,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "NVIDIA DGX H100 system (8x H100, 640 GB GPU memory, 112 CPU cores) - Sec. 3 states all experiments except Sec. 3.7 ran on it"
+   },
+   "evidence": {
+    "tm_config": "Table 20"
+   },
+   "inferred": {},
+   "notes": "GraphTM depth 1, HV size 2096, HV bits 64."
+  },
+  {
+   "result_indices": [
+    78,
+    79
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "total",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "Table 8 caption (10 epochs); Sec. 3.7"
+   },
+   "inferred": {},
+   "notes": "GraphTM-1 (depth 1); other settings not stated."
+  },
+  {
+   "result_indices": [
+    80,
+    81,
+    95,
+    99,
+    103,
+    107
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 2000,
+    "clauses_scope": "total",
+    "T": 2000,
+    "s": 1,
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 200,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "Table 21; Table 9 column 2,000"
+   },
+   "inferred": {
+    "tm_config": "Table 8 GraphTM-2 test accuracy 95.14 equals Table 9 (5 classes, 2,000 clauses); T, s, max literals, HV 512, message HV 512, depth 2 are constant across Table 21"
+   },
+   "notes": "Depth 2, 64 symbols, HV 512, message HV 512. Table 21 pairs classes 2/3/4/5 with clauses 500/700/1000/2000, whereas Table 9 reports every class count at every clause count; constant Table 21 values assumed for all cells."
+  },
+  {
+   "result_indices": [
+    92,
+    96,
+    100,
+    104
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 500,
+    "clauses_scope": "total",
+    "T": 2000,
+    "s": 1,
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 200,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "Table 21; Table 9"
+   },
+   "inferred": {
+    "tm_config": "T, s, epochs, max literals, HV sizes and depth are constant across Table 21 rows; clause count from the Table 9 column"
+   },
+   "notes": "Depth 2. See the Table 21 vs Table 9 pairing note."
+  },
+  {
+   "result_indices": [
+    93,
+    97,
+    101,
+    105
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 700,
+    "clauses_scope": "total",
+    "T": 2000,
+    "s": 1,
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 200,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "Table 21; Table 9"
+   },
+   "inferred": {
+    "tm_config": "T, s, epochs, max literals, HV sizes and depth are constant across Table 21 rows; clause count from the Table 9 column"
+   },
+   "notes": "Depth 2. See the Table 21 vs Table 9 pairing note."
+  },
+  {
+   "result_indices": [
+    94,
+    98,
+    102,
+    106
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": 1000,
+    "clauses_scope": "total",
+    "T": 2000,
+    "s": 1,
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": 200,
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "Table 21; Table 9"
+   },
+   "inferred": {
+    "tm_config": "T, s, epochs, max literals, HV sizes and depth are constant across Table 21 rows; clause count from the Table 9 column"
+   },
+   "notes": "Depth 2. See the Table 21 vs Table 9 pairing note."
+  },
+  {
+   "result_indices": [
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": null,
+   "evidence": {
+    "source": "Table 8"
+   },
+   "inferred": {},
+   "notes": "NN baselines, 10 epochs; hardware 48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+  },
+  {
+   "result_indices": [
+    108
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "total",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": 10,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "App. A.4.7: all experiments 10 epochs except increased sequence length"
+   },
+   "inferred": {},
+   "notes": "Sample-size scalability study (Fig. 7); clause count not stated."
+  },
+  {
+   "result_indices": [
+    109
+   ],
+   "statistic": "not_reported",
+   "n_runs": "not_reported",
+   "selection_on_test": "not_reported",
+   "tm_config": {
+    "n_clauses": "not_reported",
+    "clauses_scope": "total",
+    "T": "not_reported",
+    "s": "not_reported",
+    "epochs": 20,
+    "n_states": "not_reported",
+    "state_bits": "not_reported",
+    "max_included_literals": "not_reported",
+    "patch_size": null,
+    "weighted": true,
+    "implementation": "custom",
+    "hardware": "48 CPU cores + NVIDIA Tesla V100-SXM3 32 GB (Sec. 3 footnote 1, Sec. 3.7 experiments)"
+   },
+   "evidence": {
+    "tm_config": "App. A.4.7: 20 epochs for the increased-sequence-length experiments"
+   },
+   "inferred": {},
+   "notes": "Sequence-length study (Fig. 7); 95.88 is the best over lengths 500-6,000, not over epochs."
+  }
+ ],
+ "corrections": [],
+ "notes": "GraphTM = Coalesced (shared clause pool, per-class weights) convolutional TM over hypervector-encoded graphs; all GraphTM clause counts are therefore stored with scope 'total'. Message-passing depth per setting: toy 2, disconnected images 1, superpixels 35, sentiment 1/2, Tangram 6/12, Amazon not stated, MovieLens 1, viral 1/2, XOR 2. Implementation is the authors' custom CUDA-kernel GraphTM (Sec. 3 'GPU Implementation Details'); library name and code link not given. No paper result states run count, seeds or what the +/- is; the only run count is Fig. 8 (five trials, multivalue noisy XOR, curves only, no record results). Table 22 (XOR): clauses {4,50,200,1000,2000}, T = 10 x clauses, s = 2.2, 500 symbols, HV 2048, message HV {2048,4096,8196 (text/Fig. 8 says 8192)}, depth 2, 1% noise. MNIST Superpixel: PDF internally inconsistent (Table 4 '2000 clauses', 88.09+/-0.27 vs text 89.24+/-1.34 and Table 17 60,000 clauses); record already notes this. Table 9 split not labelled, but its 5-class/2,000-clause cell equals Table 8 testing accuracy, so it is test accuracy. App. A.3 'another experiment' (3-class A/AA/AAA, 3 layers, 4 clauses) has no accuracy. No validation set mentioned anywhere."
+}

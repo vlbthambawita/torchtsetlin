@@ -1,0 +1,184 @@
+{
+  "paper_id": "2025_Event_Driven_Digital_Time_Domain_Inference_Architectures_for_TMs_arXiv2511.09527",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-7"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "primary_task_family": "Sec. II-C, Eqs. 1-2, p. 3: argmax class-sum inference for multi-class TM and CoTM",
+      "code_available": "no code or repository link in the paper",
+      "hyperparameters_complete": "only 16 features, 12 clauses, 3 classes given (Sec. III-A, p. 5); no T, s, epochs, TA states, training procedure or weight bit width",
+      "seeds_stated": "no seeds or repeated runs mentioned",
+      "interpretability_evidence": "interpretability only claimed in the introduction (p. 1); no rules or clause analysis shown"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "iris",
+      "task_family": "classification",
+      "setting_tags": ["hardware"],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {"n_classes": 3, "label_type": "multiclass", "class_balance": "not_reported", "discretized_from": null},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported", "n_bins": "not_reported", "threshold": "not_reported",
+        "n_boolean_features": 16, "n_literals": 32,
+        "fit_on": "not_reported",
+        "description": "Paper only says the Iris configuration comprises 16 features; how the 4 real-valued Iris attributes become 16 Boolean inputs is not described."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "n_boolean_features": "Sec. III-A, p. 5: 'comprising 16 features, 12 clauses, and 3 classes'; waveforms feature[0:15] (Figs. 7-8)",
+        "n_literals": "Algorithm 2, p. 2: literal[2i]=feature[i], literal[2i+1]=not feature[i]",
+        "split": "Sec. III-A, p. 5: Iris used only for functional verification on a short input sequence (target classes 2,0,1,1); no train/test split, no accuracy"
+      },
+      "inferred": {
+        "n_boolean_features": "the 16 features are bits: feature[0:15] is shown as a 4-hex-digit vector in Figs. 7-8 and Algorithm 2 takes feature in {0,1}^num_feature",
+        "n_literals": "2 x 16 features per Algorithm 2"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 12, "clauses_scope": "not_reported", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "asic",
+        "hardware": "Inference-only multi-class TM (16 features, 12 clauses, 3 classes), purely digital baselines in SystemVerilog following Algorithms 1-3: synchronous pipeline and asynchronous bundled-data pipeline (two-phase click-element controller). Verified with Cadence Xcelium, synthesised and placed-and-routed with Cadence Genus and Innovus (post-implementation). Technology node and voltage of the baselines not stated explicitly. Throughput = 2FCK*f_infer (Eq. 3); energy efficiency = throughput/(1000 P) (Eq. 4)."
+      },
+      "evidence": {
+        "tm_config": "Sec. III-A, p. 5 ('16 features, 12 clauses, and 3 classes'); Eq. 1, p. 3",
+        "hardware": "Sec. III-A, pp. 5; Fig. 7; Sec. III-B, Eqs. 3-4, pp. 5-6",
+        "statistic": "Table IV, p. 6: one value per implementation, no repetitions"
+      },
+      "inferred": {
+        "statistic": "deterministic post-implementation numbers, one per design; no repetitions mentioned",
+        "weighted": "multi-class TM, Eq. 1: plain positive minus negative clause counts",
+        "implementation": "standard-cell synthesis + place-and-route flow (Genus/Innovus), no FPGA or fabrication",
+        "selection_on_test": "no learning-time selection; hardware evaluation of a fixed model",
+        "n_clauses": "Table IV rows are taken to use the Iris configuration (the only one in the paper); not stated explicitly next to Table IV"
+      }
+    },
+    {
+      "result_indices": [4, 5],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 12, "clauses_scope": "not_reported", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "asic",
+        "hardware": "Proposed multi-class TM: three-stage two-phase bundled-data click-element asynchronous controller, digital literal generation and clause evaluation, fully time-domain Hamming-distance class-sum delay accumulation and Winner-Takes-All arbitration (Mutex / tree-based arbiter, from [12]) with four-to-two-phase TFF interface. Built in Cadence Virtuoso, TSMC 65 nm CMOS, 1.0 V, analogue mixed-signal simulation (not fabricated)."
+      },
+      "evidence": {
+        "hardware": "Sec. II, pp. 2-5; Sec. III-A, p. 5; Table III (65 nm, 1.0 V, Async BD, Time domain), p. 6",
+        "tm_config": "Sec. III-A, p. 5",
+        "statistic": "Table IV, p. 6"
+      },
+      "inferred": {
+        "statistic": "single simulated design point, no repetitions mentioned",
+        "weighted": "Eq. 1, p. 3: Hamming-distance (unweighted) class sums",
+        "implementation": "custom 65 nm mixed-signal circuit, simulation only",
+        "selection_on_test": "no learning-time selection; hardware evaluation of a fixed model",
+        "n_clauses": "Iris configuration is the only one described (Sec. III-A)"
+      }
+    },
+    {
+      "result_indices": [6, 7, 8, 9],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 12, "clauses_scope": "total", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": true,
+        "implementation": "asic",
+        "hardware": "Inference-only Coalesced TM (16 features, 12 shared clauses, 3 classes, signed integer clause weights), purely digital baselines in SystemVerilog following Algorithms 1-3: synchronous pipeline and asynchronous bundled-data pipeline. Cadence Xcelium / Genus / Innovus, post-implementation. Technology node and voltage of the baselines not stated explicitly."
+      },
+      "evidence": {
+        "tm_config": "Sec. III-A, p. 5; Eq. 2 and text, p. 3 (signed weights per clause and class)",
+        "hardware": "Sec. III-A, p. 5; Fig. 8, p. 6",
+        "statistic": "Table IV, p. 6"
+      },
+      "inferred": {
+        "statistic": "deterministic post-implementation numbers, one per design",
+        "clauses_scope": "CoTM clauses are shared across all classes (Eq. 2, Fig. 3 shows one clause vector weighted per class), so 12 is the total pool",
+        "implementation": "standard-cell synthesis + place-and-route flow",
+        "selection_on_test": "no learning-time selection",
+        "n_clauses": "Iris configuration is the only one described (Sec. III-A)"
+      }
+    },
+    {
+      "result_indices": [10, 11],
+      "statistic": "single_run",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 12, "clauses_scope": "total", "T": null, "s": null, "epochs": null,
+        "n_states": null, "state_bits": null, "max_included_literals": null,
+        "patch_size": null, "weighted": true,
+        "implementation": "asic",
+        "hardware": "Proposed CoTM: two-phase bundled-data click-element controller; digital clause evaluation, MUX binary multiplication matrix and sign/magnitude pre-summation; leading-ones-detector coarse/fine (k, f; e-bit fine) logarithmic delay compression; dual-rail differential delay path (raceS/raceM), Vernier TDC, digitally-controlled delay element single-rail path; Mutex-based WTA arbitration; four-to-two-phase TFF interface. Cadence Virtuoso, TSMC 65 nm CMOS, 1.0 V, analogue mixed-signal simulation (not fabricated)."
+      },
+      "evidence": {
+        "hardware": "Sec. II-C, Fig. 3, Algorithm 4, Fig. 4, pp. 3-4; Sec. III-A, p. 5; Table III (65 nm, 1.0 V, Async BD, Hybrid domain), p. 6",
+        "statistic": "Table IV, p. 6"
+      },
+      "inferred": {
+        "statistic": "single simulated design point",
+        "clauses_scope": "CoTM clauses are shared across classes (Eq. 2)",
+        "implementation": "custom 65 nm mixed-signal circuit, simulation only",
+        "selection_on_test": "no learning-time selection",
+        "n_clauses": "Iris configuration is the only one described (Sec. III-A)"
+      }
+    },
+    {
+      "result_indices": [12, 13, 14],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Table III, p. 6: values quoted from cited works [21] (async QDI CNN, 65 nm, 1.2 V), [4] (async BD SNN, 28 nm, 0.9 V), [8] (sync time-domain BNN, 65 nm, 1.2 V)"
+      }
+    },
+    {
+      "result_indices": [15],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported", "clauses_scope": "not_reported", "T": "not_reported", "s": "not_reported", "epochs": "not_reported",
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": "not_reported",
+        "patch_size": null, "weighted": "not_reported",
+        "implementation": "asic",
+        "hardware": "Cited work [11] (Wheeldon et al., DATE 2021): asynchronous QDI dual-rail multi-class TM edge chip, 65 nm, 1.2 V, digital domain; value quoted, not re-measured."
+      },
+      "evidence": {
+        "tm_config": "Table III and Sec. III-C, p. 6"
+      },
+      "inferred": {
+        "implementation": "paper calls [11] a 'multi-class TM edge chip' (Sec. III-C)"
+      }
+    }
+  ],
+  "corrections": [
+    {"where": "results[0,1,2,3,6,7,8,9].config", "kind": "unsupported", "record": "TSMC 65 nm CMOS, 1.0 V", "pdf": "technology and voltage only stated for the proposed designs (Table III); baselines only described as SystemVerilog synthesised/implemented with Cadence Genus/Innovus", "location": "Sec. III-A p. 5; Table III p. 6", "note": "likely the same node, but not stated for the baselines"}
+  ],
+  "notes": "Hardware-only paper: no accuracy, no training details. Iris (16 Boolean features, 12 clauses, 3 classes) is used for functional verification (correct predictions on a short sequence, target classes 2,0,1,1). Table IV does not restate the configuration; Eq. 3 (throughput = 2FCK f_infer) with F=16, C=12, K=3 is consistent with the Iris setup, which is the only configuration described. Whether the 12 multi-class TM clauses are per class or total is not stated (Eq. 1 uses n clauses per class with n/2 per polarity), so clauses_scope is not_reported for the multi-class groups. Table III lists 3329 TOP/J for the proposed multi-class TM while Table IV and the record use 3290.00 (paper inconsistency, already noted in the record). Sec. III-B percentages (e.g. +247% energy efficiency vs sync) are derived from Table IV. Proposed designs are mixed-signal simulations; baselines are post-implementation digital, so the comparison mixes evaluation levels. Clause weight bit width and e (fine-delay bits) are not given; Fig. 6 waveforms suggest 3-bit k/fine fields (class0_pk<2:0>) but this is figure-only."
+}

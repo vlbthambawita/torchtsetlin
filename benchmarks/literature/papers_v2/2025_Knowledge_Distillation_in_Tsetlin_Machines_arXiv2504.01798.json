@@ -1,0 +1,1091 @@
+{
+  "paper_id": "2025_Knowledge_Distillation_in_Tsetlin_Machines_arXiv2504.01798",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-75"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "feature_importance",
+    "evidence": {
+      "code_available": "Sec. 4 footnote 1, p. 36 (github.com/ckinateder/pyTsetlinMachineParallel)",
+      "interpretability_evidence": "Sec. 4.4.3, Fig. 4.18: per-pixel activation maps of included literals over all clauses (intensity = feature importance), EMNIST only",
+      "hyperparameters_complete": "Tables 4.2/4.5 give clauses, T, s, epochs, KD params; TA states, weight learning rate gamma, IMDB n-gram settings and hardware are not given"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "75/255 (0.3 normalized): intensity > 75 -> 1, <= 75 -> 0",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "all grayscale image data is binarized at threshold 75/255; every pixel with intensity 75 or lower is set to 0, every pixel above to 1"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. 4.1.1, p. 36-37; Table 4.1",
+        "booleanization": "Sec. 4.1.2, p. 37; Fig. 4.1",
+        "booleanization.n_boolean_features": "Table 4.1 (column |L| = 784)",
+        "split": "Sec. 4.1.1: MNIST 60000 training / 10000 testing images; Table 4.1"
+      },
+      "inferred": {
+        "split.protocol": "train/test sizes are the dataset's standard published split; the paper does not use the word 'official'"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "kuzushiji-mnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "75/255 (0.3 normalized): intensity > 75 -> 1, <= 75 -> 0",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "all grayscale image data is binarized at threshold 75/255; every pixel with intensity 75 or lower is set to 0, every pixel above to 1"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. 4.1.1, p. 36-37; Table 4.1",
+        "booleanization": "Sec. 4.1.2, p. 37; Fig. 4.1",
+        "booleanization.n_boolean_features": "Table 4.1 (column |L| = 784)",
+        "split": "Sec. 4.1.1: KMNIST 60000 training / 10000 testing images; Table 4.1"
+      },
+      "inferred": {
+        "split.protocol": "train/test sizes are the dataset's standard published split; the paper does not use the word 'official'"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "emnist",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 26,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 26,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "fixed_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "75/255 (0.3 normalized): intensity > 75 -> 1, <= 75 -> 0",
+        "n_boolean_features": 784,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "all grayscale image data is binarized at threshold 75/255; every pixel with intensity 75 or lower is set to 0, every pixel above to 1"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. 4.1.1, p. 36-37; Table 4.1",
+        "booleanization": "Sec. 4.1.2, p. 37; Fig. 4.1",
+        "booleanization.n_boolean_features": "Table 4.1 (column |L| = 784)",
+        "split": "Sec. 4.1.1: EMNIST 124800 training / 20800 testing images; Table 4.1"
+      },
+      "inferred": {
+        "split.protocol": "train/test sizes are the dataset's standard published split; the paper does not use the word 'official'"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "n-grams decomposed into bit representations, 5000 features per sample (n-gram order and feature selection not stated)"
+        }
+      ],
+      "booleanization": {
+        "method": "n_gram_presence",
+        "bits_per_feature": null,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 5000,
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "IMDB textual data is preprocessed into n-grams and decomposed into bit representations before training for a total of 5000 features per sample"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. 4.1.1, p. 37 ('only two classes: positive and negative')",
+        "booleanization": "Sec. 4.1.2, p. 37; Table 4.1 (|L| = 5000)",
+        "split": "Sec. 4.1.1: 25,000 reviews for training and 25,000 for testing"
+      },
+      "inferred": {
+        "booleanization.method": "'n-grams ... decomposed into bit representations' read as n-gram presence bits; the encoding is not spelled out",
+        "split.protocol": "25k/25k is the standard IMDB split of Maas et al. [67]"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "label": "DKD teacher TM_T, MNIST",
+      "result_indices": [
+        0,
+        1,
+        40
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; distillation uses its checkpoint at E_T = 120 epochs; KD params of the run: tau=3.0, alpha=0.5, z=0.3"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "baseline teacher is trained for E_T+S = E_T + E_S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD student baseline TM_S, MNIST",
+      "result_indices": [
+        2,
+        3,
+        41
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation (same T, s as teacher)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "student baseline is trained for E_T+S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD distilled TM_D, MNIST",
+      "result_indices": [
+        4,
+        5,
+        42
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 4.0,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "distilled: initialised with |C_S| teacher clauses (Alg. 2, z=0.3), trained on soft labels (Alg. 3/4) with tau=3.0, alpha=0.5; teacher checkpoint at E_T=120"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "Sec. 4.2: distilled model is trained for E_S epochs after the teacher's E_T; its accuracy is still averaged over E_T+S epochs (Sec. 4.2), its times over E_S",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD teacher TM_T, KMNIST",
+      "result_indices": [
+        6,
+        7,
+        43
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 8.2,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; distillation uses its checkpoint at E_T = 120 epochs; KD params of the run: tau=4.0, alpha=0.5, z=0.3"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "baseline teacher is trained for E_T+S = E_T + E_S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD student baseline TM_S, KMNIST",
+      "result_indices": [
+        8,
+        9,
+        44
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 8.2,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation (same T, s as teacher)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "student baseline is trained for E_T+S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD distilled TM_D, KMNIST",
+      "result_indices": [
+        10,
+        11,
+        45
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 8.2,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "distilled: initialised with |C_S| teacher clauses (Alg. 2, z=0.3), trained on soft labels (Alg. 3/4) with tau=4.0, alpha=0.5; teacher checkpoint at E_T=120"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "Sec. 4.2: distilled model is trained for E_S epochs after the teacher's E_T; its accuracy is still averaged over E_T+S epochs (Sec. 4.2), its times over E_S",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD teacher TM_T, EMNIST",
+      "result_indices": [
+        12,
+        13,
+        46
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; distillation uses its checkpoint at E_T = 120 epochs; KD params of the run: tau=4.0, alpha=0.5, z=0.2"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "baseline teacher is trained for E_T+S = E_T + E_S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD student baseline TM_S, EMNIST",
+      "result_indices": [
+        14,
+        15,
+        47
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation (same T, s as teacher)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "student baseline is trained for E_T+S = 120+240 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD distilled TM_D, EMNIST",
+      "result_indices": [
+        16,
+        17,
+        48
+      ],
+      "statistic": "mean",
+      "n_runs": 10,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "distilled: initialised with |C_S| teacher clauses (Alg. 2, z=0.2), trained on soft labels (Alg. 3/4) with tau=4.0, alpha=0.5; teacher checkpoint at E_T=120"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "Sec. 4.2: distilled model is trained for E_S epochs after the teacher's E_T; its accuracy is still averaged over E_T+S epochs (Sec. 4.2), its times over E_S",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD teacher TM_T, IMDB",
+      "result_indices": [
+        18,
+        19,
+        49
+      ],
+      "statistic": "mean",
+      "n_runs": 8,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 8000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 7.0,
+        "epochs": 90,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; distillation uses its checkpoint at E_T = 30 epochs; KD params of the run: tau=3.0, alpha=0.5, z=0.2"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "baseline teacher is trained for E_T+S = E_T + E_S = 30+60 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD student baseline TM_S, IMDB",
+      "result_indices": [
+        20,
+        21,
+        50
+      ],
+      "statistic": "mean",
+      "n_runs": 8,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 7.0,
+        "epochs": 90,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation (same T, s as teacher)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "student baseline is trained for E_T+S = 30+60 epochs (Sec. 4.2); the sum is computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "DKD distilled TM_D, IMDB",
+      "result_indices": [
+        22,
+        23,
+        51
+      ],
+      "statistic": "mean",
+      "n_runs": 8,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 4000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 7.0,
+        "epochs": 60,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "distilled: initialised with |C_S| teacher clauses (Alg. 2, z=0.2), trained on soft labels (Alg. 3/4) with tau=3.0, alpha=0.5; teacher checkpoint at E_T=30"
+      },
+      "evidence": {
+        "tm_config": "Table 4.5 (DKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: 'we run the experiment K times and average the results'; 'we measure all average accuracies over E_T+S epochs'; Tables 4.6/4.7 report mean +- spread",
+        "n_runs": "Table 4.5, column K",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.5 (E_T, E_S)"
+      },
+      "inferred": {
+        "tm_config.epochs": "Sec. 4.2: distilled model is trained for E_S epochs after the teacher's E_T; its accuracy is still averaged over E_T+S epochs (Sec. 4.2), its times over E_S",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD teacher TM_T, MNIST",
+      "result_indices": [
+        24
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 800,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 7.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; CKD uses its checkpoint at E_T = 120 epochs to generate clause outputs"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD student baseline TM_S, MNIST",
+      "result_indices": [
+        25
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 7.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD distilled TM_D and TM_PCD, MNIST",
+      "result_indices": [
+        26,
+        27
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 7.0,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "input = teacher clause outputs (zeta x 800 bits) for TM_D; TM_PCD additionally drops columns with PCD at delta=0.15 (Alg. 1)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "Sec. 4.2: TM_D and TM_PCD are trained for E_S epochs",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD teacher TM_T, KMNIST",
+      "result_indices": [
+        28
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 400,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 5,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; CKD uses its checkpoint at E_T = 120 epochs to generate clause outputs"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD student baseline TM_S, KMNIST",
+      "result_indices": [
+        29
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 5,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD distilled TM_D and TM_PCD, KMNIST",
+      "result_indices": [
+        30,
+        31
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 5,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "input = teacher clause outputs (zeta x 400 bits) for TM_D; TM_PCD additionally drops columns with PCD at delta=0.22 (Alg. 1)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "Sec. 4.2: TM_D and TM_PCD are trained for E_S epochs",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD teacher TM_T, EMNIST",
+      "result_indices": [
+        32
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 400,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; CKD uses its checkpoint at E_T = 120 epochs to generate clause outputs"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD student baseline TM_S, EMNIST",
+      "result_indices": [
+        33
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 360,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 120+240 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD distilled TM_D and TM_PCD, EMNIST",
+      "result_indices": [
+        34,
+        35
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 100,
+        "s": 4.0,
+        "epochs": 240,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "input = teacher clause outputs (zeta x 400 bits) for TM_D; TM_PCD additionally drops columns with PCD at delta=0.25 (Alg. 1)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "Sec. 4.2: TM_D and TM_PCD are trained for E_S epochs",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD teacher TM_T, IMDB",
+      "result_indices": [
+        36
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 10000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 5.0,
+        "epochs": 120,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "teacher; CKD uses its checkpoint at E_T = 30 epochs to generate clause outputs"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 30+90 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD student baseline TM_S, IMDB",
+      "result_indices": [
+        37
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 5.0,
+        "epochs": 120,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "student baseline without distillation"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "E_T+S = 30+90 (Sec. 4.2); sum computed here",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    },
+    {
+      "label": "CKD distilled TM_D and TM_PCD, IMDB",
+      "result_indices": [
+        38,
+        39
+      ],
+      "statistic": "mean",
+      "n_runs": 1,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000,
+        "clauses_scope": "per_class",
+        "T": 6000,
+        "s": 5.0,
+        "epochs": 90,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported",
+        "extra": "input = teacher clause outputs (zeta x 10000 bits) for TM_D; TM_PCD additionally drops columns with PCD at delta=0.15 (Alg. 1)"
+      },
+      "evidence": {
+        "tm_config": "Table 4.2 (CKD hyper-parameters)",
+        "statistic": "Sec. 4.2, p. 39: average accuracies over E_T+S epochs; 'Results are not aggregated with this approach' (no K runs for CKD); Table 4.4 reports mean +- spread",
+        "tm_config.implementation": "Sec. 4 footnote 1, p. 36: experiments use 'a parallel Tsetlin Machine implementation' at github.com/ckinateder/pyTsetlinMachineParallel (the author's fork, modified for KD)",
+        "tm_config.weighted": "Sec. 1.1.2, p. 14: 'We will be using weighted, multi-class Tsetlin Machines for all experiments'",
+        "tm_config.epochs": "Sec. 4.2, pp. 38-39; Table 4.2 (E_T, E_S)"
+      },
+      "inferred": {
+        "n_runs": "'Results are not aggregated with this approach' (Sec. 4.2) read as one run per model; the +- would then be the spread over epochs",
+        "tm_config.epochs": "Sec. 4.2: TM_D and TM_PCD are trained for E_S epochs",
+        "tm_config.clauses_scope": "Eq. 1.18/3.5-3.7 sum |C|/2 positive and |C|/2 negative clauses inside each class, and Sec. 3.1.1 turns the teacher output into zeta x |C| features, so |C| (the tables' |C_T|, |C_S|) counts clauses per class"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "M.S. thesis (75 pp.), text extracted with pymupdf; figures not visible. Two methods: CKD (Tables 4.2-4.4) and DKD (Tables 4.5-4.7). All accuracies are averages over all E_T+S epochs (not final-epoch), for DKD further averaged over K runs; the paper never says whether +- is a standard deviation or what it is taken over. Times have no unit; teacher/student times are averaged over E_T+S epochs, distilled over E_S epochs (Sec. 4.2); figure times are normalised by dataset size. KD hyper-parameters (tau, alpha, z, delta) are stored as free text in tm_config.extra. delta in Table 4.2 is marked delta* and applies to TM_PCD only. Paper inconsistency: Sec. 3.2.1 says 'We find an optimal value at z = 0.2' but Table 4.5 uses z = 0.3 for MNIST and KMNIST. How z, delta (Sec. 4.2: 'chosen to find the best compromise between accuracy and speed') and the other hyper-parameters were chosen is not said and no validation set is mentioned, so selection_on_test is not_reported. Table 4.1 labels the feature count |L| (784 / 5000) although Eq. 1.4 defines |L| = 2n literals; stored as n_boolean_features, n_literals left not_reported. CKD distilled models take zeta x |C_T| teacher clause bits as input (Eq. 3.2), not the raw 784/5000 bits. EMNIST: 26 letter classes, 124,800/20,800 (the Letters split; the paper just says EMNIST). Not in the record (omissions, not errors): the DKD time columns carry +- values (e.g. MNIST T_T 0.37 +- 0.01, Table 4.7) while the record's time rows have std_or_range null; Table 4.3 (CKD training results) and the training times of Table 4.6 are not in the record. Record values checked against Tables 4.4, 4.6, 4.7: no disagreements."
+}

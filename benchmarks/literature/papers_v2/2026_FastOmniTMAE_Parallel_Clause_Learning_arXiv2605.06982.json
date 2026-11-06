@@ -1,0 +1,836 @@
+{
+  "paper_id": "2026_FastOmniTMAE_Parallel_Clause_Learning_arXiv2605.06982",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-14"
+  },
+  "paper": {
+    "primary_task_family": "representation_learning",
+    "code_available": false,
+    "seeds_stated": true,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "Sec. 3.1, p. 7: 'The benchmark code will be released publicly after double-blind review'; no URL",
+      "seeds_stated": "Sec. 3.1.1, p. 7: seed = 42 for the classification test; no seeds for the similarity or hardware runs",
+      "hyperparameters_complete": "Table 1 TM/baseline settings and classification settings given; state bits / epochs / accumulation of the hardware benchmark, n_states, vocabulary construction and similarity function not given",
+      "interpretability_evidence": "App. A.2, Fig. 6: TA-state distribution of literals across clauses (original vs negated)"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "one-billion-word",
+      "task_family": "representation_learning",
+      "setting_tags": [
+        "hardware",
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "per-token embedding training corpus; evaluated by (i) per-token binary presence classification of 100 target tokens (precision/recall/F1 over 100 epochs, Fig. 4), (ii) word similarity on RG-65, WS-353-Sim, MTurk-287, MTurk-771, MEN (Spearman/Kendall, Table 1, incl. 'Avg.' column attached here), (iii) qualitative t-SNE of 13 hand-picked semantic word groups (Fig. 5); training time on CPU/GPU/SoC-FPGA (Table 2, RG65 44-token workload)"
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "vocabulary of 40,000 tokens (selection criterion not stated)"
+        },
+        {
+          "step": "resampling",
+          "params": "per target token: binary label sampled (token present/absent), input X built by randomly accumulating a = 24 documents according to the label; 2,000 examples per token (similarity/t-SNE); classification test 1,000 training + 500 inference examples per token for 100 tokens; hardware benchmark 8,000 pre-prepared examples per token for the 44 RG65 tokens (352k)"
+        },
+        {
+          "step": "other",
+          "params": "tokenization, lowercasing and stop-word handling not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 40000,
+        "n_literals": 80000,
+        "fit_on": "not_reported",
+        "description": "Input X is the accumulation of a documents over the 40,000-token vocabulary, evaluated with logical operations against clauses; feature negation doubles it to 80,000 literals."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. 2.1, pp. 3-4 (literals with negation; accumulating a documents); App. A.2, p. 12 (40,000 features, 80,000 literals)",
+        "preprocessing": "Sec. 3.1.1 p. 7 (100 tokens, 1,000/500 examples); Table 1 text p. 8 (number_of_examples = 2000, accumulation = 24); Sec. 3.4 p. 9 (8,000 examples per token)",
+        "split": "Sec. 3.1.1: 1,000 training then 500 inference examples per token; how drawn not stated",
+        "setting_tags": "Sec. 3.4 / Table 2-3 (hardware); App. A.2 Fig. 6 TA-state distribution (interpretability)",
+        "downstream_eval": "Secs. 3.1-3.4, Fig. 4, Table 1, Fig. 5, Table 2"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size",
+        "booleanization.method": "paper never says 'presence'; X is a Boolean input compared by AND/XOR over vocabulary literals (Sec. 2.1), as in Omni TM-AE",
+        "booleanization.bits_per_feature": "one literal per vocabulary feature plus its negation (App. A.2)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "imdb",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": "not_reported",
+        "downstream_eval": "none: only the update probability update_p over 6 epochs is plotted (Fig. 2b) for s in {1,5,10}, T in {100,1000,10000}; no quality metric"
+      },
+      "preprocessing": [
+        {
+          "step": "resampling",
+          "params": "each epoch contains 2,000 training examples"
+        },
+        {
+          "step": "vocabulary_cap",
+          "params": "vocabulary of fewer than 2,000 tokens (as stated)"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Same Omni TM-AE input construction (accumulated documents over the vocabulary); not separately described for IMDb."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 2.2, p. 4; Fig. 2(b)",
+        "preprocessing": "Sec. 2.2, p. 4 ('fewer than 2,000 tokens', '2,000 training examples')",
+        "split": "only training dynamics shown, no evaluation"
+      },
+      "inferred": {
+        "booleanization.method": "same pipeline as the 1 Billion Word runs (Sec. 2.1); not described for IMDb specifically"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "rg-65",
+      "task_family": "representation_learning",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: similarity of the two words' FastOmniTMAE / Omni TM-AE / GloVe / Word2Vec / FastText embeddings compared with human similarity scores by Spearman rho and Kendall tau; embeddings trained on 1 Billion Word (vocab 40,000); similarity function not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 3.2, pp. 7-8; Table 1",
+        "split": "evaluation-only human-rated word pairs, no training on them (Sec. 3.2)",
+        "size": "Sec. 3.4, p. 9: 'RG65 word similarity dataset, which contains 44 word pairs'; Table 2 caption '44-token workload'"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "ws-353-sim",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: similarity of the two words' FastOmniTMAE / Omni TM-AE / GloVe / Word2Vec / FastText embeddings compared with human similarity scores by Spearman rho and Kendall tau; embeddings trained on 1 Billion Word (vocab 40,000); similarity function not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 3.2, pp. 7-8; Table 1",
+        "split": "evaluation-only human-rated word pairs, no training on them (Sec. 3.2)"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "mturk-287",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: similarity of the two words' FastOmniTMAE / Omni TM-AE / GloVe / Word2Vec / FastText embeddings compared with human similarity scores by Spearman rho and Kendall tau; embeddings trained on 1 Billion Word (vocab 40,000); similarity function not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 3.2, pp. 7-8; Table 1",
+        "split": "evaluation-only human-rated word pairs, no training on them (Sec. 3.2)"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "mturk-771",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: similarity of the two words' FastOmniTMAE / Omni TM-AE / GloVe / Word2Vec / FastText embeddings compared with human similarity scores by Spearman rho and Kendall tau; embeddings trained on 1 Billion Word (vocab 40,000); similarity function not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 3.2, pp. 7-8; Table 1",
+        "split": "evaluation-only human-rated word pairs, no training on them (Sec. 3.2)"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "men",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: similarity of the two words' FastOmniTMAE / Omni TM-AE / GloVe / Word2Vec / FastText embeddings compared with human similarity scores by Spearman rho and Kendall tau; embeddings trained on 1 Billion Word (vocab 40,000); similarity function not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 3.2, pp. 7-8; Table 1",
+        "split": "evaluation-only human-rated word pairs, no training on them (Sec. 3.2)"
+      },
+      "inferred": {
+        "embedding_dim": "not printed in this paper; App. A.2-A.3 (p. 13): the embedding combines the signed state of each original literal with its negated counterpart over a 40,000-word vocabulary (80,000 literals), as in Omni TM-AE [14] where the vector has the vocabulary size"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline_config": "p. 8: GloVe, Word2Vec, FastText trained with vector_size = 100, window = 5, epochs = 25 on the DGX H100 CPU",
+        "statistic": "Table 1 caption: mean and standard deviation over five runs"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server, CPU"
+      },
+      "evidence": {
+        "tm_config": "p. 8 below Table 1: number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits = 8 (same for Omni TM-AE and FastOmniTMAE)",
+        "statistic": "Table 1 caption: mean and standard deviation over five runs",
+        "hardware": "p. 8: all models trained on the CPU of the same DGX H100 server, FastOmniTMAE also on GPU; Sec. 3.1 p. 7 (8 GPUs, 2.0 TiB RAM)",
+        "weighted": "Sec. 2.1 p. 3 (CoTM weights matrix); Alg. 1 (w_j)",
+        "clauses_scope": "CoTM clauses shared by outputs (Sec. 2.1) but Omni TM-AE 'trained separately for each target token' (p. 3); whether 32 counts per token or total is not stated",
+        "selection_on_test": "settings not said to be chosen on a validation set; model 'rebuilt' through 'extensive experimentation and the developed benchmarks' (Sec. 2.2.1) without saying how hyper-parameters were fixed"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states (0-255) = 2N, threshold N = 128 (Sec. 2.1 p. 3 describes b = 8 -> 256 states with an intermediate threshold N)"
+      }
+    },
+    {
+      "result_indices": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA DGX H100 server, CPU"
+      },
+      "evidence": {
+        "tm_config": "p. 8 below Table 1: number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits = 8 (same for Omni TM-AE and FastOmniTMAE)",
+        "statistic": "Table 1 caption: mean and standard deviation over five runs",
+        "hardware": "p. 8: all models trained on the CPU of the same DGX H100 server, FastOmniTMAE also on GPU; Sec. 3.1 p. 7 (8 GPUs, 2.0 TiB RAM)",
+        "weighted": "Sec. 2.1 p. 3 (CoTM weights matrix); Alg. 1 (w_j)",
+        "clauses_scope": "CoTM clauses shared by outputs (Sec. 2.1) but Omni TM-AE 'trained separately for each target token' (p. 3); whether 32 counts per token or total is not stated",
+        "selection_on_test": "settings not said to be chosen on a validation set; model 'rebuilt' through 'extensive experimentation and the developed benchmarks' (Sec. 2.2.1) without saying how hyper-parameters were fixed"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states (0-255) = 2N, threshold N = 128 (Sec. 2.1 p. 3 describes b = 8 -> 256 states with an intermediate threshold N)"
+      }
+    },
+    {
+      "result_indices": [
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA DGX H100 server, H100 GPU (CUDA)"
+      },
+      "evidence": {
+        "tm_config": "p. 8 below Table 1: number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits = 8 (same for Omni TM-AE and FastOmniTMAE)",
+        "statistic": "Table 1 caption: mean and standard deviation over five runs",
+        "hardware": "p. 8: all models trained on the CPU of the same DGX H100 server, FastOmniTMAE also on GPU; Sec. 3.1 p. 7 (8 GPUs, 2.0 TiB RAM)",
+        "weighted": "Sec. 2.1 p. 3 (CoTM weights matrix); Alg. 1 (w_j)",
+        "clauses_scope": "CoTM clauses shared by outputs (Sec. 2.1) but Omni TM-AE 'trained separately for each target token' (p. 3); whether 32 counts per token or total is not stated",
+        "selection_on_test": "settings not said to be chosen on a validation set; model 'rebuilt' through 'extensive experimentation and the developed benchmarks' (Sec. 2.2.1) without saying how hyper-parameters were fixed"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states (0-255) = 2N, threshold N = 128 (Sec. 2.1 p. 3 describes b = 8 -> 256 states with an intermediate threshold N)"
+      }
+    },
+    {
+      "result_indices": [
+        72
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA DGX H100 server CPU (~179 cores, ~80% of CPU resources, for the timed runs), 2.0 TiB RAM"
+      },
+      "evidence": {
+        "tm_config": "p. 8 below Table 1: number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits = 8 (same for Omni TM-AE and FastOmniTMAE)",
+        "statistic": "p. 8: 'required an average of 242.9 seconds'; number of runs averaged not stated",
+        "hardware": "p. 8: approximately 80% of the DGX H100 CPU resources, around 179 cores",
+        "weighted": "Sec. 2.1 p. 3 (CoTM weights matrix); Alg. 1 (w_j)",
+        "clauses_scope": "CoTM clauses shared by outputs (Sec. 2.1) but Omni TM-AE 'trained separately for each target token' (p. 3); whether 32 counts per token or total is not stated",
+        "selection_on_test": "settings not said to be chosen on a validation set; model 'rebuilt' through 'extensive experimentation and the developed benchmarks' (Sec. 2.2.1) without saying how hyper-parameters were fixed"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states (0-255) = 2N, threshold N = 128 (Sec. 2.1 p. 3 describes b = 8 -> 256 states with an intermediate threshold N)"
+      }
+    },
+    {
+      "result_indices": [
+        73
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server CPU (~179 cores, ~80% of CPU resources, for the timed runs), 2.0 TiB RAM"
+      },
+      "evidence": {
+        "tm_config": "p. 8 below Table 1: number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits = 8 (same for Omni TM-AE and FastOmniTMAE)",
+        "statistic": "p. 8: FastOmniTMAE 'an average of 242.9 seconds, while Omni TM-AE required 293.1 seconds'",
+        "hardware": "p. 8: approximately 80% of the DGX H100 CPU resources, around 179 cores",
+        "weighted": "Sec. 2.1 p. 3 (CoTM weights matrix); Alg. 1 (w_j)",
+        "clauses_scope": "CoTM clauses shared by outputs (Sec. 2.1) but Omni TM-AE 'trained separately for each target token' (p. 3); whether 32 counts per token or total is not stated",
+        "selection_on_test": "settings not said to be chosen on a validation set; model 'rebuilt' through 'extensive experimentation and the developed benchmarks' (Sec. 2.2.1) without saying how hyper-parameters were fixed"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states (0-255) = 2N, threshold N = 128 (Sec. 2.1 p. 3 describes b = 8 -> 256 states with an intermediate threshold N)"
+      }
+    },
+    {
+      "result_indices": [
+        74,
+        75
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 160,
+        "clauses_scope": "not_reported",
+        "T": 8000,
+        "s": 2.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server (8 GPUs, 2.0 TiB RAM); CPU or GPU not stated"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.1.1, p. 7: clauses = 160, T = 8000, s = 2, seed = 42, 100 epochs, both models identical settings",
+        "statistic": "Sec. 3.1.1: 'Omni TM-AE required 1709 seconds to train for 100 epochs, while FastOmniTMAE completed the same training in 310 seconds'; whether per run or averaged over the 5 repeats not stated",
+        "hardware": "Sec. 3.1, p. 7",
+        "implementation": "one row each for Omni TM-AE and FastOmniTMAE; neither implementation named for this test"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        76
+      ],
+      "statistic": "final_epoch",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 160,
+        "clauses_scope": "not_reported",
+        "T": 8000,
+        "s": 2.0,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server (8 GPUs, 2.0 TiB RAM); CPU or GPU not stated"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.1.1, p. 7",
+        "statistic": "Sec. 3.1.1: Omni TM-AE F1 'decreased to 0.56 in the final epochs'; Fig. 4 dark curve = mean over 5 paired runs, 100 epochs each",
+        "selection_on_test": "value read at the final epochs, not a peak; settings fixed and identical for both models (seed = 42)"
+      },
+      "inferred": {
+        "statistic": "value is the end of the 5-run mean curve, read off the text describing Fig. 4"
+      }
+    },
+    {
+      "result_indices": [
+        77,
+        78,
+        81,
+        82,
+        85,
+        86,
+        89,
+        90,
+        93,
+        94
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "single core/thread: ZCU104 ARM CPU (1 of 4 cores); Zybo ARM CPU (1 of 2 cores); Core i5 PC (1 of 8 threads); Intel Core i9 Ultra workstation at 3.7 GHz (1 of 24 threads); DGX H100 host CPU at 2.0-2.9 GHz (1 of 224 threads)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.4, p. 9: 32 clauses, T = 20000, s = 1.0; 8,000 examples per token, 44 RG65 tokens; training only (example preparation excluded)",
+        "statistic": "Table 2 caption: mean with standard deviation over 5 runs (CPU-row rho printed without SD)",
+        "implementation": "Sec. 3.4: C (CPU), HDL (FPGA), C/OpenCL (Intel GPU), CUDA (NVIDIA GPU), all the authors' own",
+        "selection_on_test": "RG65 chosen as the evaluation task 'based on previous benchmark observations' (dataset choice, not result selection); hyper-parameter selection not described",
+        "hardware": "Table 2; Sec. 3.4 p. 9 (i9 Ultra 3.7 GHz; DGX CPU 2.0-2.9 GHz)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        79,
+        80
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "fpga",
+        "hardware": "Xilinx ZCU104 (Zynq UltraScale+ xczu7ev-ffvc1156-2-e), 12 accelerator engines, 150 MHz PL clock"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.4, p. 9: 32 clauses, T = 20000, s = 1.0; 8,000 examples per token, 44 RG65 tokens; training only (example preparation excluded)",
+        "statistic": "Table 2 caption: mean with standard deviation over 5 runs (CPU-row rho printed without SD)",
+        "implementation": "Sec. 3.4: C (CPU), HDL (FPGA), C/OpenCL (Intel GPU), CUDA (NVIDIA GPU), all the authors' own",
+        "selection_on_test": "RG65 chosen as the evaluation task 'based on previous benchmark observations' (dataset choice, not result selection); hyper-parameter selection not described",
+        "hardware": "Table 2; App. A.4, p. 13"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        83,
+        84
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "fpga",
+        "hardware": "Digilent Zybo (Zynq-7000 xc7z010clg400-1, 1 GB RAM), 2 accelerator engines, 75 MHz PL clock"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.4, p. 9: 32 clauses, T = 20000, s = 1.0; 8,000 examples per token, 44 RG65 tokens; training only (example preparation excluded)",
+        "statistic": "Table 2 caption: mean with standard deviation over 5 runs (CPU-row rho printed without SD)",
+        "implementation": "Sec. 3.4: C (CPU), HDL (FPGA), C/OpenCL (Intel GPU), CUDA (NVIDIA GPU), all the authors' own",
+        "selection_on_test": "RG65 chosen as the evaluation task 'based on previous benchmark observations' (dataset choice, not result selection); hyper-parameter selection not described",
+        "hardware": "Table 2; Sec. 3.4 p. 9 (1 GB RAM); App. A.4, p. 13"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        87,
+        88,
+        91,
+        92
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "OpenCL on Intel integrated GPUs: Core i5 PC Intel Iris Xe Graphics; Core i9 Ultra workstation Intel Graphics"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.4, p. 9: 32 clauses, T = 20000, s = 1.0; 8,000 examples per token, 44 RG65 tokens; training only (example preparation excluded)",
+        "statistic": "Table 2 caption: mean with standard deviation over 5 runs (CPU-row rho printed without SD)",
+        "implementation": "Sec. 3.4: C (CPU), HDL (FPGA), C/OpenCL (Intel GPU), CUDA (NVIDIA GPU), all the authors' own",
+        "selection_on_test": "RG65 chosen as the evaluation task 'based on previous benchmark observations' (dataset choice, not result selection); hyper-parameter selection not described",
+        "hardware": "Table 2"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        95,
+        96
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "NVIDIA H100 80GB HBM3 (DGX H100), CUDA"
+      },
+      "evidence": {
+        "tm_config": "Sec. 3.4, p. 9: 32 clauses, T = 20000, s = 1.0; 8,000 examples per token, 44 RG65 tokens; training only (example preparation excluded)",
+        "statistic": "Table 2 caption: mean with standard deviation over 5 runs (CPU-row rho printed without SD)",
+        "implementation": "Sec. 3.4: C (CPU), HDL (FPGA), C/OpenCL (Intel GPU), CUDA (NVIDIA GPU), all the authors' own",
+        "selection_on_test": "RG65 chosen as the evaluation task 'based on previous benchmark observations' (dataset choice, not result selection); hyper-parameter selection not described",
+        "hardware": "Table 2"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        97,
+        99,
+        101,
+        103,
+        105
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "fpga",
+        "hardware": "Xilinx ZCU104 (xczu7ev-ffvc1156-2-e), 12 engines, 150 MHz PL clock; post-synthesis utilisation"
+      },
+      "evidence": {
+        "tm_config": "Table 3 / App. A.4 p. 13 (design); clause count and T/s from the Table 2 setup, Sec. 3.4",
+        "statistic": "post-synthesis resource report, not a run statistic"
+      },
+      "inferred": {
+        "tm_config": "Table 3 is the accelerator benchmarked in Table 2 (App. A.4 refers back to Sec. 3.4), so the 32-clause, T = 20000, s = 1.0 setup applies"
+      }
+    },
+    {
+      "result_indices": [
+        98,
+        100,
+        102,
+        104,
+        106
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "not_reported",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "fpga",
+        "hardware": "Digilent Zybo (xc7z010clg400-1), 2 engines, 75 MHz PL clock; post-synthesis utilisation"
+      },
+      "evidence": {
+        "tm_config": "Table 3 / App. A.4 p. 13 (design); clause count and T/s from the Table 2 setup, Sec. 3.4",
+        "statistic": "post-synthesis resource report, not a run statistic"
+      },
+      "inferred": {
+        "tm_config": "Table 3 is the accelerator benchmarked in Table 2 (App. A.4 refers back to Sec. 3.4), so the 32-clause, T = 20000, s = 1.0 setup applies"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "datasets[2].notes (same text in datasets[3..6].notes)",
+      "kind": "unsupported",
+      "record": "Spearman rho / Kendall tau between embedding cosine similarity and human scores",
+      "pdf": "similarity measure between embeddings not stated",
+      "location": "Sec. 3.2, p. 7-8; Table 1 caption",
+      "note": "the paper never names cosine similarity"
+    }
+  ],
+  "notes": "Precision/recall/F1 curves for the classification test exist only in Fig. 4 (not extractable); FastOmniTMAE is only said to stay 'above 0.6' F1. IMDb is used only for the update_p dynamics plot (Fig. 2b), no quality result. Table 2 CPU-row RG65 rho 0.680 is printed without SD while the caption says mean over 5 runs; it differs from Table 1 CPU RG65 rho 0.656 because Table 2 uses 8,000 examples per token on a 44-token workload. The paper calls RG65 '44 word pairs' / '44-token workload' (standard RG-65 has 65 pairs). clauses_scope left not_reported: CoTM clauses shared across outputs, yet Omni TM-AE is 'trained separately for each target token'. embedding_dim 40000 is inferred (not printed in this paper). Fig. 2(c) shows clause weights over epochs; Fig. 5 t-SNE of 13 semantic groups (embeddings from the Table 1 setup)."
+}

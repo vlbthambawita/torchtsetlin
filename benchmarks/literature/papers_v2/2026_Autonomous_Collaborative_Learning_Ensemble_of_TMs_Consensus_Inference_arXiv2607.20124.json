@@ -1,0 +1,2023 @@
+{
+  "paper_id": "2026_Autonomous_Collaborative_Learning_Ensemble_of_TMs_Consensus_Inference_arXiv2607.20124",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-14"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "feature_importance",
+    "evidence": {
+      "code_available": "no code link; Sec. VI p. 13 data available on request only",
+      "hyperparameters_complete": "clauses/T/s/epochs per row in Tables IV-VII, IX; no booleanization for (F-)MNIST, no N states, no settings for the 9-agent graph run",
+      "interpretability_evidence": "Figs. 3-4 (p. 8-9): per-agent (per-tile) class votes mapped over the image"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "decentralized",
+        "federated",
+        "privacy"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "vertical partitioning: each 28x28 image split into n^2 equal tiles, one per agent (49 x 4x4 or 16 x 7x7)"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "not described for the image benchmarks"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. IV p. 8 and Sec. IV-A/B p. 8-9",
+        "setting_tags": "Sec. I-III (vertical FL, decentralized, no raw data exchange)",
+        "split": "only 'test accuracy' is stated (Tables IV-VII); no split description"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "decentralized",
+        "federated",
+        "privacy"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "vertical partitioning: each 28x28 image split into n^2 equal tiles, one per agent (49 x 4x4 or 16 x 7x7)"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "not described for the image benchmarks"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "preprocessing": "Sec. IV p. 8 and Sec. IV-A/B p. 8-9",
+        "setting_tags": "Sec. I-III (vertical FL, decentralized, no raw data exchange)",
+        "split": "only 'test accuracy' is stated (Tables IV-VII); no split description"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "synthetic-heterogeneous-sensor-network",
+      "task_family": "classification",
+      "setting_tags": [
+        "decentralized",
+        "federated",
+        "privacy"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 3,
+        "label_type": "multiclass",
+        "class_balance": "balanced (test support 2000 per class)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "per-agent sensor heterogeneity: 1 or 2 sensors, scaling x1.8/1.0 and x0.6/1, offset 1.2, noise std 0.3/0.4/0.8; per-agent bits reshaped into a 4x4 tile, 25 tiles form a 20x20 pattern"
+        }
+      ],
+      "booleanization": {
+        "method": "quantile_thermometer",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "thresholds at approximately evenly spaced indices of the sorted unique values (smallest discarded), approximating quantile binning",
+        "n_boolean_features": 16,
+        "n_literals": 32,
+        "fit_on": "not_reported",
+        "description": "approximate quantile binning with cumulative (x >= t_k) encoding; 8 bits per sensor for a two-sensor agent, 16 bits for a single-sensor agent, i.e. 16 Boolean features per agent"
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "booleanization": "Sec. IV-C2 p. 10; Table IX literals 16*2 = 32 per agent",
+        "synthetic": "Sec. IV-C p. 10 (multivariate Gaussian generator)",
+        "task_detail": "Table VIII / X support rows",
+        "split": "train size and split not stated"
+      },
+      "inferred": {
+        "n_boolean_features": "per agent (16 bits), not the whole input; the centralized TM uses 25*16 = 400 features / 800 literals (Table IX)",
+        "bits_per_feature": "8 or 16 depending on agent, so no single value"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "label": "MNIST 49 agents 4x4, input 16/T3/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "label": "MNIST 49 agents 4x4, input 32/T4/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "label": "MNIST 49 agents 4x4, input 64/T6/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64,
+        "clauses_scope": "per_class",
+        "T": 6,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "label": "MNIST 49 agents 4x4, input 128/T8/s20, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 128,
+        "clauses_scope": "per_class",
+        "T": 8,
+        "s": 20.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "label": "MNIST 49 agents 4x4, input 16/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "label": "MNIST 49 agents 4x4, input 16/T3/s3, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "label": "MNIST 49 agents 4x4, input 16/T3/s3, agg 64/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        7
+      ],
+      "label": "MNIST 49 agents 4x4, input 32/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "label": "MNIST 49 agents 4x4, input 32/T3/s3, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "label": "MNIST 49 agents 4x4, input 32/T3/s3, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table IV (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table IV 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        10
+      ],
+      "label": "MNIST 16 agents 7x7, input 16/T3/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "label": "MNIST 16 agents 7x7, input 32/T4/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        12
+      ],
+      "label": "MNIST 16 agents 7x7, input 64/T6/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64,
+        "clauses_scope": "per_class",
+        "T": 6,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        13
+      ],
+      "label": "MNIST 16 agents 7x7, input 128/T8/s20, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 128,
+        "clauses_scope": "per_class",
+        "T": 8,
+        "s": 20.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        14
+      ],
+      "label": "MNIST 16 agents 7x7, input 16/T4/s5, agg 16/T3/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 16,
+          "clauses_scope": "per_class",
+          "T": 3,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        15
+      ],
+      "label": "MNIST 16 agents 7x7, input 16/T4/s5, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        16
+      ],
+      "label": "MNIST 16 agents 7x7, input 16/T4/s5, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        17
+      ],
+      "label": "MNIST 16 agents 7x7, input 32/T4/s5, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        18
+      ],
+      "label": "MNIST 16 agents 7x7, input 32/T4/s5, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        19
+      ],
+      "label": "MNIST 16 agents 7x7, input 32/T4/s5, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table V (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table V 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        20
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 16/T3/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        21
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 32/T4/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        22
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 64/T6/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64,
+        "clauses_scope": "per_class",
+        "T": 6,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        23
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 128/T8/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 128,
+        "clauses_scope": "per_class",
+        "T": 8,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        24
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 16/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        25
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 16/T3/s3, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        26
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 16/T3/s3, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        27
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 32/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        28
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 32/T3/s3, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        29
+      ],
+      "label": "Fashion-MNIST 49 agents 4x4, input 32/T3/s3, agg 64/T6/s10, 35 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 35,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 49,
+        "member_input_tile": "4x4",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VI (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VI 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        30
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 16/T3/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        31
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 32/T4/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 4,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        32
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 64/T6/s10, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 64,
+        "clauses_scope": "per_class",
+        "T": 6,
+        "s": 10.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        33
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 128/T8/s20, vote sums, 20 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 128,
+        "clauses_scope": "per_class",
+        "T": 8,
+        "s": 20.0,
+        "epochs": 20,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": "vote sums (single-layer, no aggregation TM)",
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        34
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 16/T3/s3, agg 16/T3/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 16,
+          "clauses_scope": "per_class",
+          "T": 3,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        35
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 16/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        36
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 16/T3/s3, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 16,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        37
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 32/T3/s3, agg 32/T4/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 32,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        38
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 32/T3/s3, agg 48/T5/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 48,
+          "clauses_scope": "per_class",
+          "T": 5,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        39
+      ],
+      "label": "Fashion-MNIST 16 agents 7x7, input 32/T3/s3, agg 64/T6/s10, 50 ep",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "7x7",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 16,
+        "member_input_tile": "7x7",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM (inputs: own + 8 neighbours' input-layer clause outputs)",
+          "n_clauses": 64,
+          "clauses_scope": "per_class",
+          "T": 6,
+          "s": 10.0
+        },
+        "topology": "toroidal n x n grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Table VII (p. 9-10) rows; ensemble size and tile in caption; all agents share hyper-parameters Sec. IV p. 8",
+        "statistic": "Table VII 'Epochs' column ('test accuracies obtained after N training epochs', Sec. IV-A/B)",
+        "topology": "Sec. III p. 6"
+      },
+      "inferred": {
+        "clauses_scope": "Sec. III p. 6: 'each agent maintains a pair of TMs for every class', so the printed clause count is per class per agent per layer; Table IX counts TAs 'per class' as clauses x literals for the same kind of agent TMs",
+        "patch_size": "the agent's image tile (each input-layer TM sees only its tile); not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        40
+      ],
+      "label": "classic TM MNIST, quoted from [50]",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200,
+        "clauses_scope": "not_reported",
+        "T": 10,
+        "s": 7.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachine",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Tables IV/V footnote ('Accuracy of a classic TM with ... @100 epochs [50]')",
+        "implementation": "ref. [50] is O.-C. Granmo, 'pytsetlinmachine', github.com/cair/pyTsetlinMachine"
+      },
+      "inferred": {
+        "implementation": "the number is cited to the pyTsetlinMachine repository [50]; not re-run in this paper"
+      }
+    },
+    {
+      "result_indices": [
+        41
+      ],
+      "label": "classic TM Fashion-MNIST, quoted from [50]",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "not_reported",
+        "T": 20,
+        "s": 7.5,
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "pyTsetlinMachine",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Tables VI/VII footnote ('Accuracy of a classic TM with ... @100 epochs [50]')",
+        "implementation": "ref. [50] is O.-C. Granmo, 'pytsetlinmachine', github.com/cair/pyTsetlinMachine"
+      },
+      "inferred": {
+        "implementation": "the number is cited to the pyTsetlinMachine repository [50]; not re-run in this paper"
+      }
+    },
+    {
+      "result_indices": [
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60
+      ],
+      "label": "Table III non-TM literature baselines (from [42])",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "source": "Table III caption 'adapted from [42]', p. 5"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        61,
+        62
+      ],
+      "label": "Table III TM (from [42], the CTM paper)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": "not_reported",
+      "evidence": {
+        "source": "Table III caption 'adapted from [42]', p. 5; no configuration given"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        63
+      ],
+      "label": "ANN single agent (agent 2), sensor network",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. IV-C1 p. 10: Input(2)-Dense(128)-Dense(64)-Output(3); Table VIII"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        64,
+        69,
+        70,
+        71
+      ],
+      "label": "ANN centralized on 25 agents' pooled data",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. IV-C1 p. 10: Input(45)-Dense(256)-Dense(128)-Dense(64)-Output(3); Table VIII"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        65,
+        72,
+        73,
+        74,
+        82
+      ],
+      "label": "Two-layer TM ensemble, 25 agents 5x5 grid, sensor network",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "per_class",
+        "T": 3,
+        "s": 3.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "4x4",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 25,
+        "member_input": "16 Boolean features (32 literals) reshaped to a 4x4 tile",
+        "aggregation": {
+          "layer": "neighbourhood aggregation TM, 9*32*2 = 576 literals",
+          "n_clauses": 16,
+          "clauses_scope": "per_class",
+          "T": 4,
+          "s": 10.0
+        },
+        "topology": "toroidal 5x5 grid, 8-neighbour"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-C2 p. 11 and Table IX (p. 12)",
+        "epochs": "Table IX 'Accuracy @ 50 epochs'",
+        "statistic": "Table IX 'Accuracy @ 50 epochs'"
+      },
+      "inferred": {
+        "clauses_scope": "Table IX gives 'System-wide # TAs per class' = 25 x (32x32 + 16x576), i.e. the clause counts are per class",
+        "statistic": "Table VIII F1 rows assumed to be the same 50-epoch model as the Table IX accuracy (identical 0.93 accuracy)",
+        "patch_size": "the agent's 4x4 tile of its own 16 bits; not a convolution window"
+      }
+    },
+    {
+      "result_indices": [
+        66,
+        81
+      ],
+      "label": "Classic centralized TM baseline, sensor network",
+      "statistic": "final_epoch",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200,
+        "clauses_scope": "per_class",
+        "T": 10,
+        "s": 5.0,
+        "epochs": 50,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "n_literals": 800
+      },
+      "evidence": {
+        "tm_config": "Table IX (p. 12)",
+        "statistic": "Table IX 'Accuracy @ 50 epochs'"
+      },
+      "inferred": {
+        "clauses_scope": "Table IX: 'System-wide # TAs per class' 160,000 = 200 clauses x 800 literals"
+      }
+    },
+    {
+      "result_indices": [
+        67,
+        75,
+        76,
+        77
+      ],
+      "label": "ANN centralized on 9 agents' pooled data (graph topology)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "source": "Table X (p. 12); architecture of this ANN not given"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        68,
+        78,
+        79,
+        80
+      ],
+      "label": "Two-layer TM ensemble, 9 agents general graph (Fig. 8)",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": null,
+        "ensemble_size": 9,
+        "topology": "general connected graph, agents with 1, 3 or 4 neighbours (Fig. 8); aggregation-layer input sizes differ per agent"
+      },
+      "evidence": {
+        "ensemble_size": "Table X caption and Fig. 8 (p. 12)",
+        "topology": "Sec. IV-C2b p. 12"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Ensemble of n^2 agents (49 x 4x4 tiles or 16 x 7x7 on MNIST/F-MNIST; 25 or 9 on the sensor network), each with a per-class input-layer TM and optionally a neighbourhood-aggregation TM; all agents share hyper-parameters. tm_config top-level n_clauses/T/s are the per-agent input-layer TM; the aggregation-layer TM is under tm_config.aggregation; ensemble_size = number of agents. Text says Tables IV-VII are 'after 50 training epochs' but the tables print 20 epochs for vote-sum rows and 35 for the last Table VI row; the table column was used. Table VII caption says 2.05% though the tiles are 7x7 (6.25%). Table IV footnote prints s=7,5. No run count, seeds, validation set or train/test split sizes for any experiment; selection_on_test is not_reported because every hyper-parameter row is reported (no best-of selection), but no validation protocol is stated either. Table VIII single-agent ANN class-2 F1 is printed '60' (garbled). Fig. 7 (accuracy vs number of agents) values exist only in the figure."
+}

@@ -1,0 +1,132 @@
+{
+  "paper_id": "2024_The_Probabilistic_Tsetlin_Machine_Uncertainty_Quantification_arXiv2410.17851",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-12"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "no",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link or repository mentioned anywhere in the paper",
+      "seeds_stated": "no seeds or number of runs mentioned (Sec. 5)",
+      "hyperparameters_complete": "only m = 4 clauses for noisy-XOR (Sec. 5.2, p. 7); no clauses, T, s, N, epochs for the synthetic or Iris experiments; baseline settings not given",
+      "interpretability_evidence": "Figs. 1-2, p. 8: steady-state probabilities of each TA in each of the 4 clauses, discussed literal by literal in Sec. 5.2"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "noisy-xor",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty", "interpretability"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 2,
+        "n_literals": 4,
+        "fit_on": null,
+        "description": "Variant of Granmo (2018) noisy-XOR with the redundant features removed (x1, x2 only) and 30% random inversion of the XOR outputs; TA-1..TA-4 handle x1, not x1, x2, not x2."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "booleanization": "Sec. 5.2, p. 7",
+        "synthetic": "Sec. 5.2, p. 7",
+        "split": "no train/test sizes or split given; only qualitative SSP plots (Figs. 1-2)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "synthetic-2d-binary",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {"n_classes": 2, "label_type": "binary", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Two continuous features X1, X2; the paper does not say how they are booleanized for the PTM."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "synthetic": "Sec. 5.3, p. 7: 1000 labeled training examples, 2000 additional unlabeled test points randomly distributed over a larger range than the training data",
+        "split": "Sec. 5.3, p. 7: separately generated unlabeled test points, no conventional split",
+        "setting_tags": "Sec. 5.3 and Fig. 3: predictive mean, entropy, std from K = 100 prediction samples"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "iris",
+      "task_family": "classification",
+      "setting_tags": ["uncertainty"],
+      "label_type": "multiclass",
+      "n_classes": 3,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "science",
+      "task_detail": {"n_classes": 3, "label_type": "multiclass", "class_balance": "not_reported"},
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described in the paper."
+      },
+      "split": {"protocol": "not_reported", "k_folds": null, "validation_used_for": "not_reported"},
+      "evidence": {
+        "split": "Sec. 5.4, p. 11: 80% train / 20% test, not said to be random",
+        "setting_tags": "Sec. 5.4, Fig. 5, Table 6 (predictive entropy, mutual information, ECE)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported", "clauses_scope": "not_reported", "T": "not_reported", "s": "not_reported",
+        "epochs": "not_reported", "n_states": "not_reported", "state_bits": "not_reported",
+        "max_included_literals": "not_reported", "patch_size": null, "weighted": "not_reported",
+        "implementation": "not_reported", "hardware": "not_reported"
+      },
+      "evidence": {"tm_config": "Sec. 5.4 / Table 6, p. 11: no PTM hyper-parameters given for Iris", "statistic": "number of runs not stated"},
+      "inferred": {}
+    },
+    {
+      "result_indices": [1, 2, 3],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {"tm_config": "Table 6, p. 11: GP, MLP-MCd, RF baselines (Sec. 5.1); their settings are not given"},
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Only quantitative result is Table 6 (ECE on Iris test set, 20%). Noisy-XOR (Figs. 1-2) and the synthetic 2-D data (Figs. 3-4) are qualitative only. The only TM hyper-parameter printed is m = 4 clauses for noisy-XOR (total, with odd/even polarity; Sec. 3/5.2), which has no result row. The record's extraction_notes mention '8 states (figure axes)': Figs. 1-2 have State tick labels 0..8, which is not a stated N, so n_states is left unreported. ECE number of bins M is not given. Iris 'domain' set to science (botanical measurements); ECE 0.0100 for MLP-MCd matches record value 0.01."
+}

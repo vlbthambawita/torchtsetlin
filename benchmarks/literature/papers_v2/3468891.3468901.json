@@ -1,0 +1,319 @@
+{
+  "paper_id": "3468891.3468901",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-9"
+  },
+  "paper": {
+    "primary_task_family": "regression",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code or repository link anywhere in the paper (pp. 1-9)",
+      "seeds_stated": "no seeds or repetitions mentioned",
+      "hyperparameters_complete": "clauses (3/7/15 noise-free, 1000 noisy), filter sizes and stride given; s, K, epochs, TA states, noise level, dataset sizes not given; T and s deferred to [16]",
+      "interpretability_evidence": "Tables 2, 3, 5 pp. 6-8: learned patterns and how many clauses represent each pattern"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "synthetic-weighted-mask-regression-3x3",
+      "task_family": "regression",
+      "setting_tags": [
+        "interpretability",
+        "robustness"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "image",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "100 x sum of image pixels times weight-mask weights (2^k for the important pixels); unitless",
+        "target_range": "0-300 (2 important pixels), 0-700 (3), 0-1500 (4)",
+        "output_dim": 1,
+        "subtype": "point",
+        "horizon": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 9,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "3x3x1 images of uniform random binary pixels (already Boolean); each patch is augmented with its location encoded by thresholds on the X and Y position (Table 4)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "synthetic": "Sec. 4.1, p. 5",
+        "booleanization": "Sec. 4.1 p. 5 (random binary pixels); Sec. 3.1 p. 4 and Table 4 p. 7 (location thresholds)",
+        "task_detail": "Sec. 4.1 p. 5 and Fig. 3 (target = 100 x sum of weighted pixels); Table 5 p. 8 (output values per #important pixels)",
+        "split": "train and test MAEs reported (Tables 6, 7) but split sizes and protocol not stated; noise only in training data (p. 7)",
+        "setting_tags": "noisy training data (Sec. 4.1, p. 5); pattern analysis Tables 2, 5",
+        "n_boolean_features": "image size, Sec. 4.1 p. 5"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "synthetic-weighted-mask-regression-4x4",
+      "task_family": "regression",
+      "setting_tags": [
+        "interpretability",
+        "robustness"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "image",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "100 x sum of image pixels times weight-mask weights (2^k for the important pixels); unitless",
+        "target_range": "0-300 (2 important pixels), 0-700 (3), 0-1500 (4)",
+        "output_dim": 1,
+        "subtype": "point",
+        "horizon": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 16,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "4x4x1 images of uniform random binary pixels (already Boolean); each patch is augmented with its location encoded by thresholds on the X and Y position (Table 4)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "synthetic": "Sec. 4.1, p. 5",
+        "booleanization": "Sec. 4.1 p. 5 (random binary pixels); Sec. 3.1 p. 4 and Table 4 p. 7 (location thresholds)",
+        "task_detail": "Sec. 4.1 p. 5 and Fig. 3 (target = 100 x sum of weighted pixels); Table 5 p. 8 (output values per #important pixels)",
+        "split": "train and test MAEs reported (Tables 6, 7) but split sizes and protocol not stated; noise only in training data (p. 7)",
+        "setting_tags": "noisy training data (Sec. 4.1, p. 5); pattern analysis Tables 2, 5",
+        "n_boolean_features": "image size, Sec. 4.1 p. 5"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "synthetic-weighted-mask-regression-5x5",
+      "task_family": "regression",
+      "setting_tags": [
+        "interpretability",
+        "robustness"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "image",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "target": "100 x sum of image pixels times weight-mask weights (2^k for the important pixels); unitless",
+        "target_range": "0-300 (2 important pixels), 0-700 (3), 0-1500 (4)",
+        "output_dim": 1,
+        "subtype": "point",
+        "horizon": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "native_binary",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 25,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "5x5x1 images of uniform random binary pixels (already Boolean); each patch is augmented with its location encoded by thresholds on the X and Y position (Table 4)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "synthetic": "Sec. 4.1, p. 5",
+        "booleanization": "Sec. 4.1 p. 5 (random binary pixels); Sec. 3.1 p. 4 and Table 4 p. 7 (location thresholds)",
+        "task_detail": "Sec. 4.1 p. 5 and Fig. 3 (target = 100 x sum of weighted pixels); Table 5 p. 8 (output values per #important pixels)",
+        "split": "train and test MAEs reported (Tables 6, 7) but split sizes and protocol not stated; noise only in training data (p. 7)",
+        "setting_tags": "noisy training data (Sec. 4.1, p. 5); pattern analysis Tables 2, 5",
+        "n_boolean_features": "image size, Sec. 4.1 p. 5"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "per_output",
+        "T": 1000,
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config.n_clauses": "Sec. 4.2 p. 7: 'C-RTM is operated with 1000 clauses on all 36 noisy datasets'",
+        "tm_config.T": "Sec. 4.2 p. 7: 'initialized with a large number of clauses (= T)'",
+        "tm_config.weighted": "Eq. 5 p. 4: output is the plain clause sum / T x y_max",
+        "statistic": "Tables 6, 7 captions: 'Average ... MAEs', averaged over the 4 masks per cell"
+      },
+      "inferred": {
+        "tm_config.T": "the noisy-data strategy sets clauses = T, and 1000 clauses are used, so T = 1000",
+        "tm_config.clauses_scope": "single regression output without polarity, so the clause count is the whole machine",
+        "clauses_scope": "single regression output, so the clause count is per output (review 2026-11-06, consistent with other regression sidecars)"
+      }
+    },
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. 4.2 p. 7: CNN1 containing 50 filters",
+        "statistic": "Tables 6, 7: average over 4 masks"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "model": "Sec. 4.2 p. 7: CNN2 containing 1000 filters",
+        "statistic": "Tables 6, 7: average over 4 masks"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        54,
+        55,
+        56,
+        57,
+        58,
+        59
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "per_output",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": "not_reported",
+        "weighted": false,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config.n_clauses": "Sec. 4.2 p. 5: 3 / 7 / 15 clauses for 2 / 3 / 4 important pixels (varies within each row, so not a single value)",
+        "tm_config.T": "Sec. 4.2 p. 5: 'optimum T and s values found in [16]' (values not printed); p. 7: T equal to the number of clauses",
+        "tm_config.patch_size": "p. 7: 1x2 / 1x3 / 2x2 filters for 2 / 3 / 4 important pixels, stride d = 1 (varies within each row)",
+        "value": "Sec. 4.2 p. 5: 'zero MAE for both training and testing on noise-free datasets'"
+      },
+      "inferred": {
+        "clauses_scope": "single regression output, so the clause count is per output (review 2026-11-06, consistent with other regression sidecars)"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[18..26,45..53].config",
+      "kind": "contradicted",
+      "record": "1000 clauses, T and s from RTM paper [16]",
+      "pdf": "for the noisy datasets clauses = T, i.e. T = 1000; only s (and the noise-free T) come from [16]",
+      "location": "Sec. 4.2, p. 5 and p. 7",
+      "note": "The paper says the [16] T and s are used, but in the noise-free context; for the noisy runs it says the C-RTM is initialized with a large number of clauses (= T) and run with 1000 clauses. Borderline; reviewer may prefer to keep the record."
+    }
+  ],
+  "notes": "Only synthetic data: per image size 12 masks (4 each for 2/3/4 important pixels), noise-free and noisy-training variants (72 datasets). Dataset sizes, train/test split, noise type/level, s, K (feedback scaling constant), epochs and CNN architectures beyond filter count are not stated. Tables 6/7 values are averages over the 4 masks per cell, not over repeated runs (statistic 'mean', n_runs not_reported). Fig. 4 (MAE vs. epochs) is not visible as text. Noise-free rows (54-59) cover all three #important-pixel settings at once with differing clause counts (3/7/15) and filter sizes (1x2/1x3/2x2), so these are not_reported in that single group. Filter size for the noisy 1000-clause runs is not stated. Record values in Tables 6 and 7 all match the PDF."
+}

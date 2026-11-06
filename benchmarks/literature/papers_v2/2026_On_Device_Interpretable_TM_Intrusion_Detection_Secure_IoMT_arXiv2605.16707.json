@@ -1,0 +1,207 @@
+{
+  "paper_id": "2026_On_Device_Interpretable_TM_Intrusion_Detection_Secure_IoMT_arXiv2605.16707",
+  "extracted": {"by": "agent", "date": "2026-11-06", "pages_read": "1-9"},
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": true,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "No code link anywhere in the paper; only the Kaggle dataset link (p. 4 footnote 1)",
+      "seeds_stated": "Sec. VI-B and VI-C: stratified 80/20 split with fixed random seed 42; 'random seed of 42 used throughout' (Sec. VI-C.2)",
+      "hyperparameters_complete": "Table III gives binarizer, clauses, T, s, weighted, epochs (and for STM literal sampling, max included literals, absorbing); number of TA states and clause scope are not printed, and how the 'empirically determined' settings were chosen is not said",
+      "interpretability_evidence": "Sec. VI-C.3, Figs. 6-11: feature-level contribution scores, class-wise vote sums and a per-class clause activation heatmap for single test samples; no rules printed"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "medsec-25",
+      "task_family": "classification",
+      "setting_tags": ["interpretability", "hardware", "imbalanced"],
+      "label_type": "multiclass",
+      "n_classes": 5,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "security",
+      "task_detail": {
+        "n_classes": 5,
+        "label_type": "multiclass",
+        "class_balance": "imbalanced, majority Reconnaissance 401,683 of 554,534 (72.4%); TM training set SMOTE-balanced to 321,307 per class",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {"step": "other", "params": "348 duplicate samples removed (554,534 -> 554,186); labels encoded 0=Benign, 1-4 = Reconnaissance, Initial access, Lateral movement, Exfiltration (attack-phase granularity, 5 classes, not binary benign/malicious)"},
+        {"step": "feature_selection", "params": "drop identifier columns Flow ID, Src IP, Dst IP, Timestamp (and Label) to avoid identifier bias / leakage; 79 CICFlowMeter flow features remain (Src Port, Dst Port, Protocol kept; NN input layer = 79). No statistical feature selection"},
+        {"step": "resampling", "params": "SMOTE on the training set only, for the TM/STM (Fig. 4: each class oversampled to 321,307); ML baselines use class_weight=balanced instead"},
+        {"step": "normalize", "params": "min-max scaling fitted on the training data, applied to the test data"}
+      ],
+      "booleanization": {
+        "method": "one_hot",
+        "bits_per_feature": "not_reported",
+        "n_bins": 40,
+        "threshold": "quantile bin edges (KBinsDiscretizer strategy=quantile)",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "train",
+        "description": "Min-max-normalized features are discretized with scikit-learn KBinsDiscretizer, strategy=quantile, encode=onehot-dense; n_bins=40 for the TM and 25 for the Sparse TM (Table III)."
+      },
+      "split": {"protocol": "k_fold_cv", "k_folds": 5, "validation_used_for": "not_reported"},
+      "evidence": {
+        "n_classes": "Table II; Sec. VI-C.1",
+        "class_balance": "Table II counts; Figs. 3-4",
+        "preprocessing": "Sec. VI-C.1 (duplicates, dropped columns, SMOTE vs class weights); Sec. VI-C.2 (min-max fitted on training data)",
+        "booleanization": "Table III; Sec. VI-C.2",
+        "split": "Sec. VI-B: stratified random 80/20 train/test split (seed 42); training data SMOTE-balanced, normalized and binarized, then five-fold stratified CV; 'metrics are averaged across the validation folds, with empirically fixed hyperparameter settings'"
+      },
+      "inferred": {
+        "fit_on": "Sec. VI-B says the training data are 'balanced using SMOTE, normalized, and binarized' before CV, and Sec. IV loads the stored binarizer with the test file on the device; the binarizer fit itself is not stated in so many words",
+        "n_bins": "40 is the TM value; the STM uses 25 (Table III)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [0, 1, 2, 3],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 30, "s": 15, "epochs": 45,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "tmu",
+        "hardware": "MacBook, Apple M4, 16 GB RAM (host; Python 3.13.6)"
+      },
+      "evidence": {
+        "tm_config": "Table III (TM row)",
+        "statistic": "Table IV 'mean +- std'; Sec. VI-B 'averaged across the validation folds' of five-fold stratified CV",
+        "hardware": "Sec. VI-A",
+        "clauses_scope": "Fig. 8: clause activation heatmap has one row per class with clause index 0-1900+, i.e. 2000 clauses per class",
+        "selection_on_test": "Sec. VI-B/VI-C.2: hyperparameters 'empirically determined' / 'empirically fixed'; how is not said"
+      },
+      "inferred": {
+        "clauses_scope": "Fig. 8 axis shows ~2000 clause indices for each of the 5 classes",
+        "implementation": "TMU 0.6.5 is named only for the Raspberry Pi runs (Sec. VI-A); the same trained model is loaded on the device (Sec. IV), so training used TMU"
+      }
+    },
+    {
+      "result_indices": [4, 5, 6, 7],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1500, "clauses_scope": "not_reported", "T": 30, "s": 20, "epochs": 50,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": 16,
+        "patch_size": null, "weighted": false,
+        "implementation": "tmu",
+        "hardware": "MacBook, Apple M4, 16 GB RAM (host; Python 3.13.6)"
+      },
+      "evidence": {
+        "tm_config": "Table III (STM row): KBinsDiscretizer n_bins=25 quantile one-hot, clauses 1500, T=30, s=20, weighted=False, literal sampling=1, max included literals=16, absorbing=0, 50 epochs",
+        "statistic": "Table IV mean +- std over 5 validation folds",
+        "hardware": "Sec. VI-A"
+      },
+      "inferred": {
+        "implementation": "TMU 0.6.5 named for the on-device runs (Sec. VI-A); same models deployed"
+      }
+    },
+    {
+      "result_indices": [40, 41, 42, 43],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 30, "s": 15, "epochs": 45,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "tmu",
+        "hardware": "Raspberry Pi 5 Model B (quad-core ARM Cortex-A76 @ 2.4 GHz, up to 8 GB SDRAM), Python 3.11.9, TMU 0.6.5; CPU/memory via psutil"
+      },
+      "evidence": {
+        "tm_config": "Table III (TM row)",
+        "hardware": "Sec. III-C; Sec. VI-A; Sec. VI-D",
+        "values": "Table VI"
+      },
+      "inferred": {
+        "clauses_scope": "Fig. 8 shows 2000 clause indices per class"
+      }
+    },
+    {
+      "result_indices": [44, 45, 46, 47],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1500, "clauses_scope": "not_reported", "T": 30, "s": 20, "epochs": 50,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": 16,
+        "patch_size": null, "weighted": false,
+        "implementation": "tmu",
+        "hardware": "Raspberry Pi 5 Model B (quad-core ARM Cortex-A76 @ 2.4 GHz, up to 8 GB SDRAM), Python 3.11.9, TMU 0.6.5; CPU/memory via psutil"
+      },
+      "evidence": {
+        "tm_config": "Table III (STM row)",
+        "hardware": "Sec. III-C; Sec. VI-A; Sec. VI-D",
+        "values": "Table VI"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 2000, "clauses_scope": "per_class", "T": 30, "s": 15, "epochs": 45,
+        "n_states": "not_reported", "state_bits": "not_reported", "max_included_literals": null,
+        "patch_size": null, "weighted": false,
+        "implementation": "tmu",
+        "hardware": null
+      },
+      "evidence": {
+        "tm_config": "Table III (TM row)",
+        "values": "Table V (class-wise TM performance, whole percents); Fig. 5 confusion matrix is consistent (recall 0.998/0.975/0.995/0.975/0.948)"
+      },
+      "inferred": {
+        "clauses_scope": "Fig. 8 shows 2000 clause indices per class"
+      }
+    },
+    {
+      "result_indices": [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table IV mean +- std over five-fold stratified CV (Sec. VI-B)",
+        "config": "Table III; ML baselines trained on min-max-normalized non-binarized features with class_weight=balanced, no SMOTE (Sec. VI-C.1/2); host MacBook Apple M4"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "values": "Table VI, Raspberry Pi 5 (Sec. VI-D)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [95, 96, 97],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "values": "Table VII, 'Paper [27] ML Classifier' (Almobaideen et al., MedSec-25 dataset paper); its protocol is not described"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "Label granularity: 5-class attack-phase classification (Benign, Reconnaissance, Initial access, Lateral movement, Exfiltration); no binary benign/malicious experiment. Table IV (TM, STM, baselines) is the mean over the 5 validation folds of stratified CV on the 80% training split, not the held-out 20% test set. SMOTE is applied to the whole training split before the CV for the TM/STM only, so the TM/STM validation folds contain synthetic minority samples and are class-balanced, while the ML baselines (class weights, no SMOTE) are validated on imbalanced folds: Table IV TM vs baseline numbers are not on the same validation distribution, and TM CV scores may be optimistic. Tables V/VI do not state their split; Sec. IV says the 'test file' is loaded onto the Raspberry Pi. Host inference times (Table IV) are on an Apple M4 MacBook; Table VI on a Raspberry Pi 5. The text also mentions 'Keras framework built on TensorFlow 2.20.0' for all algorithms (Sec. VI-A); only TMU 0.6.5 is named as TM library (for the Pi). The STM clause scope is not determinable (no per-class figure for STM). Number of Boolean features is not given: 79 features x 40 bins would be 3160 but quantile KBinsDiscretizer may drop degenerate bins, so it is not recorded. Interpretability evidence also includes feature-level contribution scores (Fig. 6), i.e. feature_importance. NN baseline is printed with 'output layer=1 neurons' and softmax (Table III), presumably a typo."
+}

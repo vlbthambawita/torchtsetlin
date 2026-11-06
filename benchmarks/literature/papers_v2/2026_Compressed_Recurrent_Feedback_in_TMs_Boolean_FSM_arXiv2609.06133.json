@@ -1,0 +1,413 @@
+{
+  "paper_id": "2026_Compressed_Recurrent_Feedback_in_TMs_Boolean_FSM_arXiv2609.06133",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": true,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "Sec. VIII p. 6 (github.com/Ankitkumar1062/LBP2026 Ankit-Utkarsh)",
+      "seeds_stated": "Sec. IV p. 4 and Table I (circuit seeds 42, 43, 44; fixed split seed); Sec. V-A (three training seeds, values not printed)",
+      "hyperparameters_complete": "Sec. V-A gives clauses, T, s, weighted, epochs, ensemble size, fold width, EMA alphas; number of TA states not stated",
+      "interpretability_evidence": "Sec. V-A p. 5 and Table VI: nearest-centroid probe of feedback (clause-activation) signatures against hidden FSM state; no rules shown"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "boolean-fsm-6bit",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "sequence",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "near balanced to mildly imbalanced; majority-label test accuracy 50.30-61.74% per circuit",
+        "discretized_from": null,
+        "sequence_task": "per-time-step (many-to-many) binary labelling: y_t = parity of the updated hidden FSM state s_{t+1}; one label per time step, accuracy over all test time steps",
+        "sequence_length": 25,
+        "hidden_state": "6 hidden bits (at most 64 states); each next-state bit is a seeded three-gate Boolean circuit of state bits and the 4 input bits; 3 circuit seeds (42, 43, 44)",
+        "input_alphabet": "16 symbols (0..15), sampled independently and uniformly",
+        "per_step_booleanization": "each symbol -> 42 bits; per-step input d_t = [e(x_{t-1}), e(x_t), one-hot previous prediction] = 86 bits, plus 96 recurrent bits (2 EMA timescales x 48 XOR-fold bins) = 182 bits; raw variant 960 recurrent bits = 1046 bits"
+      },
+      "preprocessing": [
+        {
+          "step": "windowing",
+          "params": "per-step input holds current and previous symbol plus one-hot previous prediction (zero-initialised at sequence start); state reset per sequence"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": 42,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 182,
+        "n_literals": 364,
+        "fit_on": null,
+        "description": "Multi-view symbol encoding: 4 binary digits + 16 thermometer bits + 16 one-hot bits + 6 pairwise XOR bits = 42 bits per symbol; two symbols and a one-hot previous prediction give 86 observed bits, concatenated with a 96-bit recurrent state (XOR-folded clause activations, two EMAs thresholded at 0.5)"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "task_detail": "Sec. IV p. 3-4, Eq. (7)-(8); Fig. 2 caption",
+        "sequence_length": "Sec. IV p. 4 ('Sequence lengths are 25 and 30 for the 6- and 8-bit families')",
+        "class_balance": "Table I (majority baseline per circuit)",
+        "booleanization": "Sec. III-A p. 2, Eq. (2); Sec. III-B Eq. (6), p. 3",
+        "split": "Sec. IV p. 4 (1000/300/500 sequences per circuit, fixed split seed -> separate dataset seeds); Sec. VIII (split arrays exported)",
+        "split.validation_used_for": "Sec. V-A p. 4 ('validation data are exported but do not select an RTM checkpoint'); neural baselines use validation for checkpoint selection (p. 5)"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x 182 input bits (standard TM literals); not printed",
+        "booleanization.n_boolean_features": "182 = 86 + 96 for the proposed compressed model (Eq. 6); raw-feedback variant uses 1046, no-feedback uses fewer",
+        "split.protocol": "benchmark-defined partitions generated from separate dataset seeds and exported with the artifact; treated as the benchmark's own official split",
+        "booleanization.fit_on": "fixed symbol encoding, nothing fitted to data (null = not applicable)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "boolean-fsm-8bit",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "sequence",
+      "synthetic": true,
+      "domain": "generic",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "near balanced; majority-label test accuracy 51.51-55.17% per circuit",
+        "discretized_from": null,
+        "sequence_task": "per-time-step (many-to-many) binary labelling: y_t = parity of the updated hidden FSM state s_{t+1}; one label per time step, accuracy over all test time steps",
+        "sequence_length": 30,
+        "hidden_state": "8 hidden bits (at most 256 states); each next-state bit is a seeded three-gate Boolean circuit of state bits and the 4 input bits; 3 circuit seeds (42, 43, 44)",
+        "input_alphabet": "16 symbols (0..15), sampled independently and uniformly",
+        "per_step_booleanization": "each symbol -> 42 bits; per-step input d_t = [e(x_{t-1}), e(x_t), one-hot previous prediction] = 86 bits, plus 96 recurrent bits (2 EMA timescales x 48 XOR-fold bins) = 182 bits; raw variant 960 recurrent bits = 1046 bits"
+      },
+      "preprocessing": [
+        {
+          "step": "windowing",
+          "params": "per-step input holds current and previous symbol plus one-hot previous prediction (zero-initialised at sequence start); state reset per sequence"
+        }
+      ],
+      "booleanization": {
+        "method": "other",
+        "bits_per_feature": 42,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 182,
+        "n_literals": 364,
+        "fit_on": null,
+        "description": "Multi-view symbol encoding: 4 binary digits + 16 thermometer bits + 16 one-hot bits + 6 pairwise XOR bits = 42 bits per symbol; two symbols and a one-hot previous prediction give 86 observed bits, concatenated with a 96-bit recurrent state (XOR-folded clause activations, two EMAs thresholded at 0.5)"
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "evidence": {
+        "task_detail": "Sec. IV p. 3-4, Eq. (7)-(8); Fig. 2 caption",
+        "sequence_length": "Sec. IV p. 4 ('Sequence lengths are 25 and 30 for the 6- and 8-bit families')",
+        "class_balance": "Table I (majority baseline per circuit)",
+        "booleanization": "Sec. III-A p. 2, Eq. (2); Sec. III-B Eq. (6), p. 3",
+        "split": "Sec. IV p. 4 (1000/300/500 sequences per circuit, fixed split seed -> separate dataset seeds); Sec. VIII (split arrays exported)",
+        "split.validation_used_for": "Sec. V-A p. 4 ('validation data are exported but do not select an RTM checkpoint'); neural baselines use validation for checkpoint selection (p. 5)"
+      },
+      "inferred": {
+        "booleanization.n_literals": "2 x 182 input bits (standard TM literals); not printed",
+        "booleanization.n_boolean_features": "182 = 86 + 96 for the proposed compressed model (Eq. 6); raw-feedback variant uses 1046, no-feedback uses fewer",
+        "split.protocol": "benchmark-defined partitions generated from separate dataset seeds and exported with the artifact; treated as the benchmark's own official split",
+        "booleanization.fit_on": "fixed symbol encoding, nothing fitted to data (null = not applicable)"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "statistic": "mean",
+      "n_runs": 9,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 240,
+        "clauses_scope": "per_class",
+        "T": 120,
+        "s": 6.0,
+        "epochs": 8,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "one ARM64 macOS host (Python 3.9, NumPy 1.26.4, TMU 0.7.1, PyTorch 2.8.0)"
+      },
+      "evidence": {
+        "tm_config": "Sec. III p. 2 ('240 clauses for each of two classes'); Sec. V-A p. 4 (240 clauses per class, T=120, s=6.0, weighted clauses, eight training passes)",
+        "implementation": "Sec. V-A p. 4 software list includes TMU 0.7.1",
+        "statistic": "Table IV caption ('mean accuracy +- SD over nine runs'); Sec. V-A (3 circuit seeds x 3 training seeds)",
+        "variants": "Sec. V-A p. 5: no clause feedback, one ensemble member, 32-bit fold, no thermometer, one EMA alpha=0.5, instantaneous binary feedback, uncompressed 480-bit feedback; each changes one part of Fig. 1"
+      },
+      "inferred": {
+        "tm_config.implementation": "TMU 0.7.1 is listed in the software environment; the paper does not explicitly say the RTM is built on TMU",
+        "selection_on_test": "fixed hyper-parameters justified a priori (Sec. V-A) and a fixed 8-epoch schedule with no checkpoint selection; no tuning on test described",
+        "tm_config_ablations": "ablation rows change only the named component; base TM settings (clauses, T, s, epochs) are stated as common to all RTM variants ('Every RTM variant follows the same eight-epoch schedule')"
+      }
+    },
+    {
+      "result_indices": [
+        26,
+        33,
+        40,
+        47,
+        54,
+        61
+      ],
+      "statistic": "mean",
+      "n_runs": 3,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 240,
+        "clauses_scope": "per_class",
+        "T": 120,
+        "s": 6.0,
+        "epochs": 8,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "one ARM64 macOS host (Python 3.9, NumPy 1.26.4, TMU 0.7.1, PyTorch 2.8.0)"
+      },
+      "evidence": {
+        "tm_config": "Sec. III p. 2 ('240 clauses for each of two classes'); Sec. V-A p. 4 (240 clauses per class, T=120, s=6.0, weighted clauses, eight training passes)",
+        "implementation": "Sec. V-A p. 4 software list includes TMU 0.7.1",
+        "statistic": "Table III caption ('mean over three training seeds')"
+      },
+      "inferred": {
+        "tm_config.implementation": "TMU 0.7.1 is listed in the software environment; the paper does not explicitly say the RTM is built on TMU",
+        "selection_on_test": "fixed hyper-parameters justified a priori (Sec. V-A) and a fixed 8-epoch schedule with no checkpoint selection; no tuning on test described"
+      }
+    },
+    {
+      "result_indices": [
+        16,
+        17,
+        18,
+        19
+      ],
+      "statistic": "mean",
+      "n_runs": 9,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 240,
+        "clauses_scope": "per_class",
+        "T": 120,
+        "s": 6.0,
+        "epochs": 8,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "one ARM64 macOS host (Python 3.9, NumPy 1.26.4, TMU 0.7.1, PyTorch 2.8.0)"
+      },
+      "evidence": {
+        "tm_config": "Sec. III p. 2 ('240 clauses for each of two classes'); Sec. V-A p. 4 (240 clauses per class, T=120, s=6.0, weighted clauses, eight training passes)",
+        "implementation": "Sec. V-A p. 4 software list includes TMU 0.7.1",
+        "statistic": "Table V ('Mean run time (min)'); Sec. VI-C",
+        "hardware": "Sec. V-A p. 4 (one ARM64 macOS host; wall time includes training and test evaluation, all five members; not a hardware benchmark)"
+      },
+      "inferred": {
+        "tm_config.implementation": "TMU 0.7.1 is listed in the software environment; the paper does not explicitly say the RTM is built on TMU",
+        "selection_on_test": "fixed hyper-parameters justified a priori (Sec. V-A) and a fixed 8-epoch schedule with no checkpoint selection; no tuning on test described",
+        "n_runs": "mean over the nine circuit/training-seed runs per family and variant (Table II design); the paper does not say 9 for the timing explicitly"
+      }
+    },
+    {
+      "result_indices": [
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69
+      ],
+      "statistic": "mean",
+      "n_runs": 9,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 240,
+        "clauses_scope": "per_class",
+        "T": 120,
+        "s": 6.0,
+        "epochs": 8,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "tmu",
+        "hardware": "one ARM64 macOS host (Python 3.9, NumPy 1.26.4, TMU 0.7.1, PyTorch 2.8.0)"
+      },
+      "evidence": {
+        "tm_config": "Sec. III p. 2 ('240 clauses for each of two classes'); Sec. V-A p. 4 (240 clauses per class, T=120, s=6.0, weighted clauses, eight training passes)",
+        "implementation": "Sec. V-A p. 4 software list includes TMU 0.7.1",
+        "statistic": "Table VI caption ('mean +- SD ... nine runs')",
+        "probe": "Sec. V-A p. 5: nearest-centroid probe, 70%/30% random split of the first member's test time points"
+      },
+      "inferred": {
+        "tm_config.implementation": "TMU 0.7.1 is listed in the software environment; the paper does not explicitly say the RTM is built on TMU",
+        "selection_on_test": "fixed hyper-parameters justified a priori (Sec. V-A) and a fixed 8-epoch schedule with no checkpoint selection; no tuning on test described"
+      }
+    },
+    {
+      "result_indices": [
+        21,
+        22,
+        23,
+        24,
+        25,
+        28,
+        29,
+        30,
+        31,
+        32,
+        35,
+        36,
+        37,
+        38,
+        39,
+        42,
+        43,
+        44,
+        45,
+        46,
+        49,
+        50,
+        51,
+        52,
+        53,
+        56,
+        57,
+        58,
+        59,
+        60
+      ],
+      "statistic": "mean",
+      "n_runs": 3,
+      "selection_on_test": false,
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Table III caption ('mean over three training seeds')",
+        "selection_on_test": "Sec. V-A p. 4-5: AdamW lr 1e-3, wd 1e-4, batch 32, <=60 epochs, patience 8; 'Validation selects neural checkpoints'"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        20,
+        27,
+        34,
+        41,
+        48,
+        55
+      ],
+      "statistic": "single_run",
+      "n_runs": 1,
+      "selection_on_test": true,
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Sec. IV p. 4 ('accuracy of always predicting that circuit's most common test label')"
+      },
+      "inferred": {
+        "statistic": "deterministic reference computed once from the test labels; Table III's 'mean over three training seeds' cannot vary for it",
+        "selection_on_test": "the predicted label is chosen from the test-label distribution by definition"
+      }
+    }
+  ],
+  "corrections": [
+    {
+      "where": "results[2].config",
+      "kind": "contradicted",
+      "record": "... XOR fold B=48, EMA alpha {0.3,0.9}",
+      "pdf": "no clause feedback (keeps two observed symbols and previous prediction)",
+      "location": "Sec. V-A p. 5",
+      "note": "config string copied from the full model; same for results[3]"
+    },
+    {
+      "where": "results[4].config",
+      "kind": "contradicted",
+      "record": "5-member majority-vote ensemble",
+      "pdf": "one ensemble member",
+      "location": "Sec. V-A p. 5; Table IV",
+      "note": "same for results[5]"
+    },
+    {
+      "where": "results[6].config",
+      "kind": "contradicted",
+      "record": "XOR fold B=48",
+      "pdf": "32-bit fold",
+      "location": "Sec. V-A p. 5; Table IV",
+      "note": "same for results[7]"
+    },
+    {
+      "where": "results[10].config",
+      "kind": "contradicted",
+      "record": "EMA alpha {0.3,0.9}",
+      "pdf": "one EMA with alpha = 0.5",
+      "location": "Sec. V-A p. 5",
+      "note": "same for results[11]"
+    },
+    {
+      "where": "results[12].config",
+      "kind": "contradicted",
+      "record": "EMA alpha {0.3,0.9}",
+      "pdf": "instantaneous binary feedback",
+      "location": "Sec. V-A p. 5",
+      "note": "same for results[13]"
+    },
+    {
+      "where": "results[14].config",
+      "kind": "contradicted",
+      "record": "XOR fold B=48",
+      "pdf": "no folding; both EMAs on all 480 clause bits (960 recurrent bits, 1046-bit input)",
+      "location": "Sec. III-A p. 3; Table V",
+      "note": "same for results[15]"
+    }
+  ],
+  "notes": "Task is per-time-step binary labelling of synthetic Boolean-FSM sequences (label = parity of updated hidden state). All Table IV ablation rows share the base TM settings (240 clauses/class, T=120, s=6.0, weighted, 8 epochs, 5-member majority-vote ensemble unless the variant removes it); the tm_config schema has no field for ensemble size, fold width or EMA timescales, so the variant differences are only in the model names and the corrections above. TA state count / state bits / literal budget not stated. Timing rows (results 16-19) are host wall time including training and test, recorded with split 'test' in the record. Family-level neural means exist only in Fig. 3 (not extracted). Probe uses a 70/30 random split of test time points of the first ensemble member, not held-out sequences. Training seed values are not printed (only 'three training seeds')."
+}

@@ -1,0 +1,366 @@
+{
+  "paper_id": "2024_TPFL_Tsetlin_Personalized_Federated_Learning_Confidence_Clustering_arXiv2409.10392",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-22"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "Sec. 6 p. 13 footnote 1 'TPFL Github repository' (hyperlink) and Sec. 8.3 p. 19",
+      "hyperparameters_complete": "Table 2 gives clauses, s, T, epochs, rounds; booleanization, number of TA states, implementation and seeds missing"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "federated"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "random subset: 30,000 train / 15,000 test / 15,000 confidence set out of the dataset (Table 2)"
+        },
+        {
+          "step": "other",
+          "params": "federated partition over 100 clients, Dirichlet alpha=10000 (IID) / 0.05 (non-IID), 5 IID:non-IID client mixes (100:0, 75:25, 50:50, 25:75, 0:100)"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described in the paper (28x28 gray-scale images, Table 1)."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "split_notes": "30,000 train / 15,000 test / 15,000 confidence-set samples, 'randomly shuffled' (Sec. 6.5, Table 2); 100 clients; per-client allocation via Dirichlet distribution over classes (Hsu et al. [33]), alpha=10000 (IID) or 0.05 (non-IID); Exp. 1 = 100% of clients IID, Exp. 2 = 75% IID/25% non-IID, Exp. 3 = 50/50, Exp. 4 = 25/75, Exp. 5 = 100% non-IID (Sec. 6.1, 6.3, Fig. 3). Unclear whether the 30k/15k/15k sizes are totals split across clients or per client (Table 2 is titled 'client configuration').",
+      "evidence": {
+        "n_classes": "Table 1",
+        "split": "Sec. 6.5 p. 15 'randomly shuffled samples', Table 2; Sec. 6.3 p. 14",
+        "setting_tags": "Sec. 6.1, 6.3, 6.5 (100 clients, Dirichlet partitioning)",
+        "dataset": "MNIST, Table 1",
+        "booleanization": "not found anywhere in the paper"
+      },
+      "inferred": {
+        "validation_used_for": "only train, test and confidence sets are described (Sec. 6.3); the confidence set is used for client clustering, not tuning"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "fashion-mnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "federated"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 10,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 10,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "random subset: 30,000 train / 15,000 test / 15,000 confidence set out of the dataset (Table 2)"
+        },
+        {
+          "step": "other",
+          "params": "federated partition over 100 clients, Dirichlet alpha=10000 (IID) / 0.05 (non-IID), 5 IID:non-IID client mixes (100:0, 75:25, 50:50, 25:75, 0:100)"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described in the paper (28x28 gray-scale images, Table 1)."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "split_notes": "30,000 train / 15,000 test / 15,000 confidence-set samples, 'randomly shuffled' (Sec. 6.5, Table 2); 100 clients; per-client allocation via Dirichlet distribution over classes (Hsu et al. [33]), alpha=10000 (IID) or 0.05 (non-IID); Exp. 1 = 100% of clients IID, Exp. 2 = 75% IID/25% non-IID, Exp. 3 = 50/50, Exp. 4 = 25/75, Exp. 5 = 100% non-IID (Sec. 6.1, 6.3, Fig. 3). Unclear whether the 30k/15k/15k sizes are totals split across clients or per client (Table 2 is titled 'client configuration').",
+      "evidence": {
+        "n_classes": "Table 1",
+        "split": "Sec. 6.5 p. 15 'randomly shuffled samples', Table 2; Sec. 6.3 p. 14",
+        "setting_tags": "Sec. 6.1, 6.3, 6.5 (100 clients, Dirichlet partitioning)",
+        "dataset": "Fashion-MNIST, Table 1",
+        "booleanization": "not found anywhere in the paper"
+      },
+      "inferred": {
+        "validation_used_for": "only train, test and confidence sets are described (Sec. 6.3); the confidence set is used for client clustering, not tuning"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "emnist",
+      "task_family": "classification",
+      "setting_tags": [
+        "federated"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 62,
+      "modality": "image",
+      "synthetic": false,
+      "domain": "vision",
+      "task_detail": {
+        "n_classes": 62,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "other",
+          "params": "random subset: 30,000 train / 15,000 test / 15,000 confidence set out of the dataset (Table 2)"
+        },
+        {
+          "step": "other",
+          "params": "federated partition over 100 clients, Dirichlet alpha=10000 (IID) / 0.05 (non-IID), 5 IID:non-IID client mixes (100:0, 75:25, 50:50, 25:75, 0:100)"
+        }
+      ],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": "not_reported",
+        "threshold": "not_reported",
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Not described in the paper (28x28 gray-scale images, Table 1)."
+      },
+      "split": {
+        "protocol": "random_holdout",
+        "k_folds": null,
+        "validation_used_for": "none"
+      },
+      "split_notes": "30,000 train / 15,000 test / 15,000 confidence-set samples, 'randomly shuffled' (Sec. 6.5, Table 2); 100 clients; per-client allocation via Dirichlet distribution over classes (Hsu et al. [33]), alpha=10000 (IID) or 0.05 (non-IID); Exp. 1 = 100% of clients IID, Exp. 2 = 75% IID/25% non-IID, Exp. 3 = 50/50, Exp. 4 = 25/75, Exp. 5 = 100% non-IID (Sec. 6.1, 6.3, Fig. 3). Unclear whether the 30k/15k/15k sizes are totals split across clients or per client (Table 2 is titled 'client configuration').",
+      "evidence": {
+        "n_classes": "Table 1",
+        "split": "Sec. 6.5 p. 15 'randomly shuffled samples', Table 2; Sec. 6.3 p. 14",
+        "setting_tags": "Sec. 6.1, 6.3, 6.5 (100 clients, Dirichlet partitioning)",
+        "dataset": "'FEMNIST (by class)', actually EMNIST partitioned by the authors (Sec. 6.2, Table 1: 132,000 images, 62 classes)",
+        "booleanization": "not found anywhere in the paper"
+      },
+      "inferred": {
+        "validation_used_for": "only train, test and confidence sets are described (Sec. 6.3); the confidence set is used for client clustering, not tuning"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        9,
+        10,
+        11,
+        18,
+        19,
+        20,
+        27,
+        28,
+        29,
+        36,
+        37,
+        38,
+        81,
+        82
+      ],
+      "label": "TPFL, MNIST, Exp. 1-5",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 300,
+        "clauses_scope": "not_reported",
+        "T": 1000,
+        "s": 10.0,
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 and Sec. 6.5 p. 14-15 (clauses, sensitivity s=10, T=1000, 10 local epochs, 10 rounds)",
+        "weighted": "Eq. (1), Sec. 4.1; Algorithm 1 (clause weights W are what is shared)",
+        "statistic": "Sec. 6.4: accuracy = average accuracy of all client models over all clusters; no repeated runs mentioned",
+        "values": "Table 4 (Exp. 1-5), Table 5 (Exp. 5 repeated)"
+      },
+      "inferred": {},
+      "notes": "epochs = 10 local epochs per round, 10 federation rounds, 100 clients. Accuracy is the mean over the 100 client models after round 10 (presumably; round not stated); Fig. 4 shows test accuracy per round. Communication cost rows: Table 4 = total upload/download over 10 rounds, Table 5 = per model."
+    },
+    {
+      "result_indices": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        83,
+        84,
+        85,
+        86
+      ],
+      "label": "TPFL, Fashion-MNIST and FEMNIST(EMNIST), Exp. 1-5",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 500,
+        "clauses_scope": "not_reported",
+        "T": 1000,
+        "s": 10.0,
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 2 and Sec. 6.5 p. 14-15 (clauses, sensitivity s=10, T=1000, 10 local epochs, 10 rounds)",
+        "weighted": "Eq. (1), Sec. 4.1; Algorithm 1 (clause weights W are what is shared)",
+        "statistic": "Sec. 6.4: accuracy = average accuracy of all client models over all clusters; no repeated runs mentioned",
+        "values": "Table 4 (Exp. 1-5), Table 5 (Exp. 5 repeated)"
+      },
+      "inferred": {},
+      "notes": "Same as MNIST group but 500 clauses (Table 2)."
+    },
+    {
+      "result_indices": [
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74
+      ],
+      "label": "DL baselines FedAvg, FedProx, FLIS DC/HC, IFCA (Table 5)",
+      "statistic": "best_of_n",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": null,
+      "evidence": {
+        "statistic": "Sec. 6.8 p. 18: 'comparison is between the best results of each baseline with non-IID data partitioning'",
+        "provenance": "Sec. 6.6 p. 15: FedProx reimplemented (proximal term 0.1); FLIS reimplemented with a simple CNN; IFCA reimplemented only on Fashion-MNIST, MNIST/FEMNIST numbers from IFCA authors; Table 3 'Reimplementation' column"
+      },
+      "inferred": {
+        "selection_on_test": "'best results' among non-IID settings, and no validation set is described; the best is therefore chosen on test accuracy",
+        "statistic": "'best results of each baseline' (Sec. 6.8)"
+      },
+      "notes": "Baselines were run with different numbers of rounds/setups than TPFL (Sec. 6.8: TPFL used the fewest rounds)."
+    },
+    {
+      "result_indices": [
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "label": "FedTM (quoted from FedTM paper [29])",
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": "not_reported",
+      "evidence": {
+        "provenance": "Sec. 6.6 p. 15 item 5: 'No implementations were carried out ... results were presented in FedTM [29]'"
+      },
+      "inferred": {},
+      "notes": "FedTM configuration not given in this paper."
+    }
+  ],
+  "corrections": [],
+  "notes": "Federated personalized learning: 100 clients, 10 local epochs x 10 rounds, confidence-based clustering (at most C clusters). Booleanization of the images is never described. Clause scope unknown ('300 clauses'). Accuracy is averaged over clients/clusters (Sec. 6.4), not over repeated runs. Whether the 30k/15k/15k sample counts are totals or per client is ambiguous. Table 3 lists FedTM's non-IID scheme as Dirichlet. Abstract says 5 baselines, Sec. 1 says 6 (FLIS DC/HC counted separately). Record split field 'train' on communication-cost rows is a convention, not from the paper."
+}

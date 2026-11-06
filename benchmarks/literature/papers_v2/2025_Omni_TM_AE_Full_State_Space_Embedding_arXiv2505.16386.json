@@ -1,0 +1,730 @@
+{
+  "paper_id": "2025_Omni_TM_AE_Full_State_Space_Embedding_arXiv2505.16386",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-13"
+  },
+  "paper": {
+    "primary_task_family": "representation_learning",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "seeds_stated": "only random_state=42 for the sklearn classifiers (Sec. 4.3) and t-SNE (Sec. 4.4); no seeds for TM-AE training or runs",
+      "hyperparameters_complete": "Omni TM-AE and TM-classifier T/s/clauses/epochs given (Secs. 4.2, 4.3); TM-classifier state bits and input encoding, TM-AE baseline config, KMeans k, document-embedding aggregation, IMDb split not given",
+      "interpretability_evidence": "Fig. 3 (literal states of a 'happy' clause), Fig. 5, Sec. 4.4 co-occurrence analysis of 'partner', App. A.2 ('driving'/'road' clauses)"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "one-billion-word",
+      "task_family": "representation_learning",
+      "setting_tags": [
+        "interpretability"
+      ],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "intrinsic word similarity on WS-353, MTURK287, MTURK717 (MTurk-771), RG65, MEN (Spearman, Kendall); document clustering on 20 News, Reuters, Yelp, Amazon, AG News (KMeans, NMI, ARI); qualitative t-SNE of 130 words in 13 hand-made semantic groups"
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "fixed vocabulary of 40,000 words for all embedding models (selection criterion, e.g. frequency, not stated)"
+        },
+        {
+          "step": "resampling",
+          "params": "per target word: training examples labelled 1 come from documents containing the target word, 0 from documents lacking it; documents shuffled and 'accumulation' = 24 documents combined into one input X; number_of_examples = 2000"
+        },
+        {
+          "step": "other",
+          "params": "target words: one TM-AE output (class) per target word; which/how many target words were embedded for the similarity and clustering benchmarks is not stated (t-SNE used 130 hand-picked words); tokenization, lowercasing and stop-word handling not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 40000,
+        "n_literals": 80000,
+        "fit_on": "not_reported",
+        "description": "Input X is binary word presence over the vocabulary in the accumulated documents (frequency ignored), plus the negation of every feature, so l = 2d literals."
+      },
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "embedding_dim": "Sec. 3.4, p. 5 (e in Z^d, size of vocabulary d); Sec. 4.2, p. 7 (vocabulary 40,000)",
+        "downstream_eval": "Secs. 4.2 and 4.4, pp. 7-9; Tables 1 and 3; Fig. 4",
+        "preprocessing": "Sec. 3.3 'Preparation Phase', p. 4; Sec. 4.2, p. 7 (number_of_examples = 2000, accumulation = 24); Sec. 4.4 p. 9 (130 words)",
+        "booleanization": "Sec. 3.3, p. 4 (l = 2d, features 1 / negations 0); Sec. 4.4 p. 9 ('input vector X is binary, indicating only the presence or absence of words, not their frequency'); Fig. 5 caption, p. 12 (40,000 tokens, 80,000 literals)",
+        "split": "embedding training corpus only; no train/test split of One Billion Word described",
+        "setting_tags": "Fig. 3, Sec. 4.4 'partner' analysis, App. A.2"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "ws-353",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: model similarity of the two words' Omni TM-AE embeddings compared with human-assigned similarity ratings via Spearman and Kendall rank correlation; embeddings trained on One Billion Word (vocab 40,000); similarity function (e.g. cosine) not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 4.2, pp. 6-7; Table 1",
+        "split": "Sec. 4.2: evaluation-only benchmark of human-rated word pairs; no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "mturk-287",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: model similarity of the two words' Omni TM-AE embeddings compared with human-assigned similarity ratings via Spearman and Kendall rank correlation; embeddings trained on One Billion Word (vocab 40,000); similarity function (e.g. cosine) not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 4.2, pp. 6-7; Table 1",
+        "split": "Sec. 4.2: evaluation-only benchmark of human-rated word pairs; no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "mturk-771",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: model similarity of the two words' Omni TM-AE embeddings compared with human-assigned similarity ratings via Spearman and Kendall rank correlation; embeddings trained on One Billion Word (vocab 40,000); similarity function (e.g. cosine) not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 4.2, pp. 6-7; Table 1",
+        "split": "Sec. 4.2: evaluation-only benchmark of human-rated word pairs; no training on it"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "rg-65",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: model similarity of the two words' Omni TM-AE embeddings compared with human-assigned similarity ratings via Spearman and Kendall rank correlation; embeddings trained on One Billion Word (vocab 40,000); similarity function (e.g. cosine) not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 4.2, pp. 6-7; Table 1",
+        "split": "Sec. 4.2: evaluation-only benchmark of human-rated word pairs; no training on it",
+        "size": "Sec. 4.2, p. 7: RG65 65 word pairs"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "men",
+      "task_family": "representation_learning",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": null,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": null,
+        "embedding_dim": 40000,
+        "downstream_eval": "word similarity: model similarity of the two words' Omni TM-AE embeddings compared with human-assigned similarity ratings via Spearman and Kendall rank correlation; embeddings trained on One Billion Word (vocab 40,000); similarity function (e.g. cosine) not stated"
+      },
+      "preprocessing": [],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "downstream_eval": "Sec. 4.2, pp. 6-7; Table 1",
+        "split": "Sec. 4.2: evaluation-only benchmark of human-rated word pairs; no training on it",
+        "size": "Sec. 4.2, p. 7: MEN 3,000 word pairs"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "imdb",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "vocabulary limit 20,000 tokens for all embedding models trained on IMDb"
+        },
+        {
+          "step": "other",
+          "params": "embedding-based perturbation: 5% of the words of each document substituted; positive documents: random one of the 5 most similar words; negative documents: random one of the 5 most dissimilar among the 400 most similar words"
+        },
+        {
+          "step": "feature_extraction",
+          "params": "documents classified from word embeddings (GloVe, Word2Vec, FastText, Omni TM-AE trained on IMDb; fine-tuned BERT; ELMo v3 from TF Hub); how word embeddings are turned into document features is not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": 20000,
+        "n_literals": 40000,
+        "fit_on": "not_reported",
+        "description": "Applies to Omni TM-AE embedding training on IMDb (binary word presence plus negations, as in Sec. 3.3); the input encoding of the downstream TM classifier is not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "label_type": "Sec. 4.3, p. 8: 'positively labeled documents' / 'negatively labeled documents' (sentiment)",
+        "preprocessing": "Sec. 4.3, pp. 7-8",
+        "booleanization": "Sec. 3.3, p. 4; Sec. 4.3, p. 7 (vocabulary 20,000)",
+        "split": "Sec. 4.3: no train/test split or sizes given"
+      },
+      "inferred": {
+        "n_classes": "only positive and negative sentiment labels are mentioned (Sec. 4.3)",
+        "n_boolean_features": "Sec. 3.3 input length l = 2d with d = 20,000 vocabulary on IMDb; not printed"
+      }
+    },
+    {
+      "usage_index": 7,
+      "dataset_id": "20-newsgroups",
+      "task_family": "clustering",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 20,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 40000,
+        "downstream_eval": "document clustering: documents represented with word embeddings (aggregation not stated), KMeans (RAPIDS cuML), scored by NMI and ARI against the ground-truth labels; embeddings trained on One Billion Word (vocab 40,000)"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "documents embedded with word embeddings trained on One Billion Word (vocab 40,000); aggregation not stated"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Table 3 'Labels count' (as printed)",
+        "downstream_eval": "Sec. 4.1 (cuML KMeans), Sec. 4.4 p. 9; Table 3",
+        "split": "Sec. 4.4: labelled public datasets used only for unsupervised clustering evaluation; Table 3 'Length' = documents"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)",
+        "split": "no training on these datasets (embeddings come from One Billion Word), so no split; whether the full labelled set was used is not stated"
+      }
+    },
+    {
+      "usage_index": 8,
+      "dataset_id": "reuters-21578",
+      "task_family": "clustering",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 79,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 40000,
+        "downstream_eval": "document clustering: documents represented with word embeddings (aggregation not stated), KMeans (RAPIDS cuML), scored by NMI and ARI against the ground-truth labels; embeddings trained on One Billion Word (vocab 40,000)"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "documents embedded with word embeddings trained on One Billion Word (vocab 40,000); aggregation not stated"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Table 3 'Labels count' (as printed)",
+        "downstream_eval": "Sec. 4.1 (cuML KMeans), Sec. 4.4 p. 9; Table 3",
+        "split": "Sec. 4.4: labelled public datasets used only for unsupervised clustering evaluation; Table 3 'Length' = documents"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)",
+        "split": "no training on these datasets (embeddings come from One Billion Word), so no split; whether the full labelled set was used is not stated"
+      }
+    },
+    {
+      "usage_index": 9,
+      "dataset_id": "yelp",
+      "task_family": "clustering",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 11537,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 40000,
+        "downstream_eval": "document clustering: documents represented with word embeddings (aggregation not stated), KMeans (RAPIDS cuML), scored by NMI and ARI against the ground-truth labels; embeddings trained on One Billion Word (vocab 40,000)"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "documents embedded with word embeddings trained on One Billion Word (vocab 40,000); aggregation not stated"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Table 3 'Labels count' (as printed)",
+        "downstream_eval": "Sec. 4.1 (cuML KMeans), Sec. 4.4 p. 9; Table 3",
+        "split": "Sec. 4.4: labelled public datasets used only for unsupervised clustering evaluation; Table 3 'Length' = documents"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)",
+        "split": "no training on these datasets (embeddings come from One Billion Word), so no split; whether the full labelled set was used is not stated"
+      }
+    },
+    {
+      "usage_index": 10,
+      "dataset_id": "amazon",
+      "task_family": "clustering",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 30,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 40000,
+        "downstream_eval": "document clustering: documents represented with word embeddings (aggregation not stated), KMeans (RAPIDS cuML), scored by NMI and ARI against the ground-truth labels; embeddings trained on One Billion Word (vocab 40,000)"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "documents embedded with word embeddings trained on One Billion Word (vocab 40,000); aggregation not stated"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Table 3 'Labels count' (as printed)",
+        "downstream_eval": "Sec. 4.1 (cuML KMeans), Sec. 4.4 p. 9; Table 3",
+        "split": "Sec. 4.4: labelled public datasets used only for unsupervised clustering evaluation; Table 3 'Length' = documents"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)",
+        "split": "no training on these datasets (embeddings come from One Billion Word), so no split; whether the full labelled set was used is not stated"
+      }
+    },
+    {
+      "usage_index": 11,
+      "dataset_id": "ag-news",
+      "task_family": "clustering",
+      "setting_tags": [],
+      "label_type": null,
+      "n_classes": 5,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_clusters": "not_reported",
+        "embedding_dim": 40000,
+        "downstream_eval": "document clustering: documents represented with word embeddings (aggregation not stated), KMeans (RAPIDS cuML), scored by NMI and ARI against the ground-truth labels; embeddings trained on One Billion Word (vocab 40,000)"
+      },
+      "preprocessing": [
+        {
+          "step": "feature_extraction",
+          "params": "documents embedded with word embeddings trained on One Billion Word (vocab 40,000); aggregation not stated"
+        }
+      ],
+      "booleanization": null,
+      "split": {
+        "protocol": "none",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Table 3 'Labels count' (as printed)",
+        "downstream_eval": "Sec. 4.1 (cuML KMeans), Sec. 4.4 p. 9; Table 3",
+        "split": "Sec. 4.4: labelled public datasets used only for unsupervised clustering evaluation; Table 3 'Length' = documents"
+      },
+      "inferred": {
+        "embedding_dim": "Sec. 3.4: e in Z^d, 'the embedding vector will be of the size of the vocabulary d'; vocabulary fixed at 40,000 words (Sec. 4.2, Sec. 4.4, Fig. 5 caption)",
+        "split": "no training on these datasets (embeddings come from One Billion Word), so no split; whether the full labelled set was used is not stated"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        6,
+        7,
+        14,
+        15,
+        22,
+        23,
+        32,
+        33,
+        40,
+        41,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "total",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server restricted to two GPUs, 2.0 TiB RAM (all experiments)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4.2, p. 7 and Sec. 4.3, p. 8 (number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits_ta = 8)",
+        "clauses_scope": "Sec. 3.3: CoTM, one state_matrix of c clauses x l literals shared by the m outputs (weight_matrix c x m)",
+        "weighted": "Sec. 3.3 weight_matrix; Sec. 3.4 positive-weighted clauses",
+        "n_states": "Fig. 3 caption, p. 5: threshold N = 128",
+        "hardware": "Sec. 4.1, p. 6",
+        "statistic": "no run count, seeds or variance for any table",
+        "selection_on_test": "Sec. 4.4 p. 9: the t-SNE experiment on 130 words 'played a vital role in the hyperparameter tuning phase'; no validation set described",
+        "scope_of_group": "Omni TM-AE embeddings trained on One Billion Word, Tables 1 and 3"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states = 2N, consistent with N = 128 printed for the Fig. 3 experiment"
+      }
+    },
+    {
+      "result_indices": [
+        60,
+        61,
+        62,
+        63,
+        64
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 32,
+        "clauses_scope": "total",
+        "T": 20000,
+        "s": 1.0,
+        "epochs": 4,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server restricted to two GPUs, 2.0 TiB RAM (all experiments)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4.2, p. 7 and Sec. 4.3, p. 8 (number_of_examples = 2000, accumulation = 24, clauses = 32, T = 20000, s = 1.0, epochs = 4, number_of_state_bits_ta = 8)",
+        "clauses_scope": "Sec. 3.3: CoTM, one state_matrix of c clauses x l literals shared by the m outputs (weight_matrix c x m)",
+        "weighted": "Sec. 3.3 weight_matrix; Sec. 3.4 positive-weighted clauses",
+        "n_states": "Fig. 3 caption, p. 5: threshold N = 128",
+        "hardware": "Sec. 4.1, p. 6",
+        "statistic": "no run count, seeds or variance for any table",
+        "selection_on_test": "Sec. 4.4 p. 9: the t-SNE experiment on 130 words 'played a vital role in the hyperparameter tuning phase'; no validation set described",
+        "scope_of_group": "Omni TM-AE embeddings trained on IMDb (vocab 20,000) + RF (n_estimators=100) / LR / NB / SVM / MLP (sklearn defaults, random_state=42), Table 2; Sec. 4.3 p. 8"
+      },
+      "inferred": {
+        "n_states": "8 state bits -> 256 states = 2N, consistent with N = 128 printed for the Fig. 3 experiment"
+      }
+    },
+    {
+      "result_indices": [
+        47,
+        53,
+        59,
+        65,
+        71,
+        77
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "not_reported",
+        "T": 8000,
+        "s": 2.0,
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": null,
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "NVIDIA DGX H100 server restricted to two GPUs, 2.0 TiB RAM (all experiments)"
+      },
+      "evidence": {
+        "tm_config": "Sec. 4.3, p. 8: 'clauses=1000, T=8000, s=2.0, epochs=10, and clause_drop_p=0.75' used uniformly across all embeddings",
+        "clause_drop_p": "0.75 (Sec. 4.3)",
+        "omni_row": "the Omni TM-AE + TM row (Table 2) also uses the Omni TM-AE embedding config (32 clauses, T=20000, s=1.0, 4 epochs, 8 state bits); tm_config here is the TM classifier",
+        "hardware": "Sec. 4.1, p. 6",
+        "statistic": "no run count or variance stated"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        30,
+        31
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": "not_reported",
+      "evidence": {
+        "tm_config": "Sec. 4.2, p. 7: TM-AE (Bhattarai et al. 2024) tested on RG65 only, ~8 hours of training; its hyper-parameters are not given",
+        "dataset": "Sec. 4.2: 'All models were trained on the One Billion Word Benchmark corpus using a fixed vocabulary of 40,000 words'"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 4.2, p. 7 and Sec. 4.4, p. 9: Word2Vec, FastText, GloVe trained on One Billion Word, vocab 40,000, vector dim 100, window 5, 25 epochs (GloVe MAX_ITER = 25), other hyper-parameters default"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        42,
+        43,
+        44,
+        45,
+        46,
+        48,
+        49,
+        50,
+        51,
+        52,
+        54,
+        55,
+        56,
+        57,
+        58,
+        66,
+        67,
+        68,
+        69,
+        70,
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "baseline": "Sec. 4.3, pp. 7-8: GloVe/Word2Vec/FastText trained on IMDb (vocab 20,000, dim 100, window 5, 25 epochs); BERT fine-tuned (batch 8, lr 5e-5, 3 epochs, grad-clip 1.0); ELMo v3 from TF Hub; classifiers RF n_estimators=100, LR/NB/SVM/MLP sklearn defaults with random_state=42"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [],
+  "notes": "All 118 record values checked against Tables 1-3: no mismatches. Omni TM-AE embedding length equals the vocabulary size d (Sec. 3.4), i.e. 40,000 for One Billion Word and 20,000 for IMDb; baselines use dim 100. Clause count 32 is the CoTM clause pool c (state_matrix c x l, weight_matrix c x m); the paper also says the embedding of a word comes from 'training TM-AE for the target word', so whether each target word gets its own 32-clause machine (then per_output) is not fully clear; kept 'total' per Sec. 3.3. n_states 128 is printed only for the Fig. 3 experiment (1,600-word vocabulary) and matches 8 state bits. Hyper-parameters were tuned with the t-SNE visualisation (Sec. 4.4), not a validation set; selection_on_test left not_reported. KMeans number of clusters, how documents are embedded for clustering/classification, and the IMDb split are not stated. Table 3 label counts are kept as printed (Yelp 11,537; AG News 5). Record category 'generative_sequence' fits poorly: the paper is representation learning."
+}

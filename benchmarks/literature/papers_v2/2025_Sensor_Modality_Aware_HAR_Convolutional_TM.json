@@ -1,0 +1,425 @@
+{
+  "paper_id": "2025_Sensor_Modality_Aware_HAR_Convolutional_TM",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-26"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "yes",
+    "interpretability_evidence": "clause_analysis",
+    "evidence": {
+      "code_available": "Sec. 2.3 p. 7 and Data Availability Statement p. 24: github.com/cair/pyTsetlinMachineParallel (the library used, v0.2.1); no paper-specific experiment code is linked",
+      "seeds_stated": "no random seeds mentioned anywhere (pp. 1-26)",
+      "hyperparameters_complete": "Table 1 (C, T, s, patch, B, binning, encoding, epochs, splits); Sec. 2.5 p. 11 (2n = 256 states); baseline hyper-parameters are not given",
+      "interpretability_evidence": "Sec. 3.2 Fig. 5 (individual clauses as literal maps), Sec. 3.3 Fig. 6 (aggregated class templates, per-class discussion); Sec. 3.4 modality/channel contribution"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "ucihar",
+      "task_family": "classification",
+      "setting_tags": [
+        "interpretability",
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 6,
+      "modality": "time_series",
+      "synthetic": false,
+      "domain": "medical",
+      "task_detail": {
+        "n_classes": 6,
+        "label_type": "multiclass",
+        "class_balance": "roughly balanced: test-set class counts 420-537 (Table 4 row sums)",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "windowing",
+          "params": "provided by the dataset: fixed-width 2.56 s windows of 128 samples (50 Hz) with 50% overlap; the paper uses them as-is, 'requiring no additional resampling or segmentation'; input 9 channels x 128 samples"
+        },
+        {
+          "step": "other",
+          "params": "provided by the dataset: body acceleration obtained from total acceleration by removing gravity with a Butterworth low-pass filter (0.3 Hz cutoff); channels body_acc_xyz, total_acc_xyz, body_gyro_xyz; the 561 precomputed features are NOT used"
+        },
+        {
+          "step": "feature_selection",
+          "params": "sensor-modality decomposition (Table 5/6): 25 subsets of the 9 raw channels by sensor, signal group and axis, a separate CTM per subset"
+        }
+      ],
+      "booleanization": {
+        "method": "quantile_thermometer",
+        "bits_per_feature": 4,
+        "n_bins": 5,
+        "threshold": "per channel, B = 4 quantile thresholds theta_{i,b} = Q_i(b/B) fit on the training set (best config); base model and Table 5 use B = 1 threshold = per-channel training-set mean (2 bins)",
+        "n_boolean_features": 4608,
+        "n_literals": 9216,
+        "fit_on": "train",
+        "description": "Each raw sample of each of the 9 inertial channels is compared against B channel-specific thresholds (training-set mean for B = 1; training-set quantiles for B > 1, best B = 4 i.e. 5 bins, preferred over equal-width and k-means) and thermometer-encoded, giving X in {0,1}^(N x W*B) plus negations."
+      },
+      "split": {
+        "protocol": "official",
+        "k_folds": null,
+        "validation_used_for": "tuning"
+      },
+      "evidence": {
+        "n_classes": "Sec. 2.1 p. 4; Sec. 2.2 p. 5 (M = 6)",
+        "preprocessing": "Sec. 2.1 p. 4 (Butterworth 0.3 Hz, 2.56 s / 128 readings / 50% overlap, 'no additional resampling or segmentation'); Abstract (raw 9 x 128, not 561 features); Sec. 3.4 Table 5",
+        "booleanization": "Sec. 2.4 pp. 7-10 (mean threshold from training set; quantile thresholds 'computed only from the training set'; thermometer encoding); Table 1 (B tested 1-10, optimum 4; mean vs median; equal-width/quantile/K-means; thermometer vs one-hot); Sec. 3.1 p. 14 'five bins using four quantile thresholds'",
+        "n_boolean_features": "Sec. 2.2 p. 5 X in {0,1}^(N x W*B); Sec. 2.5 p. 10 '9 x 128 Boolean features' for B = 1",
+        "split": "Sec. 2.1 p. 4 'original UCI-HAR subject-independent train/test split with 7352 training samples and 2947 test samples'; Sec. 2.5 p. 11 and Table 1: 80/20 subject-disjoint train/validation split for tuning",
+        "class_balance": "Table 4 row sums 496/471/420/491/532/537",
+        "setting_tags": "Abstract and Sec. 3.2-3.3 (clause visualization); Table 2 footnote 2 (training/inference on Arduino UNO Q Cortex-A53)"
+      },
+      "inferred": {
+        "n_boolean_features": "9 channels x 128 samples x B = 4 thresholds (formula in Sec. 2.2) for the full-window 5-bin model; consistent with the 4x model size (5400 vs 1350 KB, Table 2). It is 1152 for B = 1 (printed as 9 x 128, p. 10) and differs per run of Table 5",
+        "n_literals": "2 x n_boolean_features (L = {X, not X}, Sec. 2.2)",
+        "class_balance": "derived from the Table 4 confusion-matrix row sums; the paper does not discuss balance",
+        "domain": "HAR for mobile health / rehabilitation (Sec. 1, Sec. 4); no single vocab domain fits exactly, 'medical' chosen for the stated health-monitoring use"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x128",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "Intel Core i7-12700H, 16 GB RAM (CPU rows) / quad-core Cortex-A53, 4 GB RAM on Arduino UNO Q (embedded rows); each result's notes say which"
+      },
+      "evidence": {
+        "tm_config": "Table 1 (C=100, T=9, s=3.75, 1000 epochs); Table 2 caption; Sec. 2.3 p. 7 (MultiClassConvolutionalTsetlinMachine2D, pyTsetlinMachineParallel v0.2.1); Sec. 2.5 p. 11 (one byte per TA, 2n = 256); Table 2 column header (patch 9x128); booleanization: 1 threshold (2 bins, training-set mean), base model",
+        "statistic": "Table 2 caption 'averaged over 5 independent training runs'; timings are 'Avg.' (Table 2 footnote 2)",
+        "selection_on_test": "Sec. 2.5 p. 11: T, s chosen on a subject-disjoint 20% validation split of the training set, then patch size and Booleanization granularity also chosen by 'highest validation accuracy'; 'the test set was used only once for final reporting per selected configuration'",
+        "hardware": "Table 2 footnote 2"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x128",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "Intel Core i7-12700H, 16 GB RAM (CPU rows) / quad-core Cortex-A53, 4 GB RAM on Arduino UNO Q (embedded rows); each result's notes say which"
+      },
+      "evidence": {
+        "tm_config": "Table 1 (C=100, T=9, s=3.75, 1000 epochs); Table 2 caption; Sec. 2.3 p. 7 (MultiClassConvolutionalTsetlinMachine2D, pyTsetlinMachineParallel v0.2.1); Sec. 2.5 p. 11 (one byte per TA, 2n = 256); Table 2 column header (patch 9x128); booleanization: 4 quantile thresholds (5 bins), thermometer",
+        "statistic": "Table 2 caption 'averaged over 5 independent training runs'; timings are 'Avg.' (Table 2 footnote 2)",
+        "selection_on_test": "Sec. 2.5 p. 11: T, s chosen on a subject-disjoint 20% validation split of the training set, then patch size and Booleanization granularity also chosen by 'highest validation accuracy'; 'the test set was used only once for final reporting per selected configuration'",
+        "hardware": "Table 2 footnote 2"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x114",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "Intel Core i7-12700H, 16 GB RAM (CPU rows) / quad-core Cortex-A53, 4 GB RAM on Arduino UNO Q (embedded rows); each result's notes say which"
+      },
+      "evidence": {
+        "tm_config": "Table 1 (C=100, T=9, s=3.75, 1000 epochs); Table 2 caption; Sec. 2.3 p. 7 (MultiClassConvolutionalTsetlinMachine2D, pyTsetlinMachineParallel v0.2.1); Sec. 2.5 p. 11 (one byte per TA, 2n = 256); Table 2 column header (patch 9x114); booleanization: 1 threshold (2 bins, training-set mean)",
+        "statistic": "Table 2 caption 'averaged over 5 independent training runs'; timings are 'Avg.' (Table 2 footnote 2)",
+        "selection_on_test": "Sec. 2.5 p. 11: T, s chosen on a subject-disjoint 20% validation split of the training set, then patch size and Booleanization granularity also chosen by 'highest validation accuracy'; 'the test set was used only once for final reporting per selected configuration'",
+        "hardware": "Table 2 footnote 2"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "statistic": "mean",
+      "n_runs": 5,
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x114",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "Intel Core i7-12700H, 16 GB RAM (CPU rows) / quad-core Cortex-A53, 4 GB RAM on Arduino UNO Q (embedded rows); each result's notes say which"
+      },
+      "evidence": {
+        "tm_config": "Table 1 (C=100, T=9, s=3.75, 1000 epochs); Table 2 caption; Sec. 2.3 p. 7 (MultiClassConvolutionalTsetlinMachine2D, pyTsetlinMachineParallel v0.2.1); Sec. 2.5 p. 11 (one byte per TA, 2n = 256); Table 2 column header (patch 9x114); booleanization: 4 quantile thresholds (5 bins), thermometer",
+        "statistic": "Table 2 caption 'averaged over 5 independent training runs'; timings are 'Avg.' (Table 2 footnote 2)",
+        "selection_on_test": "Sec. 2.5 p. 11: T, s chosen on a subject-disjoint 20% validation split of the training set, then patch size and Booleanization granularity also chosen by 'highest validation accuracy'; 'the test set was used only once for final reporting per selected configuration'",
+        "hardware": "Table 2 footnote 2"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned"
+      }
+    },
+    {
+      "result_indices": [
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "statistic": "best_of_n",
+      "n_runs": 5,
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x114",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "Intel Core i7-12700H, 16 GB RAM"
+      },
+      "evidence": {
+        "tm_config": "Table 1 (C=100, T=9, s=3.75, 1000 epochs); Table 2 caption; Sec. 2.3 p. 7 (MultiClassConvolutionalTsetlinMachine2D, pyTsetlinMachineParallel v0.2.1); Sec. 2.5 p. 11 (one byte per TA, 2n = 256); Table 3 footnote 4 (9x114 patch, 5-bin Booleanization)",
+        "statistic": "Sec. 3.1 p. 12: 'the best achieved performance is shown in Table 3'; Table 4 caption 'best-performing CTM across five runs (95.11% accuracy)'",
+        "hardware": "Table 3 footnote 1"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned",
+        "selection_on_test": "the Table 3 CTM row is the best of five runs, and the runs differ only in their test-set performance (no validation-based run selection is described), so the reported number was picked by looking at test results"
+      }
+    },
+    {
+      "result_indices": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": false,
+      "tm_config": {
+        "n_clauses": 100,
+        "clauses_scope": "per_class",
+        "T": 9,
+        "s": 3.75,
+        "epochs": 1000,
+        "n_states": 128,
+        "state_bits": 8,
+        "max_included_literals": null,
+        "patch_size": "9x114",
+        "weighted": false,
+        "implementation": "pyTsetlinMachineParallel",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Table 5 caption 'CTM (C = 100, T = 9, s = 3.75) using a 9 x 114 patch size and a single Booleanization threshold'; Fig. 7 caption; epochs/implementation from Sec. 2.3/2.5 and Table 1",
+        "selection_on_test": "configuration fixed in advance from the validation-tuned base settings (Sec. 2.5); each modality subset is reported, not selected"
+      },
+      "inferred": {
+        "n_states": "paper prints 2n = 256 states ('each TA by default occupies one byte of memory to store its 256 states', p. 11), so N = 128",
+        "weighted": "the paper describes unweighted +1/-1 clause votes (Sec. 2.2 p. 5, Sec. 2.4 p. 10) and the plain MultiClassConvolutionalTsetlinMachine2D; no weighting is mentioned",
+        "epochs": "Table 5 does not restate the epoch count; Table 1 lists 1000 training epochs as the experimental setting",
+        "patch_size": "Table 5 prints '9 x 114' even for subsets with fewer than 9 channels; the patch then spans all channels of the subset x 114 samples"
+      }
+    },
+    {
+      "result_indices": [
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Table 3: non-TM baselines (RF, SVM, stacked LSTM, 1D-CNNs, 2D-CNN, RCN) re-implemented and run by the authors on raw inertial signals, i7-12700H CPU (footnote 1); no run count or tuning protocol stated"
+      }
+    },
+    {
+      "result_indices": [
+        46,
+        54,
+        62,
+        70,
+        78,
+        86,
+        94
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Table 3 'Reported Accuracy' column, footnote 2: accuracy as reported in the original papers; footnote 6: RF and 1D-CNN_Gopinath values were on full UCI-HAR incl. the 561 features"
+      }
+    },
+    {
+      "result_indices": [
+        95,
+        96
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "tm_config": "Sec. 3.1 p. 14: cited literature values (HSTCN-NuSVC 97.25% [34], channel-selective ResNet 97.28% [35]), not re-run"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "Single dataset (UCI-HAR raw inertial signals, 9 x 128). Results come in three TM experiment blocks: Table 2 (means of 5 runs, 4 patch x Booleanization configs, CPU and Arduino UNO Q timings), Table 3 (best run of the 5-bin 9x114 config, 95.11% per Table 4 caption, printed as 0.951) and Table 5 (25 channel subsets, 9x114 patch, single mean threshold; record keeps 9 subsets). Table 5's run count is not stated; its all-9-channel accuracy (91.45%) differs from the Table 2 mean for the same config (91.03 +/- 0.36), so it is likely a single run, but the paper does not say. Text/table inconsistencies in the paper: Sec. 3.4 text gives 88.67%/61.83%/78.42%/71.06%/73.68% where Table 5 prints 88.66/61.82/78.41/71.05/73.70 (record follows the table). Sec. 2.4 defines theta_{i,b} = Q_i(b/B) for b = 1..B, which would put the last threshold at the maximum; the worked example speaks of 'four 25% quantile thresholds' for 5 bins - the exact quantile levels are therefore ambiguous. The paper writes P = 114 gives 14 patch positions (W - P), off by one from W - P + 1. Booleanization object describes the best (5-bin) configuration; the base model, the 2-bin Table 2 columns and all of Table 5 use one mean threshold per channel (fixed_threshold-like, fit on train). Baselines in Table 3 were re-run by the authors on raw signals with no stated hyper-parameters or run counts. T heuristic: T range sqrt(C/2) +/- 3 (Table 1), text says 7 +/- 3. The record's category 'image_classification' reflects the folder; the task is sensor time-series HAR."
+}

@@ -1,0 +1,290 @@
+{
+  "paper_id": "2025_TsetlinKWS_65nm_State_Driven_Convolutional_TM_Accelerator_arXiv2510.24282",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-12"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": true,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "Sec. III-A, p. 4: 'TsetlinKWS is an open-source accelerator available at: https://github.com/Baizhou-713/TsetlinKWS'",
+      "hyperparameters_complete": "Sec. IV-A, p. 9: T=300, s=8.0, 400 epochs for the 120-clause model only; 200/400-clause models of Fig. 7 have no T/s/epochs; n_states/state bits not given",
+      "seeds_stated": "no seeds or repeated runs mentioned",
+      "interpretability_evidence": "interpretability only claimed in passing (Sec. III-D-1); no rules or clause analysis shown"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "google-speech-commands",
+      "task_family": "classification",
+      "setting_tags": [
+        "hardware"
+      ],
+      "label_type": "multiclass",
+      "n_classes": 12,
+      "modality": "audio",
+      "synthetic": false,
+      "domain": "speech",
+      "task_detail": {
+        "n_classes": 12,
+        "label_type": "multiclass",
+        "class_balance": "not_reported"
+      },
+      "preprocessing": [
+        {
+          "step": "augmentation",
+          "params": "training only: random 20-40 dB white noise added to keyword audio, random pitch alteration"
+        },
+        {
+          "step": "other",
+          "params": "pre-emphasis filter (design of [6]); 16 kHz audio via I2S"
+        },
+        {
+          "step": "windowing",
+          "params": "256-sample subframes (no window function); 50% overlap realised after the Mel filter by summing the MFSCs of adjacent subframes"
+        },
+        {
+          "step": "feature_extraction",
+          "params": "MFSC-SF: 256-point FFT (R2-SDF, 15-bit output), magnitude instead of power, 128 of 129 bins kept, rectangular unity-gain Mel filters -> 32 MFSC; no LOG, no DCT; spectral flux (difference of adjacent-frame MFSCs, 32 coeffs); MFSC32 + SF32 concatenated = 64 coefficients per frame. Ablations: MFSC32, MFSC64, MFSC32-SF32"
+        }
+      ],
+      "booleanization": {
+        "method": "adaptive_threshold",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": "MFSC: streaming dynamic mean per coefficient over the last 64 frames (division by shift); SF: fixed threshold 1024",
+        "n_boolean_features": 4096,
+        "n_literals": "not_reported",
+        "fit_on": null,
+        "description": "Each of the 64 coefficients per frame becomes one bit: MFSC bits compare against a running per-coefficient average over a 64-frame batch (updated in streaming fashion), SF bits against a fixed threshold of 1024; feature map 64 coefficients x 64 frames, scanned by a 64x7 spectral convolution kernel (58 windows)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-A, p. 8: 10 keywords + Silence + Unknown (remaining 25 keywords)",
+        "preprocessing": "Sec. III-B, pp. 4-5, Fig. 5, Fig. 6; augmentation Sec. IV-A, p. 8",
+        "booleanization": "Sec. III-B-2, p. 5 and Fig. 6 caption: 'MFSC is binarized using the dynamic mean, while SF is binarized using a fixed threshold'; 'SF threshold is set to 1024'; 'batch size is set to 64'",
+        "n_boolean_features": "Fig. 6 SF SPad (32x64)x1b, 'SF scratch pad stores the Boolean value for 64 frames'; 64x7 kernel (Sec. III-C-1); PE array 58 windows (Sec. III-A)",
+        "split": "Sec. IV-A, p. 8-9: training/validation/test 74922/4490/4870 audio examples"
+      },
+      "inferred": {
+        "booleanization.n_boolean_features": "64 coefficients x 64 frames (SF SPad holds 64 frames; 58 windows = 64 - 7 + 1 for the 64x7 kernel); not printed as one number",
+        "booleanization.fit_on": "thresholds are computed per input stream at inference time (running mean / fixed constant), so nothing is fitted on a data split"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 120,
+        "clauses_scope": "per_class",
+        "T": 300,
+        "s": 8.0,
+        "epochs": 400,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "64x7",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-A, p. 9: 'For the 120-Clause CTM model, the hyperparameters T and s are set to 300 and 8.0 ... trained with 400 epochs'; Fig. 7 x-axis '#Clause/Class'",
+        "patch_size": "Sec. III-C-1, p. 5: '64x7 convolution kernel'",
+        "weighted": "Sec. II-A (weight of clause summed into class confidence, ref. [15] integer-weighted TM); Fig. 4 4-bit weight; Fig. 11",
+        "value": "Fig. 7 and Table I (87.35% @clean)"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": 120,
+        "clauses_scope": "per_class",
+        "T": 300,
+        "s": 8.0,
+        "epochs": 400,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "64x7",
+        "weighted": true,
+        "implementation": "asic",
+        "hardware": "TSMC 65 nm LP CMOS, core 0.8x0.79 mm (0.63 mm2), die 1.67 mm2, 400 kHz, on-chip memory 33.5 KB (FEx SRAM 1.53 KB, model SRAM 27.25 KB, feature SRAM 4.75 KB), 58x5 PE array, OG-BCSR model 19.9 KB; power measured at 1.2 V / 25 C excl. IO (40.8 uW), 0.7 V figures voltage-scaled estimates"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-A, p. 9 (120-clause model)",
+        "hardware": "Sec. IV-A, p. 9; Fig. 16; Table I",
+        "statistic": "single measured/estimated values, no repetitions mentioned"
+      },
+      "inferred": {}
+    },
+    {
+      "result_indices": [
+        8,
+        9
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 120,
+        "clauses_scope": "per_class",
+        "T": 300,
+        "s": 8.0,
+        "epochs": 400,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 (120 clauses/class, MFSC32 / MFSC64 features); T, s, epochs Sec. IV-A, p. 9",
+        "value": "Fig. 7 data labels"
+      },
+      "inferred": {
+        "tm_config.T": "Sec. IV-A gives T=300, s=8.0, 400 epochs 'for the 120-Clause CTM model' without naming the feature set; assumed to cover the 120-clause Fig. 7 ablation runs too",
+        "results": "assignment of Fig. 7 data labels to series read from the text-layer order (MFSC32, MFSC64, MFSC32-SF32 series); consistent with the '4% gain' (83.35 -> 87.35) stated in Sec. III-B"
+      }
+    },
+    {
+      "result_indices": [
+        10,
+        11,
+        12
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 200,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 x-axis '#Clause/Class' 200 and 400",
+        "value": "Fig. 7 data labels"
+      },
+      "inferred": {
+        "results": "assignment of Fig. 7 data labels to series read from the text-layer order; values only in the figure"
+      }
+    },
+    {
+      "result_indices": [
+        13,
+        14,
+        15
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 400,
+        "clauses_scope": "per_class",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": "not_reported",
+        "weighted": true,
+        "implementation": "not_reported",
+        "hardware": "not_reported"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 x-axis '#Clause/Class' 200 and 400",
+        "value": "Fig. 7 data labels"
+      },
+      "inferred": {
+        "results": "assignment of Fig. 7 data labels to series read from the text-layer order; values only in the figure"
+      }
+    },
+    {
+      "result_indices": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": null,
+      "evidence": {
+        "value": "Table I, values as reported by the cited works [6], [7], [11], [10]"
+      },
+      "inferred": {}
+    }
+  ],
+  "corrections": [
+    {
+      "where": "datasets[0].booleanization",
+      "kind": "contradicted",
+      "record": "MFSC-SF features binarized with a streaming (running-mean) threshold per coefficient",
+      "pdf": "only MFSC uses the streaming dynamic mean (64-frame batch); SF is binarized with a fixed threshold of 1024",
+      "location": "Sec. III-B-2, p. 5; Fig. 6 caption",
+      "note": ""
+    },
+    {
+      "where": "results[0,1,2,3,5,6].is_tm",
+      "kind": "contradicted",
+      "record": "free-text notes (e.g. 'Clean test set, 12 classes.')",
+      "pdf": "these are rows of the proposed CTM accelerator, i.e. is_tm should be true; the text belongs in notes",
+      "location": "Table I",
+      "note": "record field defect rather than a PDF disagreement"
+    }
+  ],
+  "notes": "Hardware: TSMC 65 nm LP; the paper calls Fig. 16(b) 'measurement results' and power 'measured' at 1.2 V/25 C (no low-voltage library), but the layout is 'exported from Cadence Virtuoso' and it never says the chip was fabricated, so whether figures are silicon measurements or post-layout simulation is unclear. The 0.7 V numbers (16.58 uW total, 11.94 uW inference core) are voltage-scaled estimates (dynamic ~ V^2, static ~ V). Accuracy: the paper does not say whether 87.35% was measured on chip or in software; Fig. 7 caption calls it 'measured accuracy' alongside 200/400-clause models that were never put on chip, and the software MFSC-SF preprocessing is 'designed to ensure numerical consistency with its hardware counterpart', which suggests a bit-exact software evaluation; recorded as implementation not_reported. Latency 16 ms = one 256-sample subframe at 16 kHz. Training library not named. The 64x16 TA action matrix per clause = 64 rows x (7 kernel columns x 2 polarities + positional TAs), positional encoding details not given. Validation set (4490) exists but its use is not stated; the split counts are not called official. Fig. 7 values exist only as figure data labels; series assignment taken from the text layer order. Prior vanilla-TM KWS results quoted in Sec. I (86.5%/80.5% 6/9 keywords [12], REDRESS 87.1% [13]) are on different tasks and not in the record."
+}

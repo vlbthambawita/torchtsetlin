@@ -578,14 +578,16 @@
       "record": "p=0 is clean MNIST test",
       "pdf": "these rows are p=0.25 / 0.5 / 0.75, i.e. corrupted MNIST-c test images with probability p",
       "location": "Table VI; Sec. IV-D a)",
-      "note": "note copied from the p=0 row; should be empty or state the corruption probability"
+      "note": "note copied from the p=0 row; should be empty or state the corruption probability",
+      "kind": "contradicted"
     },
     {
       "where": "datasets[1].split_as_reported",
       "record": "verification on 100 test instances",
       "pdf": "robustness (Table IV) on 100 test instances that were correctly classified by both models at eps=0",
       "location": "Sec. IV-B, p. 7",
-      "note": "selection criterion missing from the record"
+      "note": "selection criterion missing from the record",
+      "kind": "omitted"
     }
   ],
   "notes": "Verification metrics: 'eps-robust' (Tables III, IV, VII) counts test instances for which the SAT solver (Glucose, 300 s timeout per instance) proved that no perturbation of at most eps flipped input bits changes the classification; 'solved' counts instances decided within the timeout (either a counterexample found or robustness proven), so eps-robust <= solved, and unsolved instances are neither. For MNIST the check is run on each per-class TsM of the trained team (Sec. IV-B). Table VII '% eps-rob' is eps-robust divided by solved (e.g. 145/200 = 72.5%, 14/116 = 12.07%). 'eps-similar' (Table V) counts instances for which two models give the same classification on the input and all inputs within Hamming distance eps (eps=0 = agreement on the unperturbed input). Equivalence of IMDB Models 2 and 3 was checked and they were found not equivalent (Sec. IV-C, no numeric result). Average SAT solve times are in Tables III and IV but not in the record. '400 iterations of Algorithm 1' is read as 400 epochs (inferred). 'We set the limit of the maximum size of monomials to 2000' (Sec. IV-A) is ambiguous (could be a max-literals budget or the max N tried) and is not mapped to max_included_literals. The TM implementation is not named; pyTsetlinMachine [7] is cited only as the state of the art for multiclass TsMs. Hardware lists a GTX 1070 GPU but which parts used it is not stated. MNIST-c and MNIST-back-image booleanization and epochs (MNIST-c) are not stated. MNIST-back-image TsM robust count 145/200 at eps=1, 14/116 at eps=3, 0/34 at eps=5 (Table VII). BNN MNIST-back-image numbers are quoted from Narodytska et al. 2018."

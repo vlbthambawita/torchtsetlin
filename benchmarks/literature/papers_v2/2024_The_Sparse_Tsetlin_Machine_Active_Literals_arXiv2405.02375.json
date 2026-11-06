@@ -1,0 +1,999 @@
+{
+  "paper_id": "2024_The_Sparse_Tsetlin_Machine_Active_Literals_arXiv2405.02375",
+  "extracted": {
+    "by": "agent",
+    "date": "2026-11-06",
+    "pages_read": "1-8"
+  },
+  "paper": {
+    "primary_task_family": "classification",
+    "code_available": false,
+    "seeds_stated": false,
+    "hyperparameters_complete": "partial",
+    "interpretability_evidence": "none",
+    "evidence": {
+      "code_available": "no code link anywhere in the paper",
+      "hyperparameters_complete": "Sec. IV-A lists N, T, s, a, t, p as parameters; Sec. IV-B gives N, a, t, p per dataset but never T or s; no epochs for Table I; no settings at all for Amazon",
+      "interpretability_evidence": "no rules or clauses shown"
+    }
+  },
+  "usages": [
+    {
+      "usage_index": 0,
+      "dataset_id": "cr",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are 'bit-encoded for TM training' and become vastly sparse; no encoding, vocabulary or feature count is given for this dataset."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'customer reviews for sentiment classifications from positive or negative'",
+        "booleanization": "Sec. IV-B, p. 5: 'When bit-encoded for TM training, these datasets become vastly sparse'; sparsity in Table I",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 1,
+      "dataset_id": "subj",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "V = 2500..10000 (step 500) in the Figs. 5-7 scaling experiment only; Table I vocabulary not stated"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Bit-encoded vocabulary representation of size n x V; for the scaling experiment (Figs. 5-7) the vocabulary V is swept from 2500 to 10000 in steps of 500; the vocabulary used for Table I is not stated."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'binary classification dataset ... subjective or objective'",
+        "booleanization": "Sec. IV-C, p. 6: vocabulary size V in (n x V), 2500 to 10000",
+        "preprocessing": "Sec. IV-C, p. 6",
+        "split": "no train/test split described anywhere in the paper"
+      },
+      "inferred": {
+        "booleanization.method": "the paper speaks of a vocabulary of size V giving an n x V bit-encoded matrix and of bag-of-word-based representations (Sec. I), i.e. word-presence bits; not stated in so many words"
+      }
+    },
+    {
+      "usage_index": 2,
+      "dataset_id": "mpqa",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are 'bit-encoded for TM training' and become vastly sparse; no encoding, vocabulary or feature count is given for this dataset."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'articles ... annotated for opinions' (class count not stated; binary is the record's value)",
+        "booleanization": "Sec. IV-B, p. 5: 'When bit-encoded for TM training, these datasets become vastly sparse'; sparsity in Table I",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 3,
+      "dataset_id": "sst-2",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are 'bit-encoded for TM training' and become vastly sparse; no encoding, vocabulary or feature count is given for this dataset."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'binary sentiment classification of the Stanford Sentiment Treebank'",
+        "booleanization": "Sec. IV-B, p. 5: 'When bit-encoded for TM training, these datasets become vastly sparse'; sparsity in Table I",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 4,
+      "dataset_id": "mr",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are 'bit-encoded for TM training' and become vastly sparse; no encoding, vocabulary or feature count is given for this dataset."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'movie review dataset used for binary sentiment analysis'",
+        "booleanization": "Sec. IV-B, p. 5: 'When bit-encoded for TM training, these datasets become vastly sparse'; sparsity in Table I",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 5,
+      "dataset_id": "pros-cons",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are 'bit-encoded for TM training' and become vastly sparse; no encoding, vocabulary or feature count is given for this dataset."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'binary classification dataset that classifies pros and cons'",
+        "booleanization": "Sec. IV-B, p. 5: 'When bit-encoded for TM training, these datasets become vastly sparse'; sparsity in Table I",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 6,
+      "dataset_id": "tunadromd",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "binary",
+      "n_classes": 2,
+      "modality": "tabular",
+      "synthetic": false,
+      "domain": "security",
+      "task_detail": {
+        "n_classes": 2,
+        "label_type": "binary",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [],
+      "booleanization": {
+        "method": "not_reported",
+        "bits_per_feature": "not_reported",
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "The paper only says the datasets are bit-encoded for TM training (sparsity 6.029% non-zero, Table I); TUNADROMD's encoding is not described."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5: 'supervised tabular malware detection dataset' (binary not stated explicitly)",
+        "booleanization": "Sec. IV-B, p. 5; Table I sparsity",
+        "split": "no train/test split described anywhere in the paper"
+      }
+    },
+    {
+      "usage_index": 7,
+      "dataset_id": "amazon-reviews-2018",
+      "task_family": "classification",
+      "setting_tags": [],
+      "label_type": "multiclass",
+      "n_classes": 5,
+      "modality": "text",
+      "synthetic": false,
+      "domain": "nlp",
+      "task_detail": {
+        "n_classes": 5,
+        "label_type": "multiclass",
+        "class_balance": "not_reported",
+        "discretized_from": null
+      },
+      "preprocessing": [
+        {
+          "step": "vocabulary_cap",
+          "params": "V = 250000 / 1000000 / 2500000 / 2500000 / 5000000 for the five subsets (Table II)"
+        },
+        {
+          "step": "resampling",
+          "params": "random subset of n documents from 233.1M (n = 100k, 1M, 2.5M, 5M, 10M train+test)"
+        }
+      ],
+      "booleanization": {
+        "method": "bag_of_words_presence",
+        "bits_per_feature": 1,
+        "n_bins": null,
+        "threshold": null,
+        "n_boolean_features": "not_reported",
+        "n_literals": "not_reported",
+        "fit_on": "not_reported",
+        "description": "Bag-of-words processed data (stored as uint8 without CSR for the 'Data size' column); vocabulary size grows with the subset: 250000, 1000000, 2500000, 2500000, 5000000 (Table II). Negated literals are not stored (Sec. III)."
+      },
+      "split": {
+        "protocol": "not_reported",
+        "k_folds": null,
+        "validation_used_for": "not_reported"
+      },
+      "evidence": {
+        "n_classes": "Sec. IV-B, p. 5 and Sec. IV-D, p. 6: 'product reviews distributed over 5 labels'",
+        "booleanization": "Table II caption: 'bag-of-word processed data represented as uint8'; vocabulary sizes in Table II",
+        "preprocessing": "Table II 'Vocabulary Size' column",
+        "split": "Sec. IV-D, p. 6: 'randomly sampling a subset of n documents from the text corpus'; train/test counts in Table II (80/20), how the subset is divided is not stated"
+      },
+      "inferred": {
+        "booleanization.method": "Table II says bag-of-words; TM input must be Boolean (Sec. II, X = {0,1}^o), so presence bits",
+        "booleanization.bits_per_feature": "Boolean input space, Sec. II"
+      }
+    }
+  ],
+  "configs": [
+    {
+      "result_indices": [
+        0
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 6500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 115,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 6500, a = 200, t = 30, p = 115, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        1
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 6500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 115,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 6500, a = 200, t = 30, p = 115, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        2
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 75,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1000, a = 80, t = 40, p = 75, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        3
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 75,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1000, a = 80, t = 40, p = 75, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        4
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 100,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1000, a = 123, t = 43, p = 100, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        5
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 100,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1000, a = 123, t = 43, p = 100, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        6
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 3500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 75,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3500, a = 130, t = 40, p = 75, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        7
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 3500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 75,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3500, a = 130, t = 40, p = 75, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        8
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 1500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 150,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1500, a = 130, t = 80, p = 150, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        9
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 1500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 150,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 1500, a = 130, t = 80, p = 150, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        10
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 3500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 130,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3500, a = 100, t = 60, p = 130, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        11
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 3500,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 130,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3500, a = 100, t = 60, p = 130, dynamic AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        12
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": 3000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 50,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3000, a = 100, t = 50, p = 50, static AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'the best reproducible accuracy in %' (whether best over epochs or over runs is not stated)",
+        "selection_on_test": "Table I: 'best' test accuracy; no validation set mentioned; 'we tuned the STM for each dataset' (Sec. IV-A)"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'",
+        "selection_on_test": "a 'best' accuracy on the test data is a maximum over test-set results (epochs or runs)"
+      }
+    },
+    {
+      "result_indices": [
+        13
+      ],
+      "statistic": "average_last_epochs",
+      "n_runs": "not_reported",
+      "selection_on_test": "not_reported",
+      "tm_config": {
+        "n_clauses": 3000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": "not_reported",
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 50,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Sec. IV-B, p. 5: N = 3000, a = 100, t = 50, p = 50, static AL (N = number of clauses, p = max clause size, Sec. IV-A / III-C)",
+        "weighted": "Eq. 7: STM = {X, Y, C, W, AL} with integer weight matrix W",
+        "hardware": "Sec. IV-A, p. 4-5",
+        "statistic": "Table I caption: 'average accuracy in % from the last 25 epochs'",
+        "selection_on_test": "Sec. IV-A: 'we tuned the STM for each dataset' - on which data is not stated"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        14,
+        17,
+        20,
+        23,
+        26
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": true,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "20 CPU threads (CPU model not restated for this experiment)"
+      },
+      "evidence": {
+        "tm_config": "Table II caption: 'trained for 10 epochs on 20 CPU threads'; N, a, t, p, T, s not given for Amazon",
+        "weighted": "Eq. 7",
+        "statistic": "Table II caption: 'the best reproducible test accuracy in %'"
+      },
+      "inferred": {
+        "selection_on_test": "'best' test accuracy over the 10 epochs or runs, no validation set",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named"
+      }
+    },
+    {
+      "result_indices": [
+        15,
+        18,
+        21,
+        24,
+        27
+      ],
+      "statistic": "mean",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "20 CPU threads (CPU model not restated for this experiment)"
+      },
+      "evidence": {
+        "tm_config": "Table II caption: 'trained for 10 epochs on 20 CPU threads'; N, a, t, p, T, s not given for Amazon",
+        "weighted": "Eq. 7",
+        "statistic": "Table II caption: 'the mean epoch time in seconds'"
+      },
+      "inferred": {
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named"
+      }
+    },
+    {
+      "result_indices": [
+        16,
+        19,
+        22,
+        25,
+        28
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": "not_reported",
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 10,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "20 CPU threads (CPU model not restated for this experiment)"
+      },
+      "evidence": {
+        "tm_config": "Table II caption: 'trained for 10 epochs on 20 CPU threads'; N, a, t, p, T, s not given for Amazon",
+        "weighted": "Eq. 7",
+        "statistic": "Table II 'Sparse Memory' column; constant 0.544 MiB, bounded by a, p, t (Sec. IV-D, p. 7)"
+      },
+      "inferred": {
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named"
+      }
+    },
+    {
+      "result_indices": [
+        29
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "total",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": 75,
+        "patch_size": null,
+        "weighted": true,
+        "implementation": "custom",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 caption: 'STM applied parameters from section IV-B' (SUBJ: N = 1000, a = 80, t = 40, p = 75, dynamic AL); 100 epochs",
+        "value": "Sec. IV-C, p. 6: '8.22% cumulative training time increase from V = 2500 to V = 10000'"
+      },
+      "inferred": {
+        "tm_config.clauses_scope": "STM has the CoTM structure {X,Y,C,W,AL} (Eq. 7) with one clause pool shared by all outputs via W (Sec. II-A), so N counts all clauses",
+        "tm_config.implementation": "the paper's own list-based sparse clause structure (Sec. III); no library or code named",
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    },
+    {
+      "result_indices": [
+        30
+      ],
+      "statistic": "not_reported",
+      "n_runs": "not_reported",
+      "selection_on_test": null,
+      "tm_config": {
+        "n_clauses": 1000,
+        "clauses_scope": "not_reported",
+        "T": "not_reported",
+        "s": "not_reported",
+        "epochs": 100,
+        "n_states": "not_reported",
+        "state_bits": "not_reported",
+        "max_included_literals": "not_reported",
+        "patch_size": null,
+        "weighted": "not_reported",
+        "implementation": "not_reported",
+        "hardware": "Intel i5-13600KF @ 3.5GHz, single-threaded, Ubuntu 20.04 LTS"
+      },
+      "evidence": {
+        "tm_config": "Fig. 7 caption: Contracting TM 'tuned for 1000 clauses with an absorbing state of 50 and literal sampling of 0.6'; 100 epochs",
+        "value": "Sec. IV-C, p. 6: 'For the Contracting TM, the increase in training time is recorded to be 99.47%'"
+      },
+      "inferred": {
+        "tm_config.hardware": "Sec. IV-A: 'Unless otherwise noted, all experiments were conducted on an Intel i5-13600KF ... single-threaded'"
+      }
+    }
+  ],
+  "corrections": [],
+  "notes": "The paper uses N for the number of clauses (Sec. IV-A), not for TA states. a = active-literal list size, t = lower TA-state threshold below which a literal is dropped, p = max clause size (stored as max_included_literals). T and s are named as parameters but never given. Table I 'Best' is 'the best reproducible accuracy' - not said whether over epochs or runs; number of runs, seeds and Table I epoch count are not stated. Figs. 5, 6 and 8 (per-epoch time/accuracy on SUBJ) are figure-only and not digitized. For CR, MPQA, SST-2, MR and PC the paper never says bag-of-words explicitly (only 'bit-encoded'; the introduction speaks of bag-of-word-based NLP representations), so their booleanization method is not_reported although the record says 'bag-of-words bit encoding'. Amazon train/test counts are exactly 80/20 of each random subset, but how the subset is split is not stated. Contracting TM in Fig. 7 also used absorbing state 50 and literal sampling 0.6 (no schema field). Record values checked against Tables I-II and Sec. IV-C text: no disagreements found."
+}
