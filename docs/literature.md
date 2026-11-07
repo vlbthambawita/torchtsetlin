@@ -11,6 +11,9 @@ Every dataset and every reported number from the 55 Tsetlin-machine papers in
 The numbers are **as reported by the authors, not reproduced here**. The page loads the catalog
 as a SQLite database (about 1.5 MB, once). All filtering and ranking then run as SQL in your
 browser, and only one page of rows is drawn at a time.
+In every table, click a column title to sort by it and drag a title to move its column (or focus
+it and press Alt+←/→). Your column order is remembered in this browser; **Reset column order**
+below the table restores the default.
 
 <div id="lit-app" markdown="0">
   <nav class="lit-tabs" role="tablist">

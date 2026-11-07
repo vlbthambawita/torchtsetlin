@@ -166,10 +166,40 @@
 
   // --------------------------------------------------------- paged table view
   /* A table whose rows come from a SQL source: `count()` and `page(limit, offset, order)`.
-   * columns: [{key, title, render(row) -> html, sort: sql expression | undefined, cls}] */
+   * columns: [{key, title, render(row) -> html, sort: sql expression | undefined, cls}]
+   * The reader can reorder the columns by dragging a title (or Alt+←/→ on a focused title);
+   * the order is kept per table in localStorage unless `opts.persist === false`. */
   function pagedTable(prefix, columns, opts) {
     const state = { page: 0, size: opts.size || 100, sort: null, dir: "DESC", source: null };
     const tableEl = $(`${prefix}-table`), pagerEl = $(`${prefix}-pager`);
+    const storeKey = opts.persist === false ? null : `tm-literature-columns-${prefix}`;
+    const colId = (c) => c.key || c.title;
+    let order = null;  // column ids in the reader's order, or null for the default order
+    if (storeKey) {
+      try { order = JSON.parse(localStorage.getItem(storeKey)) || null; } catch (e) { order = null; }
+    }
+    function saveOrder() {
+      if (!storeKey) return;
+      try {
+        if (order) localStorage.setItem(storeKey, JSON.stringify(order)); else localStorage.removeItem(storeKey);
+      } catch (e) { /* storage blocked: the order lasts for this page view */ }
+    }
+    // Columns in display order: the saved ids first, then any column the saved order does not know.
+    function ordered() {
+      if (!order) return columns;
+      const byId = new Map(columns.map((c) => [colId(c), c]));
+      const out = order.filter((id) => byId.has(id)).map((id) => byId.get(id));
+      for (const c of columns) if (!out.includes(c)) out.push(c);
+      return out;
+    }
+    function moveColumn(from, to) {
+      const ids = ordered().map(colId);
+      if (from === to || to < 0 || to >= ids.length) return;
+      ids.splice(to, 0, ids.splice(from, 1)[0]);
+      order = ids.join("\u0001") === columns.map(colId).join("\u0001") ? null : ids;
+      saveOrder();
+      draw();
+    }
 
     function draw() {
       const src = state.source;
@@ -180,34 +210,85 @@
       const order = state.sort ? `${state.sort} ${state.dir}` : null;
       const rows = src.page(state.size, state.page * state.size, order);
       let lastGroup;
-      const head = columns.map((c) => {
+      const cols = ordered();
+      const head = cols.map((c, j) => {
         const mark = state.sort && state.sort === c.sort ? (state.dir === "ASC" ? " ▲" : " ▼") : "";
-        return `<th${c.sort ? ` data-sort="${esc(c.sort)}" class="lit-sortable"` : ""}>${esc(c.title)}${mark}</th>`;
+        return `<th data-col="${j}" draggable="true" tabindex="0" title="Drag to move this column (or Alt+←/→)"`
+          + `${c.sort ? ` data-sort="${esc(c.sort)}" class="lit-sortable"` : ""}>${esc(c.title)}${mark}</th>`;
       }).join("");
       const body = rows.map((r, i) => {
         let pre = "";
         if (opts.groupOf && !state.sort) {
           const g = opts.groupOf(r);
           if (g !== undefined && g !== lastGroup) {
-            pre = `<tr class="lit-group"><td colspan="${columns.length}">${opts.groupLabel(r)}</td></tr>`;
+            pre = `<tr class="lit-group"><td colspan="${cols.length}">${opts.groupLabel(r)}</td></tr>`;
             lastGroup = g;
           }
         }
         const cls = opts.rowClass ? opts.rowClass(r) : "";
-        return `${pre}<tr data-i="${i}" class="${cls}">${columns.map((c) =>
+        return `${pre}<tr data-i="${i}" class="${cls}">${cols.map((c) =>
           `<td class="${c.cls || ""}">${c.render ? c.render(r) : esc(r[c.key])}</td>`).join("")}</tr>`;
       }).join("");
       tableEl.innerHTML = `<table class="lit-table"><thead><tr>${head}</tr></thead><tbody>${body
-        || `<tr><td colspan="${columns.length}" class="lit-empty">No rows match.</td></tr>`}</tbody></table>`;
+        || `<tr><td colspan="${cols.length}" class="lit-empty">No rows match.</td></tr>`}</tbody></table>`;
       tableEl._rows = rows;
-      pagerEl.innerHTML = total <= PAGE_SIZES[0] ? "" :
+      const reset = order ? '<button type="button" data-reset-cols>Reset column order</button>' : "";
+      pagerEl.innerHTML = total <= PAGE_SIZES[0] ? reset :
         `<button type="button" data-go="prev" ${state.page ? "" : "disabled"}>‹ Prev</button>`
         + `<span>Page ${state.page + 1} of ${pages} · rows ${(state.page * state.size + 1).toLocaleString()}–`
         + `${Math.min(total, (state.page + 1) * state.size).toLocaleString()} of ${total.toLocaleString()}</span>`
         + `<button type="button" data-go="next" ${state.page < pages - 1 ? "" : "disabled"}>Next ›</button>`
         + `<label>Rows per page <select data-size>${PAGE_SIZES.map((s) =>
-          `<option${s === state.size ? " selected" : ""}>${s}</option>`).join("")}</select></label>`;
+          `<option${s === state.size ? " selected" : ""}>${s}</option>`).join("")}</select></label>` + reset;
     }
+
+    // Column reordering: drag a title onto another, or Alt+←/→ on a focused title.
+    let dragFrom = null;
+    const clearDrop = () => tableEl.querySelectorAll(".lit-drop-before, .lit-drop-after")
+      .forEach((el) => el.classList.remove("lit-drop-before", "lit-drop-after"));
+    tableEl.addEventListener("dragstart", (e) => {
+      const th = e.target.closest && e.target.closest("th[data-col]");
+      if (!th) return;
+      dragFrom = +th.dataset.col;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", th.textContent);
+      th.classList.add("lit-dragging");
+    });
+    tableEl.addEventListener("dragover", (e) => {
+      const th = dragFrom !== null && e.target.closest("th[data-col]");
+      if (!th) return;
+      e.preventDefault();
+      clearDrop();
+      const to = +th.dataset.col;
+      if (to !== dragFrom) th.classList.add(to < dragFrom ? "lit-drop-before" : "lit-drop-after");
+    });
+    tableEl.addEventListener("drop", (e) => {
+      const th = dragFrom !== null && e.target.closest("th[data-col]");
+      if (!th) return;
+      e.preventDefault();
+      const from = dragFrom;
+      dragFrom = null;
+      moveColumn(from, +th.dataset.col);
+    });
+    tableEl.addEventListener("dragend", () => {
+      dragFrom = null;
+      clearDrop();
+      tableEl.querySelectorAll(".lit-dragging").forEach((el) => el.classList.remove("lit-dragging"));
+    });
+    tableEl.addEventListener("keydown", (e) => {
+      const th = e.target.closest("th[data-col]");
+      if (!th) return;
+      if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const from = +th.dataset.col, to = from + (e.key === "ArrowLeft" ? -1 : 1);
+        moveColumn(from, to);
+        const moved = tableEl.querySelector(`th[data-col="${Math.max(0, Math.min(to, ordered().length - 1))}"]`);
+        if (moved) moved.focus();
+      } else if ((e.key === "Enter" || e.key === " ") && th.dataset.sort) {
+        e.preventDefault();
+        th.click();
+      }
+    });
 
     tableEl.addEventListener("click", (e) => {
       const th = e.target.closest("th[data-sort]");
@@ -236,10 +317,16 @@
     pagerEl.addEventListener("change", (e) => {
       if (e.target.matches("[data-size]")) { state.size = +e.target.value; state.page = 0; draw(); }
     });
+    pagerEl.addEventListener("click", (e) => {
+      if (e.target.matches && e.target.matches("[data-reset-cols]")) { order = null; saveOrder(); draw(); }
+    });
 
     return {
       set(source, newColumns) {
-        if (newColumns) columns = newColumns;
+        if (newColumns) {
+          columns = newColumns;
+          if (!storeKey) order = null;  // an unsaved order belongs to the previous column set
+        }
         state.source = source;
         state.page = 0;
         state.sort = null;
@@ -402,7 +489,7 @@
     $("r-summary").textContent = `${plural(shown, "result")} from ${plural(stats.p, "paper")}`
       + ` · ${stats.b.toLocaleString()} best values (★)`
       + ` · ${(performance.now() - t0).toFixed(0)} ms · click a row for its config and notes`
-      + " · click a column title to sort";
+      + " · click a column title to sort, drag it to move the column";
   }
 
   // --------------------------------------------------------- best per dataset
@@ -590,7 +677,7 @@
 
   // ---------------------------------------------------------------------- SQL
   let sqlRows = [];
-  const sqlTable = pagedTable("s", [], { size: 100 });
+  const sqlTable = pagedTable("s", [], { size: 100, persist: false });
   function runSql() {
     const t0 = performance.now();
     try {
