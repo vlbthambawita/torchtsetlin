@@ -11,8 +11,15 @@ notation. At depth 1 on `GraphBatch.from_images` graphs it learns bit for bit li
 `ConvCoalescedTsetlinMachine` (tested). The `Trainer` accepts a `GraphBatch` wherever it takes
 a tensor. A specificity per layer (`s=(s0, s1, ...)`, as the reference implementation allows;
 new `functional.apply_feedback_blocks`), `explain_node` (traces a clause at one node back to
-the symbols of the neighbours that sent its messages) and `rules(symbols=...)`. No Triton or
-CUDA-graph fast path yet.
+the symbols of the neighbours that sent its messages) and `rules(symbols=...)`.
+
+**Graph TM on the CUDA fast paths** (`plans/graph-tm-fast-paths.md`). `GraphBatch.pad(max_nodes,
+max_edges)` gives a fixed-shape layout (edges as a `(B, E, 2)` array with a mask) whose slices
+have static shapes and never synchronise with the host. Batched updates run in events mode
+(the fused Triton commit) for flat and padded batches. Padded batches also take the compiled
+single-example commit in sequential mode and are replayed from CUDA graphs. Sequence example on
+an RTX 3090 (smoke): sequential 4.8 → 0.065 ms per graph, batched 0.23 → 0.013 ms per graph.
+`models/base.py` and the Triton kernels are unchanged.
 
 `CoalescedTsetlinMachine.rules` forwards extra keyword arguments to `clause_expression`.
 

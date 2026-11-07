@@ -2,7 +2,7 @@
 
 *Status: **steps 1–8 implemented**, 2026-11-07 (`models/graph.py`, `data/graphs.py`,
 `functional.apply_feedback_blocks`, `tests/test_graph.py`, docs, `examples/graph_sequence.py`).
-Step 9 (Triton / CUDA-graph fast paths) is open, planned in `plans/graph-tm-fast-paths.md`; step 10
+Step 9 (CUDA fast paths) implemented per `plans/graph-tm-fast-paths.md` (phases 0–5); step 10
 (paper-scale reproduction) needs a go-ahead. Tracks GitHub
 issue #8 ("Implement GRAPH TM"). See "Implementation notes" at the end.*
 
@@ -503,7 +503,7 @@ What the implementation changed or found, relative to the plan above:
 - **API additions not in the plan:** `clause_expression(..., layers=[0])` (the part of a clause
   that a message about it vouches for), `GraphBatch.edge_type_names`, `GraphBatch.cat`. The
   `Trainer` accepts a `GraphBatch` wherever it takes a tensor.
-- **Not done:** `from_networkx` / `from_pyg` builders, fast paths (step 9).
+- **Not done:** `from_networkx` / `from_pyg` builders. Step 9: see `plans/graph-tm-fast-paths.md`.
 
 ### Steps 5 (rest), 7 and 8 (2026-11-07, second pass)
 

@@ -95,10 +95,17 @@ on the CPU for big inboxes, `_dense_binding`). `_encode` returns an `_Encoded` h
 literals. `_feedback_counts` draws nodes exactly as the conv code does but sums the drawn rows
 as a sparse `W @ H` over the positive half (the negated half is `count - W @ H`), never building
 `2F`-wide rows per event. A tuple `s` (per layer, `layer_s`) commits through
-`F.apply_feedback_blocks` instead of the base commit paths. Graph models opt out of
-events mode, fused single-example commits and CUDA graphs (`_events_eligible`,
-`_fuse_single_examples`, `_graphs_ok` return False). `tests/test_graph.py` pins evaluation against
-a naive per-node reference and depth 1 against `ConvCoalescedTsetlinMachine` bit for bit.
+`F.apply_feedback_blocks` instead of the base commit paths. On CUDA, graph updates join the conv
+fast paths with nodes for patches (`_record_fast`: dense node draw, `acc.events` /
+`acc.single` with the `(B, P, 2F)` literal rows): events mode for any batch, fused sequential
+commits and CUDA graphs only for **padded** batches (`GraphBatch.pad`: `(B, E, 2)` edges plus a
+mask, slicing never syncs and keeps the shape; `_input_padded` is set in `_coerce_input`).
+`_fuse_single_examples` has no minimum model size (an eager graph step is ~5 ms of launches and
+syncs). `_graph_key` adds the padded edge shape; `GraphBatch.clone`/`copy_` serve the base
+capture code, so `models/base.py` needed no change. A per-layer `s` keeps the eager paths.
+`tests/test_graph.py` pins evaluation against a naive per-node reference, depth 1 against
+`ConvCoalescedTsetlinMachine` bit for bit (eager path), padded = flat, and the fast paths
+(sync-free updates, replays with fresh randomness).
 
 `FeedbackAccumulator` carries the per-update event counts (`n_true`, `n_false`, `n_ib`, `n2`, plus `extra`
 for weight deltas). `functional.apply_feedback` **uses those count tensors as scratch space** (in-place) —

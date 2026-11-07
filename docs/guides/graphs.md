@@ -112,6 +112,34 @@ Choosing the settings:
   `shared_node_draw=True`, and for several classes `multi_label=True` with one-hot targets and
   `negative_scale=q / (K − 1)` (see [the differences](../concepts/graph-tm.md#where-torchtsetlin-differs-from-the-reference-code)).
 
+### Speed on the GPU: pad the dataset
+
+On CUDA, pad the whole dataset to one shape before training:
+
+```python
+P = max(g_train.shape[1], g_test.shape[1])                                   # nodes
+E = int(max(g_train.edges_per_graph.max(), g_test.edges_per_graph.max()))   # edges
+g_train, g_test = g_train.pad(P, E), g_test.pad(P, E)
+```
+
+A padded batch keeps that shape when it is sliced, without looking at the data, so updates can
+use the fused kernels and be replayed from CUDA graphs. On the sequence example (RTX 3090):
+
+| Update | Flat batches | Padded batches |
+|---|---|---|
+| batched (25 graphs) | ~0.23 ms per graph | ~0.013 ms per graph |
+| sequential (one graph at a time) | ~4.8 ms per graph | ~0.065 ms per graph |
+
+(smoke measurements, not benchmarks). The results are the same in distribution; padding nodes
+and unused edge slots never match or send. What each layout gets:
+
+* **Batched updates** run in events mode (one Triton commit kernel) for flat and padded
+  batches. Padded batches are also replayed from CUDA graphs.
+* **Sequential updates** use the compiled single-example commit and CUDA graphs only for padded
+  batches, because both are built per input shape.
+* Pad to **one** shape: every distinct `(P, E)` is compiled and captured on its own. A per-layer
+  `s` or `budget_mode="hard"` keeps the eager paths. On the CPU nothing changes.
+
 ## Reading the clauses
 
 ```python

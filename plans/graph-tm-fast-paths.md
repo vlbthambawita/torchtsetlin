@@ -1,7 +1,8 @@
 # Graph Tsetlin machine: CUDA fast paths (graph-tm.md, step 9)
 
-*Status: plan, 2026-11-07. Not started. Parent plan: `plans/graph-tm.md` (steps 1–8 done,
-commits `a416264`, `01305f0`). Tracks GitHub issue #8.*
+*Status: **phases 0–5 implemented**, 2026-11-07; phase 6 (optional kernels, ragged storage)
+open, not needed by the measurements so far. Parent plan: `plans/graph-tm.md` (steps 1–8 done,
+commits `a416264`, `01305f0`). Tracks GitHub issue #8. See "Implementation notes" at the end.*
 
 ## TL;DR
 
@@ -229,3 +230,57 @@ is part of that request, not of this plan.
   * `docs/concepts/graph-tm.md`: drop "no fast path";
   * `CLAUDE.md` graph note;
   * `CHANGELOG.md`.
+
+## Implementation notes (2026-11-07)
+
+What the implementation did, relative to the plan above:
+
+- **Phase 0, sync audit** (`torch.cuda.set_sync_debug_mode("warn")`, batched and sequential,
+  CUDA):
+  - Every slice of a `GraphBatch` synchronised, including the update's own `xb[0:B]` chunk,
+    in the constructor's validation, the padding trim, `edge_graph` (`repeat_interleave`) and
+    the edge offsets.
+  - The graph `_feedback_counts` synchronised in its `nonzero` loop.
+  - The commits synchronised in `apply_feedback` (batched, budget check) and in the row-sparse
+    `apply_feedback_rows` (sequential).
+- **Phase 1.** `GraphBatch.pad`, `unpad`, `clone`, `copy_`, `is_padded`, `edge_slots` and
+  `flat_edge_mask`. `edges`, `edge_type` and `edges_per_graph` are now properties, derived for
+  padded batches.
+  - Padded slicing is plain tensor indexing with no checks (`_getitem_padded`); `cat` keeps the
+    padded layout.
+  - The model masks unused edge slots in `_inbox`.
+  - Tests:
+    - padded = flat for outputs, including extra padding nodes;
+    - eager updates are bit-identical at the same node count;
+    - padded slicing passes `set_sync_debug_mode("error")`.
+- **Phases 2–4.** One method, `_record_fast`, writes `acc.events` (events mode) or
+  `acc.single` (fused sequential) from a dense `_draw_nodes` (`rand · matches`, argmax over
+  nodes; `shared_node_draw` reuses the Ia draw). The literal tensor is materialised in float16
+  (no `HALF` flag: not needed so far).
+  - Events mode needs no padding: `fused_commit` takes `B` and `P` at run time, so flat batches
+    use it too.
+  - **Change from the plan:** `_fuse_single_examples` has no minimum model size. The base rule
+    (`ta_state.numel() · steps ≥ 2^18`) kept the sequence example (6,480 automata, Trainer
+    batches of 25) on the eager path at ~4.8 ms per graph. An eager graph step costs that in
+    launches and syncs whatever the model size, so a padded graph model fuses whenever it can.
+- **Phase 5.** `_graphs_ok` accepts only padded batches. `_graph_key` is the base key on the
+  node features plus the padded edge shape. **No change to `models/base.py`** was needed:
+  `GraphBatch.clone()` and `copy_()` are exactly what the base capture code calls.
+- **Measured (smoke, RTX 3090, sequence example, 40 clauses, depth 2):**
+
+  | Update | Before | Now |
+  |---|---|---|
+  | Sequential | 4.8 ms per graph | 0.065 ms per graph replayed (~74×); an epoch of 2,000 graphs takes 0.1 s instead of 9.7 s |
+  | Batched (25) | 0.23 ms per graph | 0.013 ms per graph (~17×) |
+
+  The example reaches 1.000 on seeds 0–3. The first sequential call compiles (~6 s once).
+- **Tests** (`tests/test_graph.py`, CUDA ones need Triton):
+  - the dense draw is uniform and independent;
+  - events carry the literal rows and matching nodes;
+  - padded updates take the fused paths and learn the AAA task (flat sequential, per-layer `s`
+    stay eager);
+  - padded updates never synchronise (batched and sequential);
+  - CUDA-graph replays learn and draw fresh randomness (restoring caches in place, so the
+    replay itself is tested).
+- **Not done (phase 6):** bit-packed node evaluation, a fused inbox kernel and ragged storage.
+  The profiles do not call for them yet.

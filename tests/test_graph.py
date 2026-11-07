@@ -482,3 +482,237 @@ def test_per_layer_specificity():
                                budget_mode="hard")
     with pytest.raises(ValueError):
         tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(0.5, 3.0), depth=2)
+
+
+# ----------------------------------------------------------------------------- padded layout
+
+
+def test_padded_layout_round_trips_and_slices_like_the_flat_one():
+    gen = torch.Generator().manual_seed(21)
+    g = _random_graphs(7, 5, n_edge_types=2, n_node_types=2, gen=gen)
+    p = g.pad(max_nodes=g.shape[1] + 2, max_edges=int(g.edges_per_graph.max()) + 3)
+    assert p.is_padded and not g.is_padded
+    assert p.shape[1] == g.shape[1] + 2 and p.edge_slots == 7 * (int(g.edges_per_graph.max()) + 3)
+    for a, b in [(p.edges, g.edges), (p.edge_type, g.edge_type), (p.edges_per_graph, g.edges_per_graph)]:
+        assert torch.equal(a, b)
+    back = p.unpad()
+    assert torch.equal(back.node_features, g.node_features) and torch.equal(back.edges, g.edges)
+    assert torch.equal(back.node_type, g.node_type)
+    for idx in [3, slice(1, 5), torch.tensor([6, 0, 0]), torch.tensor([True, False] * 3 + [True])]:
+        a, b = p[idx], g[idx]
+        assert a.is_padded and a.shape[1] == p.shape[1]
+        assert torch.equal(a.edges, b.edges) and torch.equal(a.edge_type, b.edge_type)
+        assert torch.equal(a.unpad().node_features, b.node_features)
+    c = GraphBatch.cat([p[:3], p[3:].pad(p.shape[1] + 1, p._padded[0].shape[1] + 1)])
+    assert c.is_padded and c.shape[1] == p.shape[1] + 1 and torch.equal(c.edges, g.edges)
+    d = p.clone()
+    d.copy_(p[torch.tensor([1, 0, 2, 3, 4, 5, 6])])
+    assert torch.equal(d.edges, g[torch.tensor([1, 0, 2, 3, 4, 5, 6])].edges)
+    with pytest.raises(ValueError):
+        g.pad(max_nodes=1)
+    with pytest.raises(ValueError):
+        d.copy_(g)
+
+
+@pytest.mark.parametrize("encoding", ["random", "one_hot"])
+def test_padded_batches_evaluate_and_learn_like_flat_ones(device, encoding):
+    gen = torch.Generator().manual_seed(22)
+    g = _random_graphs(9, 6, n_edge_types=2, gen=gen)
+    y = torch.randint(0, 3, (9,), generator=gen)
+    kw = dict(T=8, depth=3, message_size=16, message_encoding=encoding, n_edge_types=2)
+    a = tt.GraphTsetlinMachine(6, 3, 12, **kw)
+    _sparse_includes(a, p=0.05, gen=gen)
+    b = tt.GraphTsetlinMachine(6, 3, 12, **kw)
+    b.load_state_dict(a.state_dict())
+    a, b = a.to(device), b.to(device)
+    gf, gp = g.to(device), g.pad(max_edges=int(g.edges_per_graph.max()) + 4).to(device)
+    big = g.pad(max_nodes=g.shape[1] + 3).to(device)
+    for empty in (True, False):
+        ref = a.node_clause_outputs(gf, empty_value=empty)
+        assert torch.equal(a.node_clause_outputs(gp, empty_value=empty), ref)
+        assert torch.equal(a.node_clause_outputs(big, empty_value=empty)[:, : ref.shape[1]], ref)
+        assert not a.node_clause_outputs(big, empty_value=empty)[:, ref.shape[1]:].any()
+    # same node count and random stream: the eager update is bit for bit the same
+    for m, x in ((a, gf), (b, gp)):
+        torch.manual_seed(23)
+        for _ in range(3):
+            m.update(x, y.to(device))
+    assert torch.equal(a.ta_state, b.ta_state) and torch.equal(a.weights, b.weights)
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="needs CUDA")
+def test_padded_slicing_never_synchronises():
+    gen = torch.Generator().manual_seed(24)
+    g = _random_graphs(12, 4, n_edge_types=2, gen=gen).pad().to("cuda")
+    idx = torch.randperm(12, device="cuda")
+    torch.cuda.set_sync_debug_mode("error")
+    try:
+        parts = [g[idx[i:i + 4]] for i in range(0, 12, 4)] + [g[2:7], g[5]]
+        parts[0].clone().copy_(parts[1])
+        src, dst, et = parts[0].flat_edges()
+        parts[0].flat_edge_mask()
+    finally:
+        torch.cuda.set_sync_debug_mode(0)
+    assert all(p.shape[1] == g.shape[1] for p in parts)
+
+
+# ----------------------------------------------------------------------------- CUDA fast paths
+# (plans/graph-tm-fast-paths.md: events mode, fused sequential commits, CUDA graphs)
+
+from torchtsetlin import _triton as K  # noqa: E402
+
+CUDA = torch.device("cuda")
+needs_triton = pytest.mark.skipif(not (torch.cuda.is_available() and K.available(CUDA)),
+                                  reason="needs CUDA and Triton")
+
+
+def test_dense_node_draw_is_uniform_over_matching_nodes_and_independent():
+    m = tt.GraphTsetlinMachine(3, 2, 2, T=5)
+    matches = torch.zeros(1, 5, 2, dtype=torch.bool)
+    matches[0, [0, 2, 3], 0] = True  # clause 0 matches at nodes 0, 2, 3
+    matches[0, 4, 1] = True          # clause 1 only at node 4
+    torch.manual_seed(0)
+    draws = [m._draw_nodes(matches.expand(4000, 5, 2)) for _ in range(1)][0]
+    p_i, p_ii = draws
+    freq = torch.bincount(p_i[:, 0].long(), minlength=5).float() / 4000
+    assert torch.allclose(freq[[0, 2, 3]], torch.full((3,), 1 / 3), atol=0.03) and freq[[1, 4]].sum() == 0
+    assert (p_i[:, 1] == 4).all() and (p_ii[:, 1] == 4).all()
+    joint = (p_i[:, 0] == p_ii[:, 0]).float().mean().item()
+    assert abs(joint - 1 / 3) < 0.03  # independent draws agree with probability 1/3
+    m.shared_node_draw = True
+    a, b = m._draw_nodes(matches)
+    assert torch.equal(a, b)
+
+
+def _aaa_padded(n, seed):
+    gen = torch.Generator().manual_seed(seed)
+    sym = SymbolTable(list("ABCDE"), encoding="one_hot")
+    xs, ys = _aaa_task(n, gen)
+    return GraphBatch.from_sequences(xs, sym).pad(5, 8), ys
+
+
+@needs_triton
+def test_events_record_the_literal_rows_and_matching_nodes():
+    g, y = _aaa_padded(40, 3)
+    g, y = g.to(CUDA), y.to(CUDA)
+    m = tt.GraphTsetlinMachine(5, 2, 8, T=10, depth=2, message_encoding="one_hot", n_edge_types=2).to(CUDA)
+    _sparse_includes(m, p=0.1, gen=torch.Generator().manual_seed(4))
+    xb = m._prepare(g)
+    acc = m._new_accumulator(events=True)
+    m._accumulate_chunk(xb, m._coerce_targets(y, len(xb), xb.device), acc)
+    lit, s_i, s_ii, p_i, p_ii = acc.events
+    enc = m._encode(xb)
+    running, xs = m._evaluate_layers(enc)
+    full = torch.cat(xs + [1.0 - x for x in xs], dim=1).view(40, 5, -1)
+    assert torch.equal(lit, full)
+    matches = running[-1].view(40, 5, -1)
+    b, j = torch.nonzero(s_i, as_tuple=True)
+    assert matches[b, p_i[b, j].long(), j].all()  # Type Ia goes to a node where the clause holds
+    b, j = torch.nonzero(s_ii, as_tuple=True)
+    assert matches[b, p_ii[b, j].long(), j].all()
+    assert torch.equal(acc.n_ia, s_i.sum(0).to(acc.n_ia.dtype))
+
+
+@needs_triton
+@pytest.mark.parametrize("seq", [False, True])
+def test_padded_updates_take_the_fast_paths_and_learn(compiled, seq, monkeypatch):
+    calls = {"commit": 0, "single": 0}
+    real_commit, real_single = K.fused_commit, tt.functional.commit_single_example
+
+    def commit(*a, **k):
+        calls["commit"] += 1
+        return real_commit(*a, **k)
+
+    def single(*a, **k):
+        calls["single"] += 1
+        return real_single(*a, **k)
+
+    monkeypatch.setattr(K, "fused_commit", commit)
+    monkeypatch.setattr(tt.functional, "commit_single_example", single)
+    g, y = _aaa_padded(3000 if not seq else 1500, 1)
+    gt, yt = _aaa_padded(1000, 2)
+    g, y, gt, yt = g.to(CUDA), y.to(CUDA), gt.to(CUDA), yt.to(CUDA)
+    torch.manual_seed(0)
+    m = tt.GraphTsetlinMachine(5, 2, 8, T=40, s=2.0, depth=2, message_encoding="one_hot",
+                               n_edge_types=2, feedback_mode="sequential" if seq else "batch").to(CUDA)
+    m.cuda_graphs = False  # count the Python-level calls (a replay runs without them)
+    for _ in range(3):
+        perm = torch.randperm(len(g), device=CUDA)
+        for i in range(0, len(g), 25):
+            m.update(g[perm[i:i + 25]], y[perm[i:i + 25]])
+    assert calls["single" if seq else "commit"] > 0
+    m.eval()
+    assert (m.predict(gt) == yt).float().mean().item() > 0.99
+    m.train()
+    # events mode does not need padding (the kernel takes B and P at run time), the fused
+    # sequential step does (it is compiled per shape); per-layer s stays on the eager paths
+    calls.update(commit=0, single=0)
+    m.update(g[:25].unpad(), y[:25])
+    assert calls == ({"commit": 0, "single": 0} if seq else {"commit": 1, "single": 0})
+    calls.update(commit=0, single=0)
+    p = tt.GraphTsetlinMachine(5, 2, 8, T=40, s=(2.0, 3.0), depth=2, message_encoding="one_hot",
+                               n_edge_types=2, feedback_mode="sequential" if seq else "batch").to(CUDA)
+    p.update(g[:25], y[:25])
+    assert calls == {"commit": 0, "single": 0}
+
+
+@needs_triton
+@pytest.mark.parametrize("seq", [False, True])
+def test_padded_graph_updates_never_synchronise_with_the_host(compiled, seq):
+    g, y = _aaa_padded(200, 5)
+    g, y = g.to(CUDA), y.to(CUDA)
+    m = tt.GraphTsetlinMachine(5, 2, 8, T=40, s=2.0, depth=3, message_size=32, n_edge_types=2,
+                               max_included_literals=6, feedback_mode="sequential" if seq else "batch").to(CUDA)
+    m.cuda_graphs = False
+    for i in range(0, 150, 25):  # compile / warm up
+        m.update(g[i:i + 25], y[i:i + 25])
+    torch.cuda.synchronize()
+    torch.cuda.set_sync_debug_mode("error")
+    try:
+        m.update(g[150:175], y[150:175])
+    finally:
+        torch.cuda.set_sync_debug_mode(0)
+
+
+@needs_triton
+@pytest.mark.parametrize("seq", [False, True])
+def test_padded_graph_updates_replay_cuda_graphs_with_fresh_randomness(seq):
+    g, y = _aaa_padded(2000, 6)
+    gt, yt = _aaa_padded(500, 7)
+    g, y, gt, yt = g.to(CUDA), y.to(CUDA), gt.to(CUDA), yt.to(CUDA)
+    torch.manual_seed(0)
+    m = tt.GraphTsetlinMachine(5, 2, 8, T=40, s=2.0, depth=2, message_encoding="random", message_size=32,
+                               n_edge_types=2, feedback_mode="sequential" if seq else "batch").to(CUDA)
+    for _ in range(3):
+        for i in range(0, 2000, 25):
+            m.update(g[i:i + 25], y[i:i + 25])
+    graphs = [v for v in m.__dict__["_graphs"].values() if not isinstance(v, str)]
+    assert graphs, "no update was replayed from a CUDA graph"
+    m.eval()
+    assert (m.predict(gt) == yt).float().mean().item() > 0.99
+    m.train()
+    # replaying the same update from the same state twice must not repeat the random draws
+    # (wrong labels, so that the converged model gets feedback to sample)
+    state, weights, yy = m.ta_state.clone(), m.weights.clone(), 1 - y[:25]
+
+    def restore():  # automata and clause weights (both learn); caches in place, so the
+        m.ta_state.copy_(state)  # CUDA-graph key (buffer addresses) stays the same
+        m.weights.copy_(weights)
+        m.include.copy_((state >= m.n_states).to(m.include.dtype))
+        m.include_count.copy_((state >= m.n_states).sum(1))
+
+    for _ in range(3):  # make sure this shape is captured, then compare two replays
+        restore()
+        m.update(g[:25], yy)
+    key = next(reversed(m.__dict__["_graphs"]))
+    assert not isinstance(m.__dict__["_graphs"][key], str), "the update was not replayed"
+    restore()
+    m.update(g[:25], yy)
+    first = m.ta_state.clone()
+    restore()
+    m.update(g[:25], yy)
+    assert next(reversed(m.__dict__["_graphs"])) == key
+    assert not torch.equal(first, m.ta_state)
+    inc = m.ta_state >= m.n_states
+    assert torch.equal(m.include, inc.to(m.include.dtype))
+    assert torch.equal(m.include_bits(), K.pack_bits(inc))

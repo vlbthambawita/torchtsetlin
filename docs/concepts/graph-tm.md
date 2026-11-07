@@ -117,6 +117,10 @@ Two consequences:
 * **Batched feedback works as for other models** ([batching](batching.md)). A batch of graphs is
   padded to its largest node count and evaluated in one pass; `feedback_mode="sequential"` is the
   reference implementation's one graph at a time.
+* **The CUDA fast paths of the convolutional machine apply**: with nodes for patches, the fused
+  Triton commit and the compiled single-example commit take the graph's literal rows and the
+  drawn nodes unchanged. Datasets padded to one shape (`GraphBatch.pad`) are also replayed from
+  CUDA graphs ([guide](../guides/graphs.md#speed-on-the-gpu-pad-the-dataset)).
 
 ### Where torchtsetlin differs from the reference code
 

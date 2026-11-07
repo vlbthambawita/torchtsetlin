@@ -58,6 +58,8 @@ def main() -> None:
     ap.add_argument("--n-train", type=int, default=10000)
     ap.add_argument("--message-encoding", default="one_hot", choices=["one_hot", "random", "double_hashing"])
     ap.add_argument("--sequential", action="store_true", help="one graph at a time, as the reference code")
+    ap.add_argument("--flat", action="store_true",
+                    help="keep the flat graph layout (no CUDA fast paths) instead of padding")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
@@ -68,6 +70,12 @@ def main() -> None:
     x_test, y_test = make_sequences(2000, seed=1)
     g_train = GraphBatch.from_sequences(x_train, symbols)
     g_test = GraphBatch.from_sequences(x_test, symbols)
+    if not args.flat:
+        # one fixed shape for the whole dataset: on CUDA, updates then run the fused kernels
+        # and are replayed from CUDA graphs (the results are the same as with --flat)
+        P = max(g_train.shape[1], g_test.shape[1])
+        E = int(max(g_train.edges_per_graph.max(), g_test.edges_per_graph.max()))
+        g_train, g_test = g_train.pad(P, E), g_test.pad(P, E)
 
     model = tt.GraphTsetlinMachine(
         n_features=symbols.dim, n_outputs=3, n_clauses=args.clauses, T=args.T, s=args.s,

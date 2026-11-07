@@ -36,11 +36,12 @@ _ENCODINGS = ("random", "double_hashing", "one_hot")
 class _Encoded:
     """A coerced :class:`GraphBatch` flattened for evaluation: what ``_encode`` returns."""
 
-    __slots__ = ("x0", "node_ok", "node_type", "src", "dst", "etype", "B", "P")
+    __slots__ = ("x0", "node_ok", "node_type", "src", "dst", "etype", "emask", "B", "P")
 
-    def __init__(self, x0, node_ok, node_type, src, dst, etype, B, P):
+    def __init__(self, x0, node_ok, node_type, src, dst, etype, B, P, emask=None):
         self.x0, self.node_ok, self.node_type = x0, node_ok, node_type
         self.src, self.dst, self.etype = src, dst, etype
+        self.emask = emask  # (E,) real edges of a padded batch, None when all are real
         self.B, self.P = B, P
 
     @property
@@ -83,6 +84,7 @@ class _GraphMixin:
             raise ValueError(f"the batch has {x.n_node_types} node types, the model {self.n_node_types}")
         if self.is_initialized and x.n_features != self.n_node_features:  # type: ignore[attr-defined]
             raise ValueError(f"expected {self.n_node_features} node features, got {x.n_features}")
+        self.__dict__["_input_padded"] = x.is_padded  # read by _fuse_single_examples / _graphs_ok
         return x.to(self.ta_state.device)  # type: ignore[attr-defined]
 
     def _infer_n_features(self, xb: GraphBatch) -> int:  # type: ignore[override]
@@ -93,8 +95,9 @@ class _GraphMixin:
         dt = self._include_dtype()  # type: ignore[attr-defined]
         src, dst, et = xb.flat_edges()
         nt = None if xb.node_type is None else xb.node_type.reshape(B * P)
+        em = xb.flat_edge_mask()
         return _Encoded(xb.node_features.reshape(B * P, F0).to(dt), xb.node_mask.reshape(B * P),
-                        nt, src, dst, et, B, P)
+                        nt, src, dst, et, B, P, None if em is None else em.unsqueeze(1).to(dt))
 
     # ---- chunking and the fast paths we do not take --------------------------------
     def _patches_per_example(self, xb: GraphBatch) -> int:  # type: ignore[override]
@@ -104,7 +107,7 @@ class _GraphMixin:
         P = self._patches_per_example(xb)
         C = self.n_clauses_total  # type: ignore[attr-defined]
         Ft = int(self.n_features)  # type: ignore[attr-defined]
-        E = int(xb.edges.shape[0]) / max(1, len(xb))
+        E = xb.edge_slots / max(1, len(xb))
         per_node = C * (3 + self.n_edge_types) + 3 * Ft + self.message_size
         return int(P * per_node + E * C)
 
@@ -114,13 +117,31 @@ class _GraphMixin:
         return max(1, self.max_chunk_elements // (2 * P + 2 * L))  # type: ignore[attr-defined]
 
     def _events_eligible(self, n_examples: int) -> bool:  # type: ignore[override]
-        return False  # no Triton events path for graphs (yet)
+        """The base rule (CUDA with Triton, soft budget, counts within the kernel table), for
+        one ``s`` (the Triton commit takes a scalar specificity)."""
+        return self.layer_s is None and super()._events_eligible(n_examples)  # type: ignore[misc]
 
     def _fuse_single_examples(self, n_examples: int = 1) -> bool:  # type: ignore[override]
-        return False
+        """Fused sequential commits on CUDA for padded batches (the compiled step is traced per
+        input shape, and flat batches change shape with every graph), one ``s`` and the soft
+        budget. Unlike the base rule there is no minimum model size: an eager graph step is a
+        few hundred kernel launches and host syncs (~5 ms on an RTX 3090) whatever the size,
+        so fusing (and replaying it from CUDA graphs) pays off even for tiny models."""
+        return (self.layer_s is None and self.__dict__.get("_input_padded", False)
+                and self.ta_state.device.type == "cuda"  # type: ignore[attr-defined]
+                and (self.max_included_literals is None or self.budget_mode == "soft")  # type: ignore[attr-defined]
+                and bool(F._COMPILE["enabled"]))
 
     def _graphs_ok(self, seq: bool, xb, fuse: bool) -> bool:  # type: ignore[override]
-        return False  # graph shapes vary between batches: no CUDA-graph capture
+        """CUDA graphs for padded batches only: their slices have static shapes and the update
+        is free of host synchronisation (flat batches change shape with every graph)."""
+        return bool(getattr(xb, "is_padded", False)) and super()._graphs_ok(seq, xb, fuse)  # type: ignore[misc]
+
+    def _graph_key(self, seq: bool, xb: GraphBatch, y_t: Tensor) -> tuple:  # type: ignore[override]
+        """The base key on the node features, plus the padded edge layout."""
+        e, _, _ = xb._padded  # type: ignore[misc]
+        return super()._graph_key(seq, xb.node_features, y_t) + (  # type: ignore[misc]
+            tuple(e.shape), xb.node_type is not None, xb.n_edge_types)
 
     # ---- message passing -----------------------------------------------------------
     def _bind_matrix(self, dtype: torch.dtype) -> Tensor:
@@ -149,7 +170,10 @@ class _GraphMixin:
             return torch.zeros(N, M, dtype=dt, device=sent.device)
         # S[n, t, j] = number of in-neighbours of n over type t at which clause j matched
         S = torch.zeros(N * nt, C, dtype=dt, device=sent.device)
-        S.index_add_(0, enc.dst * nt + enc.etype, sent[enc.src].to(dt))
+        msg = sent[enc.src].to(dt)
+        if enc.emask is not None:  # unused edge slots of a padded batch carry nothing
+            msg = msg * enc.emask
+        S.index_add_(0, enc.dst * nt + enc.etype, msg)
         S = S.view(N, nt, C) > 0
         if self.message_encoding == "one_hot":  # bit j * nt + t: no collisions, no matmul
             return S.transpose(1, 2).reshape(N, C * nt).to(dt)
@@ -233,6 +257,9 @@ class _GraphMixin:
         matches, xs = ctx
         B, P = literals.B, literals.P
         N, C = B * P, matches.shape[2]
+        if acc.record_events or (acc.fuse and B == 1):
+            self._record_fast(xs, matches, sel_fire_i, sel_nofire_i, sel_fire_ii, acc)
+            return
         acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no node features
         if self.shared_node_draw:
             # the reference implementation: one random matching node per (graph, clause),
@@ -277,8 +304,36 @@ class _GraphMixin:
                 acc.n2[:, :Fn] += neg
                 acc.n2[:, Fn:] += pos
 
-    _feedback_counts._records_single = False  # type: ignore[attr-defined]
-    _feedback_counts._records_events = False  # type: ignore[attr-defined]
+    _feedback_counts._records_single = True  # type: ignore[attr-defined]
+    _feedback_counts._records_events = True  # type: ignore[attr-defined]
+
+    def _draw_nodes(self, matches: Tensor) -> Tuple[Tensor, Tensor]:
+        """``(B, C)`` int32 random matching node for Type Ia and an independent one for Type II
+        (the same one under ``shared_node_draw``), drawn densely: no host synchronisation and
+        no data-dependent shapes, as the CUDA fast paths need. Equal in distribution to the
+        draw of the eager path (arbitrary where the clause matches nowhere, as there)."""
+        m = matches.to(torch.float32)
+        p_i = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1).to(torch.int32)
+        if self.shared_node_draw:
+            return p_i, p_i
+        p_ii = (torch.rand(m.shape, device=m.device) * m).argmax(dim=1).to(torch.int32)
+        return p_i, p_ii
+
+    def _record_fast(self, xs: List[Tensor], matches: Tensor, sel_fire_i: Tensor, sel_nofire_i: Tensor,
+                     sel_fire_ii: Tensor, acc: FeedbackAccumulator) -> None:
+        """Events mode (``acc.events`` for :func:`_triton.fused_commit`) and fused sequential
+        mode (``acc.single`` for :func:`F.commit_single_example`): the convolutional records,
+        with nodes for patches and the concatenated layer inputs as the literal row."""
+        B, P, C = matches.shape
+        full = torch.cat(xs + [1.0 - x for x in xs], dim=1).view(B, P, -1)  # (B, P, 2F)
+        p_i, p_ii = self._draw_nodes(matches)
+        if acc.record_events:
+            acc.n_ib += sel_nofire_i.sum(dim=0)
+            acc.n_ia += sel_fire_i.sum(dim=0)
+            acc.events = (full, sel_fire_i, sel_fire_ii, p_i, p_ii)
+            return
+        acc.single = (full[0, p_i[0].long()], full[0, p_ii[0].long()], sel_fire_i[0], sel_nofire_i[0],
+                      sel_fire_ii[0])
 
     def _layer_columns(self) -> List[Tensor]:
         """Literal columns of every layer (positive and negated), into the ``2F`` axis."""
@@ -491,7 +546,8 @@ class _GraphMixin:
         bounds = self._layer_bounds()
         dev = mask.device
         groups, labels = self._message_groups(dev) if self.depth > 1 else (None, [])
-        src, dst, et = enc.src.tolist(), enc.dst.tolist(), enc.etype.tolist()
+        real = slice(None) if enc.emask is None else enc.emask.squeeze(1) > 0
+        src, dst, et = enc.src[real].tolist(), enc.dst[real].tolist(), enc.etype[real].tolist()
 
         def node_label(v: int) -> str:
             f = xs[0][v] > 0.5

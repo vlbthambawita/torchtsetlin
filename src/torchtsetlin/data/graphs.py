@@ -9,6 +9,11 @@ is a node, so a graph without edges is the input of a convolutional Tsetlin mach
 Storage is padded: features ``(B, P, F)`` with ``P`` the largest node count of the batch and a
 ``(B, P)`` node mask. Edges are kept per graph, sorted by graph, with *local* node indices,
 so that slicing a batch (``batch[idx]``) is cheap and keeps every edge inside its graph.
+
+:meth:`GraphBatch.pad` gives the *fixed-shape* layout: a fixed node count ``P`` and edges as a
+``(B, E, 2)`` array with an edge mask. Slicing it never looks at the data (no host
+synchronisation, and the shape of a slice depends only on how many graphs it holds), which is
+what the CUDA fast paths of :class:`~torchtsetlin.models.GraphTsetlinMachine` need.
 """
 
 from __future__ import annotations
@@ -196,9 +201,10 @@ class GraphBatch:
                 raise ValueError("node_type must have shape (B, P)")
         self.node_features = x
         self.n_nodes = n_nodes
-        self.edges = edges
-        self.edge_type = edge_type
-        self.edges_per_graph = edges_per_graph
+        self._edges: Optional[Tensor] = edges
+        self._edge_type: Optional[Tensor] = edge_type
+        self._edges_per_graph: Optional[Tensor] = edges_per_graph
+        self._padded: Optional[Tuple[Tensor, Tensor, Tensor]] = None
         self.node_type = node_type
         inferred_et = int(edge_type.max()) + 1 if E else 1
         self.n_edge_types = int(n_edge_types) if n_edge_types is not None else inferred_et
@@ -211,6 +217,142 @@ class GraphBatch:
         self.edge_type_names = None if edge_type_names is None else [str(n) for n in edge_type_names]
         if self.edge_type_names is not None and len(self.edge_type_names) != self.n_edge_types:
             raise ValueError("edge_type_names needs one name per edge type")
+
+    # ------------------------------------------------------------------ padded layout
+    @classmethod
+    def _from_padded(cls, node_features: Tensor, n_nodes: Tensor, edges: Tensor, edge_type: Tensor,
+                     edge_mask: Tensor, node_type: Optional[Tensor], n_edge_types: int,
+                     n_node_types: int, edge_type_names: Optional[Sequence[str]]) -> GraphBatch:
+        """A padded batch from its tensors, without validation (no host synchronisation)."""
+        g = cls.__new__(cls)
+        g.node_features = node_features
+        g.n_nodes = n_nodes
+        g._edges = g._edge_type = g._edges_per_graph = None
+        g._padded = (edges, edge_type, edge_mask)
+        g.node_type = node_type
+        g.n_edge_types = int(n_edge_types)
+        g.n_node_types = int(n_node_types)
+        g.edge_type_names = None if edge_type_names is None else list(edge_type_names)
+        return g
+
+    @property
+    def is_padded(self) -> bool:
+        """Whether the batch has the fixed-shape layout of :meth:`pad`."""
+        return self._padded is not None
+
+    @property
+    def edge_slots(self) -> int:
+        """Stored edges: ``E`` (flat layout) or ``B * max_edges`` (padded layout). No sync."""
+        if self._padded is not None:
+            return int(self._padded[0].shape[0] * self._padded[0].shape[1])
+        return int(self._edges.shape[0])  # type: ignore[union-attr]
+
+    def pad(self, max_nodes: Optional[int] = None, max_edges: Optional[int] = None) -> GraphBatch:
+        """The fixed-shape layout: nodes padded to ``max_nodes``, edges stored as a
+        ``(B, max_edges, 2)`` array with an edge mask (defaults: this batch's maxima).
+
+        Slicing a padded batch keeps ``max_nodes`` and ``max_edges`` and never inspects the
+        data, so it is free of host synchronisation and its shape depends only on the number
+        of graphs. That is what lets :class:`~torchtsetlin.models.GraphTsetlinMachine` use the
+        CUDA fast paths (events mode, fused sequential commits, CUDA graphs). Pad a whole
+        dataset to one size: every distinct ``(max_nodes, max_edges)`` is compiled and captured
+        separately. Results are the same as with the flat layout.
+        """
+        if self._padded is not None and max_nodes is None and max_edges is None:
+            return self
+        B, P0, F_ = self.shape
+        dev = self.device
+        per = self.edges_per_graph
+        need_p = int(self.n_nodes.max()) if B else 0
+        need_e = int(per.max()) if B and per.numel() else 0
+        P = need_p if max_nodes is None else int(max_nodes)
+        E = need_e if max_edges is None else int(max_edges)
+        if P < need_p:
+            raise ValueError(f"max_nodes={P} is below the largest graph ({need_p} nodes)")
+        if E < need_e:
+            raise ValueError(f"max_edges={E} is below the largest graph ({need_e} edges)")
+        P = max(P, 1)
+        feats = torch.zeros(B, P, F_, dtype=torch.bool, device=dev)
+        k = min(P, P0)
+        feats[:, :k] = self.node_features[:, :k]
+        ntype = None
+        if self.node_type is not None:
+            ntype = torch.zeros(B, P, dtype=torch.long, device=dev)
+            ntype[:, :k] = self.node_type[:, :k]
+        edges = torch.zeros(B, E, 2, dtype=torch.long, device=dev)
+        etype = torch.zeros(B, E, dtype=torch.long, device=dev)
+        mask = torch.zeros(B, E, dtype=torch.bool, device=dev)
+        flat_e, flat_t = self.edges, self.edge_type
+        if flat_e.shape[0]:
+            graph = self.edge_graph
+            start = torch.cumsum(per, 0) - per
+            slot = torch.arange(flat_e.shape[0], device=dev) - start[graph]
+            edges[graph, slot] = flat_e
+            etype[graph, slot] = flat_t
+            mask[graph, slot] = True
+        return GraphBatch._from_padded(feats, self.n_nodes, edges, etype, mask, ntype, self.n_edge_types,
+                                       self.n_node_types, self.edge_type_names)
+
+    def unpad(self) -> GraphBatch:
+        """The flat layout (trimmed to the largest graph); a flat batch is returned as is."""
+        if self._padded is None:
+            return self
+        P = int(self.n_nodes.max()) if len(self) else 0
+        return GraphBatch(self.node_features[:, :P], self.n_nodes, self.edges, self.edge_type,
+                          self.edges_per_graph, None if self.node_type is None else self.node_type[:, :P],
+                          self.n_edge_types, self.n_node_types, self.edge_type_names)
+
+    def copy_(self, other: GraphBatch) -> GraphBatch:
+        """Copy a padded batch of the same shape into this one, in place (CUDA-graph inputs)."""
+        if self._padded is None or other._padded is None:
+            raise ValueError("copy_ needs padded batches (GraphBatch.pad)")
+        if (self.shape != other.shape or self._padded[0].shape != other._padded[0].shape
+                or (self.node_type is None) != (other.node_type is None)):
+            raise ValueError("copy_ needs batches of the same padded shape")
+        self.node_features.copy_(other.node_features)
+        self.n_nodes.copy_(other.n_nodes)
+        for a, b in zip(self._padded, other._padded):
+            a.copy_(b)
+        if self.node_type is not None:
+            self.node_type.copy_(other.node_type)  # type: ignore[arg-type]
+        return self
+
+    def clone(self) -> GraphBatch:
+        """A copy with its own storage (same layout)."""
+        if self._padded is not None:
+            e, t, m = self._padded
+            return GraphBatch._from_padded(self.node_features.clone(), self.n_nodes.clone(), e.clone(), t.clone(),
+                                           m.clone(), None if self.node_type is None else self.node_type.clone(),
+                                           self.n_edge_types, self.n_node_types, self.edge_type_names)
+        return GraphBatch(self.node_features.clone(), self.n_nodes.clone(), self.edges.clone(),
+                          self.edge_type.clone(), self.edges_per_graph.clone(),
+                          None if self.node_type is None else self.node_type.clone(),
+                          self.n_edge_types, self.n_node_types, self.edge_type_names)
+
+    # ------------------------------------------------------------------ edges
+    @property
+    def edges(self) -> Tensor:
+        """``(E, 2)`` local ``(source, destination)`` pairs, grouped by graph (for a padded
+        batch, derived from the padded layout)."""
+        if self._padded is not None:
+            e, _, m = self._padded
+            return e[m]
+        return self._edges  # type: ignore[return-value]
+
+    @property
+    def edge_type(self) -> Tensor:
+        """``(E,)`` edge types, in the order of :attr:`edges`."""
+        if self._padded is not None:
+            _, t, m = self._padded
+            return t[m]
+        return self._edge_type  # type: ignore[return-value]
+
+    @property
+    def edges_per_graph(self) -> Tensor:
+        """``(B,)`` edge count of every graph."""
+        if self._padded is not None:
+            return self._padded[2].sum(dim=1)
+        return self._edges_per_graph  # type: ignore[return-value]
 
     # ------------------------------------------------------------------ tensor-like API
     @property
@@ -248,12 +390,19 @@ class GraphBatch:
         if device == self.device:
             return self
         mv = lambda t: None if t is None else _to_device(t, device)  # noqa: E731
+        if self._padded is not None:
+            e, t, m = self._padded
+            return GraphBatch._from_padded(mv(self.node_features), mv(self.n_nodes), mv(e), mv(t), mv(m),
+                                           mv(self.node_type), self.n_edge_types, self.n_node_types,
+                                           self.edge_type_names)
         return GraphBatch(mv(self.node_features), mv(self.n_nodes), mv(self.edges), mv(self.edge_type),
                           mv(self.edges_per_graph), mv(self.node_type), self.n_edge_types, self.n_node_types,
                           self.edge_type_names)
 
     def __getitem__(self, index: IndexLike) -> GraphBatch:
         B = len(self)
+        if self._padded is not None:
+            return self._getitem_padded(index)
         if isinstance(index, int):
             if not -B <= index < B:
                 raise IndexError("graph index out of range")
@@ -287,11 +436,44 @@ class GraphBatch:
         return GraphBatch(feats, n_nodes, edges, etype, counts, ntype, self.n_edge_types, self.n_node_types,
                           self.edge_type_names)
 
+    def _getitem_padded(self, index: IndexLike) -> GraphBatch:
+        """Padded slicing: plain tensor indexing of every field, no checks on the data."""
+        if isinstance(index, int):
+            B = len(self)
+            if not -B <= index < B:
+                raise IndexError("graph index out of range")
+            index = slice(index % B, index % B + 1)
+        elif not isinstance(index, slice):
+            index = torch.as_tensor(index, device=self.device)
+            if index.dtype != torch.bool:
+                index = index.long().reshape(-1)
+        e, t, m = self._padded  # type: ignore[misc]
+        return GraphBatch._from_padded(
+            self.node_features[index], self.n_nodes[index], e[index], t[index], m[index],
+            None if self.node_type is None else self.node_type[index], self.n_edge_types,
+            self.n_node_types, self.edge_type_names)
+
     @staticmethod
     def cat(batches: Sequence[GraphBatch]) -> GraphBatch:
-        """Concatenate batches along the graph axis (padding to the largest node count)."""
+        """Concatenate batches along the graph axis (padding to the largest node count).
+        Padded batches give a padded batch (to the largest ``max_nodes`` and ``max_edges``)."""
         if not batches:
             raise ValueError("nothing to concatenate")
+        if all(b.is_padded for b in batches):
+            P = max(b.shape[1] for b in batches)
+            E = max(b._padded[0].shape[1] for b in batches)  # type: ignore[index]
+            parts = [b.to(batches[0].device) for b in batches]
+            parts = [b if (b.shape[1], b._padded[0].shape[1]) == (P, E) else b.pad(P, E) for b in parts]  # type: ignore[index]
+            nt = None
+            if any(b.node_type is not None for b in parts):
+                nt = torch.cat([b.node_type if b.node_type is not None else
+                                torch.zeros(b.shape[:2], dtype=torch.long, device=b.device) for b in parts])
+            return GraphBatch._from_padded(
+                torch.cat([b.node_features for b in parts]), torch.cat([b.n_nodes for b in parts]),
+                *[torch.cat([b._padded[k] for b in parts]) for k in range(3)],  # type: ignore[index]
+                nt, max(b.n_edge_types for b in parts), max(b.n_node_types for b in parts),
+                parts[0].edge_type_names)
+        batches = [b.unpad() for b in batches]
         P = max(b.shape[1] for b in batches)
         F_ = batches[0].n_features
         if any(b.n_features != F_ for b in batches):
@@ -313,12 +495,27 @@ class GraphBatch:
             batches[0].edge_type_names)
 
     def flat_edges(self) -> Tuple[Tensor, Tensor, Tensor]:
-        """``(src, dst, type)`` with node indices into the flattened ``B * P`` node axis."""
+        """``(src, dst, type)`` with node indices into the flattened ``B * P`` node axis. For a
+        padded batch these include the unused edge slots; :meth:`flat_edge_mask` tells them
+        apart."""
         P = self.node_features.shape[1]
+        if self._padded is not None:
+            e, t, _ = self._padded
+            base = (torch.arange(e.shape[0], device=e.device) * P).unsqueeze(1)
+            return (base + e[..., 0]).reshape(-1), (base + e[..., 1]).reshape(-1), t.reshape(-1)
         base = self.edge_graph * P
         return base + self.edges[:, 0], base + self.edges[:, 1], self.edge_type
 
+    def flat_edge_mask(self) -> Optional[Tensor]:
+        """``(B * max_edges,)`` Boolean mask of the real edges of a padded batch (in the order
+        of :meth:`flat_edges`), ``None`` for the flat layout, where every edge is real."""
+        return None if self._padded is None else self._padded[2].reshape(-1)
+
     def __repr__(self) -> str:
+        if self._padded is not None:
+            return (f"GraphBatch({len(self)} graphs, padded to {self.shape[1]} nodes and "
+                    f"{self._padded[0].shape[1]} edges, {self.n_features} features, "
+                    f"{self.n_edge_types} edge types)")
         return (f"GraphBatch({len(self)} graphs, max {self.shape[1]} nodes, {self.n_features} features, "
                 f"{self.edges.shape[0]} edges, {self.n_edge_types} edge types)")
 
