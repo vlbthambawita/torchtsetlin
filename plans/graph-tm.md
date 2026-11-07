@@ -3,7 +3,7 @@
 *Status: **steps 1–8 implemented**, 2026-11-07 (`models/graph.py`, `data/graphs.py`,
 `functional.apply_feedback_blocks`, `tests/test_graph.py`, docs, `examples/graph_sequence.py`).
 Step 9 (CUDA fast paths) implemented per `plans/graph-tm-fast-paths.md` (phases 0–5); step 10
-(paper-scale reproduction) needs a go-ahead. Tracks GitHub
+(paper-scale reproduction, planned in `plans/graph-tm-reproduction.md`) needs a go-ahead. Tracks GitHub
 issue #8 ("Implement GRAPH TM"). See "Implementation notes" at the end.*
 
 ## TL;DR
@@ -348,7 +348,7 @@ fixture).
    - CUDA-graph capture for fixed-shape graph datasets (images: every graph has the same `P`
      and `E`).
    - Ragged (unpadded) node storage for very uneven graphs.
-10. **Reproduce paper numbers (needs the user's go-ahead; benchmark-class runs).**
+10. **Reproduce paper numbers (needs the user's go-ahead; benchmark-class runs; plan: `plans/graph-tm-reproduction.md`).**
     - **Disconnected nodes (Sec. 3.2, Table 3; hyper-parameters Table 16):**
       - MNIST: 2,500 clauses, 10×10 window, HV 128, depth 1, 30 epochs, T=3,125, s=10; reported
         **98.42 ± 0.05**, CoTM 98.93 ± 0.02;
