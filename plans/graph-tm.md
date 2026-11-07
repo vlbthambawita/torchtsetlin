@@ -2,7 +2,7 @@
 
 *Status: **steps 1–8 implemented**, 2026-11-07 (`models/graph.py`, `data/graphs.py`,
 `functional.apply_feedback_blocks`, `tests/test_graph.py`, docs, `examples/graph_sequence.py`).
-Step 9 (Triton / CUDA-graph fast paths) is open and deserves its own plan; step 10
+Step 9 (Triton / CUDA-graph fast paths) is open, planned in `plans/graph-tm-fast-paths.md`; step 10
 (paper-scale reproduction) needs a go-ahead. Tracks GitHub
 issue #8 ("Implement GRAPH TM"). See "Implementation notes" at the end.*
 
@@ -342,7 +342,7 @@ fixture).
    - Choose scatter or sparse-matmul message passing.
    - Measure only `--quick`-style smoke runs until the user okays benchmark runs (memory note:
      no timing runs without a go-ahead).
-9. **Fast paths (later, separate plan).**
+9. **Fast paths (later, separate plan: `plans/graph-tm-fast-paths.md`).**
    - Events-mode Triton evaluation, because `_triton.conv_eval` already handles a padded patch
      axis; the node mask has to be added.
    - CUDA-graph capture for fixed-shape graph datasets (images: every graph has the same `P`
