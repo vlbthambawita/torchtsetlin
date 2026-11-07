@@ -162,6 +162,8 @@ book's Section 1.6 lists three effects:
   mapped linearly to the target range; Type I when the prediction is too low, Type II when
   too high, with probability proportional to the error.
 * **Convolutional TM** — see [Convolution](convolution.md).
+* **Graph TM** (`GraphTsetlinMachine`): deep clauses over graph input, one component per
+  layer, connected by messages along typed edges — see [Graph Tsetlin machines](graph-tm.md).
 * **Clause size constraint** (`max_included_literals`): clauses above the budget receive
   only forgetting feedback until they shrink (Abeyrathna et al., 2023). By default
   (`budget_mode="soft"`, the reference implementation's rule) a clause may overshoot the

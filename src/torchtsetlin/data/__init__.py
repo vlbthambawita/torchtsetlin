@@ -33,11 +33,14 @@ from .encoders import (
     ThermometerEncoder,
     thermometer_thresholds,
 )
+from .graphs import GraphBatch, SymbolTable
 
 __all__ = [
     "SCENE_CLASSES",
     "BooleanTensorDataset",
     "TransformDataset",
+    "GraphBatch",
+    "SymbolTable",
     "load_mnist_boolean",
     "load_segmentation_boolean",
     "load_torchvision_boolean",

@@ -1,6 +1,9 @@
 # Graph Tsetlin machine (GraphTM): implementation plan
 
-*Status: **plan**, 2026-11-07. Nothing implemented yet. Tracks GitHub issue #8 ("Implement GRAPH TM").*
+*Status: **steps 1–6 implemented** (except `explain_node` and the noisy-XOR learning test), 2026-11-07 (`models/graph.py`, `data/graphs.py`,
+`tests/test_graph.py`, docs, `examples/graph_sequence.py`). Steps 7 (per-layer `s`), 8 (performance
+work), 9 (fast paths) and 10 (paper-scale reproduction, needs a go-ahead) are open. Tracks GitHub
+issue #8 ("Implement GRAPH TM"). See "Implementation notes" at the end.*
 
 ## TL;DR
 
@@ -165,7 +168,7 @@ row's total include count. That is the reference's sum over layers. ∎
 | Node draw | one node per clause per example, shared by all classes and by Type I/II | an independent draw per feedback event (conv path, so coalesced Ia and II can hit different patches) | option `shared_node_draw=True` draws once per (example, clause) |
 | Negative classes | every class updated, negatives scaled by `q/(K−1)` | multi-class mode: target plus **one** sampled negative | `multi_label=True` with one-hot targets and `negative_scale = q/(K−1)` is the same rule (`CoalescedTsetlinMachine._select_feedback`, multi-label branch) |
 | Order | sequential, one graph at a time | `feedback_mode="batch"` by default | `sequential=True` / `feedback_mode="sequential"` |
-| Empty clause at prediction | votes (no special case) | whole clause empty → False when predicting (`clause_outputs`, `self.training`) | keep torchtsetlin's rule; an empty clause also sends no messages at prediction. Document it. A component that is empty while the clause is not is still True. |
+| Empty clause at prediction | votes (no special case) | an entirely empty clause does not vote when predicting (`clause_outputs`, `self.training`) | keep torchtsetlin's rule for the vote only; messages are computed as when learning (see Implementation notes) |
 | `s` | per layer allowed | one `s` | Step 7 |
 | State | bit-sliced `STATE_BITS` counters | `uint8` `ta_state`, `n_states` | same automaton, different storage |
 
@@ -473,3 +476,30 @@ Related, in this repo:
   the GraphTM gap and its CIFAR-10 configuration.
 - `experiments/paper_experiments/sources/survey_papers.md` (Graph TM timings) and
   `survey_repos.md` §8 (installability).
+
+## Implementation notes (2026-11-07)
+
+What the implementation changed or found, relative to the plan above:
+
+- **Empty clauses keep sending messages when predicting.** The first version also silenced an
+  entirely empty clause's messages in `eval()`. That is a train/test mismatch: while learning, an
+  empty clause matches every node, so its message means "a neighbour exists on that side", and
+  other clauses learned to include it (seen in the sequence example's clauses). Messages are now
+  computed identically in both modes; only the vote of an entirely empty clause is dropped
+  (`_GraphMixin._evaluate`; `test_empty_clauses_still_send_messages_when_predicting`).
+- **The literal budget is needed for message layers.** On the 3-class run-length task, depth 2
+  without `max_included_literals` collapsed on every try into clauses "NOT A AND every message
+  from both sides", true in every graph (accuracy at chance). Early on every clause matches
+  everywhere, so a boosted Type Ia event includes every message literal at once. With a budget of
+  8: 1.000 test accuracy on seeds 0–3, by epoch 5. Depth 3 without a budget reached 1.000 on
+  3 of 4 seeds. The reference demo also uses a budget (4).
+- **Measured (smoke, not benchmarks):** CPU, 40 clauses, depth 3, sequences of 3–10 nodes:
+  2.9 ms per graph sequential, 0.32 ms batched (25). RTX 3090: 5.6 ms sequential (launch
+  bound), 0.2 ms batched.
+- **Lemmas 1–2 hold in code:** evaluation equals the naive per-node / per-edge definition for all
+  three message encodings, depths 1–4, two node types (`tests/test_graph.py`). Depth 1 learns bit
+  for bit like `ConvCoalescedTsetlinMachine`, in batch and sequential mode.
+- **API additions not in the plan:** `clause_expression(..., layers=[0])` (the part of a clause
+  that a message about it vouches for), `GraphBatch.edge_type_names`, `GraphBatch.cat`. The
+  `Trainer` accepts a `GraphBatch` wherever it takes a tensor.
+- **Not done:** `from_networkx` / `from_pyg` builders, `explain_node`, per-layer `s`, fast paths.

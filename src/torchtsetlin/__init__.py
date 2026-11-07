@@ -21,6 +21,7 @@ from .models import (
     ConvCoalescedTsetlinMachine,
     ConvRegressionTsetlinMachine,
     ConvTsetlinMachine,
+    GraphTsetlinMachine,
     RegressionTsetlinMachine,
     SegmentationTsetlinMachine,
     TsetlinMachine,
@@ -65,6 +66,7 @@ __all__ = [
     "Conv3dRegressionTsetlinMachine",
     "SegmentationTsetlinMachine",
     "CoalescedSegmentationTsetlinMachine",
+    "GraphTsetlinMachine",
     # training
     "Trainer",
     "evaluate",

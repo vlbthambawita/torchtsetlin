@@ -11,6 +11,10 @@ Dense (segmentation) models add `model.vote_map(x) -> (B, K, H, W)`,
 `model.predict(x) -> (B, H, W)` and `model.clause_map(x)`; their `forward()` returns the
 folded votes `(B·H·W, K)`.
 
+`GraphTsetlinMachine` takes a `torchtsetlin.data.GraphBatch` instead of a tensor and adds
+`model.node_clause_outputs(g)` and `model.node_messages(g, layer)` (see the
+[graph guide](../guides/graphs.md)).
+
 ::: torchtsetlin.models.TsetlinMachine
 
 ::: torchtsetlin.models.CoalescedTsetlinMachine
@@ -34,5 +38,13 @@ folded votes `(B·H·W, K)`.
 ::: torchtsetlin.models.SegmentationTsetlinMachine
 
 ::: torchtsetlin.models.CoalescedSegmentationTsetlinMachine
+
+::: torchtsetlin.models.GraphTsetlinMachine
+    options:
+      members:
+        - node_clause_outputs
+        - node_messages
+        - message_collision_rate
+        - clause_expression
 
 ::: torchtsetlin.models.TsetlinMachineBase

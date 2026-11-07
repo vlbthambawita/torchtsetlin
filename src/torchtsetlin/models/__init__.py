@@ -12,6 +12,7 @@ from .conv import (
     ConvRegressionTsetlinMachine,
     ConvTsetlinMachine,
 )
+from .graph import GraphTsetlinMachine
 from .regression import RegressionTsetlinMachine
 from .segmentation import (
     CoalescedSegmentationTsetlinMachine,
@@ -33,4 +34,5 @@ __all__ = [
     "Conv3dRegressionTsetlinMachine",
     "SegmentationTsetlinMachine",
     "CoalescedSegmentationTsetlinMachine",
+    "GraphTsetlinMachine",
 ]

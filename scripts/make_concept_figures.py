@@ -698,6 +698,67 @@ def fig_conv_position(c: Dict[str, str]) -> Fig:
     return f
 
 
+def fig_graph_messages(c: Dict[str, str]) -> Fig:
+    """Graph TM message passing on the sequence BAAAE (paper App. A.3): layer 0 matches
+    C^0 = A at X1..X3, each match is sent to both neighbours bound to the edge type, and the
+    layer-1 component C^1 = left1:0 AND right1:0 then holds only at X2."""
+    f = Fig(780, 400, c, "Message passing in a graph Tsetlin machine",
+            "A five-node sequence B A A A E. Layer 0: the clause component C0 = A matches "
+            "nodes X1, X2 and X3. Each match is sent to the neighbours as a message bound to "
+            "the edge type. Layer 1: the component C1 = left1:0 AND right1:0 needs a match "
+            "on both sides, which only X2 has, so the deep clause holds at X2 and the clause "
+            "is True for the graph.")
+    letters = "BAAAE"
+    xs = [165 + 130 * i for i in range(5)]
+    y0, y1 = 95, 285
+    r = 27
+    f.add(f.text(18, y0 + 5, "Layer 0", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(18, y0 + 24, "C⁰ = A", 12.5, c["accent"], anchor="start"))
+    f.add(f.text(18, y1 + 5, "Layer 1", 13.5, anchor="start", weight="bold"))
+    f.add(f.text(18, y1 + 24, "C¹ = left1:0", 12.5, c["accent"], anchor="start"))
+    f.add(f.text(18, y1 + 41, "  AND right1:0", 12.5, c["accent"], anchor="start"))
+    match0 = [ch == "A" for ch in letters]
+    f.add(f.line(560, 22, 590, 22, c["amber"], 2))
+    f.add(f.text(596, 26, "left-going edge (left)", 11.5, c["muted"], anchor="start"))
+    f.add(f.line(560, 40, 590, 40, c["blue"], 2))
+    f.add(f.text(596, 44, "right-going edge (right)", 11.5, c["muted"], anchor="start"))
+    for i, (x, ch) in enumerate(zip(xs, letters)):
+        on = match0[i]
+        f.add(f'<circle cx="{x}" cy="{y0}" r="{r}" fill="{c["pos_soft"] if on else c["panel2"]}" '
+              f'stroke="{c["pos"] if on else c["line"]}" stroke-width="1.8"/>')
+        f.add(f.text(x, y0 + 6, ch, 17, weight="bold"))
+        f.add(f.text(x - r - 8, y0 + 5, f"X{i}", 12, c["muted"], anchor="end"))
+        f.add(f.check(x, y0 + r + 16, 12, c["pos"]) if on else f.cross(x, y0 + r + 16, 10, c["muted"], 1.6))
+    # messages from every layer-0 match to both neighbours
+    for i in range(5):
+        if not match0[i]:
+            continue
+        for j, kind in ((i - 1, "left"), (i + 1, "right")):
+            if not 0 <= j < 5:
+                continue
+            col = c["blue"] if kind == "right" else c["amber"]
+            off = 10 if kind == "right" else -10
+            f.add(f.arrow(xs[i] + off, y0 + r + 30, xs[j] + off, y1 - 80, col, sw=1.6))
+    # inboxes and layer-1 matches
+    full = []
+    for i, x in enumerate(xs):
+        from_left = i - 1 >= 0 and match0[i - 1]
+        from_right = i + 1 < 5 and match0[i + 1]
+        ok = match0[i] and from_left and from_right
+        full.append(ok)
+        chips = [("right1:0", from_left), ("left1:0", from_right)]
+        for k, (lab, have) in enumerate(chips):
+            f.add(f.chip(x - 50, y1 - 74 + k * 26, 100, 22, lab, "true" if have else "false", size=11.5))
+        f.add(f'<circle cx="{x}" cy="{y1 + 18}" r="{r - 6}" fill="{c["accent_soft"] if ok else c["panel2"]}" '
+              f'stroke="{c["accent"] if ok else c["line"]}" stroke-width="{2.4 if ok else 1.4}"/>')
+        f.add(f.text(x, y1 + 23, f"X{i}", 13, c["accent"] if ok else c["muted"], weight="bold" if ok else "normal"))
+    f.add(f.text(390, y1 + 72, "The deep clause C⁰ ∧ C¹ holds only at X2, so C is True for the graph (OR over nodes).",
+                 13, c["accent"], weight="bold"))
+    f.add(f.text(390, y1 + 94, "right1:0 = clause 0 matched at the neighbour on the left (message came along a right-going edge)",
+                 11.5, c["muted"]))
+    return f
+
+
 PLUS3 = [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
 DOT3 = [[0, 0, 0], [0, 1, 0], [0, 0, 0]]
 SPINDLE = [PLUS3, DOT3, PLUS3]   # make_3d_shapes class 0
@@ -1500,6 +1561,7 @@ FIGURES: Dict[str, Callable[[Dict[str, str]], Fig]] = {
     "conv-position": fig_conv_position,
     "conv3d-sliding": fig_conv3d_sliding,
     "conv3d-depth": fig_conv3d_depth,
+    "graph-messages": fig_graph_messages,
     "segmentation-dense": fig_segmentation_dense,
     "segmentation-pyramid": fig_segmentation_pyramid,
     "thermometer": fig_thermometer,

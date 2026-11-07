@@ -11,6 +11,7 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 from .. import metrics as M
+from ..data.graphs import GraphBatch
 from ..models import CoalescedTsetlinMachine, RegressionTsetlinMachine, TsetlinMachineBase
 from ..models.segmentation import _DenseMixin
 from ..utils import _to_device, as_bool_tensor
@@ -20,6 +21,13 @@ from .history import History
 __all__ = ["Trainer", "evaluate", "predict"]
 
 DataLike = Union[DataLoader, Dataset, Tuple, List]
+
+
+def _as_input(x, device: torch.device):
+    """Model input on ``device``: a :class:`GraphBatch` as is, anything else as a Boolean tensor."""
+    if isinstance(x, GraphBatch):
+        return x.to(device)
+    return as_bool_tensor(x, device=device)
 
 
 class _TensorBatcher:
@@ -120,7 +128,7 @@ class Trainer:
             return DataLoader(data, batch_size=batch_size, shuffle=shuffle)
         if isinstance(data, (tuple, list)) and len(data) == 2:
             x, y = data
-            x = as_bool_tensor(x, device=self.device)
+            x = _as_input(x, self.device)
             if self.task == "regression":
                 y = torch.as_tensor(y, dtype=torch.float32, device=self.device) if not isinstance(y, Tensor) else y.to(self.device, torch.float32)
             elif self.task == "multilabel" or self._seg_multi_label:
@@ -231,9 +239,9 @@ class Trainer:
                 outs.append(self.model.predict(batch))
             self.model.train()
             return torch.cat(outs, dim=0)
-        if isinstance(data, Tensor) or (isinstance(data, (tuple, list)) and len(data) == 2 and not isinstance(data[0], (Dataset, DataLoader))):
+        if isinstance(data, (Tensor, GraphBatch)) or (isinstance(data, (tuple, list)) and len(data) == 2 and not isinstance(data[0], (Dataset, DataLoader))):
             x = data[0] if isinstance(data, (tuple, list)) else data
-            x = as_bool_tensor(x, device=self.device)
+            x = _as_input(x, self.device)
             outs = [self.model(x[i : i + bs]) for i in range(0, x.shape[0], bs)]
         else:
             outs = []
@@ -288,13 +296,13 @@ class Trainer:
 
     def _predict_batches(self, data: DataLike, bs: int) -> Iterable[Tensor]:
         """Yield input batches only (targets dropped), for prediction."""
-        if isinstance(data, Tensor):
-            x = as_bool_tensor(data, device=self.device)
+        if isinstance(data, (Tensor, GraphBatch)):
+            x = _as_input(data, self.device)
             for i in range(0, x.shape[0], bs):
                 yield x[i : i + bs]
             return
         if isinstance(data, (tuple, list)) and len(data) == 2 and not isinstance(data[0], (Dataset, DataLoader)):
-            x = as_bool_tensor(data[0], device=self.device)
+            x = _as_input(data[0], self.device)
             for i in range(0, x.shape[0], bs):
                 yield x[i : i + bs]
             return

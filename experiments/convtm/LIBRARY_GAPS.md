@@ -18,7 +18,7 @@ re-checked against `src/` as of **2026-10-17 (0.3.1)** and each now carries a st
 | LG-006 | No real-valued multiplicative clause weights | OPEN | — |
 | LG-007 | No dilation; one `patch_size` per model | OPEN | scope grew: `Conv3d*` (and possibly `Segmentation*`) need it too |
 | LG-008 | Missing Otsu / Canny / HOG / adaptive colour thermometer encoders | OPEN | — |
-| LG-009 | Approaches the library cannot express | OPEN (not proposed) | — |
+| LG-009 | Approaches the library cannot express | PARTIAL | Graph TM implemented 2026-11-07 (`GraphTsetlinMachine`, `plans/graph-tm.md`); Sparse, Contracting and Fuzzy-Pattern TM remain |
 | LG-010 | Paper-configuration ambiguities | NOT A LIBRARY GAP | kept here only because `ARMS.md` cites it by ID |
 | LG-011 | Conv `_encode` override cannot wrap the parent's | OPEN | scope grew: `_Conv3dMixin._encode` duplicates the check |
 
@@ -306,7 +306,8 @@ Carried over from PLAN §12 / repo `CLAUDE.md`; re-verified in this workspace.
 
 ## LG-009 — Whole approaches that the library cannot express at all
 
-- **Status**: OPEN, no fix proposed.
+- **Status**: PARTIAL. The Graph TM row is resolved: `GraphTsetlinMachine` (2026-11-07, issue #8,
+  `plans/graph-tm.md`). The other three rows remain open, no fix proposed.
 
 Grouped, because each would be a new model rather than a missing hook. Recorded so the report can
 say why these are absent rather than leaving it to inference.

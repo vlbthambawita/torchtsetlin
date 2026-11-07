@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+**New: graph Tsetlin machine** (`GraphTsetlinMachine`, `torchtsetlin.data.GraphBatch`,
+`torchtsetlin.data.SymbolTable`; Granmo et al., arXiv:2507.14874; issue #8, `plans/graph-tm.md`).
+Deep clauses over graphs with typed edges: one clause component per layer, connected by
+messages that clauses send to neighbouring nodes. Random, double-hashed or one-hot messages,
+node types, batched and sequential feedback, and clause decoding in the paper's `right1:0`
+notation. At depth 1 on `GraphBatch.from_images` graphs it learns bit for bit like
+`ConvCoalescedTsetlinMachine` (tested). The `Trainer` accepts a `GraphBatch` wherever it takes
+a tensor. No Triton or CUDA-graph fast path yet.
+
 ## 0.6.1 (2026-11-01)
 
 **Fix: sequential convolutional models on CUDA predicted from a stale include mask** (gap G25,

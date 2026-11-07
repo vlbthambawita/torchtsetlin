@@ -30,6 +30,15 @@ matches, so one clause covers every position. These five cover the whole convolu
 Timings are for the default arguments on an RTX 3090; the generated-data scripts are
 comfortable on a CPU as well (`--device cpu`).
 
+## Graph models
+
+A graph Tsetlin machine evaluates its clauses node by node, and clauses that match at a node send
+messages to its neighbours, which the next layer's clause components can require.
+
+| script | model | data | result | runtime |
+|---|---|---|---|---|
+| [`graph_sequence.py`](graph_sequence.py) | `GraphTsetlinMachine` | sequences of 3–10 positions with one run of 1–3 A's (generated; the reference implementation's sequence demo) | 1.000 test accuracy on 4 of 4 seeds at depth 2; 0.37 (chance) at `--depth 1`; prints the strongest deep clauses and what their messages vouch for | 20 s |
+
 ## Dense prediction
 
 A convolutional machine ORs its clause outputs over patch positions, which tells you *that* a

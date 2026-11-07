@@ -83,6 +83,19 @@ pixel is an ordinary flat example and the whole flat pipeline applies unchanged.
 Config tensors such as `class_feedback_p` are registered as **non-persistent buffers** so `.to(device)`
 moves them without changing the checkpoint format — follow that pattern for any new tensor attribute.
 
+`models/graph.py::_GraphMixin` (the graph Tsetlin machine, `GraphTsetlinMachine`) takes a
+`data.graphs.GraphBatch` (padded nodes `(B, P, F)`, per-graph edge lists with local indices) instead
+of a tensor. One `ta_state` row per clause covers all layers: the literal row of a node is
+`[H^0 | H^1 | ... | H^{D-1}]` (own features, then one inbox of `message_size` bits per message
+layer), so the deep clause is the row's AND and the feedback is `_ConvMixin._feedback_counts` on
+that row (nodes = patches). Only `_evaluate` is new: it runs layer by layer, because an inbox
+depends on the previous layer's matches at the in-neighbours (scatter-OR over edges, then the
+shifted message positions). `_encode` returns an `_Encoded` holder, not literals; the full
+literal rows are built in `_feedback_counts` from the evaluation context. Graph models opt out of
+events mode, fused single-example commits and CUDA graphs (`_events_eligible`,
+`_fuse_single_examples`, `_graphs_ok` return False). `tests/test_graph.py` pins evaluation against
+a naive per-node reference and depth 1 against `ConvCoalescedTsetlinMachine` bit for bit.
+
 `FeedbackAccumulator` carries the per-update event counts (`n_true`, `n_false`, `n_ib`, `n2`, plus `extra`
 for weight deltas). `functional.apply_feedback` **uses those count tensors as scratch space** (in-place) —
 do not reuse them after the call.
