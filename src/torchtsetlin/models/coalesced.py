@@ -192,8 +192,11 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
         class_names: Optional[Sequence[str]] = None,
         skip_empty: bool = True,
         min_abs_weight: int = 1,
+        **expression_kwargs,
     ) -> List[str]:
-        """``IF ... THEN`` rules listing every output the clause votes for/against with its weight."""
+        """``IF ... THEN`` rules listing every output the clause votes for/against with its weight.
+        ``expression_kwargs`` go to :meth:`clause_expression` (e.g. ``symbols=`` for a graph
+        machine)."""
         names = list(class_names or self.class_names or [str(k) for k in range(self.n_outputs)])
         out = []
         W = self.weights.tolist()
@@ -206,7 +209,7 @@ class CoalescedTsetlinMachine(TsetlinMachineBase):
                     votes.append(f"{'+' if w >= 0 else '-'}{abs(w)} {names[i]}")
             if not votes:
                 continue
-            out.append(f"IF {self.clause_expression(j, feature_names)} THEN {', '.join(votes)}")
+            out.append(f"IF {self.clause_expression(j, feature_names, **expression_kwargs)} THEN {', '.join(votes)}")
         return out
 
     def extra_repr(self) -> str:

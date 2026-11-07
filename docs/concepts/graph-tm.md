@@ -72,7 +72,8 @@ to the deep clause. For each feedback event, one node where the **whole** clause
 drawn at random, and every layer's component is updated against that node's input of that layer:
 its own features for `C⁰`, its inbox of layer `i` for `C^i`. A clause that matches nowhere
 receives only forgetting (Type Ib). The literal budget `max_included_literals` counts the
-included literals of all layers together.
+included literals of all layers together. As in the reference implementation, `s` may be one
+value per layer, `s=(s0, s1, …)`: `s0` for the node features, `s_i` for the inbox of layer `i`.
 
 The budget matters more than in a flat machine. At the start every clause is empty, matches at
 every node and so sends messages from everywhere; a boosted Type Ia event then includes every
@@ -96,7 +97,9 @@ a single row of automata over that row, and:
    contributes True.
 2. **The feedback is the convolutional feedback on that row.** Drawing one matching node and
    updating every layer from it is exactly what the convolutional machine does with one
-   matching patch and its literal row.
+   matching patch and its literal row. (The code sums the drawn rows as one sparse product of
+   "events per clause and node" with the node inputs, which gives the same counts without
+   copying a row per event.)
 
 So a `GraphTsetlinMachine` stores one `ta_state` of shape `(C, 2·(F + (D−1)·M))`, like every
 other model, and reuses the convolutional feedback code. Only evaluation is new, because an inbox
@@ -123,7 +126,6 @@ Two consequences:
 | Negative classes | every class, scaled by `q / (K−1)` | the target and one sampled negative class | `multi_label=True`, one-hot targets, `negative_scale = q / (K−1)` |
 | Order | one graph at a time | batched | `feedback_mode="sequential"` |
 | Empty clause when predicting | votes | does not vote; its messages still flow | — |
-| Specificity per layer | `s` may be a tuple | one `s` | — |
 
 ## When to use it
 

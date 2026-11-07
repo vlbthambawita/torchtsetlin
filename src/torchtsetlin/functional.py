@@ -41,6 +41,7 @@ __all__ = [
     "type_i_counts",
     "type_ii_counts",
     "apply_feedback",
+    "apply_feedback_blocks",
     "predict_proba_from_votes",
     "confidence_from_votes",
     "boolean_pool",
@@ -516,6 +517,46 @@ def apply_feedback(
     if hard:
         _cap_new_inclusions(new, was_included, N, int(max_included_literals), generator)
     state.copy_(new)
+    return state
+
+
+def apply_feedback_blocks(
+    state: Tensor,
+    n_true: Tensor,
+    n_false: Tensor,
+    n_ib: Tensor,
+    n2: Tensor,
+    blocks: Sequence[Tuple[Tensor, float]],
+    *,
+    n_states: int,
+    boost_true_positive: bool = True,
+    max_included_literals: Optional[int] = None,
+    include_count: Optional[Tensor] = None,
+    literal_active: Optional[Tensor] = None,
+    generator: Optional[torch.Generator] = None,
+) -> Tensor:
+    """:func:`apply_feedback` with a different specificity per block of literals.
+
+    ``blocks`` is a list of ``(columns, s)``: the literal columns (a long tensor into the
+    ``2F`` axis) that use specificity ``s``. Every literal must be in exactly one block. The
+    clause budget is judged on the whole row (``include_count`` before the update), so a
+    clause over budget gets Type Ib instead of Type Ia in every block, as with a scalar ``s``.
+    Only the soft budget is supported. Used by the graph Tsetlin machine for a specificity
+    per layer (``s=(s0, s1, ...)``, as the reference implementation allows).
+
+    The count tensors are read, not modified. Returns ``state``, updated in place.
+    """
+    N = int(n_states)
+    if max_included_literals is not None and include_count is None:
+        include_count = (state >= N).sum(dim=1)
+    for cols, s in blocks:
+        sub = state[:, cols]
+        active = None if literal_active is None else literal_active.reshape(-1)[cols]
+        apply_feedback(sub, n_true[:, cols], n_false[:, cols], n_ib.clone(), n2[:, cols],
+                       n_states=N, s=float(s), boost_true_positive=boost_true_positive,
+                       max_included_literals=max_included_literals, include_count=include_count,
+                       literal_active=active, generator=generator, budget_mode="soft")
+        state[:, cols] = sub
     return state
 
 

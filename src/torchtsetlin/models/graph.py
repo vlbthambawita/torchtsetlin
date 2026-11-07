@@ -17,16 +17,16 @@ because ``H^i`` depends on the layer ``i-1`` matches of the neighbours.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple, Union
 
 import torch
 from torch import Tensor
 
+from .. import functional as F
 from ..data.graphs import GraphBatch, SymbolTable, _prev_prime
 from ..utils import chunk_indices
 from .base import FeedbackAccumulator
 from .coalesced import CoalescedTsetlinMachine
-from .conv import _ConvMixin
 
 __all__ = ["GraphTsetlinMachine"]
 
@@ -58,6 +58,7 @@ class _GraphMixin:
     n_edge_types: int
     n_node_types: int
     shared_node_draw: bool
+    layer_s: Optional[Tuple[float, ...]]
     msg_bits: Tensor
 
     # ---- sizes ---------------------------------------------------------------------
@@ -152,8 +153,28 @@ class _GraphMixin:
         S = S.view(N, nt, C) > 0
         if self.message_encoding == "one_hot":  # bit j * nt + t: no collisions, no matmul
             return S.transpose(1, 2).reshape(N, C * nt).to(dt)
-        hits = torch.matmul(S.reshape(N, nt * C).to(dt), self._bind_matrix(dt))
+        if self._dense_binding(N, sent.device):
+            hits = torch.matmul(S.reshape(N, nt * C).to(dt), self._bind_matrix(dt))
+            return (hits > 0).to(dt)
+        # scatter every message bit into its (shifted) inbox column: N * nt * C * bits work
+        # instead of the N * nt * C * M of the product, and no (nt * C, M) binding matrix
+        hits = torch.zeros(N, M, dtype=torch.float32, device=sent.device)
+        Sf = S.to(torch.float32)
+        bits = self.msg_bits.to(sent.device)
+        for t in range(nt):
+            for k in range(bits.shape[1]):
+                hits.index_add_(1, (bits[:, k] + t) % M, Sf[:, t])
         return (hits > 0).to(dt)
+
+    def _dense_binding(self, N: int, device: torch.device) -> bool:
+        """Hashed messages: bind them by a product with the cached binding matrix (CUDA:
+        tensor cores make it as fast as or faster than a scatter, unless the matrix gets
+        large) or by a column scatter (CPU, where it is ~15x faster for inboxes of 1024 bits
+        and more; the product still wins for small inboxes)."""
+        C, M, nt = self.msg_bits.shape[0], self.message_size, self.n_edge_types
+        if device.type == "cuda":
+            return nt * C * M <= 1 << 28
+        return M < 512
 
     def _evaluate_layers(self, enc: _Encoded) -> Tuple[List[Tensor], List[Tensor]]:
         """Run the layers: ``(running matches per layer, inputs per layer)``, both lists of
@@ -211,31 +232,87 @@ class _GraphMixin:
     ) -> None:
         matches, xs = ctx
         B, P = literals.B, literals.P
-        # one literal row per node, laid out like ta_state: [H0 | H1 | ...] then the negations
-        full = torch.cat(xs + [1.0 - x for x in xs], dim=1).view(B, P, -1)
-        if not self.shared_node_draw:
-            # an independent random matching node per feedback event (the conv feedback)
-            _ConvMixin._feedback_counts(self, full, matches, sel_fire_i, sel_nofire_i,  # type: ignore[arg-type]
-                                        sel_fire_ii, acc)
-            return
-        # the reference implementation: one random matching node per (graph, clause), shared
-        # by every class and by Type I and Type II
-        acc.n_ib += sel_nofire_i.sum(dim=0)
-        node = (torch.rand(matches.shape, device=matches.device) * matches).argmax(dim=1)  # (B, C)
-        flat = full.reshape(B * P, -1)
+        N, C = B * P, matches.shape[2]
+        acc.n_ib += sel_nofire_i.sum(dim=0)  # Type Ib needs no node features
+        if self.shared_node_draw:
+            # the reference implementation: one random matching node per (graph, clause),
+            # shared by every class and by Type I and Type II
+            node = (torch.rand(matches.shape, device=matches.device) * matches).argmax(dim=1)  # (B, C)
+        E = self._event_block(P)
+        x = None
         for sel, kind in ((sel_fire_i, "i"), (sel_fire_ii, "ii")):
             nz = torch.nonzero(sel, as_tuple=True)
-            for ev in chunk_indices(nz[0].numel(), self._event_block(P)):
+            if nz[0].numel() == 0:
+                continue
+            nodes = []
+            for ev in chunk_indices(nz[0].numel(), E):
                 b_idx, j_idx = nz[0][ev], nz[1][ev]
-                rows = flat[b_idx * P + node[b_idx, j_idx]].to(acc.dtype)
-                if kind == "i":
-                    acc.n_true.index_add_(0, j_idx, rows)
-                    acc.n_false.index_add_(0, j_idx, 1.0 - rows)
+                if self.shared_node_draw:
+                    p_idx = node[b_idx, j_idx]
                 else:
-                    acc.n2.index_add_(0, j_idx, 1.0 - rows)
+                    # an independent random matching node per feedback event, drawn exactly
+                    # as _ConvMixin._feedback_counts does (same blocks, same random stream)
+                    cand = matches[b_idx, :, j_idx]  # (n_sel, P)
+                    p_idx = (torch.rand(cand.shape, device=cand.device) * cand).argmax(dim=1)
+                nodes.append(b_idx * P + p_idx)
+            # The literal row of a node is [H | 1 - H], so the summed rows of the events
+            # follow from W @ H, W[j, n] = events of clause j drawn at node n: one sparse
+            # product over the positive half instead of gathering 2F-wide rows per event.
+            if x is None:
+                x = torch.cat(xs, dim=1).to(acc.dtype)  # (N, F)
+            idx = torch.stack([nz[1], torch.cat(nodes)])
+            W = torch.sparse_coo_tensor(idx, torch.ones(idx.shape[1], dtype=acc.dtype, device=x.device),
+                                        (C, N))
+            pos = torch.sparse.mm(W, x)  # (C, F): events whose node has the feature
+            cnt = torch.zeros(C, dtype=acc.dtype, device=x.device).index_add_(
+                0, nz[1], torch.ones(nz[1].numel(), dtype=acc.dtype, device=x.device)).unsqueeze(1)
+            neg = cnt - pos  # events whose node lacks it: the negated literal is True
+            Fn = pos.shape[1]
+            if kind == "i":
+                acc.n_true[:, :Fn] += pos
+                acc.n_true[:, Fn:] += neg
+                acc.n_false[:, :Fn] += neg
+                acc.n_false[:, Fn:] += pos
+            else:
+                acc.n2[:, :Fn] += neg
+                acc.n2[:, Fn:] += pos
 
     _feedback_counts._records_single = False  # type: ignore[attr-defined]
     _feedback_counts._records_events = False  # type: ignore[attr-defined]
+
+    def _layer_columns(self) -> List[Tensor]:
+        """Literal columns of every layer (positive and negated), into the ``2F`` axis."""
+        cached = self.__dict__.get("_layer_cols")
+        dev = self.ta_state.device  # type: ignore[attr-defined]
+        if (cached is not None and cached[0].device == dev
+                and sum(c.numel() for c in cached) == self.ta_state.shape[1]):  # type: ignore[attr-defined]
+            return cached
+        Fn = int(self.n_features)  # type: ignore[attr-defined]
+        bounds = self._layer_bounds()
+        cols = [torch.cat([torch.arange(a, b), torch.arange(Fn + a, Fn + b)]).to(dev)
+                for a, b in zip(bounds[:-1], bounds[1:])]
+        self.__dict__["_layer_cols"] = cols
+        return cols
+
+    def _commit(self, acc: FeedbackAccumulator) -> None:  # type: ignore[override]
+        """The base commit, or with ``s`` per layer, one :func:`F.apply_feedback_blocks`."""
+        if self.layer_s is None:
+            super()._commit(acc)  # type: ignore[misc]
+            return
+        self.__dict__["_bits_fresh"] = False
+        F.apply_feedback_blocks(
+            self.ta_state, acc.n_true, acc.n_false, acc.n_ib, acc.n2,  # type: ignore[attr-defined]
+            list(zip(self._layer_columns(), self.layer_s)),
+            n_states=self.n_states,  # type: ignore[attr-defined]
+            boost_true_positive=self.boost_true_positive,  # type: ignore[attr-defined]
+            max_included_literals=self.max_included_literals,  # type: ignore[attr-defined]
+            include_count=self.include_count,  # type: ignore[attr-defined]
+            literal_active=self._literal_active,  # type: ignore[attr-defined]
+        )
+        self._commit_weights(acc)  # type: ignore[attr-defined]
+        self._refresh_include()  # type: ignore[attr-defined]
+        acc.reset()
+        self.__dict__["_acc_dirty"] = False
 
     # ---- introspection -------------------------------------------------------------
     @torch.no_grad()
@@ -356,14 +433,9 @@ class _GraphMixin:
             terms += [names[k] for k in torch.nonzero(pos[:F0]).flatten().tolist()]
             terms += [names[Fn + k] for k in torch.nonzero(neg[:F0]).flatten().tolist()]
         # message layers
-        M, nt = self.message_size, self.n_edge_types
+        M = self.message_size
         if self.depth > 1:
-            C = self.msg_bits.shape[0]
-            if self.message_encoding == "one_hot":
-                groups = torch.arange(nt * C, device=mask.device).view(C, nt).t().reshape(-1, 1)  # (t, j) -> bit j*nt+t
-            else:
-                groups = torch.cat([(self.msg_bits + t) % M for t in range(nt)])  # (nt*C, bits)
-            labels = [(t, j) for t in range(nt) for j in range(C)]
+            groups, labels = self._message_groups(mask.device)
             for i in range(1, self.depth):
                 if i not in show:
                     continue
@@ -372,6 +444,108 @@ class _GraphMixin:
                 terms += _decode(pos[a:b], neg[a:b], groups.to(mask.device), names,
                                  [f"m{i}[{k}]" for k in range(M)])
         return joiner.join(terms) if terms else "TRUE"
+
+    def _message_groups(self, device: torch.device) -> Tuple[Tensor, List[Tuple[int, int]]]:
+        """``(groups, labels)``: the inbox positions ``(nt*C, bits)`` of every message and its
+        ``(edge type, clause)``, in the same order."""
+        M, nt = self.message_size, self.n_edge_types
+        C = self.msg_bits.shape[0]
+        if self.message_encoding == "one_hot":
+            groups = torch.arange(nt * C, device=device).view(C, nt).t().reshape(-1, 1)  # (t, j) -> bit j*nt+t
+        else:
+            groups = torch.cat([(self.msg_bits.to(device) + t) % M for t in range(nt)])  # (nt*C, bits)
+        return groups, [(t, j) for t in range(nt) for j in range(C)]
+
+    @torch.no_grad()
+    def explain_node(
+        self,
+        x: GraphBatch,
+        clause: int,
+        graph: int = 0,
+        node: Optional[int] = None,
+        symbols: Optional[SymbolTable] = None,
+        edge_type_names: Optional[Sequence[str]] = None,
+        max_senders: int = 3,
+    ) -> str:
+        """Why clause ``clause`` holds (or not) at a node of one graph, traced back to the
+        symbols of the nodes that sent the messages it relies on (paper Sec. 3.1, Table 1).
+
+        Every component is printed with :meth:`clause_expression`; under each positive message
+        literal ``<edge><i>:<k>`` the in-neighbours that sent it are listed (at most
+        ``max_senders``), each with its own explanation of clause ``k`` up to layer ``i - 1``,
+        recursively down to layer 0. ``node=None`` picks the first node where the whole clause
+        holds. Uses the learning semantics (an empty component matches), which are also the
+        ones the messages are computed with. Hashed message bits that decode to no complete
+        message are not traced.
+        """
+        clause, graph = int(clause), int(graph)
+        if not 0 <= clause < self.n_clauses:  # type: ignore[attr-defined]
+            raise ValueError(f"clause must lie in [0, {self.n_clauses})")  # type: ignore[attr-defined]
+        xb = self._prepare(x)  # type: ignore[attr-defined]
+        if not 0 <= graph < len(xb):
+            raise ValueError(f"graph must lie in [0, {len(xb)})")
+        enc = self._encode(xb[graph:graph + 1])
+        running, xs = self._evaluate_layers(enc)
+        n = int(xb.n_nodes[graph])
+        mask = self.included_mask()  # type: ignore[attr-defined]
+        bounds = self._layer_bounds()
+        dev = mask.device
+        groups, labels = self._message_groups(dev) if self.depth > 1 else (None, [])
+        src, dst, et = enc.src.tolist(), enc.dst.tolist(), enc.etype.tolist()
+
+        def node_label(v: int) -> str:
+            f = xs[0][v] > 0.5
+            if symbols is not None:
+                names = [str(s) for s in symbols.decode(f.cpu())]
+            else:
+                names = [f"x{k}" for k in torch.nonzero(f).flatten().tolist()]
+            return "[" + " ".join(names) + "]"
+
+        def expr(k: int, i: int) -> str:
+            return self.clause_expression(k, symbols=symbols, edge_type_names=edge_type_names, layers=[i])
+
+        lines: List[str] = []
+
+        def explain(k: int, v: int, top: int, pad: str) -> None:
+            for i in range(top + 1):
+                ok = bool(running[i][v, k])  # components 0 .. i-1 held, or we returned
+                mark = "" if ok else "   <- fails here"
+                lines.append(f"{pad}layer {i}: {expr(k, i)}{mark}")
+                if not ok:
+                    return
+                if i == 0 or groups is None:
+                    continue
+                a, b = bounds[i], bounds[i + 1]
+                full = mask[k, a:b][groups].all(dim=1)  # positive messages this component needs
+                for g in torch.nonzero(full).flatten().tolist():
+                    t, kk = labels[g]
+                    senders = [u for u, w, ty in zip(src, dst, et)
+                               if w == v and ty == t and bool(running[i - 1][u, kk])]
+                    name = f"{self._edge_name(t, edge_type_names)}{i}:{kk}"
+                    if not senders:  # a hashed bit set by another message
+                        lines.append(f"{pad}  {name}: no sender of this message (bits set by others)")
+                        continue
+                    for u in senders[:max_senders]:
+                        lines.append(f"{pad}  {name} from node {u} {node_label(u)} over "
+                                     f"{self._edge_name(t, edge_type_names)}: clause {kk} up to layer {i - 1}")
+                        explain(kk, u, i - 1, pad + "    ")
+                    if len(senders) > max_senders:
+                        lines.append(f"{pad}  ... and {len(senders) - max_senders} more senders")
+
+        last = self.depth - 1
+        if node is None:
+            hits = torch.nonzero(running[last][:n, clause]).flatten().tolist()
+            if not hits:
+                return f"clause {clause} holds at no node of graph {graph}"
+            node = hits[0]
+        node = int(node)
+        if not 0 <= node < n:
+            raise ValueError(f"node must lie in [0, {n})")
+        holds = bool(running[last][node, clause])
+        lines.append(f"clause {clause} {'holds' if holds else 'does not hold'} at node {node} "
+                     f"{node_label(node)} of graph {graph}")
+        explain(clause, node, last, "  ")
+        return "\n".join(lines)
 
 
 def _decode(pos: Tensor, neg: Tensor, groups: Tensor, names: List[str], raw: List[str]) -> List[str]:
@@ -426,7 +600,10 @@ class GraphTsetlinMachine(_GraphMixin, CoalescedTsetlinMachine):
         n_outputs: number of classes (multi-class) or labels (``multi_label=True``).
         n_clauses: number of shared clauses.
         T: vote margin.
-        s: specificity.
+        s: specificity, or one per layer ``(s0, s1, ..., s_{D-1})`` as the reference
+            implementation allows (``s0`` for the node features, ``s_i`` for the inbox of
+            layer ``i``). A tuple is kept in :attr:`layer_s`; the scalar attribute ``s`` is
+            then ``s0``. Per-layer ``s`` needs the soft budget (``budget_mode="soft"``).
         depth: number of layers ``D`` (``1`` = no message passing; each extra layer reaches
             one hop further).
         message_size: inbox size ``M`` per layer for hashed messages. One-hot messages use
@@ -459,7 +636,7 @@ class GraphTsetlinMachine(_GraphMixin, CoalescedTsetlinMachine):
         n_outputs: int,
         n_clauses: int,
         T: float,
-        s: float = 10.0,
+        s: Union[float, Sequence[float]] = 10.0,
         *,
         depth: int = 1,
         message_size: int = 256,
@@ -469,7 +646,7 @@ class GraphTsetlinMachine(_GraphMixin, CoalescedTsetlinMachine):
         n_node_types: int = 1,
         shared_node_draw: bool = False,
         edge_type_names: Optional[Sequence[str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if depth < 1:
             raise ValueError("depth must be >= 1")
@@ -494,8 +671,23 @@ class GraphTsetlinMachine(_GraphMixin, CoalescedTsetlinMachine):
         self.edge_type_names = None if edge_type_names is None else [str(n) for n in edge_type_names]
         if self.edge_type_names is not None and len(self.edge_type_names) != self.n_edge_types:
             raise ValueError("edge_type_names needs one name per edge type")
+        if isinstance(s, (int, float)):
+            layer_s: Optional[Tuple[float, ...]] = None
+        else:
+            layer_s = tuple(float(v) for v in s)
+            if len(layer_s) != self.depth:
+                raise ValueError(f"s needs one value per layer ({self.depth}), got {len(layer_s)}")
+            if kwargs.get("budget_mode", "soft") != "soft":
+                raise ValueError("per-layer s needs budget_mode='soft'")
+            if len(set(layer_s)) == 1:  # all equal: the scalar path, bit for bit
+                s, layer_s = layer_s[0], None
+            else:
+                s = layer_s[0]
+        if any(v < 1.0 for v in (layer_s or (float(s),))):
+            raise ValueError("s must be >= 1")
+        self.layer_s = layer_s
         total = None if n_features is None else int(n_features) + (self.depth - 1) * self.message_size
-        super().__init__(total, n_outputs, n_clauses, T, s, **kwargs)
+        super().__init__(total, n_outputs, n_clauses, T, float(s), **kwargs)
         self.register_buffer("msg_bits", self._make_message_bits())
 
     def _make_message_bits(self) -> Tensor:
@@ -510,6 +702,7 @@ class GraphTsetlinMachine(_GraphMixin, CoalescedTsetlinMachine):
         return torch.rand(C, M).argsort(dim=1)[:, : self.message_bits]
 
     def extra_repr(self) -> str:
-        return (f"depth={self.depth}, message_size={self.message_size}, "
+        s = "" if self.layer_s is None else f"layer_s={self.layer_s}, "
+        return (f"depth={self.depth}, {s}message_size={self.message_size}, "
                 f"message_encoding={self.message_encoding!r}, n_edge_types={self.n_edge_types}, "
                 + super().extra_repr())

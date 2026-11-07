@@ -87,11 +87,15 @@ moves them without changing the checkpoint format — follow that pattern for an
 `data.graphs.GraphBatch` (padded nodes `(B, P, F)`, per-graph edge lists with local indices) instead
 of a tensor. One `ta_state` row per clause covers all layers: the literal row of a node is
 `[H^0 | H^1 | ... | H^{D-1}]` (own features, then one inbox of `message_size` bits per message
-layer), so the deep clause is the row's AND and the feedback is `_ConvMixin._feedback_counts` on
+layer), so the deep clause is the row's AND and the feedback is the conv feedback (`_ConvMixin._feedback_counts`) on
 that row (nodes = patches). Only `_evaluate` is new: it runs layer by layer, because an inbox
 depends on the previous layer's matches at the in-neighbours (scatter-OR over edges, then the
-shifted message positions). `_encode` returns an `_Encoded` holder, not literals; the full
-literal rows are built in `_feedback_counts` from the evaluation context. Graph models opt out of
+shifted message positions: a product with a cached binding matrix on CUDA, a column scatter
+on the CPU for big inboxes, `_dense_binding`). `_encode` returns an `_Encoded` holder, not
+literals. `_feedback_counts` draws nodes exactly as the conv code does but sums the drawn rows
+as a sparse `W @ H` over the positive half (the negated half is `count - W @ H`), never building
+`2F`-wide rows per event. A tuple `s` (per layer, `layer_s`) commits through
+`F.apply_feedback_blocks` instead of the base commit paths. Graph models opt out of
 events mode, fused single-example commits and CUDA graphs (`_events_eligible`,
 `_fuse_single_examples`, `_graphs_ok` return False). `tests/test_graph.py` pins evaluation against
 a naive per-node reference and depth 1 against `ConvCoalescedTsetlinMachine` bit for bit.

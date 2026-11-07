@@ -1,8 +1,9 @@
 # Graph Tsetlin machine (GraphTM): implementation plan
 
-*Status: **steps 1–6 implemented** (except `explain_node` and the noisy-XOR learning test), 2026-11-07 (`models/graph.py`, `data/graphs.py`,
-`tests/test_graph.py`, docs, `examples/graph_sequence.py`). Steps 7 (per-layer `s`), 8 (performance
-work), 9 (fast paths) and 10 (paper-scale reproduction, needs a go-ahead) are open. Tracks GitHub
+*Status: **steps 1–8 implemented**, 2026-11-07 (`models/graph.py`, `data/graphs.py`,
+`functional.apply_feedback_blocks`, `tests/test_graph.py`, docs, `examples/graph_sequence.py`).
+Step 9 (Triton / CUDA-graph fast paths) is open and deserves its own plan; step 10
+(paper-scale reproduction) needs a go-ahead. Tracks GitHub
 issue #8 ("Implement GRAPH TM"). See "Implementation notes" at the end.*
 
 ## TL;DR
@@ -502,4 +503,38 @@ What the implementation changed or found, relative to the plan above:
 - **API additions not in the plan:** `clause_expression(..., layers=[0])` (the part of a clause
   that a message about it vouches for), `GraphBatch.edge_type_names`, `GraphBatch.cat`. The
   `Trainer` accepts a `GraphBatch` wherever it takes a tensor.
-- **Not done:** `from_networkx` / `from_pyg` builders, `explain_node`, per-layer `s`, fast paths.
+- **Not done:** `from_networkx` / `from_pyg` builders, fast paths (step 9).
+
+### Steps 5 (rest), 7 and 8 (2026-11-07, second pass)
+
+- **`explain_node(g, clause, graph, node, symbols=...)`** prints every component of a clause at
+  one node and, under each positive message literal, the in-neighbours that sent it with their
+  own explanation, recursively down to layer 0 (paper Table 1). `rules(symbols=...)` works
+  through a new `**expression_kwargs` on `CoalescedTsetlinMachine.rules`.
+- **Noisy XOR ([R2] `NoisyXORDemo`)** learns to 100% noise-free test accuracy (random and
+  one-hot messages, 4/4 seeds, 2,000 examples, 3 epochs) with batched feedback at `s = 2` or 3.
+  The demo's own `s = 1.0` learns only with `feedback_mode="sequential"`: forgetting has
+  probability 1, so aggregated over a batch of 25 it wipes the clauses (accuracy at chance).
+  This is the batched-feedback fidelity limit (CLAUDE.md), at its most extreme `s`.
+- **Per-layer `s` (step 7)** without touching the existing kernels:
+  `functional.apply_feedback_blocks` runs `apply_feedback` once per block of literal columns
+  (one block per layer), with the budget judged on the whole row. Scalar `s`, and a tuple of
+  equal values, take the unchanged path (bit-identical, tested). Soft budget only. The commit is
+  the dense one with a full include refresh, so it skips the row-sparse and fused commits.
+- **Feedback (step 8).** The literal row of a node is `[H | 1 − H]`, so the summed rows of the
+  feedback events follow from `W @ H` with `W[j, n]` the events of clause `j` drawn at node
+  `n`: one sparse product over the positive half instead of gathering `2F`-wide rows per event
+  and subtracting them from 1. The node draws are unchanged (same blocks, same random stream),
+  so depth 1 is still bit-identical to `ConvCoalescedTsetlinMachine`. Smoke profile (depth 3,
+  400 clauses, `M = 1024`, 100 sequences): CPU self-time per update −54%, CUDA peak memory of an
+  update 561 → 66 MB.
+- **Message binding (step 8).** Hashed messages were bound by `(N, nt·C) @ (nt·C, M)` with a
+  cached binding matrix. A column scatter (`index_add_` of each clause's bits) does
+  `N·nt·C·bits` work instead of `N·nt·C·M`. Microbenchmark: CPU 15–17× faster for
+  `M ≥ 1024`, slower for `M = 256` with 36k nodes; CUDA the tensor-core product is as fast or
+  faster. `_dense_binding` therefore picks the product on CUDA (unless the matrix would exceed
+  2^28 elements) and on the CPU for `M < 512`, the scatter otherwise. Both are tested against the
+  naive reference.
+- **Chunk size (step 8).** Measured CUDA peak memory of an update is 0.24–0.70 of what
+  `_chunk_elements_per_example` budgets (four configurations up to 2,000 clauses and
+  `M = 4096`), so the estimate stays: conservative, never undersized.

@@ -102,6 +102,10 @@ Choosing the settings:
   collision free and readable, but the inbox has `n_clauses · n_edge_types` bits per layer. For
   thousands of clauses use `"random"` with `message_size` a few times
   `n_clauses · n_edge_types · message_bits` and check `model.message_collision_rate()`.
+* **`s`** may be one value per layer, `s=(s0, s1, …)`. With `s` close to 1 use
+  `feedback_mode="sequential"`: forgetting then has probability close to 1, and aggregated
+  over a batch it wipes the clauses (the reference noisy-XOR demo's `s=1.0` learns only one
+  graph at a time; `s=2` learns it batched).
 * **`n_node_types`**: clause `j` only matches nodes of type `j mod n_node_types` (as in the
   reference implementation), which splits the clauses between kinds of node.
 * **To reproduce the reference code**, use `feedback_mode="sequential"`,
@@ -126,6 +130,24 @@ from (the right neighbour) and at the node a *right*-going edge came from (the l
 neighbour)". `left1:0` names the edge type, the message layer and the clause the message reports.
 With a symbol table, node literals are decoded to symbols; hashed messages are decoded when all
 of their bits are included and printed raw (`m1[17]`) otherwise.
+
+`model.rules(symbols=symbols)` gives the same as `IF … THEN` rules with the votes.
+
+`model.explain_node(g, clause, graph=i, symbols=symbols)` explains one clause at one node of
+graph `i` (by default the first node where it holds), tracing every message back to the
+neighbours that sent it:
+
+```text
+clause 1 holds at node 2 [A] of graph 0
+  layer 0: A
+  layer 1: left1:0 AND right1:0
+    left1:0 from node 3 [A] over left: clause 0 up to layer 0
+      layer 0: A
+    right1:0 from node 1 [A] over right: clause 0 up to layer 0
+      layer 0: A
+```
+
+A component that fails is marked `<- fails here`.
 
 Two accessors expose what happens inside one graph:
 

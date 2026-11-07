@@ -133,14 +133,18 @@ def test_from_sequences_builds_left_and_right_edges():
 # ----------------------------------------------------------------------------- evaluation
 
 
-@pytest.mark.parametrize("encoding", ["random", "double_hashing", "one_hot"])
-def test_evaluation_matches_the_naive_definition(device, encoding):
+@pytest.mark.parametrize("encoding,binding", [("random", "dense"), ("random", "scatter"),
+                                              ("double_hashing", "dense"), ("double_hashing", "scatter"),
+                                              ("one_hot", "dense")])
+def test_evaluation_matches_the_naive_definition(device, encoding, binding, monkeypatch):
     gen = torch.Generator().manual_seed(11)
     g = _random_graphs(6, 7, n_edge_types=3, n_node_types=2, gen=gen)
     m = tt.GraphTsetlinMachine(7, 3, 9, T=5, depth=3, message_size=12, message_bits=2,
                                message_encoding=encoding, n_edge_types=3, n_node_types=2)
     _sparse_includes(m, p=0.05, gen=gen)
     m = m.to(device)
+    # hashed messages are bound by a matrix product or by a column scatter, chosen per device
+    monkeypatch.setattr(type(m), "_dense_binding", lambda self, N, dev: binding == "dense")
     for empty_value in (True, False):
         ref = _naive_node_matches(m, g, empty_value)
         got = m.node_clause_outputs(g.to(device), empty_value=empty_value).cpu()
@@ -344,3 +348,137 @@ def test_input_checks():
         m.update(g, torch.tensor([0]))
     with pytest.raises(ValueError):
         tt.GraphTsetlinMachine(4, 2, 4, T=5, message_encoding="bloom")
+
+
+# ----------------------------------------------------------------------------- explain_node
+
+
+def _aaa_clauses():
+    """Clause 0: C^0 = A. Clause 1: C^0 = A and C^1 = left1:0 AND right1:0 ('an A between two
+    A's'), with one-hot messages over the sequence edges of ``from_sequences``."""
+    sym = SymbolTable(list("ABCDE"), encoding="one_hot")
+    m = tt.GraphTsetlinMachine(5, 2, 2, T=5, depth=2, message_encoding="one_hot", n_edge_types=2,
+                               edge_type_names=["left", "right"])
+    st = torch.full_like(m.ta_state, m.n_states - 1)
+    st[0, 0] = st[1, 0] = m.n_states  # A
+    st[1, 5 + 0 * 2 + 0] = st[1, 5 + 0 * 2 + 1] = m.n_states  # clause 0 via left and via right
+    m.ta_state.copy_(st)
+    m._refresh_include()
+    return m, sym
+
+
+def test_explain_node_traces_messages_to_the_senders_symbols():
+    m, sym = _aaa_clauses()
+    g = GraphBatch.from_sequences([list("BAAAE"), list("BAAB")], sym)
+    assert m.clause_expression(1, symbols=sym) == "A AND left1:0 AND right1:0"
+    text = m.explain_node(g, 1, graph=0, symbols=sym)
+    assert text.splitlines()[0] == "clause 1 holds at node 2 [A] of graph 0"
+    # left-going edges come from the right neighbour, right-going ones from the left neighbour
+    assert "left1:0 from node 3 [A] over left: clause 0 up to layer 0" in text
+    assert "right1:0 from node 1 [A] over right: clause 0 up to layer 0" in text
+    assert text.count("layer 0: A") == 3  # the node itself and both senders
+    # X1's left neighbour is a B: the clause fails at the message layer
+    fail = m.explain_node(g, 1, graph=0, node=1, symbols=sym)
+    assert fail.splitlines()[0].startswith("clause 1 does not hold at node 1")
+    assert "<- fails here" in fail.splitlines()[-1]
+    assert m.explain_node(g, 1, graph=1) == "clause 1 holds at no node of graph 1"
+    assert m.rules(symbols=sym, min_abs_weight=0)[1].startswith("IF A AND left1:0 AND right1:0 THEN")
+    with pytest.raises(ValueError):
+        m.explain_node(g, 1, graph=2)
+
+
+# ----------------------------------------------------------------------------- noisy XOR
+
+
+def _xor_graphs(n, gen, noise, sym):
+    """[R2] NoisyXORDemo: two nodes joined both ways by one edge type, one symbol each;
+    the label is XOR of the two symbols, with ``noise`` of the labels flipped."""
+    a = torch.randint(0, 2, (n, 2), generator=gen)
+    y = (a[:, 0] != a[:, 1]).long()
+    y = torch.where(torch.rand(n, generator=gen) < noise, 1 - y, y)
+    feats = [torch.stack([sym.vector(["AB"[int(a[i, 0])]]), sym.vector(["AB"[int(a[i, 1])]])])
+             for i in range(n)]
+    return GraphBatch.from_graphs(feats, [[(0, 1), (1, 0)]] * n, [[0, 0]] * n, n_edge_types=1), y
+
+
+@pytest.mark.parametrize("encoding", ["random", "one_hot"])
+def test_learns_noisy_xor_across_two_nodes(device, encoding):
+    """The reference NoisyXORDemo settings (depth 2, 10 clauses, T=100, HV 32 with 2 bits,
+    256-bit messages with 2 bits, budget 4, 1% noise) at a reduced size. The demo's s=1.0
+    only learns example by example (forgetting with probability 1, aggregated over a batch,
+    wipes the clauses), so the batched test uses s=2."""
+    gen = torch.Generator().manual_seed(0)
+    torch.manual_seed(0)
+    sym = SymbolTable(["A", "B"], dim=32, bits=2, seed=0)
+    g, y = _xor_graphs(2000, gen, 0.01, sym)
+    gt, yt = _xor_graphs(500, gen, 0.0, sym)
+    g, y, gt, yt = g.to(device), y.to(device), gt.to(device), yt.to(device)
+    m = tt.GraphTsetlinMachine(32, 2, 10, T=100, s=2.0, depth=2, message_size=256, message_bits=2,
+                               message_encoding=encoding, max_included_literals=4).to(device)
+    for _ in range(3):
+        for i in range(0, len(g), 25):
+            m.update(g[i:i + 25], y[i:i + 25])
+    m.eval()
+    assert (m.predict(gt) == yt).float().mean().item() > 0.99
+
+
+# ----------------------------------------------------------------------------- per-layer s
+
+
+def test_feedback_blocks_with_one_block_is_apply_feedback():
+    gen = torch.Generator().manual_seed(3)
+    C, L, N = 6, 10, 8
+    state = torch.randint(0, 2 * N, (C, L), generator=gen).to(torch.uint8)
+    counts = [torch.randint(0, 4, (C, L), generator=gen).float() for _ in range(3)]
+    n_ib = torch.randint(0, 3, (C,), generator=gen).float()
+    a, b = state.clone(), state.clone()
+    tt.functional.apply_feedback(a, counts[0].clone(), counts[1].clone(), n_ib.clone(), counts[2].clone(),
+                                 n_states=N, s=3.0, max_included_literals=3,
+                                 generator=torch.Generator().manual_seed(1))
+    tt.functional.apply_feedback_blocks(b, counts[0], counts[1], n_ib, counts[2], [(torch.arange(L), 3.0)],
+                                        n_states=N, max_included_literals=3,
+                                        generator=torch.Generator().manual_seed(1))
+    assert torch.equal(a, b)
+
+
+def test_feedback_blocks_forget_at_their_own_rate():
+    """Type Ib only: block 0 (s=2) loses half a step per event, block 1 (s=10) a tenth."""
+    C, L, N = 400, 8, 200
+    state = torch.full((C, L), 150, dtype=torch.int16)
+    zeros = torch.zeros(C, L)
+    n_ib = torch.full((C,), 20.0)
+    blocks = [(torch.tensor([0, 1, 4, 5]), 2.0), (torch.tensor([2, 3, 6, 7]), 10.0)]
+    tt.functional.apply_feedback_blocks(state, zeros, zeros, n_ib, zeros, blocks, n_states=N,
+                                        generator=torch.Generator().manual_seed(0))
+    drop = 150.0 - state.float()
+    assert abs(drop[:, [0, 1, 4, 5]].mean().item() - 10.0) < 0.3
+    assert abs(drop[:, [2, 3, 6, 7]].mean().item() - 2.0) < 0.15
+
+
+def test_per_layer_specificity():
+    m = tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(2.0, 7.0), depth=2, message_size=8)
+    assert m.layer_s == (2.0, 7.0) and m.s == 2.0
+    cols = m._layer_columns()
+    assert [c.tolist() for c in cols] == [[0, 1, 2, 3, 12, 13, 14, 15], list(range(4, 12)) + list(range(16, 24))]
+    # all equal: the scalar model, bit for bit
+    a = tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(3.0, 3.0), depth=2, message_size=8)
+    b = tt.GraphTsetlinMachine(4, 2, 6, T=5, s=3.0, depth=2, message_size=8)
+    assert a.layer_s is None
+    b.load_state_dict(a.state_dict())
+    gen = torch.Generator().manual_seed(4)
+    g = _random_graphs(10, 4, n_edge_types=1, gen=gen)
+    y = torch.randint(0, 2, (10,), generator=gen)
+    for model in (a, b):
+        torch.manual_seed(5)
+        model.update(g, y)
+    assert torch.equal(a.ta_state, b.ta_state)
+    # a learning update with per-layer s runs on the block commit and keeps the caches fresh
+    m.update(g, y)
+    assert torch.equal(m.include_count, (m.ta_state >= m.n_states).sum(1).to(m.include_count.dtype))
+    with pytest.raises(ValueError):
+        tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(2.0, 3.0, 4.0), depth=2)
+    with pytest.raises(ValueError):
+        tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(2.0, 3.0), depth=2, max_included_literals=3,
+                               budget_mode="hard")
+    with pytest.raises(ValueError):
+        tt.GraphTsetlinMachine(4, 2, 6, T=5, s=(0.5, 3.0), depth=2)

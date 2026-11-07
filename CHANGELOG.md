@@ -9,7 +9,12 @@ messages that clauses send to neighbouring nodes. Random, double-hashed or one-h
 node types, batched and sequential feedback, and clause decoding in the paper's `right1:0`
 notation. At depth 1 on `GraphBatch.from_images` graphs it learns bit for bit like
 `ConvCoalescedTsetlinMachine` (tested). The `Trainer` accepts a `GraphBatch` wherever it takes
-a tensor. No Triton or CUDA-graph fast path yet.
+a tensor. A specificity per layer (`s=(s0, s1, ...)`, as the reference implementation allows;
+new `functional.apply_feedback_blocks`), `explain_node` (traces a clause at one node back to
+the symbols of the neighbours that sent its messages) and `rules(symbols=...)`. No Triton or
+CUDA-graph fast path yet.
+
+`CoalescedTsetlinMachine.rules` forwards extra keyword arguments to `clause_expression`.
 
 ## 0.6.1 (2026-11-01)
 

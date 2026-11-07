@@ -13,7 +13,7 @@ so that slicing a batch (``batch[idx]``) is cheap and keeps every edge inside it
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Iterable, List, Optional, Sequence, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -411,7 +411,7 @@ class GraphBatch:
     @classmethod
     def from_images(
         cls,
-        images,
+        images: Any,
         patch_size: Union[int, Tuple[int, int]],
         stride: Union[int, Tuple[int, int]] = 1,
         position_encoding: bool = True,
