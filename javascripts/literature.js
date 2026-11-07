@@ -1,0 +1,800 @@
+/* docs/literature.md: the literature catalog, queried in the browser with sql.js.
+ *
+ * docs/assets/literature/literature.db is written by benchmarks/literature/build_catalog.py.
+ * Every filter, grouping and "best value" ranking is one SQL query; only the current page of
+ * rows is turned into HTML, which keeps each interaction to a few milliseconds.
+ */
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  if (!$("lit-app") || typeof initSqlJs === "undefined") return;
+
+  const SQLJS = "https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/";
+  const DB_URL = "../assets/literature/literature.db";
+  const PAGE_SIZES = [50, 100, 250, 1000];
+  // Only these fixed strings are ever spliced into SQL; user input always goes through bind().
+  const GROUPS = new Set(["dataset", "paper", "year", "category", "data_type", "model", ""]);
+  const SPLIT_KEY = "COALESCE(NULLIF(r.split, ''), 'test')";
+  const RANK = "CASE better WHEN 'lower' THEN value ELSE -value END";
+  const RESULTS_ORDER = `group_size DESC, grp, metric_size DESC, metric, unit, split_key, ${RANK}, year`;
+
+  let db, sqlDb;
+
+  // ---------------------------------------------------------------- helpers
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const num = (v) => (typeof v === "number"
+    ? v.toLocaleString("en-US", { maximumFractionDigits: 6 }) : esc(v));
+  const link = (url, text) => (url
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : "");
+
+  function all(sql, params, target) {
+    const st = (target || db).prepare(sql);
+    try {
+      if (params) st.bind(params);
+      const out = [];
+      while (st.step()) out.push(st.getAsObject());
+      return out;
+    } finally {
+      st.free();
+    }
+  }
+  const one = (sql, params) => all(sql, params)[0];
+
+  function debounce(fn, ms) {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+  }
+
+  function csvDownload(rows, name) {
+    if (!rows.length) return;
+    const cols = Object.keys(rows[0]);
+    const cell = (v) => (v == null ? "" : /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v));
+    const text = [cols.join(",")].concat(rows.map((r) => cols.map((c) => cell(r[c])).join(","))).join("\n");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  // "Exact pick from the datalist" -> equality; anything else -> substring (LIKE).
+  function textCond(col, value, conds, params, exact) {
+    const v = value.trim();
+    if (!v) return;
+    if (exact.has(v.toLowerCase())) {
+      conds.push(`lower(${col}) = ?`);
+      params.push(v.toLowerCase());
+    } else {
+      conds.push(`${col} LIKE ?`);
+      params.push(`%${v}%`);
+    }
+  }
+
+  /* ------------------------------------------------------------ facet counts
+   * The number next to a filter option says how many rows you would get by picking it,
+   * given every *other* active filter (a faceted count), in the unit of that tab: papers and
+   * results, table rows, datasets or papers. Selects keep a fixed option order (from
+   * UNIVERSE) and disable options that would match nothing; datalists list only matches. */
+  const UNIVERSE = {};
+  const plural = (n, unit) => `${Number(n).toLocaleString()} ${unit}${n === 1 ? "" : "s"}`;
+  const UNITS = {
+    results: (c) => `${plural(c.p, "paper")} · ${plural(c.n, "result")}`,
+    best: (c) => plural(c.n, "row"),
+    datasets: (c) => plural(c.n, "dataset"),
+    papers: (c) => plural(c.n, "paper"),
+  };
+
+  // Faceted counts for one column: `from` is a FROM/subquery with `col` in it.
+  function facetCounts(from, col, conds, params, measure) {
+    const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+    const rows = all(`SELECT ${col} AS v, ${measure} FROM ${from} ${where} GROUP BY 1`, params);
+    const total = one(`SELECT ${measure} FROM ${from} ${where}`, params);
+    return { map: new Map(rows.map((r) => [r.v, r])), total };
+  }
+
+  function renderFacet(id, counts, label) {
+    const el = $(id);
+    if (el.tagName === "SELECT") {
+      const cur = el.value;
+      el.innerHTML = "";
+      el.add(new Option(`any — ${label(counts.total)}`, ""));
+      for (const v of UNIVERSE[id]) {
+        const c = counts.map.get(v);
+        const o = new Option(`${v} — ${c ? label(c) : "no matches"}`, v);
+        o.disabled = !c && v !== cur;
+        el.add(o);
+      }
+      el.value = cur;
+    } else {  // <datalist>: the browser shows `label` next to the value
+      el.innerHTML = "";
+      const rows = [...counts.map.values()].filter((r) => r.v != null && r.v !== "")
+        .sort((a, b) => b.n - a.n || String(a.v).localeCompare(String(b.v)));
+      for (const r of rows) {
+        const o = document.createElement("option");
+        o.value = r.v;
+        o.label = label(r);
+        el.appendChild(o);
+      }
+    }
+  }
+
+  /* Filter definitions per tab: [key, chip label, input id, condition(value) -> [sql, params]].
+   * A condition returns null when its input is empty. */
+  function condsOf(defs, skip) {
+    const conds = [], params = [];
+    for (const [key, , , make] of defs) {
+      if (key === skip) continue;
+      const c = make();
+      if (c) { conds.push(c[0]); params.push(...c[1]); }
+    }
+    return { conds, params };
+  }
+  function textC(col, id, exact) {
+    return () => {
+      const c = [], p = [];
+      textCond(col, $(id).value, c, p, exact);
+      return c.length ? [c[0], p] : null;
+    };
+  }
+  const eqC = (col, id) => () => ($(id).value ? [`${col} = ?`, [$(id).value]] : null);
+  const likeC = (expr, id) => () => ($(id).value.trim() ? [`${expr} LIKE ?`, [`%${$(id).value.trim()}%`]] : null);
+  const boxC = (sql, id) => () => ($(id).checked ? [sql, []] : null);
+
+  // Removable chips for the active filters, so the current selection is always visible.
+  function chips(prefix, defs, rerun) {
+    const box = $(`${prefix}-chips`);
+    const active = defs.filter(([, , id]) => {
+      const el = $(id);
+      return el.type === "checkbox" ? el.checked : el.value.trim() !== "";
+    });
+    box.innerHTML = active.map(([, name, id]) => {
+      const el = $(id);
+      const text = el.type === "checkbox" ? name : `${name}: ${el.value.trim()}`;
+      return `<button type="button" class="lit-chip" data-clear="${esc(id)}" title="Remove this filter">`
+        + `${esc(text)} <span aria-hidden="true">×</span></button>`;
+    }).join("");
+    box.hidden = !active.length;
+    box.onclick = (e) => {
+      const b = e.target.closest("[data-clear]");
+      if (!b) return;
+      const el = $(b.dataset.clear);
+      if (el.type === "checkbox") el.checked = false; else el.value = "";
+      rerun();
+    };
+  }
+
+  // --------------------------------------------------------- paged table view
+  /* A table whose rows come from a SQL source: `count()` and `page(limit, offset, order)`.
+   * columns: [{key, title, render(row) -> html, sort: sql expression | undefined, cls}]
+   * The reader can reorder the columns by dragging a title (or Alt+←/→ on a focused title);
+   * the order is kept per table in localStorage unless `opts.persist === false`. */
+  function pagedTable(prefix, columns, opts) {
+    const state = { page: 0, size: opts.size || 100, sort: null, dir: "DESC", source: null };
+    const tableEl = $(`${prefix}-table`), pagerEl = $(`${prefix}-pager`);
+    const storeKey = opts.persist === false ? null : `tm-literature-columns-${prefix}`;
+    const colId = (c) => c.key || c.title;
+    let order = null;  // column ids in the reader's order, or null for the default order
+    if (storeKey) {
+      try { order = JSON.parse(localStorage.getItem(storeKey)) || null; } catch (e) { order = null; }
+    }
+    function saveOrder() {
+      if (!storeKey) return;
+      try {
+        if (order) localStorage.setItem(storeKey, JSON.stringify(order)); else localStorage.removeItem(storeKey);
+      } catch (e) { /* storage blocked: the order lasts for this page view */ }
+    }
+    // Columns in display order: the saved ids first, then any column the saved order does not know.
+    function ordered() {
+      if (!order) return columns;
+      const byId = new Map(columns.map((c) => [colId(c), c]));
+      const out = order.filter((id) => byId.has(id)).map((id) => byId.get(id));
+      for (const c of columns) if (!out.includes(c)) out.push(c);
+      return out;
+    }
+    function moveColumn(from, to) {
+      const ids = ordered().map(colId);
+      if (from === to || to < 0 || to >= ids.length) return;
+      ids.splice(to, 0, ids.splice(from, 1)[0]);
+      order = ids.join("\u0001") === columns.map(colId).join("\u0001") ? null : ids;
+      saveOrder();
+      draw();
+    }
+
+    function draw() {
+      const src = state.source;
+      if (!src) return;
+      const total = src.count();
+      const pages = Math.max(1, Math.ceil(total / state.size));
+      state.page = Math.min(state.page, pages - 1);
+      const order = state.sort ? `${state.sort} ${state.dir}` : null;
+      const rows = src.page(state.size, state.page * state.size, order);
+      let lastGroup;
+      const cols = ordered();
+      const head = cols.map((c, j) => {
+        const mark = state.sort && state.sort === c.sort ? (state.dir === "ASC" ? " ▲" : " ▼") : "";
+        return `<th data-col="${j}" draggable="true" tabindex="0" title="Drag to move this column (or Alt+←/→)"`
+          + `${c.sort ? ` data-sort="${esc(c.sort)}" class="lit-sortable"` : ""}>${esc(c.title)}${mark}</th>`;
+      }).join("");
+      const body = rows.map((r, i) => {
+        let pre = "";
+        if (opts.groupOf && !state.sort) {
+          const g = opts.groupOf(r);
+          if (g !== undefined && g !== lastGroup) {
+            pre = `<tr class="lit-group"><td colspan="${cols.length}">${opts.groupLabel(r)}</td></tr>`;
+            lastGroup = g;
+          }
+        }
+        const cls = opts.rowClass ? opts.rowClass(r) : "";
+        return `${pre}<tr data-i="${i}" class="${cls}">${cols.map((c) =>
+          `<td class="${c.cls || ""}">${c.render ? c.render(r) : esc(r[c.key])}</td>`).join("")}</tr>`;
+      }).join("");
+      tableEl.innerHTML = `<table class="lit-table"><thead><tr>${head}</tr></thead><tbody>${body
+        || `<tr><td colspan="${cols.length}" class="lit-empty">No rows match.</td></tr>`}</tbody></table>`;
+      tableEl._rows = rows;
+      const reset = order ? '<button type="button" data-reset-cols>Reset column order</button>' : "";
+      pagerEl.innerHTML = total <= PAGE_SIZES[0] ? reset :
+        `<button type="button" data-go="prev" ${state.page ? "" : "disabled"}>‹ Prev</button>`
+        + `<span>Page ${state.page + 1} of ${pages} · rows ${(state.page * state.size + 1).toLocaleString()}–`
+        + `${Math.min(total, (state.page + 1) * state.size).toLocaleString()} of ${total.toLocaleString()}</span>`
+        + `<button type="button" data-go="next" ${state.page < pages - 1 ? "" : "disabled"}>Next ›</button>`
+        + `<label>Rows per page <select data-size>${PAGE_SIZES.map((s) =>
+          `<option${s === state.size ? " selected" : ""}>${s}</option>`).join("")}</select></label>` + reset;
+    }
+
+    // Column reordering: drag a title onto another, or Alt+←/→ on a focused title.
+    let dragFrom = null;
+    const clearDrop = () => tableEl.querySelectorAll(".lit-drop-before, .lit-drop-after")
+      .forEach((el) => el.classList.remove("lit-drop-before", "lit-drop-after"));
+    tableEl.addEventListener("dragstart", (e) => {
+      const th = e.target.closest && e.target.closest("th[data-col]");
+      if (!th) return;
+      dragFrom = +th.dataset.col;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", th.textContent);
+      th.classList.add("lit-dragging");
+    });
+    tableEl.addEventListener("dragover", (e) => {
+      const th = dragFrom !== null && e.target.closest("th[data-col]");
+      if (!th) return;
+      e.preventDefault();
+      clearDrop();
+      const to = +th.dataset.col;
+      if (to !== dragFrom) th.classList.add(to < dragFrom ? "lit-drop-before" : "lit-drop-after");
+    });
+    tableEl.addEventListener("drop", (e) => {
+      const th = dragFrom !== null && e.target.closest("th[data-col]");
+      if (!th) return;
+      e.preventDefault();
+      const from = dragFrom;
+      dragFrom = null;
+      moveColumn(from, +th.dataset.col);
+    });
+    tableEl.addEventListener("dragend", () => {
+      dragFrom = null;
+      clearDrop();
+      tableEl.querySelectorAll(".lit-dragging").forEach((el) => el.classList.remove("lit-dragging"));
+    });
+    tableEl.addEventListener("keydown", (e) => {
+      const th = e.target.closest("th[data-col]");
+      if (!th) return;
+      if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const from = +th.dataset.col, to = from + (e.key === "ArrowLeft" ? -1 : 1);
+        moveColumn(from, to);
+        const moved = tableEl.querySelector(`th[data-col="${Math.max(0, Math.min(to, ordered().length - 1))}"]`);
+        if (moved) moved.focus();
+      } else if ((e.key === "Enter" || e.key === " ") && th.dataset.sort) {
+        e.preventDefault();
+        th.click();
+      }
+    });
+
+    tableEl.addEventListener("click", (e) => {
+      const th = e.target.closest("th[data-sort]");
+      if (th) {
+        const key = th.dataset.sort;
+        if (state.sort === key) {
+          if (state.dir === "DESC") state.dir = "ASC"; else state.sort = null;  // 3rd click: default order
+        } else {
+          state.sort = key;
+          state.dir = "DESC";
+        }
+        state.page = 0;
+        draw();
+        return;
+      }
+      const tr = e.target.closest("tr[data-i]");
+      if (tr && opts.onRow && !e.target.closest("a")) opts.onRow(tableEl._rows[+tr.dataset.i]);
+    });
+    pagerEl.addEventListener("click", (e) => {
+      const go = e.target.dataset && e.target.dataset.go;
+      if (!go) return;
+      state.page += go === "next" ? 1 : -1;
+      draw();
+      tableEl.scrollIntoView({ block: "nearest" });
+    });
+    pagerEl.addEventListener("change", (e) => {
+      if (e.target.matches("[data-size]")) { state.size = +e.target.value; state.page = 0; draw(); }
+    });
+    pagerEl.addEventListener("click", (e) => {
+      if (e.target.matches && e.target.matches("[data-reset-cols]")) { order = null; saveOrder(); draw(); }
+    });
+
+    return {
+      set(source, newColumns) {
+        if (newColumns) {
+          columns = newColumns;
+          if (!storeKey) order = null;  // an unsaved order belongs to the previous column set
+        }
+        state.source = source;
+        state.page = 0;
+        state.sort = null;
+        draw();
+      },
+      redraw: draw,
+    };
+  }
+
+  // A narrow ranked TEMP table, paged in SQL, then joined to `base` for the drawn rows only.
+  function joinedSource(table, defaultOrder, extra) {
+    return {
+      count: () => one(`SELECT COUNT(*) AS n FROM ${table}`).n,
+      page: (limit, offset, order) => all(`
+        WITH pg AS (SELECT *, ROW_NUMBER() OVER (ORDER BY ${order || defaultOrder}) AS rn
+                    FROM ${table} ORDER BY ${order || defaultOrder} LIMIT ? OFFSET ?)
+        SELECT ${extra}, b.* FROM pg c JOIN base b ON b.id = c.id ORDER BY c.rn`, [limit, offset]),
+    };
+  }
+
+  // A source over a TEMP table that a filter step has just (re)built.
+  function tempSource(table, defaultOrder) {
+    return {
+      count: () => one(`SELECT COUNT(*) AS n FROM ${table}`).n,
+      page: (limit, offset, order) =>
+        all(`SELECT * FROM ${table} ORDER BY ${order || defaultOrder} LIMIT ? OFFSET ?`, [limit, offset]),
+    };
+  }
+
+  function detail(prefix, html) {
+    const box = $(`${prefix}-detail`);
+    box.innerHTML = `<button type="button" class="lit-close" aria-label="Close">×</button>${html}`;
+    box.hidden = false;
+    box.querySelector(".lit-close").onclick = () => { box.hidden = true; };
+    box.scrollIntoView({ block: "nearest" });
+  }
+  const dl = (pairs) => `<dl>${pairs.filter(([, v]) => v != null && v !== "").map(([k, v]) =>
+    `<dt>${esc(k)}</dt><dd>${v}</dd>`).join("")}</dl>`;
+
+  // ------------------------------------------------------------------ results
+  const EXACT = { dataset: new Set(), metric: new Set() };
+
+  const arrow = (b) => (b === "higher" ? '<span class="lit-dir" title="higher is better">↑</span>'
+    : b === "lower" ? '<span class="lit-dir" title="lower is better">↓</span>' : "");
+  const unit = (u) => (u === "%" ? "%" : u ? ` ${esc(u)}` : "");
+  const valueCell = (r) => `${r.is_best ? "★ " : ""}${num(r.value)}${unit(r.unit)}`
+    + `${r.std_or_range ? ` <span class="lit-muted">${esc(r.std_or_range)}</span>` : ""}${arrow(r.better)}`;
+  const modelCell = (r) => esc(r.model)
+    + (r.is_proposed ? ' <span class="lit-badge lit-proposed">proposed</span>' : "")
+    + (r.is_tm ? "" : ' <span class="lit-badge">non-TM</span>');
+  const paperCell = (r) => (r.caution ? `<span class="lit-caution" title="${esc(r.caution)}">⚠</span> ` : "")
+    + (r.paper_url ? link(r.paper_url, r.paper) : esc(r.paper));
+
+  const resultsTable = pagedTable("r", [
+    { key: "dataset", title: "Dataset", sort: "dataset" },
+    { key: "metric", title: "Metric", sort: "metric" },
+    { key: "value", title: "Value", render: valueCell, sort: "value", cls: "lit-num" },
+    { key: "split", title: "Split", sort: "split" },
+    { key: "model", title: "Model", render: modelCell, sort: "model" },
+    { key: "paper", title: "Paper", render: paperCell, sort: "paper" },
+    { key: "year", title: "Year", sort: "year", cls: "lit-num" },
+    { key: "source_location", title: "Source" },
+  ], {
+    size: 100,
+    rowClass: (r) => (r.is_best ? "lit-best-row" : ""),
+    groupOf: (r) => (r.grp === "" ? undefined : `${r.grp}\u0001${r.metric}\u0001${r.unit}\u0001${r.split_key}`),
+    groupLabel: (r) => (r.grp === "" ? "" : `<b>${esc(r.grp)}</b> · ${esc(r.metric)}${r.unit ? ` (${esc(r.unit)})` : ""}`
+      + ` · ${esc(r.split_key)} <span class="lit-muted">${r.n_cmp} result${r.n_cmp === 1 ? "" : "s"}</span>`),
+    onRow: (r) => detail("r", `<strong>${esc(r.model)}</strong> on <code>${esc(r.dataset)}</code>: `
+      + `${esc(r.metric)} = ${num(r.value)}${unit(r.unit)}` + dl([
+      ["Paper", `${paperCell(r)} (${esc(r.year)})`], ["⚠ Caution", esc(r.caution)],
+      ["TM variants in paper", esc(r.tm_variants)], ["Config", esc(r.config)],
+      ["Structured (schema v2)", v2Detail(r)],
+      ["Source", esc(r.source_location)], ["Notes", esc(r.notes)],
+      ["Extraction notes (paper)", esc(one("SELECT extraction_notes AS x FROM papers WHERE paper_id = ?", [r.paper_id]).x)],
+      ["Record", `<code>benchmarks/literature/papers/${esc(r.paper_id)}.json</code>`]])),
+  });
+
+  const R_FILTERS = [
+    ["dataset", "Dataset", "r-dataset", textC("dataset", "r-dataset", EXACT.dataset)],
+    ["metric", "Metric", "r-metric", textC("metric", "r-metric", EXACT.metric)],
+    ["task_family", "Task", "r-task", eqC("task_family", "r-task")],
+    ["data_type", "Data type", "r-dtype", eqC("data_type", "r-dtype")],
+    ["split_key", "Split", "r-split", eqC("split_key", "r-split")],
+    ["category", "Category", "r-category", eqC("category", "r-category")],
+    ["search", "Search", "r-search", likeC("search", "r-search")],
+    ["tm", "TM models only", "r-tm", boxC("is_tm = 1", "r-tm")],
+    ["proposed", "Proposed models only", "r-proposed", boxC("is_proposed = 1", "r-proposed")],
+    ["flag", "Hide ⚠ flagged", "r-flag", boxC("caution IS NULL", "r-flag")],
+    ["best", "★ Best per group only", "r-best", () => null],
+  ];
+  const R_FACETS = [["r-task", "task_family"], ["r-dtype", "data_type"], ["r-split", "split_key"], ["r-category", "category"],
+    ["r-datasets", "dataset"], ["r-metrics", "metric"]];
+
+  // Schema-v2 fields of one result and its dataset usage, with their provenance.
+  const SOURCE_NOTE = {
+    proposed: '<span class="lit-badge" title="Parsed automatically from the text fields; not reviewed yet">proposed</span>',
+    reviewed: '<span class="lit-badge lit-proposed">reviewed</span>',
+    record: '<span class="lit-badge lit-proposed">from record</span>',
+  };
+  function v2Detail(r) {
+    const x = one(`SELECT metric_canonical, metric_qualifier, averaging, metric_kind, statistic, n_runs, n_clauses,
+        clauses_scope, T, s, epochs, n_states, state_bits, max_included_literals, patch_size, weighted,
+        implementation, v2_source FROM results WHERE id = ?`, [r.id]);
+    const u = one(`SELECT task_family, setting_tags, label_type, n_classes, modality, booleanization_method,
+        booleanization_bits, v2_source FROM dataset_usages WHERE paper_id = ? AND dataset_id = ? LIMIT 1`,
+    [r.paper_id, r.dataset]) || {};
+    const parts = [
+      ["task", u.task_family], ["setting", u.setting_tags], ["labels", u.label_type], ["classes", u.n_classes],
+      ["modality", u.modality],
+      ["Booleanization", u.booleanization_method && u.booleanization_method
+        + (u.booleanization_bits ? ` (${u.booleanization_bits})` : "")],
+      ["metric", x.metric_canonical && [x.metric_canonical, x.averaging, x.metric_qualifier].filter(Boolean).join(", ")],
+      ["statistic", x.statistic], ["runs", x.n_runs],
+      ["clauses", x.n_clauses != null && `${num(x.n_clauses)}${x.clauses_scope ? ` ${x.clauses_scope.replace("_", " ")}` : ""}`],
+      ["T", x.T], ["s", x.s], ["epochs", x.epochs], ["states", x.n_states], ["state bits", x.state_bits],
+      ["literal budget", x.max_included_literals], ["patch", x.patch_size], ["weighted", x.weighted ? "yes" : null],
+      ["implementation", x.implementation],
+    ].filter(([, v]) => v != null && v !== "" && v !== false);
+    if (!parts.length) return "";
+    const src = [u.v2_source, x.v2_source].includes("proposed") ? "proposed"
+      : [u.v2_source, x.v2_source].includes("reviewed") ? "reviewed" : "record";
+    return parts.map(([k, v]) => `${esc(k)} <b>${esc(typeof v === "number" ? num(v) : v)}</b>`).join(" · ")
+      + ` ${SOURCE_NOTE[src]}`;
+  }
+
+  function runResults() {
+    const t0 = performance.now();
+    const group = $("r-group").value;
+    const g = GROUPS.has(group) && group ? group : "''";
+    const { conds, params } = condsOf(R_FILTERS);
+    for (const [id, col] of R_FACETS) {
+      const f = condsOf(R_FILTERS, col);
+      renderFacet(id, facetCounts("base", col, f.conds, f.params,
+        "COUNT(*) AS n, COUNT(DISTINCT paper_id) AS p"), UNITS.results);
+    }
+    chips("r", R_FILTERS, runResults);
+    const where = conds.length ? `WHERE ${conds.join(" AND ")}` : "";
+    // Rank over narrow rows only (ids, keys, values); the long text columns are joined in
+    // for the one page that is drawn.
+    db.run("DROP TABLE IF EXISTS temp.cur");
+    db.run(`CREATE TEMP TABLE cur AS
+      WITH f AS (SELECT id, ${g} AS grp, dataset, metric, unit, split_key, split, value, better,
+                        model, paper, year FROM base ${where}),
+      k AS (
+        SELECT f.*, COUNT(value) OVER w AS n_cmp,
+               CASE better WHEN 'higher' THEN MAX(value) OVER w WHEN 'lower' THEN MIN(value) OVER w END AS best_v,
+               COUNT(*) OVER (PARTITION BY grp) AS group_size,
+               COUNT(*) OVER (PARTITION BY grp, metric) AS metric_size
+        FROM f WINDOW w AS (PARTITION BY grp, metric, unit, split_key)
+      )
+      SELECT id, grp, dataset, metric, unit, split_key, split, value, better, model, paper, year,
+             n_cmp, group_size, metric_size,
+             (better IS NOT NULL AND n_cmp > 1 AND value = best_v) AS is_best
+      FROM k`, params);
+    const stats = one("SELECT COUNT(*) AS n, COALESCE(SUM(is_best), 0) AS b, COUNT(DISTINCT paper) AS p FROM cur");
+    if ($("r-best").checked) db.run("DELETE FROM cur WHERE NOT is_best");
+    resultsTable.set(joinedSource("cur", RESULTS_ORDER, "c.is_best, c.grp, c.n_cmp"));
+    const shown = $("r-best").checked ? stats.b : stats.n;
+    $("r-summary").textContent = `${plural(shown, "result")} from ${plural(stats.p, "paper")}`
+      + ` · ${stats.b.toLocaleString()} best values (★)`
+      + ` · ${(performance.now() - t0).toFixed(0)} ms · click a row for its config and notes`
+      + " · click a column title to sort, drag it to move the column";
+  }
+
+  // --------------------------------------------------------- best per dataset
+  const bestTable = pagedTable("b", [
+    { key: "dataset", title: "Dataset", sort: "dataset" },
+    { key: "data_type", title: "Type", sort: "data_type" },
+    { key: "metric", title: "Metric", sort: "metric" },
+    { key: "split_key", title: "Split" },
+    { key: "n", title: "Results", sort: "n", cls: "lit-num" },
+    { key: "value", title: "Best value", cls: "lit-num lit-best-cell",
+      render: (r) => `${num(r.value)}${unit(r.unit)}${arrow(r.better)}` },
+    { key: "model", title: "Best model", render: (r) => esc(r.model) + (r.is_tm ? "" : ' <span class="lit-badge">non-TM</span>') },
+    { key: "paper", title: "Paper", render: (r) => (r.paper_url ? link(r.paper_url, r.paper) : esc(r.paper)) + ` (${esc(r.year)})` },
+    { key: "tm_value", title: "Best TM value", cls: "lit-num",
+      render: (r) => (r.tm_value == null ? "–" : `${num(r.tm_value)}${unit(r.unit)}`) },
+    { key: "tm_model", title: "Best TM model", render: (r) => esc(r.tm_model || "") },
+    { key: "tm_paper", title: "TM paper", render: (r) => (r.tm_paper ? `${esc(r.tm_paper)} (${esc(r.tm_year)})` : "") },
+  ], {
+    size: 100,
+    onRow: (r) => {
+      resetResults(false);
+      $("r-flag").checked = $("b-flag").checked;
+      $("r-dataset").value = r.dataset;
+      $("r-metric").value = r.metric;
+      showTab("results");
+      runResults();
+    },
+  });
+
+  const B_FILTERS = [
+    ["dataset", "Dataset", "b-dataset", textC("dataset", "b-dataset", EXACT.dataset)],
+    ["metric", "Metric", "b-metric", textC("metric", "b-metric", EXACT.metric)],
+    ["data_type", "Data type", "b-dtype", eqC("data_type", "b-dtype")],
+    ["flag", "Hide ⚠ flagged", "b-flag", boxC("caution IS NULL", "b-flag")],
+    ["tm", "Rank TM models only", "b-tm", boxC("is_tm = 1", "b-tm")],
+  ];
+  const B_FACETS = [["b-dtype", "data_type"], ["b-datasets", "dataset"], ["b-metrics", "metric"]];
+
+  function runBest() {
+    const minN = Math.max(1, +$("b-min").value || 1);
+    const rankable = ["better IS NOT NULL", "value IS NOT NULL"];
+    const { conds: fc, params } = condsOf(B_FILTERS);
+    const conds = rankable.concat(fc);
+    // A facet counts the rows this tab would show: dataset x metric x unit x split groups.
+    for (const [id, col] of B_FACETS) {
+      const f = condsOf(B_FILTERS, col);
+      const groups = `(SELECT dataset, data_type, metric FROM base WHERE ${rankable.concat(f.conds).join(" AND ")}
+        GROUP BY dataset, metric, unit, split_key HAVING COUNT(*) >= ${minN})`;
+      renderFacet(id, facetCounts(groups, col, [], f.params, "COUNT(*) AS n"), UNITS.best);
+    }
+    chips("b", B_FILTERS, runBest);
+    const key = "dataset, metric, unit, split_key";
+    db.run("DROP TABLE IF EXISTS temp.best");
+    db.run(`CREATE TEMP TABLE best AS
+      WITH f AS (SELECT id, dataset, data_type, metric, unit, split_key, better, value, year, is_tm
+                 FROM base WHERE ${conds.join(" AND ")}),
+      r AS (SELECT f.*, ROW_NUMBER() OVER (PARTITION BY ${key} ORDER BY ${RANK}, year) AS rk,
+                   ROW_NUMBER() OVER (PARTITION BY ${key}, is_tm ORDER BY ${RANK}, year) AS rk_cls,
+                   COUNT(*) OVER (PARTITION BY ${key}) AS n FROM f),
+      a AS (SELECT * FROM r WHERE rk = 1 AND n >= ?),
+      t AS (SELECT * FROM r WHERE is_tm = 1 AND rk_cls = 1)
+      SELECT a.dataset, a.data_type, a.metric, a.unit, a.split_key, a.better, a.n, a.value,
+             ba.model, a.is_tm, ba.paper, a.year, ba.paper_url,
+             t.value AS tm_value, bt.model AS tm_model, bt.paper AS tm_paper, t.year AS tm_year
+      FROM a JOIN base ba ON ba.id = a.id
+      LEFT JOIN t ON t.dataset = a.dataset AND t.metric = a.metric AND t.unit = a.unit
+                 AND t.split_key = a.split_key
+      LEFT JOIN base bt ON bt.id = t.id`, params.concat([minN]));
+    const n = one("SELECT COUNT(*) AS n FROM best").n;
+    bestTable.set(tempSource("best", "n DESC, dataset, metric"));
+    $("b-summary").textContent = `${n.toLocaleString()} dataset × metric × unit × split rows`
+      + " · click a row to open its results";
+  }
+
+  // ----------------------------------------------------------------- datasets
+  const datasetsTable = pagedTable("d", [
+    { key: "dataset_id", title: "Dataset", sort: "dataset_id" },
+    { key: "data_type", title: "Type", sort: "data_type" },
+    { key: "task_families", title: "Task" },
+    { key: "tasks", title: "Tasks (as reported)" },
+    { key: "n_classes", title: "Classes", sort: "n_classes_max", cls: "lit-num" },
+    { key: "input_shape_or_features", title: "Input" },
+    { key: "sizes", title: "Train / val / test (as reported)" },
+    { key: "n_papers", title: "Papers", sort: "n_papers", cls: "lit-num" },
+    { key: "n_results", title: "Results", sort: "n_results", cls: "lit-num" },
+    { key: "download_url", title: "Download",
+      render: (r) => (r.download_url ? link(r.download_url, "download") : '<span class="lit-muted">not public / n.a.</span>') },
+  ], {
+    size: 50,
+    onRow: (r) => {
+      const uses = all(`SELECT p.title, p.year, p.url, u.name_in_paper, u.task, u.train_size, u.val_size,
+                               u.test_size, u.split_as_reported, u.booleanization, u.notes, u.task_family,
+                               u.n_classes, u.booleanization_method
+                        FROM dataset_usages u JOIN papers p ON p.paper_id = u.paper_id
+                        WHERE u.dataset_id = ? ORDER BY p.year`, [r.dataset_id]);
+      detail("d", `<strong><code>${esc(r.dataset_id)}</code></strong> ${link(r.download_url, "download")}`
+        + ` · <button type="button" class="lit-linkbtn" id="d-show">show its ${r.n_results} results</button>`
+        + `<table class="lit-table lit-inner"><thead><tr><th>Paper</th><th>Name in paper</th><th>Task</th>`
+        + `<th>Classes</th><th>Train / val / test</th><th>Split as reported</th><th>Booleanization</th><th>Notes</th></tr></thead><tbody>`
+        + uses.map((u) => `<tr><td>${u.url ? link(u.url, u.title) : esc(u.title)} (${esc(u.year)})</td>`
+          + `<td>${esc(u.name_in_paper)}</td><td>${esc(u.task)}${u.task_family ? `<br><span class="lit-muted">${esc(u.task_family)}</span>` : ""}</td>`
+          + `<td class="lit-num">${u.n_classes == null ? "–" : num(u.n_classes)}</td>`
+          + `<td>${[u.train_size, u.val_size, u.test_size].map((v) => (v == null ? "–" : num(v))).join(" / ")}</td>`
+          + `<td>${esc(u.split_as_reported)}</td><td>${esc(u.booleanization)}${u.booleanization_method ? `<br><span class="lit-muted">${esc(u.booleanization_method)}</span>` : ""}</td><td>${esc(u.notes)}</td></tr>`).join("")
+        + "</tbody></table>");
+      $("d-show").onclick = () => {
+        resetResults(false);
+        $("r-dataset").value = r.dataset_id;
+        showTab("results");
+        runResults();
+      };
+    },
+  });
+
+  const D_FILTERS = [
+    ["search", "Search", "d-search", likeC("(d.dataset_id || ' ' || COALESCE(d.tasks, '') || ' ' "
+      + "|| COALESCE(d.names_in_papers, '') || ' ' || COALESCE(d.tm_variants, ''))", "d-search")],
+    ["data_type", "Data type", "d-dtype", eqC("d.data_type", "d-dtype")],
+  ];
+
+  function runDatasets() {
+    const { conds, params } = condsOf(D_FILTERS);
+    const f = condsOf(D_FILTERS, "data_type");
+    renderFacet("d-dtype", facetCounts("datasets d", "d.data_type", f.conds, f.params, "COUNT(*) AS n"), UNITS.datasets);
+    chips("d", D_FILTERS, runDatasets);
+    db.run("DROP TABLE IF EXISTS temp.ds");
+    db.run(`CREATE TEMP TABLE ds AS SELECT d.*,
+        (SELECT COUNT(*) FROM results r WHERE r.dataset_id = d.dataset_id) AS n_results,
+        (SELECT GROUP_CONCAT(s, ' | ') FROM (SELECT DISTINCT COALESCE(u.train_size, '–') || ' / '
+            || COALESCE(u.val_size, '–') || ' / ' || COALESCE(u.test_size, '–') AS s
+          FROM dataset_usages u WHERE u.dataset_id = d.dataset_id
+            AND COALESCE(u.train_size, u.val_size, u.test_size) IS NOT NULL)) AS sizes
+      FROM datasets d ${conds.length ? `WHERE ${conds.join(" AND ")}` : ""}`, params);
+    datasetsTable.set(tempSource("ds", "n_papers DESC, n_results DESC, dataset_id"));
+  }
+
+  // ------------------------------------------------------------------- papers
+  const papersTable = pagedTable("p", [
+    { key: "year", title: "Year", sort: "year", cls: "lit-num" },
+    { key: "title", title: "Title", sort: "title",
+      render: (r) => (r.caution ? `<span class="lit-caution" title="${esc(r.caution)}">⚠</span> ` : "")
+        + (r.url ? link(r.url, r.title) : esc(r.title)) },
+    { key: "category", title: "Category", sort: "category" },
+    { key: "tm_variants", title: "TM variants" },
+    { key: "new_feature", title: "New feature" },
+    { key: "n_results", title: "Results", sort: "n_results", cls: "lit-num" },
+    { key: "code_url", title: "Code", render: (r) => link(r.code_url, "code") },
+  ], {
+    size: 100,
+    onRow: (r) => {
+      detail("p", `<strong>${r.url ? link(r.url, r.title) : esc(r.title)}</strong> (${esc(r.year)})`
+        + ` · <button type="button" class="lit-linkbtn" id="p-show">show its ${r.n_results} results</button>`
+        + dl([["Authors", esc(r.authors)], ["Venue", esc(r.venue)], ["Feature type", esc(r.feature_type)],
+          ["New feature", esc(r.new_feature)], ["TM variants", esc(r.tm_variants)],
+          ["Datasets", esc(r.datasets)], ["⚠ Caution", esc(r.caution)],
+          ["Extraction notes", esc(r.extraction_notes)], ["Code", link(r.code_url, r.code_url)],
+          ["Record", `<code>benchmarks/literature/papers/${esc(r.paper_id)}.json</code>`]]));
+      $("p-show").onclick = () => {
+        resetResults(false);
+        $("r-search").value = r.title;
+        showTab("results");
+        runResults();
+      };
+    },
+  });
+
+  const P_FILTERS = [
+    ["search", "Search", "p-search", likeC("(title || ' ' || COALESCE(authors, '') || ' ' || COALESCE(tm_variants, '') "
+      + "|| ' ' || COALESCE(new_feature, '') || ' ' || COALESCE(venue, ''))", "p-search")],
+    ["category", "Category", "p-category", eqC("category", "p-category")],
+  ];
+
+  function runPapers() {
+    const { conds, params } = condsOf(P_FILTERS);
+    const f = condsOf(P_FILTERS, "category");
+    renderFacet("p-category", facetCounts("papers", "category", f.conds, f.params, "COUNT(*) AS n"), UNITS.papers);
+    chips("p", P_FILTERS, runPapers);
+    db.run("DROP TABLE IF EXISTS temp.pp");
+    db.run(`CREATE TEMP TABLE pp AS SELECT p.*,
+        (SELECT COUNT(*) FROM results r WHERE r.paper_id = p.paper_id) AS n_results,
+        (SELECT GROUP_CONCAT(dataset_id, ', ') FROM dataset_usages u WHERE u.paper_id = p.paper_id) AS datasets
+      FROM papers p ${conds.length ? `WHERE ${conds.join(" AND ")}` : ""}`, params);
+    papersTable.set(tempSource("pp", "year, title"));
+  }
+
+  // ---------------------------------------------------------------------- SQL
+  let sqlRows = [];
+  const sqlTable = pagedTable("s", [], { size: 100, persist: false });
+  function runSql() {
+    const t0 = performance.now();
+    try {
+      const res = sqlDb.exec($("s-sql").value);
+      const last = res[res.length - 1];
+      sqlRows = last ? last.values.map((v) => Object.fromEntries(last.columns.map((c, i) => [c, v[i]]))) : [];
+      const cols = last ? last.columns : [];
+      sqlTable.set({
+        count: () => sqlRows.length,
+        page: (limit, offset) => sqlRows.slice(offset, offset + limit),
+      }, cols.map((c) => ({ key: c, title: c,
+        render: (r) => (typeof r[c] === "number" ? num(r[c]) : esc(r[c])) })));
+      $("s-summary").textContent = `${sqlRows.length.toLocaleString()} rows · ${(performance.now() - t0).toFixed(0)} ms`;
+    } catch (err) {
+      $("s-summary").textContent = `Error: ${err.message}`;
+      $("s-table").innerHTML = "";
+      $("s-pager").innerHTML = "";
+    }
+  }
+
+  // --------------------------------------------------------------------- tabs
+  const ran = new Set();
+  const RUN = { results: runResults, best: runBest, datasets: runDatasets, papers: runPapers, sql: runSql };
+  function showTab(name) {
+    document.querySelectorAll("#lit-app [role=tab]").forEach((b) =>
+      b.setAttribute("aria-selected", String(b.dataset.tab === name)));
+    document.querySelectorAll("#lit-app [data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== name; });
+    if (!ran.has(name)) { ran.add(name); RUN[name](); }
+  }
+
+  function resetResults(run = true) {
+    for (const id of ["r-dataset", "r-metric", "r-task", "r-dtype", "r-split", "r-category", "r-search"]) $(id).value = "";
+    for (const id of ["r-tm", "r-proposed", "r-flag", "r-best"]) $(id).checked = false;
+    $("r-group").value = "dataset";
+    if (run) runResults();
+  }
+
+  function wire() {
+    const later = debounce(runResults, 150);
+    for (const id of ["r-group", "r-task", "r-dtype", "r-split", "r-category", "r-tm", "r-proposed", "r-flag", "r-best"]) {
+      $(id).addEventListener("change", runResults);
+    }
+    for (const id of ["r-dataset", "r-metric", "r-search"]) $(id).addEventListener("input", later);
+    $("r-reset").addEventListener("click", () => resetResults());
+    $("r-csv").addEventListener("click", () => csvDownload(
+      joinedSource("cur", RESULTS_ORDER, "c.is_best").page(-1, 0)
+        .map(({ search, id, split_key, ...row }) => row),  // eslint-disable-line no-unused-vars
+      "tm_literature_results.csv"));
+
+    const laterBest = debounce(runBest, 150);
+    for (const id of ["b-dtype", "b-flag", "b-tm", "b-min"]) $(id).addEventListener("change", runBest);
+    for (const id of ["b-dataset", "b-metric"]) $(id).addEventListener("input", laterBest);
+    $("b-csv").addEventListener("click", () => csvDownload(all("SELECT * FROM best ORDER BY n DESC, dataset, metric"),
+      "tm_literature_best_per_dataset.csv"));
+
+    $("d-search").addEventListener("input", debounce(runDatasets, 150));
+    $("d-dtype").addEventListener("change", runDatasets);
+    $("p-search").addEventListener("input", debounce(runPapers, 150));
+    $("p-category").addEventListener("change", runPapers);
+
+    $("s-run").addEventListener("click", runSql);
+    $("s-sql").addEventListener("keydown", (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runSql(); });
+    $("s-csv").addEventListener("click", () => csvDownload(sqlRows, "tm_literature_query.csv"));
+
+    document.querySelectorAll("#lit-app [role=tab]").forEach((b) =>
+      b.addEventListener("click", () => showTab(b.dataset.tab)));
+  }
+
+  async function main() {
+    const t0 = performance.now();
+    const [SQL, buf] = await Promise.all([
+      initSqlJs({ locateFile: (f) => SQLJS + f }),
+      fetch(DB_URL).then((r) => {
+        if (!r.ok) throw new Error(`${DB_URL}: HTTP ${r.status}`);
+        return r.arrayBuffer();
+      }),
+    ]);
+    const bytes = new Uint8Array(buf);
+    db = new SQL.Database(bytes);
+    sqlDb = new SQL.Database(bytes);  // separate copy: console queries cannot disturb the views
+    // One denormalised, indexed table that every results query starts from.
+    db.run(`CREATE TEMP TABLE base AS
+      SELECT r.id AS id, COALESCE(r.dataset_id, '(no dataset)') AS dataset, r.metric, r.value, r.unit,
+             r.std_or_range, r.split, ${SPLIT_KEY} AS split_key, r.better, r.model, r.is_tm,
+             r.is_proposed, r.config, r.source_location, r.notes, r.paper_id, p.title AS paper,
+             p.year, p.category, p.url AS paper_url, p.caution, p.tm_variants, d.data_type,
+             COALESCE((SELECT GROUP_CONCAT(DISTINCT u.task_family) FROM dataset_usages u
+                       WHERE u.paper_id = r.paper_id AND u.dataset_id = r.dataset_id), '(no dataset)') AS task_family,
+             r.model || ' ' || p.title || ' ' || COALESCE(r.config, '') || ' ' || COALESCE(r.notes, '')
+               || ' ' || COALESCE(r.source_location, '') AS search
+      FROM results r JOIN papers p ON p.paper_id = r.paper_id
+      LEFT JOIN datasets d ON d.dataset_id = r.dataset_id`);
+    db.run("CREATE UNIQUE INDEX temp.base_id ON base(id)");
+    for (const c of ["dataset", "metric", "data_type", "split_key", "category", "task_family"]) {
+      db.run(`CREATE INDEX temp.base_${c} ON base(${c})`);
+    }
+
+    const values = (sql) => all(sql).map((r) => r.v).filter((v) => v != null && v !== "");
+    values("SELECT DISTINCT dataset AS v FROM base").forEach((v) => EXACT.dataset.add(String(v).toLowerCase()));
+    values("SELECT DISTINCT metric AS v FROM base").forEach((v) => EXACT.metric.add(String(v).toLowerCase()));
+    // Fixed option order for the selects: most results (or datasets / papers) first.
+    const byCount = (col, from) => values(`SELECT ${col} AS v FROM ${from} GROUP BY 1 ORDER BY COUNT(*) DESC, 1`);
+    UNIVERSE["r-dtype"] = UNIVERSE["b-dtype"] = byCount("data_type", "base");
+    UNIVERSE["r-split"] = byCount("split_key", "base");
+    UNIVERSE["r-category"] = byCount("category", "base");
+    UNIVERSE["r-task"] = byCount("task_family", "base");
+    UNIVERSE["d-dtype"] = byCount("data_type", "datasets");
+    UNIVERSE["p-category"] = byCount("category", "papers");
+
+    wire();
+    const n = one("SELECT (SELECT COUNT(*) FROM papers) AS p, (SELECT COUNT(*) FROM datasets) AS d, (SELECT COUNT(*) FROM results) AS r");
+    $("lit-status").textContent = `${n.p} papers · ${n.d} datasets · ${n.r.toLocaleString()} reported results`
+      + ` · database loaded in ${(performance.now() - t0).toFixed(0)} ms`;
+    showTab("results");
+  }
+
+  main().catch((err) => {
+    $("lit-status").textContent = `Could not load the literature database (${err.message || err}).`;
+  });
+})();

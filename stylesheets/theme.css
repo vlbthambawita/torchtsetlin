@@ -1,0 +1,49 @@
+/* Docs colours, built around the primary #FA772A (hue 22). It is light enough that white text
+   on it reaches only 2.7:1, so header text is a deep brown (#2B1608, 6.3:1), as Material does for
+   its own light oranges. Shades of the same hue carry links and accents at AA contrast. */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #FA772A;               /* primary: header */
+  --md-primary-fg-color--light: #FB9960;
+  --md-primary-fg-color--dark: #883607;
+  --md-primary-fg-color--transparent: rgba(250, 119, 42, 0.12);
+  --md-primary-bg-color: #2B1608;               /* header text and icons, 6.3:1 */
+  --md-primary-bg-color--light: rgba(43, 22, 8, 0.72);
+  --md-accent-fg-color: #D5550B;                 /* hover, active tab */
+  --md-accent-fg-color--transparent: rgba(213, 85, 11, 0.1);
+  --md-accent-bg-color: #FFFFFF;
+  --md-typeset-a-color: #AE4609;                 /* links, 5.7:1 on white */
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 25;                                  /* warm dark background */
+  --md-primary-fg-color: #FA772A;
+  --md-primary-fg-color--light: #FB9960;
+  --md-primary-fg-color--dark: #883607;
+  --md-primary-fg-color--transparent: rgba(250, 119, 42, 0.16);
+  --md-primary-bg-color: #2B1608;
+  --md-primary-bg-color--light: rgba(43, 22, 8, 0.72);
+  --md-accent-fg-color: #FB9960;
+  --md-accent-fg-color--transparent: rgba(251, 153, 96, 0.12);
+  --md-typeset-a-color: #FFA060;                 /* links, 8.2:1 on the dark ground */
+}
+
+/* Release banner (overrides/main.html). */
+.md-banner { background-color: #883607; color: #fff; }   /* 8.2:1 */
+.md-banner .tt-release { color: #fff; }
+.md-banner .tt-release:hover { color: #FFB37E; text-decoration: underline; }
+
+/* "release" admonition (docs/index.md) in the primary terracotta, with a tag icon. */
+:root {
+  --md-admonition-icon--release: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.5 7A1.5 1.5 0 0 1 4 5.5 1.5 1.5 0 0 1 5.5 4 1.5 1.5 0 0 1 7 5.5 1.5 1.5 0 0 1 5.5 7m15.91 4.58-9-9C12.05 2.22 11.55 2 11 2H4c-1.11 0-2 .89-2 2v7c0 .55.22 1.05.59 1.41l8.99 9c.37.36.87.59 1.42.59s1.05-.23 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.56-.23-1.06-.59-1.42"/></svg>');
+}
+.md-typeset .admonition.release,
+.md-typeset details.release { border-color: #FA772A; }
+.md-typeset .release > .admonition-title,
+.md-typeset .release > summary { background-color: rgba(250, 119, 42, 0.12); }
+.md-typeset .release > .admonition-title::before,
+.md-typeset .release > summary::before {
+  background-color: #D5550B;
+  -webkit-mask-image: var(--md-admonition-icon--release);
+  mask-image: var(--md-admonition-icon--release);
+}
