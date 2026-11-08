@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.0 (2026-11-08)
 
 **New: graph Tsetlin machine** (`GraphTsetlinMachine`, `torchtsetlin.data.GraphBatch`,
 `torchtsetlin.data.SymbolTable`; Granmo et al., arXiv:2507.14874; issue #8, `plans/graph-tm.md`).
@@ -30,6 +30,12 @@ and draw their feedback nodes with `_triton.conv_eval` on bit-packed literals, n
 Fashion-MNIST with 40,000 clauses trains in ~12 s per epoch on an RTX 3090.
 
 `CoalescedTsetlinMachine.rules` forwards extra keyword arguments to `clause_expression`.
+
+**Paper reproduction** (`plans/graph-tm-reproduction.md`,
+`experiments/paper_experiments/results/graphtm/REPORT.md`, 5 seeds each): three consecutive A's
+100.00 (paper 100); MNIST GraphTM 98.07 (98.42), CoTM 98.49 (98.93); Fashion-MNIST GraphTM 88.59
+(89.49), CoTM 90.70 (91.05). All within tolerance, and the paper's ordering CoTM > GraphTM holds.
+CIFAR-10 and multivalue noisy XOR were skipped (no comparable published number).
 
 ## 0.6.1 (2026-11-01)
 
