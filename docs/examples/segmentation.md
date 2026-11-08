@@ -1,7 +1,9 @@
 # Segmentation on generated scenes
 
 Full script: `examples/segmentation_scenes.py`. Runs in about a minute on a GPU, a few on a
-CPU, and needs no download. See [Segmentation](../concepts/segmentation.md) for the algorithm
+CPU, and needs no download. The notebook
+[Semantic segmentation](notebooks/07_segmentation_tsetlin.ipynb) walks through the same steps
+and opens in Google Colab. See [Segmentation](../concepts/segmentation.md) for the algorithm
 and the [segmentation guide](../guides/segmentation.md) for the API.
 
 ## The task
@@ -32,10 +34,10 @@ trainer.test((x[220:], labels[220:]))
 ```
 
 ```
-test_pixel_accuracy  0.991
-test_mean_iou        0.946
-test_iou_sky         0.998   test_iou_building  0.894
-test_iou_tree        0.903   test_iou_road      0.989
+test_pixel_accuracy  0.989
+test_mean_iou        0.935
+test_iou_sky         0.999   test_iou_building  0.865
+test_iou_tree        0.893   test_iou_road      0.984
 ```
 
 ## What the script measures
@@ -45,10 +47,10 @@ test_iou_tree        0.903   test_iou_road      0.989
 | | pixel acc. | mIoU | sky | building | tree | road |
 |---|---|---|---|---|---|---|
 | *row prior, no image content* | *0.876* | *0.410* | *0.715* | *0.000* | *0.000* | *0.923* |
-| single scale 3×3 | 0.934 | 0.798 | 0.980 | 0.505 | 0.808 | 0.898 |
-| pyramid 1×/2×/4× | 0.967 | 0.874 | 0.982 | 0.699 | 0.867 | 0.950 |
-| single scale + position | 0.991 | 0.946 | 0.998 | 0.894 | 0.903 | 0.989 |
-| pyramid + position | **0.993** | **0.959** | 0.996 | **0.921** | 0.926 | 0.992 |
+| single scale 3×3 | 0.945 | 0.818 | 0.997 | 0.526 | 0.833 | 0.915 |
+| pyramid 1×/2×/4× | 0.987 | 0.925 | 0.998 | 0.837 | 0.884 | 0.981 |
+| single scale + position | 0.989 | 0.935 | 0.999 | 0.865 | 0.893 | 0.984 |
+| pyramid + position | **0.993** | **0.954** | 0.999 | **0.919** | 0.906 | 0.990 |
 
 **Building is the interesting column.** A 3×3 patch of building interior and a 3×3 patch of
 road look alike once illumination varies; separating them needs to know where the horizon is,
@@ -67,7 +69,7 @@ python examples/segmentation_scenes.py                      # single scale, with
 python examples/segmentation_scenes.py --pyramid --position 8
 python examples/segmentation_scenes.py --all --plot         # the table + segmentation_scenes.png
 python examples/segmentation_scenes.py --commit-ablation    # patches_per_commit sweep
-python examples/segmentation_scenes.py --explain 20 12      # why one pixel got its label
+python examples/segmentation_scenes.py --position 8 --explain 20 12   # why one pixel got its label
 python examples/segmentation_scenes.py --balanced           # class-balanced feedback
 ```
 
@@ -75,11 +77,17 @@ python examples/segmentation_scenes.py --balanced           # class-balanced fee
 named pixels:
 
 ```
-pixel (20, 12) -> 3  (true: 3)
-prediction: 3  votes: [-60.0, -60.0, -60.0, 60.0]
-  [+109 -> output 3] clause 1029: IF p[0,19,12] AND p[0,20,11] AND p[1,21,13] AND ...
-                                     AND y>2 AND y>3 AND NOT p[3,19,11] AND ...
+pixel (20, 12) -> 3
+prediction: 3  votes: [-1415.0, -445.0, -487.0, 614.0]
+  [+92 -> output 3] clause 1008: IF y>2 AND y>3 AND y>4
+  [+88 -> output 3] clause 1018: IF p[0,19,12] AND p[0,19,13] AND p[0,20,12] AND ...
+                                    AND y>1 AND y>2 AND x>1 AND NOT p[1,20,11] AND ...
 ```
+
+The strongest vote for road says only "row 18 or lower" (`y>2 AND y>3 AND y>4`; the position
+bits are thresholds spread over the rows, and `model.clause_region(1008)` decodes them). The next
+one is a colour statement about the 3×3 neighbourhood: `p[0,19,12]` reads "plane 0 (red ≥ 0.2)
+of pixel (19, 12) is set".
 
 `--commit-ablation` sweeps `patches_per_commit`, the fidelity/throughput knob described in
 [Commit granularity](../concepts/segmentation.md#commit-granularity-is-a-real-hyper-parameter).

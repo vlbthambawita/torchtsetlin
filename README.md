@@ -129,8 +129,8 @@ details and references.
   MNIST (convolutional clauses and GPU throughput) and CIFAR-10 (booleanizing colour images),
   plus two that work through the Tsetlin-machine segmentation literature — the Convolutional
   Regression TM (ICMLT 2021) and CTM-UNet (ISTM 2025), the latter building a dense per-pixel
-  Tsetlin segmentation head, and the graph Tsetlin machine (deep clauses over sequences, and
-  images as graphs). Each opens in Google Colab from its badge, and the
+  Tsetlin segmentation head, the graph Tsetlin machine (deep clauses over sequences, and
+  images as graphs), and semantic segmentation with `SegmentationTsetlinMachine`. Each opens in Google Colab from its badge, and the
   [documentation](https://vlbthambawita.github.io/torchtsetlin/examples/notebooks/) lists them.
 
 ## Citation

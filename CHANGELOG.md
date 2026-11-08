@@ -10,7 +10,12 @@ updated to the results it now produces. Each notebook has an *Open in Colab* bad
 cell that installs torchtsetlin from PyPI when it runs in Colab; MNIST and CIFAR-10 download to
 `data/` there. New notebook `06_graph_tsetlin.ipynb`: the graph Tsetlin machine on the paper's
 three-A's task (four readable clauses, `explain_node`), run lengths, the padded CUDA fast path,
-and MNIST as depth-1 graphs learning bit for bit like `ConvCoalescedTsetlinMachine`.
+and MNIST as depth-1 graphs learning bit for bit like `ConvCoalescedTsetlinMachine`. New notebook
+`07_segmentation_tsetlin.ipynb`: `SegmentationTsetlinMachine` on generated street scenes (the
+segmentation example), with the row-prior floor, position literals and the OR-pooled pyramid,
+`explain_pixel`, a `patches_per_commit` sweep and class-balanced feedback. The segmentation
+example, guide and concept pages now show the numbers measured on 0.7.0 (e.g. single scale
+0.818 mIoU, was 0.798; pyramid + position 0.954, was 0.959).
 
 The C-RTM notebook (`04_convolutional_regression_tsetlin.ipynb`) no longer recovers the planted
 mask with the paper's 15 clauses (0 of 12 restarts, was 9 of 12 on 0.1.x). Side experiments

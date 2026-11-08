@@ -44,8 +44,8 @@ model.class_names = list(tt.data.SCENE_CLASSES)
 trainer = tt.Trainer(model, device="cuda", batch_size=8)     # batch_size is in IMAGES
 trainer.fit((x[:220], labels[:220]), epochs=8, val_data=(x[220:], labels[220:]))
 trainer.test((x[220:], labels[220:]))
-# {'test_pixel_accuracy': 0.991, 'test_mean_iou': 0.946, 'test_mean_dice': 0.972,
-#  'test_iou_sky': 0.998, 'test_iou_building': 0.894, ...}
+# {'test_pixel_accuracy': 0.989, 'test_mean_iou': 0.935, 'test_mean_dice': 0.966,
+#  'test_iou_sky': 0.999, 'test_iou_building': 0.865, ...}
 ```
 
 Or without the `Trainer`:
@@ -88,8 +88,8 @@ x_ctx = pyr(x).float()                       # (B, Z*9*3, H, W)
 model = tt.SegmentationTsetlinMachine(4, 300, T=60, patch_size=1, position_encoding=8)
 ```
 
-Both work and they compose; on the example scenes building IoU goes 0.505 → 0.699 (pyramid)
-→ 0.894 (position) → 0.921 (both). Pass `position_encoding` an **integer** on anything bigger
+Both work and they compose; on the example scenes building IoU goes 0.526 → 0.837 (pyramid)
+→ 0.865 (position) → 0.919 (both). Pass `position_encoding` an **integer** on anything bigger
 than about 64 px: `True` adds one bit per row and column, which is 1 022 extra features at
 512 px.
 
@@ -152,13 +152,15 @@ print(tt.interpret.explain_pixel(model, x_test[0], row=20, col=12, target=int(y[
 ```
 
 ```
-pixel (20, 12) -> 3  (true: 3)
-prediction: 3  votes: [-60.0, -60.0, -60.0, 60.0]
-  [+109 -> output 3] clause 1029: IF p[0,19,12] AND p[0,20,11] AND p[1,21,13] AND ...
-                                     AND y>2 AND y>3 AND NOT p[3,19,11] AND ...
+pixel (20, 12) -> 3
+prediction: 3  votes: [-1415.0, -445.0, -487.0, 614.0]
+  [+92 -> output 3] clause 1008: IF y>2 AND y>3 AND y>4
+  [+88 -> output 3] clause 1018: IF p[0,19,12] AND p[0,19,13] AND p[0,20,12] AND ...
+                                    AND y>1 AND y>2 AND x>1 AND NOT p[1,20,11] AND ...
 ```
 
-`p[1,21,13]` reads "plane 1 of pixel (21, 13) is set". Clauses get long at high `s`; cap them
+`p[0,19,12]` reads "plane 0 of pixel (19, 12) is set", and `y>4` is a row threshold
+(`model.clause_region(j)` decodes them). Clauses get long at high `s`; cap them
 with `max_included_literals` if you want rules you can read at a glance. Related tools:
 
 ```python

@@ -116,13 +116,13 @@ Measured on `make_scenes` (32×32, 4 classes, 220 train / 80 test, 300 clauses/c
 | | pixel acc. | mIoU | sky | building | tree | road |
 |---|---|---|---|---|---|---|
 | *row prior, no image content* | *0.876* | *0.410* | *0.715* | *0.000* | *0.000* | *0.923* |
-| single scale 3×3 | 0.934 | 0.798 | 0.980 | 0.505 | 0.808 | 0.898 |
-| pyramid 1×/2×/4× | 0.967 | 0.874 | 0.982 | 0.699 | 0.867 | 0.950 |
-| single scale + position | 0.991 | 0.946 | 0.998 | 0.894 | 0.903 | 0.989 |
-| pyramid + position | **0.993** | **0.959** | 0.996 | **0.921** | 0.926 | 0.992 |
+| single scale 3×3 | 0.945 | 0.818 | 0.997 | 0.526 | 0.833 | 0.915 |
+| pyramid 1×/2×/4× | 0.987 | 0.925 | 0.998 | 0.837 | 0.884 | 0.981 |
+| single scale + position | 0.989 | 0.935 | 0.999 | 0.865 | 0.893 | 0.984 |
+| pyramid + position | **0.993** | **0.954** | 0.999 | **0.919** | 0.906 | 0.990 |
 
-Building IoU is the column that matters: 0.505 with no context, 0.699 with the pyramid,
-0.894 with position literals, 0.921 with both. Both mechanisms work and they compose.
+Building IoU is the column that matters: 0.526 with no context, 0.837 with the pyramid,
+0.865 with position literals, 0.919 with both. Both mechanisms work and they compose.
 
 !!! warning "Read mIoU, not pixel accuracy"
     The first row is a classifier that has never seen a pixel — it labels each pixel by the
@@ -143,8 +143,8 @@ reweight. The only lever is **which pixels produce feedback**, which is
 `class_feedback_p`: a per-class probability that a pixel takes part in an update.
 `data.balanced_class_probabilities(labels, K, floor=0.05)` computes the equalising choice.
 
-It is a rescue, not a default. On the scenes above it lifts the pyramid-only run from 0.874
-to 0.927 mIoU (building 0.699 → 0.842), and *costs* 0.05 mIoU once position literals are on,
+It is a rescue, not a default. On the scenes above it lifts the pyramid-only run from 0.925
+to 0.950 mIoU (building 0.837 → 0.914), and *costs* about 0.03 mIoU once position literals are on,
 because by then the model can separate the classes anyway and throwing away 95% of the road
 pixels is pure loss. Reach for it when a specific class is being lost, and check the
 per-class IoU afterwards.
