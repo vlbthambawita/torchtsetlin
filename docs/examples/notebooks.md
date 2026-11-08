@@ -14,10 +14,11 @@ PyPI. The datasets download on first use.
 | [CTM-UNet segmentation](notebooks/05_ctm_unet_segmentation.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vlbthambawita/torchtsetlin/blob/main/examples/notebooks/05_ctm_unet_segmentation.ipynb) | synthetic CamVid-like scenes | `TsetlinMachine` (dense per-pixel head) | CTM-UNet (ISTM 2025): which of its ingredients carry the result | ~1 min |
 | [Graph Tsetlin machine](notebooks/06_graph_tsetlin.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vlbthambawita/torchtsetlin/blob/main/examples/notebooks/06_graph_tsetlin.ipynb) | synthetic sequences, MNIST | `GraphTsetlinMachine` | Granmo et al. (2025): deep clauses over graphs, reading them back, and depth 1 = convolution | ~1 min |
 | [Semantic segmentation](notebooks/07_segmentation_tsetlin.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vlbthambawita/torchtsetlin/blob/main/examples/notebooks/07_segmentation_tsetlin.ipynb) | synthetic street scenes | `SegmentationTsetlinMachine` | Per-pixel labels: the row-prior floor, context from position literals and a pyramid, explaining a pixel, `patches_per_commit` | ~3 min |
+| [Polyp segmentation (Kvasir-SEG)](notebooks/08_kvasir_seg_tsetlin.ipynb) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/vlbthambawita/torchtsetlin/blob/main/examples/notebooks/08_kvasir_seg_tsetlin.ipynb) | Kvasir-SEG (downloaded) | `SegmentationTsetlinMachine` | Real colonoscopy images: a location-prior floor, class-balanced feedback, early stopping, and clauses that expose the model's shortcut | ~6 min |
 
 ## Running in Colab
 
-* For notebooks 2–7 choose *Runtime → Change runtime type → T4 GPU* before running. A T4 is
+* For notebooks 2–8 choose *Runtime → Change runtime type → T4 GPU* before running. A T4 is
   slower than the RTX 3090 and 3080 the runtimes above were measured on, so expect them to take longer.
   Notebook 1 runs on the CPU.
 * The Colab links open the notebooks from the `main` branch on GitHub.
@@ -31,7 +32,7 @@ pip install torchtsetlin jupyterlab        # or pip install -e ".[dev]" in a che
 jupyter lab examples/notebooks
 ```
 
-MNIST and CIFAR-10 download to `data/` at the repository root on first run. Every notebook also
-runs on the CPU, but notebooks 2–7 are written for a GPU and are much slower without one.
+MNIST, CIFAR-10 and Kvasir-SEG download to `data/` at the repository root on first run. Every notebook also
+runs on the CPU, but notebooks 2–8 are written for a GPU and are much slower without one.
 The source files are in
 [`examples/notebooks/`](https://github.com/vlbthambawita/torchtsetlin/tree/main/examples/notebooks).

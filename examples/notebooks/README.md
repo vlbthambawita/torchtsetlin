@@ -1,10 +1,11 @@
 # Example notebooks
 
-Seven end-to-end walkthroughs. The first three cover the same arc — booleanize, train, evaluate,
+Eight end-to-end walkthroughs. The first three cover the same arc — booleanize, train, evaluate,
 interpret — on a dataset that stresses a different part of it. Notebooks 4 and 5 work through the
 Tsetlin-machine **segmentation** literature paper by paper, reproducing what reproduces and
 saying so when it doesn't. The sixth introduces the graph Tsetlin machine, and the seventh is a
-walkthrough of `SegmentationTsetlinMachine` on generated street scenes. The notebooks are
+walkthrough of `SegmentationTsetlinMachine` on generated street scenes; the eighth takes it to
+real colonoscopy images (Kvasir-SEG). The notebooks are
 stored without outputs; the results and runtimes below are from running them on the current
 release (RTX 3090 / RTX 3080), and yours will differ a little from run to run.
 
@@ -17,6 +18,7 @@ release (RTX 3090 / RTX 3080), and yours will differ a little from run to run.
 | [`05_ctm_unet_segmentation.ipynb`](05_ctm_unet_segmentation.ipynb) | synthetic CamVid-like scenes | `TsetlinMachine` (dense per-pixel head) | **CTM-UNet (ISTM 2025)** — the only TM segmentation paper, and which of its ingredients actually carry the result | ~0.996 pixel acc, ~0.97 mIoU | ~1 min |
 | [`06_graph_tsetlin.ipynb`](06_graph_tsetlin.ipynb) | synthetic sequences, MNIST (torchvision) | `GraphTsetlinMachine` | **Graph TM (Granmo et al., 2025)**: deep clauses that read a node and its neighbours, traced with `explain_node`; at depth 1 it learns bit for bit like a convolutional machine | 1.000 on three A's and on run lengths (depth 1: 0.73 / 0.35) | ~1 min |
 | [`07_segmentation_tsetlin.ipynb`](07_segmentation_tsetlin.ipynb) | synthetic street scenes (`make_scenes`) | `SegmentationTsetlinMachine` | Dense per-pixel labels: the row-prior floor, context from position literals and an OR-pooled pyramid, explaining one pixel, `patches_per_commit` and class-balanced feedback | ~0.95 mIoU with pyramid + position (row prior: 0.41) | ~3 min |
+| [`08_kvasir_seg_tsetlin.ipynb`](08_kvasir_seg_tsetlin.ipynb) | Kvasir-SEG (downloaded, 46 MB) | `SegmentationTsetlinMachine` | Real colonoscopy images: a location-prior floor, class-balanced feedback, early stopping, and clauses that show the model's shortcut ("pale and bright is polyp") | ~0.45 polyp Dice (location prior: 0.43) | ~6 min |
 
 ## The papers
 
@@ -65,7 +67,7 @@ it where it reproduces, and quantify the gap where it doesn't.
 **In Google Colab:** click the *Open in Colab* badge at the top of a notebook (or see the
 [notebooks page](https://vlbthambawita.github.io/torchtsetlin/examples/notebooks/) of the
 documentation). The first code cell installs torchtsetlin from PyPI when it runs in Colab; for
-notebooks 2–7 pick *Runtime → Change runtime type → T4 GPU* first.
+notebooks 2–8 pick *Runtime → Change runtime type → T4 GPU* first.
 
 **Locally:**
 
@@ -75,10 +77,12 @@ pip install jupyterlab
 jupyter lab examples/notebooks
 ```
 
-MNIST and CIFAR-10 download to `../../data/` (i.e. `data/` at the repo root, which is
+MNIST, CIFAR-10 and Kvasir-SEG download to `../../data/` (i.e. `data/` at the repo root, which is
 gitignored) on first run. Everything runs on CPU as well — the Iris notebook is CPU-only by
 design — but notebooks 2–5 are written for a GPU and will be roughly 10-30x slower without one.
 
 Datasets come from torchvision where they exist there (MNIST, CIFAR-10), from scikit-learn
 otherwise (Iris), and are generated in-notebook for 4 and 5 (the paper's own synthetic
 construction, and CamVid-like scenes — CamVid itself is not redistributable here).
+Kvasir-SEG is downloaded from its [dataset page](https://datasets.simula.no/kvasir-seg/) by
+notebook 8 (or read from `KVASIR_SEG_DIR` if you already have a copy).
