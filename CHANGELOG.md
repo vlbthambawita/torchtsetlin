@@ -21,6 +21,14 @@ single-example commit in sequential mode and are replayed from CUDA graphs. Sequ
 an RTX 3090 (smoke): sequential 4.8 → 0.065 ms per graph, batched 0.23 → 0.013 ms per graph.
 `models/base.py` and the Triton kernels are unchanged.
 
+**Depth-1 graphs on the convolutional kernel.** A depth-1 graph clause is a convolutional clause
+over the node features, so batches whose graphs all have the full node count
+(`GraphBatch.full_nodes`, set by `from_images` and `from_graphs`, kept by slicing) evaluate
+and draw their feedback nodes with `_triton.conv_eval` on bit-packed literals, never forming the
+`(B, P, C)` match tensor. On CUDA such a model learns bit for bit like
+`ConvCoalescedTsetlinMachine` (tested). This makes the paper-scale image experiments feasible:
+Fashion-MNIST with 40,000 clauses trains in ~12 s per epoch on an RTX 3090.
+
 `CoalescedTsetlinMachine.rules` forwards extra keyword arguments to `clause_expression`.
 
 ## 0.6.1 (2026-11-01)

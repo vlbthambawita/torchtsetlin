@@ -716,3 +716,63 @@ def test_padded_graph_updates_replay_cuda_graphs_with_fresh_randomness(seq):
     inc = m.ta_state >= m.n_states
     assert torch.equal(m.include, inc.to(m.include.dtype))
     assert torch.equal(m.include_bits(), K.pack_bits(inc))
+
+
+# ----------------------------------------------------------------------------- depth 1 on conv_eval
+
+
+@needs_triton
+def test_depth_one_on_the_kernel_learns_like_the_convolutional_machine_on_cuda():
+    """Full-node depth-1 graphs take the convolutional kernels (bit-packed evaluation and node
+    draw, fused commit, CUDA graphs): with the same random stream the graph machine learns bit
+    for bit like ConvCoalescedTsetlinMachine on CUDA, batched and sequential."""
+    gen = torch.Generator().manual_seed(4)
+    x = _images(64, gen=gen).to(CUDA)
+    y = torch.randint(0, 3, (64,), generator=gen).to(CUDA)
+    conv = tt.ConvCoalescedTsetlinMachine(3, 20, T=8, s=3.0, patch_size=3, input_shape=(1, 8, 8)).to(CUDA)
+    graph = tt.GraphTsetlinMachine(conv.n_features, 3, 20, T=8, s=3.0, depth=1).to(CUDA)
+    graph.weights.copy_(conv.weights)
+    g = GraphBatch.from_images(x, 3)
+    assert g.full_nodes and g[3:9].full_nodes and g.pad()[2:5].full_nodes
+    for step in range(8):
+        sl = slice(8 * step, 8 * step + 8)
+        torch.manual_seed(100 + step)
+        v1 = conv.update(x[sl], y[sl])
+        torch.manual_seed(100 + step)
+        v2 = graph.update(g[sl], y[sl])
+        assert torch.equal(v1, v2)
+        assert torch.equal(conv.ta_state, graph.ta_state) and torch.equal(conv.weights, graph.weights)
+    assert (conv.ta_state != conv.n_states - 1).sum() > 50
+    conv.eval()
+    graph.eval()
+    assert torch.equal(conv(x), graph(g))
+
+
+@needs_triton
+def test_kernel_path_is_exact_and_only_taken_for_full_depth_one_batches(monkeypatch):
+    calls = {"n": 0}
+    real = K.conv_eval
+
+    def spy(*a, **k):
+        calls["n"] += 1
+        return real(*a, **k)
+
+    monkeypatch.setattr(K, "conv_eval", spy)
+    gen = torch.Generator().manual_seed(9)
+    g = GraphBatch.from_images(_images(12, gen=gen), 3).to(CUDA)
+    m = tt.GraphTsetlinMachine(g.n_features, 3, 30, T=8, depth=1)
+    _sparse_includes(m, p=0.05, gen=gen)
+    m = m.to(CUDA).eval()
+    out = m.evaluate_clauses(g)
+    assert calls["n"] > 0
+    enc = m._encode(m._prepare(g))
+    enc.full = False
+    dense, _ = m._evaluate(enc, empty_value=False)
+    assert torch.equal(out, dense)
+    # not full (different node counts), depth 2, or typed nodes: the dense path
+    calls["n"] = 0
+    r = _random_graphs(6, 5, gen=gen).to(CUDA)
+    assert not r.full_nodes
+    tt.GraphTsetlinMachine(5, 2, 10, T=6, n_edge_types=2).to(CUDA).eval().evaluate_clauses(r)
+    tt.GraphTsetlinMachine(g.n_features, 3, 10, T=6, depth=2, message_size=8).to(CUDA).eval().evaluate_clauses(g)
+    assert calls["n"] == 0

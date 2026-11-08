@@ -54,7 +54,7 @@ is only used for accuracy seeds.
 | Library | Reason |
 |---|---|
 | Tsetlin.jl | Implements the Fuzzy-Pattern TM, a different algorithm with extra hyperparameters, in Julia. Its numbers are not comparable like for like. |
-| GraphTsetlinMachine | Graph-structured input; it publishes no numbers to compare against. |
+| GraphTsetlinMachine | Graph-structured input. Its paper (Granmo et al., arXiv:2507.14874) does publish numbers; torchtsetlin's `GraphTsetlinMachine` is compared with them in a separate section (G0–G2, `code/graphtm/`, `results/graphtm/`, plan `plans/graph-tm-reproduction.md`). The reference library itself is not run. |
 | tsetlin-rs | Rust only, and its benchmarks use synthetic data only. |
 | FsTsetlin | F#, no release. |
 

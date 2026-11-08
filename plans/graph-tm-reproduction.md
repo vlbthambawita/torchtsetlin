@@ -1,9 +1,19 @@
 # Graph Tsetlin machine: reproducing the paper's numbers (graph-tm.md, step 10)
 
-*Status: plan, 2026-11-07. Not started. **Every run in it is benchmark-class and needs the user's
-go-ahead** (memory note: no timing or seed runs without it; smoke runs are fine). Parent plan:
-`plans/graph-tm.md`; fast paths: `plans/graph-tm-fast-paths.md` (done, `f92c813`). Tracks
-GitHub issue #8.*
+*Status: **done**, 2026-11-08 (results: `experiments/paper_experiments/results/graphtm/REPORT.md`). Scope set by the user on 2026-11-07: "just compare the available
+results with our implementation": run what has published numbers we can rebuild, skip the rest
+with a note. So **G0, G1, G2 run; G3 and G4 are skipped** (notes below), the reference library
+is not run (D1: no), and the authors are not contacted (D3: no). L1 is done. Parent plan:
+`plans/graph-tm.md`; fast paths: `plans/graph-tm-fast-paths.md`. Tracks GitHub issue #8.*
+
+### Skipped, with notes
+
+* **G3, CIFAR-10: skipped.** The paper's preprocessing cannot be rebuilt. Table 16 gives 2,500
+  symbols; the text's two views (adaptive threshold plus 8-bin colour thermometer, 8×8
+  patches) give about 1,778. The public `CIFAR10Demo.py` is a different, single-view setup
+  (40,000 clauses, T=7,500). A number from our guess would not be comparable with 70.28%.
+* **G4, multivalue noisy XOR: skipped.** The paper reports curves only (Fig. 8), so there is
+  no number to compare against.
 
 ## TL;DR
 
@@ -244,3 +254,26 @@ The smoke measurement afterwards is one epoch on a 1,000-graph F-MNIST subset. E
   * `experiments/paper_experiments/PLAN.md`: the benchmark row and the "not run" table entry;
   * `config_map.md`;
   * `REPORT.md`.
+
+## Results (2026-11-08)
+
+The table is generated from the records by `code/graphtm/report.py` into
+`experiments/paper_experiments/results/graphtm/REPORT.md` (rule P2: no hand-typed numbers).
+
+* **Runs:**
+  * G0: 5 seeds;
+  * G1 and G2: 5 seeds each, for both the GraphTM and the CoTM;
+  * 30 epochs, batched feedback with batch 16, RTX 3090 (GraphTM) and RTX 3080 (CoTM).
+* **Every cell is within the fixed tolerance** (|difference| ≤ max(1 pp, 2 × seed sd)).
+  * The paper's ordering holds: CoTM > GraphTM on MNIST and on F-MNIST.
+  * All four image cells are 0.35–0.9 pp *below* the paper.
+  * Likely causes, not investigated, since the criteria pass:
+    * batched vs the reference's sequential feedback;
+    * one sampled negative class vs the reference's all-classes rule;
+    * F-MNIST thermometer levels, which the paper does not give (assumed uniform).
+* **Cost after L1:** ~1.4 s per epoch on MNIST (2,500 clauses) and ~12 s on F-MNIST (40,000
+  clauses) for the GraphTM on the 3090. A whole 30-epoch F-MNIST run takes ~6 min. These are
+  accuracy runs on a shared machine, not benchmark timings.
+* **Source state:** the runs used L1 before it was committed. `results/graphtm/src_state.json`
+  holds the base commit and the sha256 of the `src/` diff, which the L1 commit reproduces
+  exactly.

@@ -102,7 +102,11 @@ commits and CUDA graphs only for **padded** batches (`GraphBatch.pad`: `(B, E, 2
 mask, slicing never syncs and keeps the shape; `_input_padded` is set in `_coerce_input`).
 `_fuse_single_examples` has no minimum model size (an eager graph step is ~5 ms of launches and
 syncs). `_graph_key` adds the padded edge shape; `GraphBatch.clone`/`copy_` serve the base
-capture code, so `models/base.py` needed no change. A per-layer `s` keeps the eager paths.
+capture code, so `models/base.py` needed no change. A per-layer `s` keeps the eager paths. Depth-1 batches with `GraphBatch.full_nodes` (no padding
+nodes; set on the host by the builders, carried by slicing, never computed from the data) and one
+node type take `_triton.conv_eval` like conv models (`_bitpacked`, `_evaluate_learning` returns
+a `("nodes", lit, p_i, p_ii)` context); they learn bit for bit like `ConvCoalescedTsetlinMachine`
+on CUDA.
 `tests/test_graph.py` pins evaluation against a naive per-node reference, depth 1 against
 `ConvCoalescedTsetlinMachine` bit for bit (eager path), padded = flat, and the fast paths
 (sync-free updates, replays with fresh randomness).

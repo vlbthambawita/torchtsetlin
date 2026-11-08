@@ -22,6 +22,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 import torch
 from torch import Tensor
 
+from .. import _triton
 from .. import functional as F
 from ..data.graphs import GraphBatch, SymbolTable, _prev_prime
 from ..utils import chunk_indices
@@ -36,13 +37,14 @@ _ENCODINGS = ("random", "double_hashing", "one_hot")
 class _Encoded:
     """A coerced :class:`GraphBatch` flattened for evaluation: what ``_encode`` returns."""
 
-    __slots__ = ("x0", "node_ok", "node_type", "src", "dst", "etype", "emask", "B", "P")
+    __slots__ = ("x0", "node_ok", "node_type", "src", "dst", "etype", "emask", "B", "P", "full")
 
-    def __init__(self, x0, node_ok, node_type, src, dst, etype, B, P, emask=None):
+    def __init__(self, x0, node_ok, node_type, src, dst, etype, B, P, emask=None, full=False):
         self.x0, self.node_ok, self.node_type = x0, node_ok, node_type
         self.src, self.dst, self.etype = src, dst, etype
         self.emask = emask  # (E,) real edges of a padded batch, None when all are real
         self.B, self.P = B, P
+        self.full = full  # every graph has P nodes (GraphBatch.full_nodes)
 
     @property
     def shape(self) -> Tuple[int, int, int]:
@@ -97,7 +99,8 @@ class _GraphMixin:
         nt = None if xb.node_type is None else xb.node_type.reshape(B * P)
         em = xb.flat_edge_mask()
         return _Encoded(xb.node_features.reshape(B * P, F0).to(dt), xb.node_mask.reshape(B * P),
-                        nt, src, dst, et, B, P, None if em is None else em.unsqueeze(1).to(dt))
+                        nt, src, dst, et, B, P, None if em is None else em.unsqueeze(1).to(dt),
+                        bool(xb.full_nodes))
 
     # ---- chunking and the fast paths we do not take --------------------------------
     def _patches_per_example(self, xb: GraphBatch) -> int:  # type: ignore[override]
@@ -115,6 +118,53 @@ class _GraphMixin:
         """Feedback events drawn together (as :meth:`_ConvMixin._event_block`)."""
         L = self.n_literals  # type: ignore[attr-defined]
         return max(1, self.max_chunk_elements // (2 * P + 2 * L))  # type: ignore[attr-defined]
+
+    # ---- depth 1: the convolutional kernel -------------------------------------------
+    def _bitpacked(self, full: bool) -> bool:
+        """Whether clauses are evaluated by :func:`_triton.conv_eval` on bit-packed node
+        literals: depth 1 (a graph clause is then a convolutional clause over the node
+        features), every graph with all ``P`` nodes (the kernel has no node mask), one node
+        type (no clause ownership), CUDA with Triton, outside ``torch.compile``."""
+        return (bool(full) and self.depth == 1 and self.n_node_types == 1
+                and _triton.available(self.ta_state.device)  # type: ignore[attr-defined]
+                and not torch.compiler.is_compiling())
+
+    def _node_literals(self, enc: _Encoded) -> Tensor:
+        """``(B, P, 2F)`` literal rows of the nodes (depth 1: own features and negations)."""
+        x = enc.x0
+        return torch.cat([x, 1.0 - x], dim=1).view(enc.B, enc.P, -1)
+
+    def _bitpacked_chunk_size(self, xb: GraphBatch) -> int:
+        """Graphs per chunk on the kernel path: no ``(P, C)`` intermediate (as
+        :meth:`_ConvMixin._fused_chunk_size`)."""
+        P = max(1, int(xb.shape[1]))
+        per = 4 * P * self.n_literals + 8 * self.n_clauses_total  # type: ignore[attr-defined]
+        return max(1, min(len(xb), self.max_chunk_elements // per))  # type: ignore[attr-defined]
+
+    def _chunk_size(self, xb: GraphBatch) -> int:  # type: ignore[override]
+        if not self.training and self._bitpacked(xb.full_nodes):  # type: ignore[attr-defined]
+            return self._bitpacked_chunk_size(xb)
+        return super()._chunk_size(xb)  # type: ignore[misc]
+
+    def _events_chunk_size(self, xb: GraphBatch) -> int:  # type: ignore[override]
+        if self._bitpacked(xb.full_nodes):
+            return self._bitpacked_chunk_size(xb)
+        return super()._events_chunk_size(xb)  # type: ignore[misc]
+
+    def _evaluate_learning(self, literals: _Encoded, acc: FeedbackAccumulator) -> Tuple[Tensor, Any]:  # type: ignore[override]
+        if acc.record_events and self._bitpacked(literals.full):
+            # one kernel: clause outputs plus, per (graph, clause), the random matching node of
+            # Type Ia and an independent one of Type II
+            lit = self._node_literals(literals)
+            B, P, L = lit.shape
+            res = _triton.conv_eval(_triton.pack_bits(lit.reshape(B * P, L) == 0),
+                                    self.include_bits(), B, P, draw=True)  # type: ignore[attr-defined]
+            if res is not None:
+                p_i, p_ii = res[1], res[2]
+                if self.shared_node_draw:
+                    p_ii = p_i
+                return res[0], ("nodes", lit, p_i, p_ii)
+        return self._evaluate(literals, empty_value=True)
 
     def _events_eligible(self, n_examples: int) -> bool:  # type: ignore[override]
         """The base rule (CUDA with Triton, soft budget, counts within the kernel table), for
@@ -237,6 +287,14 @@ class _GraphMixin:
         return running, xs
 
     def _evaluate(self, literals: _Encoded, empty_value: bool) -> Tuple[Tensor, Any]:  # type: ignore[override]
+        if not empty_value and self._bitpacked(literals.full):
+            # prediction at depth 1: the convolutional kernel, no (B, P, C) tensor
+            lit = self._node_literals(literals)
+            B, P, L = lit.shape
+            res = _triton.conv_eval(_triton.pack_bits(lit.reshape(B * P, L) == 0),
+                                    self.include_bits(), B, P, draw=False)  # type: ignore[attr-defined]
+            if res is not None:
+                return res[0] & (self.include_count > 0).unsqueeze(0), None  # type: ignore[attr-defined]
         running, xs = self._evaluate_layers(literals)
         matches = running[-1].view(literals.B, literals.P, -1)  # (B, P, C)
         out = matches.any(dim=1)
@@ -254,6 +312,12 @@ class _GraphMixin:
         sel_fire_ii: Tensor,
         acc: FeedbackAccumulator,
     ) -> None:
+        if isinstance(ctx[0], str):  # ("nodes", ...): events drawn by the kernel at depth 1
+            _, lit, p_i, p_ii = ctx
+            acc.n_ib += sel_nofire_i.sum(dim=0)
+            acc.n_ia += sel_fire_i.sum(dim=0)
+            acc.events = (lit, sel_fire_i, sel_fire_ii, p_i, p_ii)
+            return
         matches, xs = ctx
         B, P = literals.B, literals.P
         N, C = B * P, matches.shape[2]

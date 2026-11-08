@@ -137,6 +137,9 @@ and unused edge slots never match or send. What each layout gets:
   batches. Padded batches are also replayed from CUDA graphs.
 * **Sequential updates** use the compiled single-example commit and CUDA graphs only for padded
   batches, because both are built per input shape.
+* **Depth 1 with full graphs** (every graph has all `P` nodes, as with `from_images`) runs on the
+  convolutional machine's bit-packed kernel: the model is then exactly a convolutional
+  coalesced machine over the node features, and as fast.
 * Pad to **one** shape: every distinct `(P, E)` is compiled and captured on its own. A per-layer
   `s` or `budget_mode="hard"` keeps the eager paths. On the CPU nothing changes.
 
