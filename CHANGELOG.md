@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+**Notebooks in the documentation, runnable in Google Colab.** The example notebooks
+(`examples/notebooks/`) are rendered under Examples → Notebooks (`mkdocs-jupyter`, added to the
+`docs` extra; `docs/examples/notebooks` is a symlink to them). They are stored without outputs,
+nothing is executed during the docs build, and every notebook was re-run on 0.7.0 with its text
+updated to the results it now produces. Each notebook has an *Open in Colab* badge and a first
+cell that installs torchtsetlin from PyPI when it runs in Colab; MNIST and CIFAR-10 download to
+`data/` there. New notebook `06_graph_tsetlin.ipynb`: the graph Tsetlin machine on the paper's
+three-A's task (four readable clauses, `explain_node`), run lengths, the padded CUDA fast path,
+and MNIST as depth-1 graphs learning bit for bit like `ConvCoalescedTsetlinMachine`.
+
+The C-RTM notebook (`04_convolutional_regression_tsetlin.ipynb`) no longer recovers the planted
+mask with the paper's 15 clauses (0 of 12 restarts, was 9 of 12 on 0.1.x). Side experiments
+trace this to the two 0.5.0 rule changes *together*: weights floored at 1 and the squared
+regression feedback (either one alone still breaks it, putting both back restores it). The
+notebook now uses 8 weighted clauses, 400 epochs and batches of 16, which is exact on 8 of 12
+restarts.
+
 ## 0.7.0 (2026-11-08)
 
 **New: graph Tsetlin machine** (`GraphTsetlinMachine`, `torchtsetlin.data.GraphBatch`,

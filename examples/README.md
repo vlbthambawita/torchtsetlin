@@ -2,7 +2,7 @@
 
 Every script is self-contained, takes `--device` (CUDA when available, otherwise CPU) and
 prints what the model *learned*, not just its score. The worked notebooks live in
-[`notebooks/`](notebooks).
+[`notebooks/`](notebooks); each one opens in Google Colab from the badge at its top.
 
 ## Flat models
 

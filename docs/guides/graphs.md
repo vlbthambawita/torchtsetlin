@@ -194,3 +194,8 @@ another model.
 [`examples/graph_sequence.py`](https://github.com/vlbthambawita/torchtsetlin/blob/main/examples/graph_sequence.py)
 counts runs of consecutive A's in sequences of varying length, the reference implementation's
 sequence demo, and prints the learned deep clauses.
+
+The notebook [Graph Tsetlin machine](../examples/notebooks/06_graph_tsetlin.ipynb) walks through
+the same ideas: the paper's three-A's task with four readable clauses, `explain_node`,
+run lengths, the padded fast path, and MNIST as graphs learning bit for bit like
+`ConvCoalescedTsetlinMachine`. It opens in Google Colab.

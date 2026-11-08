@@ -36,8 +36,19 @@ theme:
 hooks:
   - scripts/mkdocs_hooks.py
 
+exclude_docs: |
+  examples/notebooks/README.md
+  examples/notebooks/*.pt
+
 plugins:
   - search
+  - mkdocs-jupyter:
+      # docs/examples/notebooks is a symlink to examples/notebooks; the notebooks are stored
+      # without outputs and nothing is executed during the build
+      include: ["examples/notebooks/*.ipynb"]
+      execute: false
+      include_source: true
+      ignore_h1_titles: false
   - autorefs
   - mkdocstrings:
       handlers:
@@ -116,6 +127,14 @@ nav:
       - Convolution on generated data: examples/convolution.md
       - Segmentation on generated scenes: examples/segmentation.md
       - Tabular data with thermometers: examples/tabular.md
+      - Notebooks:
+          - Overview: examples/notebooks.md
+          - Iris, a readable model: examples/notebooks/01_iris_tabular_tsetlin.ipynb
+          - MNIST on the GPU: examples/notebooks/02_mnist_tsetlin.ipynb
+          - CIFAR-10: examples/notebooks/03_cifar10_tsetlin.ipynb
+          - Convolutional regression (C-RTM): examples/notebooks/04_convolutional_regression_tsetlin.ipynb
+          - CTM-UNet segmentation: examples/notebooks/05_ctm_unet_segmentation.ipynb
+          - Graph Tsetlin machine: examples/notebooks/06_graph_tsetlin.ipynb
   - API reference:
       - Models: api/models.md
       - functional: api/functional.md
