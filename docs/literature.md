@@ -35,6 +35,7 @@ below the table restores the default.
             <option value="year">Year</option>
             <option value="category">Paper category</option>
             <option value="data_type">Data type</option>
+            <option value="booleanization">Booleanization</option>
             <option value="model">Model</option>
             <option value="">Nothing (whole selection)</option>
           </select>
@@ -43,6 +44,7 @@ below the table restores the default.
         <label>Metric <input id="r-metric" list="r-metrics" placeholder="any"></label>
         <label>Task <select id="r-task"><option value="">any</option></select></label>
         <label>Data type <select id="r-dtype"><option value="">any</option></select></label>
+        <label>Booleanization <select id="r-bool"><option value="">any</option></select></label>
         <label>Split <select id="r-split"><option value="">any</option></select></label>
         <label>Paper category <select id="r-category"><option value="">any</option></select></label>
         <label>Search <input id="r-search" type="search" placeholder="model, paper, config, notes…"></label>
@@ -75,6 +77,7 @@ below the table restores the default.
       <div class="lit-fields">
         <label>Dataset <input id="b-dataset" list="b-datasets" placeholder="any"></label>
         <label>Data type <select id="b-dtype"><option value="">any</option></select></label>
+        <label>Booleanization <select id="b-bool"><option value="">any</option></select></label>
         <label>Metric <input id="b-metric" list="b-metrics" placeholder="any"></label>
         <label>Min. results per row <input id="b-min" type="number" min="1" value="2"></label>
       </div>
@@ -98,6 +101,7 @@ below the table restores the default.
       <div class="lit-fields">
         <label>Search <input id="d-search" type="search" placeholder="name, task, TM variant…"></label>
         <label>Data type <select id="d-dtype"><option value="">any</option></select></label>
+        <label>Booleanization <select id="d-bool" title="Datasets that at least one paper Booleanized this way"><option value="">any</option></select></label>
       </div>
       <p class="lit-hint lit-legend">Numbers in the lists: how many datasets you get by picking that option, given the other filters.</p>
     </aside>

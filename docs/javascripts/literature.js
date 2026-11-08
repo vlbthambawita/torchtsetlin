@@ -13,7 +13,10 @@
   const DB_URL = "../assets/literature/literature.db";
   const PAGE_SIZES = [50, 100, 250, 1000];
   // Only these fixed strings are ever spliced into SQL; user input always goes through bind().
-  const GROUPS = new Set(["dataset", "paper", "year", "category", "data_type", "model", ""]);
+  // A usage's Booleanization method (schema v2 vocabulary); papers that do not say get NOT_STATED.
+  const NOT_STATED = "(not stated)";
+  const BOOL_OF_U = `COALESCE(u.booleanization_method, '${NOT_STATED}')`;
+  const GROUPS = new Set(["dataset", "paper", "year", "category", "data_type", "booleanization", "model", ""]);
   const SPLIT_KEY = "COALESCE(NULLIF(r.split, ''), 'test')";
   const RANK = "CASE better WHEN 'lower' THEN value ELSE -value END";
   const RESULTS_ORDER = `group_size DESC, grp, metric_size DESC, metric, unit, split_key, ${RANK}, year`;
@@ -410,6 +413,7 @@
     ["metric", "Metric", "r-metric", textC("metric", "r-metric", EXACT.metric)],
     ["task_family", "Task", "r-task", eqC("task_family", "r-task")],
     ["data_type", "Data type", "r-dtype", eqC("data_type", "r-dtype")],
+    ["booleanization", "Booleanization", "r-bool", eqC("booleanization", "r-bool")],
     ["split_key", "Split", "r-split", eqC("split_key", "r-split")],
     ["category", "Category", "r-category", eqC("category", "r-category")],
     ["search", "Search", "r-search", likeC("search", "r-search")],
@@ -418,7 +422,7 @@
     ["flag", "Hide ⚠ flagged", "r-flag", boxC("caution IS NULL", "r-flag")],
     ["best", "★ Best per group only", "r-best", () => null],
   ];
-  const R_FACETS = [["r-task", "task_family"], ["r-dtype", "data_type"], ["r-split", "split_key"], ["r-category", "category"],
+  const R_FACETS = [["r-task", "task_family"], ["r-dtype", "data_type"], ["r-bool", "booleanization"], ["r-split", "split_key"], ["r-category", "category"],
     ["r-datasets", "dataset"], ["r-metrics", "metric"]];
 
   // Schema-v2 fields of one result and its dataset usage, with their provenance.
@@ -523,10 +527,11 @@
     ["dataset", "Dataset", "b-dataset", textC("dataset", "b-dataset", EXACT.dataset)],
     ["metric", "Metric", "b-metric", textC("metric", "b-metric", EXACT.metric)],
     ["data_type", "Data type", "b-dtype", eqC("data_type", "b-dtype")],
+    ["booleanization", "Booleanization", "b-bool", eqC("booleanization", "b-bool")],
     ["flag", "Hide ⚠ flagged", "b-flag", boxC("caution IS NULL", "b-flag")],
     ["tm", "Rank TM models only", "b-tm", boxC("is_tm = 1", "b-tm")],
   ];
-  const B_FACETS = [["b-dtype", "data_type"], ["b-datasets", "dataset"], ["b-metrics", "metric"]];
+  const B_FACETS = [["b-dtype", "data_type"], ["b-bool", "booleanization"], ["b-datasets", "dataset"], ["b-metrics", "metric"]];
 
   function runBest() {
     const minN = Math.max(1, +$("b-min").value || 1);
@@ -536,8 +541,8 @@
     // A facet counts the rows this tab would show: dataset x metric x unit x split groups.
     for (const [id, col] of B_FACETS) {
       const f = condsOf(B_FILTERS, col);
-      const groups = `(SELECT dataset, data_type, metric FROM base WHERE ${rankable.concat(f.conds).join(" AND ")}
-        GROUP BY dataset, metric, unit, split_key HAVING COUNT(*) >= ${minN})`;
+      const groups = `(SELECT dataset, data_type, booleanization, metric FROM base WHERE ${rankable.concat(f.conds).join(" AND ")}
+        GROUP BY dataset, metric, unit, split_key, ${col} HAVING COUNT(*) >= ${minN})`;
       renderFacet(id, facetCounts(groups, col, [], f.params, "COUNT(*) AS n"), UNITS.best);
     }
     chips("b", B_FILTERS, runBest);
@@ -572,6 +577,7 @@
     { key: "tasks", title: "Tasks (as reported)" },
     { key: "n_classes", title: "Classes", sort: "n_classes_max", cls: "lit-num" },
     { key: "input_shape_or_features", title: "Input" },
+    { key: "booleanizations", title: "Booleanization" },
     { key: "sizes", title: "Train / val / test (as reported)" },
     { key: "n_papers", title: "Papers", sort: "n_papers", cls: "lit-num" },
     { key: "n_results", title: "Results", sort: "n_results", cls: "lit-num" },
@@ -608,15 +614,25 @@
     ["search", "Search", "d-search", likeC("(d.dataset_id || ' ' || COALESCE(d.tasks, '') || ' ' "
       + "|| COALESCE(d.names_in_papers, '') || ' ' || COALESCE(d.tm_variants, ''))", "d-search")],
     ["data_type", "Data type", "d-dtype", eqC("d.data_type", "d-dtype")],
+    ["booleanization", "Booleanization", "d-bool", () => ($("d-bool").value
+      ? [`EXISTS (SELECT 1 FROM dataset_usages u WHERE u.dataset_id = d.dataset_id AND ${BOOL_OF_U} = ?)`,
+        [$("d-bool").value]] : null)],
   ];
 
   function runDatasets() {
     const { conds, params } = condsOf(D_FILTERS);
     const f = condsOf(D_FILTERS, "data_type");
     renderFacet("d-dtype", facetCounts("datasets d", "d.data_type", f.conds, f.params, "COUNT(*) AS n"), UNITS.datasets);
+    // A dataset counts once under every method any paper used on it.
+    const fb = condsOf(D_FILTERS, "booleanization");
+    renderFacet("d-bool", facetCounts(`(SELECT DISTINCT d.*, ${BOOL_OF_U} AS bmethod FROM datasets d
+        JOIN dataset_usages u ON u.dataset_id = d.dataset_id) d`, "d.bmethod", fb.conds, fb.params,
+    "COUNT(DISTINCT d.dataset_id) AS n"), UNITS.datasets);
     chips("d", D_FILTERS, runDatasets);
     db.run("DROP TABLE IF EXISTS temp.ds");
     db.run(`CREATE TEMP TABLE ds AS SELECT d.*,
+        (SELECT GROUP_CONCAT(m, ', ') FROM (SELECT DISTINCT ${BOOL_OF_U} AS m FROM dataset_usages u
+          WHERE u.dataset_id = d.dataset_id ORDER BY 1)) AS booleanizations,
         (SELECT COUNT(*) FROM results r WHERE r.dataset_id = d.dataset_id) AS n_results,
         (SELECT GROUP_CONCAT(s, ' | ') FROM (SELECT DISTINCT COALESCE(u.train_size, '–') || ' / '
             || COALESCE(u.val_size, '–') || ' / ' || COALESCE(u.test_size, '–') AS s
@@ -709,7 +725,7 @@
   }
 
   function resetResults(run = true) {
-    for (const id of ["r-dataset", "r-metric", "r-task", "r-dtype", "r-split", "r-category", "r-search"]) $(id).value = "";
+    for (const id of ["r-dataset", "r-metric", "r-task", "r-dtype", "r-bool", "r-split", "r-category", "r-search"]) $(id).value = "";
     for (const id of ["r-tm", "r-proposed", "r-flag", "r-best"]) $(id).checked = false;
     $("r-group").value = "dataset";
     if (run) runResults();
@@ -717,7 +733,7 @@
 
   function wire() {
     const later = debounce(runResults, 150);
-    for (const id of ["r-group", "r-task", "r-dtype", "r-split", "r-category", "r-tm", "r-proposed", "r-flag", "r-best"]) {
+    for (const id of ["r-group", "r-task", "r-dtype", "r-bool", "r-split", "r-category", "r-tm", "r-proposed", "r-flag", "r-best"]) {
       $(id).addEventListener("change", runResults);
     }
     for (const id of ["r-dataset", "r-metric", "r-search"]) $(id).addEventListener("input", later);
@@ -728,13 +744,14 @@
       "tm_literature_results.csv"));
 
     const laterBest = debounce(runBest, 150);
-    for (const id of ["b-dtype", "b-flag", "b-tm", "b-min"]) $(id).addEventListener("change", runBest);
+    for (const id of ["b-dtype", "b-bool", "b-flag", "b-tm", "b-min"]) $(id).addEventListener("change", runBest);
     for (const id of ["b-dataset", "b-metric"]) $(id).addEventListener("input", laterBest);
     $("b-csv").addEventListener("click", () => csvDownload(all("SELECT * FROM best ORDER BY n DESC, dataset, metric"),
       "tm_literature_best_per_dataset.csv"));
 
     $("d-search").addEventListener("input", debounce(runDatasets, 150));
     $("d-dtype").addEventListener("change", runDatasets);
+    $("d-bool").addEventListener("change", runDatasets);
     $("p-search").addEventListener("input", debounce(runPapers, 150));
     $("p-category").addEventListener("change", runPapers);
 
@@ -766,12 +783,15 @@
              p.year, p.category, p.url AS paper_url, p.caution, p.tm_variants, d.data_type,
              COALESCE((SELECT GROUP_CONCAT(DISTINCT u.task_family) FROM dataset_usages u
                        WHERE u.paper_id = r.paper_id AND u.dataset_id = r.dataset_id), '(no dataset)') AS task_family,
+             CASE WHEN r.dataset_id IS NULL THEN '(no dataset)' ELSE COALESCE(
+               (SELECT GROUP_CONCAT(DISTINCT ${BOOL_OF_U}) FROM dataset_usages u
+                WHERE u.paper_id = r.paper_id AND u.dataset_id = r.dataset_id), '${NOT_STATED}') END AS booleanization,
              r.model || ' ' || p.title || ' ' || COALESCE(r.config, '') || ' ' || COALESCE(r.notes, '')
                || ' ' || COALESCE(r.source_location, '') AS search
       FROM results r JOIN papers p ON p.paper_id = r.paper_id
       LEFT JOIN datasets d ON d.dataset_id = r.dataset_id`);
     db.run("CREATE UNIQUE INDEX temp.base_id ON base(id)");
-    for (const c of ["dataset", "metric", "data_type", "split_key", "category", "task_family"]) {
+    for (const c of ["dataset", "metric", "data_type", "split_key", "category", "task_family", "booleanization"]) {
       db.run(`CREATE INDEX temp.base_${c} ON base(${c})`);
     }
 
@@ -784,6 +804,9 @@
     UNIVERSE["r-split"] = byCount("split_key", "base");
     UNIVERSE["r-category"] = byCount("category", "base");
     UNIVERSE["r-task"] = byCount("task_family", "base");
+    UNIVERSE["r-bool"] = UNIVERSE["b-bool"] = byCount("booleanization", "base");
+    UNIVERSE["d-bool"] = values(`SELECT ${BOOL_OF_U} AS v FROM dataset_usages u GROUP BY 1
+      ORDER BY COUNT(DISTINCT u.dataset_id) DESC, 1`);
     UNIVERSE["d-dtype"] = byCount("data_type", "datasets");
     UNIVERSE["p-category"] = byCount("category", "papers");
 
