@@ -478,3 +478,19 @@ def test_compiled_cpu_kernels_bisect_counts_beyond_the_narrow_table(compiled):
     dec = old.int() - state.int()
     for v in (90, 150):
         _assert_matches_pmf(dec[n == v], v, p)
+
+
+@pytest.mark.parametrize("dtype", [torch.long, torch.int32])
+def test_count_included_matches_the_one_shot_sum_in_row_blocks(device, monkeypatch, dtype):
+    # Row blocks bound the scratch of the include count (a one-shot sum made an int64 copy of
+    # every automaton and ran a 24 GB GPU out of memory at 640 000 x 1 568). Small blocks here
+    # force uneven block boundaries, including a last partial block.
+    monkeypatch.setattr(F, "_COUNT_BLOCK_ELEMENTS", 7 * 10)
+    g = torch.Generator().manual_seed(0)
+    state = torch.randint(0, 256, (53, 10), generator=g, dtype=torch.uint8).to(device)
+    ref = (state >= 128).sum(dim=1)
+    out = torch.full((53,), -1, dtype=dtype, device=device)
+    assert F.count_included(state, 128, out=out) is out
+    assert torch.equal(out.long(), ref)
+    got = F.count_included(state, 128)
+    assert got.dtype == torch.long and torch.equal(got, ref)

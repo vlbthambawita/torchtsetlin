@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+**Fix: out of memory on large models when counting included literals.** Every refresh of
+`include_count` (the dense CUDA commit, `apply_feedback*` with a clause budget, and the full
+include-cache refresh after loading or moving a model) summed `state >= N` in one go, which makes
+an int64 copy of the whole state: 8 bytes per automaton, a 7.5 GiB spike at 64,000 clauses per
+class on flat MNIST (640,000 x 1,568 automata). Flat MNIST at that size ran out of memory on a
+24 GB RTX 3090 for batches of 64 and more. The new `functional.count_included` counts in row
+blocks (at most ~0.6 GiB of scratch, same speed, same result) and is used at every such site.
+Found by the batch-size x clause-count experiments (`experiments/mnist_batch_clauses/`, gap MBC-1;
+also `toolbox_cifar10` TB-1).
+
 **Notebooks in the documentation, runnable in Google Colab.** The example notebooks
 (`examples/notebooks/`) are rendered under Examples → Notebooks (`mkdocs-jupyter`, added to the
 `docs` extra; `docs/examples/notebooks` is a symlink to them). They are stored without outputs,

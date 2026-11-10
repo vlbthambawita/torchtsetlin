@@ -145,6 +145,8 @@ do not reuse them after the call.
   `acc.rows` (`_accumulate_literals` marks every selected matching clause). The count buffers are
   reused across updates (`_new_accumulator`), so never keep a reference to them after `_commit`.
   `tests/test_models.py::test_include_caches_track_the_automata` pins the cache refresh.
+  Count included literals with `F.count_included` (row blocks), never a one-shot
+  `(state >= N).sum(dim=1)`: its int64 temporary is 8 bytes per automaton (7.5 GiB at 640k x 1 568).
 - **CUDA fast path since 2026-10-28** (`_triton.py`, LIBRARY_GAPS round 3). A batched CUDA
   update that fits one chunk runs in *events mode* (`acc.record_events`): `_feedback_counts`
   stores `acc.events = (literals, sel_i, sel_ii, patch_i, patch_ii)` instead of counts and

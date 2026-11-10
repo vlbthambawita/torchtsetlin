@@ -37,6 +37,7 @@ __all__ = [
     "apply_feedback_rows",
     "commit_single_example",
     "commit_dense",
+    "count_included",
     "set_compile",
     "type_i_counts",
     "type_ii_counts",
@@ -425,6 +426,40 @@ def _binomial(count: Tensor, p: float, generator: Optional[torch.Generator] = No
     return torch.binomial(count, prob.expand_as(count), generator=generator)
 
 
+_COUNT_BLOCK_ELEMENTS = 1 << 26
+
+
+def count_included(state: Tensor, n_states: int, out: Optional[Tensor] = None) -> Tensor:
+    """Included literals per clause, ``(state >= n_states).sum(dim=1)``, in row blocks.
+
+    The one-shot sum materialises a bool mask plus an int64 copy of it (9 bytes per automaton:
+    7.5 GiB at 640 000 clauses x 1 568 literals, which ran a 24 GB GPU out of memory). Blocks of
+    ``_COUNT_BLOCK_ELEMENTS`` automata bound that scratch to ~0.6 GiB at the same speed. The
+    block bounds depend only on the shape, so the loop is safe inside a captured CUDA graph.
+
+    Args:
+        state: ``(C, L)`` TA states.
+        n_states: ``N``; a literal is included iff its state is ``>= N``.
+        out: optional ``(C,)`` tensor written in place (its dtype is kept); else a new int64
+            tensor is returned.
+
+    Returns:
+        ``(C,)`` include counts (``out`` itself when given).
+    """
+    N = int(n_states)
+    C, L = state.shape
+    if out is None:
+        out = torch.empty(C, dtype=torch.long, device=state.device)
+    rows = max(1, _COUNT_BLOCK_ELEMENTS // max(L, 1))
+    for i in range(0, C, rows):
+        blk = out[i:i + rows]
+        if blk.dtype == torch.long:
+            torch.sum(state[i:i + rows] >= N, dim=1, out=blk)
+        else:
+            blk.copy_((state[i:i + rows] >= N).sum(dim=1))
+    return out
+
+
 def apply_feedback(
     state: Tensor,
     n_true: Tensor,
@@ -478,7 +513,7 @@ def apply_feedback(
 
     if max_included_literals is not None:
         if include_count is None:
-            include_count = (state >= N).sum(dim=1)
+            include_count = count_included(state, N)
         oversize = (include_count > int(max_included_literals)).unsqueeze(1)
         if bool(oversize.any()):
             # Every Type Ia event of an oversized clause becomes a Type Ib event.
@@ -548,7 +583,7 @@ def apply_feedback_blocks(
     """
     N = int(n_states)
     if max_included_literals is not None and include_count is None:
-        include_count = (state >= N).sum(dim=1)
+        include_count = count_included(state, N)
     for cols, s in blocks:
         sub = state[:, cols]
         active = None if literal_active is None else literal_active.reshape(-1)[cols]
@@ -670,7 +705,7 @@ def apply_feedback_rows(
     nib = n_ib.clone()
     if max_included_literals is not None and idx.numel():
         if include_count is None:
-            include_count = (state >= N).sum(dim=1)
+            include_count = count_included(state, N)
         over = include_count[idx] > int(max_included_literals)
         if bool(over.any()):
             # Every Type Ia event of an oversized clause becomes a Type Ib event.
@@ -968,7 +1003,7 @@ def commit_dense(
                          width)
     if done is None and _dense_commit_kernel in _FAILED:
         return None
-    torch.sum(state >= N, dim=1, out=include_count)
+    count_included(state, N, out=include_count)
     return include_count
 
 def _cap_new_inclusions(

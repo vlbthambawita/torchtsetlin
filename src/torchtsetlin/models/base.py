@@ -285,9 +285,8 @@ class TsetlinMachineBase(nn.Module):
     def _refresh_include(self) -> None:
         """Recompute the cached include mask after the automata changed."""
         self.__dict__["_bits_fresh"] = False
-        inc = self.ta_state >= self.n_states
-        self.include = inc.to(self._include_dtype())
-        self.include_count = inc.sum(dim=1)
+        self.include = (self.ta_state >= self.n_states).to(self._include_dtype())
+        self.include_count = F.count_included(self.ta_state, self.n_states)
 
     def _apply(self, fn, recurse: bool = True):  # type: ignore[override]
         # .to(device) keeps buffer dtypes; re-derive the include cache for the new device.
