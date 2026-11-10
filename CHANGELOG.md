@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.1 (2026-11-10)
 
 **Fix: out of memory on large models when counting included literals.** Every refresh of
 `include_count` (the dense CUDA commit, `apply_feedback*` with a clause budget, and the full
