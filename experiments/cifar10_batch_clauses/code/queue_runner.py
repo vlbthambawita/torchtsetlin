@@ -156,17 +156,38 @@ def command(job, smoke=False):
     return cmd
 
 
+def gpu_name(slot, cvd):
+    """Name of the one visible GPU, or a diagnosis of why there is none."""
+    try:
+        return torch.cuda.get_device_name(0)
+    except RuntimeError as e:
+        try:
+            smi = subprocess.run(["nvidia-smi", "-L"], capture_output=True, text=True, timeout=30).stdout.strip()
+        except Exception as e2:  # noqa: BLE001
+            smi = f"nvidia-smi failed: {e2}"
+        raise SystemExit(
+            f"GPU slot {slot}: PyTorch sees no GPU with CUDA_VISIBLE_DEVICES={cvd} ({e}).\n"
+            f"  outer CUDA_VISIBLE_DEVICES (before run_gpu.sh): {os.environ.get('CBC_OUTER_CVD') or 'unset'}\n"
+            f"  torch {torch.__version__}, built for CUDA {torch.version.cuda}\n"
+            f"  nvidia-smi -L:\n    " + smi.replace("\n", "\n    ") + "\n"
+            "  Fixes: on SLURM run inside a GPU job (srun/sbatch with --gres=gpu:4); if this shell already\n"
+            "  restricts GPUs, run_gpu.sh maps slot K to the K-th visible GPU; check the driver supports\n"
+            "  this CUDA build (nvidia-smi 'CUDA Version' >= torch's).") from None
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--gpu", type=int, required=True, help="physical GPU index (CUDA_VISIBLE_DEVICES)")
+    ap.add_argument("--gpu", type=int, required=True, help="GPU slot 0-3 (run_gpu.sh sets CUDA_VISIBLE_DEVICES)")
     ap.add_argument("--arm", default="all", choices=["all", "smoke"])
     ap.add_argument("--any-gpu", action="store_true", help="allow a non-V100 GPU (timings then differ)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    if os.environ.get("CUDA_VISIBLE_DEVICES") != str(args.gpu):
-        raise SystemExit(f"run me with CUDA_VISIBLE_DEVICES={args.gpu} (run_gpu{args.gpu}.sh does this)")
-    name = torch.cuda.get_device_name(0) if DEVICE != "cpu" else "cpu (harness test)"
+    cvd = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if DEVICE != "cpu" and (not cvd or "," in cvd):
+        raise SystemExit(f"start me through run_gpu{args.gpu}.sh: it gives this runner exactly one GPU "
+                         f"(CUDA_VISIBLE_DEVICES is {cvd or 'unset'})")
+    name = gpu_name(args.gpu, cvd) if DEVICE != "cpu" else "cpu (harness test)"
     if "V100" not in name and not args.any_gpu and DEVICE != "cpu":
         raise SystemExit(f"GPU {args.gpu} is a {name}; the plan's timings are V100 timings (--any-gpu to override)")
     os.environ["CBC_GPU"] = str(args.gpu)

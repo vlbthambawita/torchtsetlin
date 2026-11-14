@@ -9,8 +9,12 @@ cd "$(dirname "$0")"
 if [ -f STOP ]; then echo "STOP file present: remove it (rm STOP) to run again"; exit 1; fi
 if pgrep -f "queue_runner.py --gpu $K( |$)" >/dev/null; then echo "GPU $K: a runner is already running"; exit 1; fi
 mkdir -p logs
-CUDA_VISIBLE_DEVICES=$K setsid nohup python code/queue_runner.py --gpu "$K" >> "logs/gpu$K.log" 2>&1 < /dev/null &
+# Slot K -> one device. If this shell already restricts the GPUs (SLURM, containers, a set
+# CUDA_VISIBLE_DEVICES), use the K-th entry of that list instead of the bare index K.
+DEV=$(./gpu_device.sh "$K") || exit 1
+CBC_OUTER_CVD=${CUDA_VISIBLE_DEVICES:-} CUDA_VISIBLE_DEVICES=$DEV \
+  setsid nohup python code/queue_runner.py --gpu "$K" >> "logs/gpu$K.log" 2>&1 < /dev/null &
 echo $! > "logs/gpu$K.pid"
 sleep 5
 tail -n 3 "logs/gpu$K.log"
-echo "GPU $K runner started (pid $!). Follow it with: tail -f $PWD/logs/gpu$K.log"
+echo "GPU slot $K (device $DEV) runner started (pid $(cat logs/gpu$K.pid)). Follow it with: tail -f $PWD/logs/gpu$K.log"

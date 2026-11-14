@@ -20,6 +20,11 @@ wandb login --host https://api.forge.coreweave.com   # once
 ./status.sh         # progress
 ```
 
+**One reserved GPU per tmux session** (each session sees one GPU): run `./setup.sh` once (any
+session), then `./run_gpu0.sh` in the first session, `./run_gpu1.sh` in the second, and so on. A
+runner uses whichever single GPU its session sees; the number only names it (`logs/gpuK.log`).
+All four must run in the same folder (they share the job list through `.cache/claims/`).
+
 Each `run_gpuK.sh` starts a background runner for GPU K (log `logs/gpuK.log`, one log per run in
 `logs/runs/`). The runners work through pricing → flat pilot → sanity cell → grid (longest first) →
 controls, and exit when nothing is left. Re-running a script resumes: finished runs are skipped,
@@ -62,7 +67,8 @@ Statistic: test accuracy at the best-validation epoch.
 | Path | What |
 |---|---|
 | `setup.sh`, `env.sh` | one-time setup; shared environment (venv, W&B host) |
-| `run_gpu0.sh` … `run_gpu3.sh`, `run_gpu.sh` | one runner per GPU |
+| `run_gpu0.sh` … `run_gpu3.sh`, `run_gpu.sh` | one runner per GPU slot |
+| `gpu_device.sh` | slot K → `CUDA_VISIBLE_DEVICES` (the K-th entry of an existing list, e.g. under SLURM, else K) |
 | `status.sh`, `stop.sh` | progress; graceful / immediate stop |
 | `code/common.py` | paths, grid, base configs, encodings, data + split, records |
 | `code/data.py` | CIFAR-10 download + checks → `.cache/data/cifar10_uint8.npz` |

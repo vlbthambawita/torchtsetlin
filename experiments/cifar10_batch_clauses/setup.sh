@@ -69,6 +69,16 @@ for i in range(n):
 print(f"  {n} GPU(s) OK")
 EOF
 
+# Each runner sees exactly one GPU (run_gpu.sh): check every slot the same way.
+NGPU=$(python -c "import torch; print(torch.cuda.device_count())")
+for K in $(seq 0 $((NGPU < 4 ? NGPU - 1 : 3))); do
+  DEV=$(./gpu_device.sh "$K")
+  CUDA_VISIBLE_DEVICES=$DEV python -c "import torch; print('  slot $K -> CUDA_VISIBLE_DEVICES=$DEV:', torch.cuda.get_device_name(0))" \
+    || { echo "  slot $K (CUDA_VISIBLE_DEVICES=$DEV): no GPU visible to PyTorch"; exit 1; }
+done
+[ "$NGPU" -ge 4 ] || echo "  $NGPU GPU(s) visible here. One GPU per session (e.g. tmux): run setup.sh once, then
+  run_gpuK.sh in session K (K = 0..3); each runner uses its session's GPU."
+
 echo "== 3/5 CIFAR-10"
 python code/data.py ${CBC_CIFAR_DIR:+--from-dir "$CBC_CIFAR_DIR"}
 
@@ -92,9 +102,10 @@ fi
 if [ "${CBC_SKIP_SMOKE:-0}" = 1 ]; then echo "== 5/5 smoke test skipped"; exit 0; fi
 echo "== 5/5 smoke test on GPU 0 (log: logs/smoke.log)"
 mkdir -p logs
-CUDA_VISIBLE_DEVICES=0 python code/queue_runner.py --gpu 0 --arm smoke --any-gpu > logs/smoke.log 2>&1 \
+DEV0=$(./gpu_device.sh 0)
+CUDA_VISIBLE_DEVICES=$DEV0 python code/queue_runner.py --gpu 0 --arm smoke --any-gpu > logs/smoke.log 2>&1 \
   || { tail -20 logs/smoke.log; exit 1; }
-CUDA_VISIBLE_DEVICES=0 python code/resume_check.py >> logs/smoke.log 2>&1 || { tail -20 logs/smoke.log; exit 1; }
+CUDA_VISIBLE_DEVICES=$DEV0 python code/resume_check.py >> logs/smoke.log 2>&1 || { tail -20 logs/smoke.log; exit 1; }
 python - <<'EOF'
 import sys
 sys.path.insert(0, "code")
