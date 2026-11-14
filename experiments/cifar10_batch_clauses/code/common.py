@@ -24,6 +24,7 @@ REPO = PROG.parents[1]
 RESULTS = Path(os.environ.get("CBC_RESULTS", PROG / "results"))
 CACHE = Path(os.environ.get("CBC_CACHE", PROG / ".cache"))     # git-ignored: data, checkpoints, claims, W&B
 LOGS = PROG / "logs"                                             # git-ignored
+MODELS_DIR = Path(os.environ.get("CBC_MODELS", PROG / "models"))  # git-ignored: best-epoch models
 DATA = CACHE / "data"
 
 # ---------------------------------------------------------------- data (D5)

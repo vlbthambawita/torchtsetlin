@@ -81,6 +81,7 @@ bit-plane channels. That is stated in the paper; the 3D model is what the librar
 | D12 | B\*(C) | Largest B whose test accuracy is within **1.0 pp** of the B = 1 cell. One seed on 10 000 test images at ~65 % has a binomial SE of ≈ 0.5 pp, so MNIST's 0.3 pp would be noise. All cells are reported. |
 | D13 | Seeds | Seed 0 only (as MNIST, user 2026-11-12); seeds 1–2 only with the user's OK after seed 0. |
 | D14 | Timing | Four identical V100s, one run per GPU, nothing else on them; the four runners run concurrently (shared host CPU; recorded). Each record carries GPU name, slot and memory. s/epoch is comparable across the V100s, **not** with the MNIST 3090 timings. |
+| D16 | Models kept | The model at the **best-validation epoch** of every grid/pilot/control run (user, 2026-11-14): `models/<arm>/<tag>.pt` = state_dict + hp + epoch + val/test accuracy + git sha, overwritten at each new best, written after the epoch's timing (not counted in s/epoch). **Git-ignored, never committed**; ~35 GB in total (flat ≈ 22 GB). Resume checkpoints (`.cache/ckpt/`, every 5 epochs) are separate and deleted when a run ends. |
 | D15 | Library | torchtsetlin from the cloned repo (`pip install -e`), so every record has the version and git sha. `src/torchtsetlin/**` read-only; gaps go to `LIBRARY_GAPS.md`. |
 
 ## 4. Cost (estimates; the pricing phase measures them on the V100)

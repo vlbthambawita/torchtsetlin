@@ -26,6 +26,9 @@ controls, and exit when nothing is left. Re-running a script resumes: finished r
 interrupted runs continue from their checkpoint. `./stop.sh` stops after the current runs,
 `./stop.sh --now` immediately (resumable); remove `STOP` to continue. Results come back to mimir with
 `rsync -a <server>:<path>/results/ results/` (or a commit); then `python code/report.py`.
+The best-epoch models stay in `models/` on the server (git-ignored); copy them with
+`rsync -a <server>:<path>/models/ models/` when needed. Interrupted runs resume from
+`.cache/ckpt/` (every 5 epochs, deleted when the run ends).
 
 Knobs: `CBC_VENV=none` (use the active Python instead of `./.venv`), `TORCH_INDEX=<wheel
 index>` (default cu126, which has V100 kernels), `CBC_WANDB=0` (no W&B), `CBC_DEVICE=cpu` (harness
@@ -68,4 +71,5 @@ Statistic: test accuracy at the best-validation epoch.
 | `code/tracking.py` | W&B mirror, id `cbc-<arm>-<tag>`, group = arm |
 | `code/resume_check.py` | smoke: interrupted + resumed run = uninterrupted run |
 | `code/report.py` | `REPORT.md`, `results/summary.json`; `--status` for progress |
+| `models/<arm>/<tag>.pt` | **not in git**: the model at the best-validation epoch of every run (state_dict + hp + epoch + val/test accuracy), ~35 GB in total |
 | `results/<arm>/<tag>.json` | one record per run; tag = `<model>_c<C>_b<B>_T<scaled|fixed>[_seq][_Tref<T>_spec<s>]_s0` |

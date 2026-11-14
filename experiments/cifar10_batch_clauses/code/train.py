@@ -24,6 +24,7 @@ from common import (
     BASE,
     CACHE,
     EARLY,
+    MODELS_DIR,
     PILOT_MAX_EPOCHS,
     RESULTS,
     T_of,
@@ -297,6 +298,7 @@ def train(args, model, rec, T, xtr, ytr, xva, yva, xte, yte, gen, dev, out, ckpt
 
         if es["best_val_correct"] < 0 or val_correct >= es["best_val_correct"] + need:
             es.update(best_val_correct=val_correct, best_epoch=epoch, since=0)
+            save_best(args, model, rec, epoch, val_acc, test_acc)
         else:
             es["since"] += 1
         rec["elapsed_s"] += train_s + val_s + test_s
@@ -341,6 +343,28 @@ def train(args, model, rec, T, xtr, ytr, xva, yva, xte, yte, gen, dev, out, ckpt
         if epoch == args.stop_after:
             print(f"[{rec['tag']}] --stop-after {epoch}: exiting with a checkpoint", flush=True)
             raise SystemExit(3)
+
+
+def save_best(args, model, rec, epoch, val_acc, test_acc):
+    """The model at the best-validation epoch (user, 2026-11-14): models/<arm>/<tag>.pt, overwritten
+    at every new best, never committed (git-ignored). Written after the epoch's timing, so it does
+    not count towards train_s / elapsed_s. A resumed run replays the epochs after its checkpoint
+    bit for bit, so it rewrites the same best model. Rebuild with
+    ``train.build_model(hp['model'], hp['clauses_per_class'], hp['T'], hp['s'], False)`` and
+    ``load_state_dict(ckpt['model'])``; set ``max_chunk_elements`` from hp for the same chunking."""
+    if args.arm in NO_MODELS:
+        return
+    path = MODELS_DIR / args.arm / f"{rec['tag']}.pt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    torch.save({"model": model.state_dict(), "epoch": epoch, "val_acc": val_acc, "test_acc": test_acc,
+                "tag": rec["tag"], "hp": rec["hp"], "git_sha": rec["git_sha"], "env": rec["env"]}, tmp)
+    tmp.replace(path)
+    rec["best_model"] = {"path": str(path.relative_to(MODELS_DIR.parent)) if MODELS_DIR.parent in path.parents
+                         else str(path), "epoch": epoch}
+
+
+NO_MODELS = {"smoke", "pricing", "resume_check"}    # tiny/throw-away runs: no model kept
 
 
 def finish(rec, stop, es, n_tr, bs):
