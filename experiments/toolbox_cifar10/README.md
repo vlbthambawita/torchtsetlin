@@ -61,5 +61,13 @@ nohup python code/queue_runner.py --device cuda:1 > logs/queue_gpu1.log 2>&1 &  
 python code/report.py                               # REPORT.md + paper/generated/toolbox_*.tex
 ```
 
+Progress is mirrored to Weights & Biases, `simulamet_mlc/torchtsetlin`, group `toolbox_cifar10`
+(`code/tracking.py`): one W&B run per training run, id `tb-<tag>` (`/` -> `-`), so a resumed run
+continues the same W&B run. Each epoch logs `test_acc`, `train_acc_running`, `train_s`, `test_s` and
+`peak_gib` against `epoch`; the summary gets the last-25 statistics at the end, and an interrupted run
+finishes as failed. Runs trained before tracking existed were loaded with `code/wandb_backfill.py`
+(skips runs already in W&B). W&B is a mirror only; reported numbers come from `results/*.json`. W&B
+failures are printed and ignored; turn it off with `--no-wandb` or `TB_WANDB=0`.
+
 An interrupted specialist resumes from its last checkpoint (every 5 epochs) when its queue is
 restarted after removing its claim in `.cache/claims/`.

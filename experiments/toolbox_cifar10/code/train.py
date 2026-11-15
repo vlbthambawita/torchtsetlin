@@ -9,6 +9,7 @@ Usage:  python code/train.py --spec therm5 [--clauses 64000] [--device cuda:0]
 """
 
 import argparse
+import signal
 import sys
 import time
 
@@ -19,6 +20,7 @@ import torchtsetlin as tt
 from common import CACHE, RESULTS, new_record, write_json
 from encoders import encoded
 from specialists import EPOCHS, LAST_EPOCHS, MAX_INCLUDED_LITERALS, SPECIALISTS
+from tracking import Tracker
 
 
 def build_model(cfg, n_clauses, n_features, input_shape, max_chunk_elements, batch_size):
@@ -58,6 +60,7 @@ def main():
     ap.add_argument("--calibrate", type=int, default=0, help="time this many batches and exit")
     ap.add_argument("--subset", type=int, default=0, help="smoke tests: first N train/test images")
     ap.add_argument("--tag", default="", help="record name (default <spec>_c<clauses>_seed<seed>)")
+    ap.add_argument("--no-wandb", action="store_true", help="do not mirror progress to W&B")
     args = ap.parse_args()
 
     cfg = SPECIALISTS[args.spec]
@@ -145,13 +148,36 @@ def main():
         torch.set_rng_state(state["cpu_rng"])
         torch.cuda.set_rng_state(state["cuda_rng"], dev)
         rec = state["rec"]
-        rec["status"] = "running"
+        if state["epoch"] < args.epochs:
+            rec["status"] = "running"
         rec.setdefault("resumed_at", []).append({"epoch": state["epoch"], "argv": sys.argv,
                                                  "time": time.strftime("%Y-%m-%dT%H:%M:%S")})
         rec["curve"] = [c for c in rec["curve"] if c["epoch"] <= state["epoch"]]
         start_epoch = state["epoch"]
         print(f"[{args.spec}] resumed after epoch {start_epoch}", flush=True)
 
+    if start_epoch >= args.epochs:
+        print(f"[{args.spec}] {tag} already done ({start_epoch} epochs)", flush=True)
+        return
+    # Mirror progress to W&B (code/tracking.py); a SIGTERM is logged as an interrupted run.
+    tracker = Tracker(tag, args.spec, hp, enabled=not args.no_wandb, env=rec["env"])
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
+    try:
+        train_epochs(args, model, rec, xtr, ytr_t, xte, yte, gen, dev, sums_dir, out, ckpt,
+                     start_epoch, tracker)
+    except BaseException as e:
+        done = rec["curve"][-1]["epoch"] if rec["curve"] else start_epoch
+        tracker.end({"status": "interrupted", "epochs_done": done,
+                        "error": f"{type(e).__name__}: {e}"})
+        raise
+    tracker.end({k: rec.get(k) for k in ("status", "test_acc_final", "last25_mean",
+                                            "last25_variance", "train_s_per_epoch_mean",
+                                            "test_s_per_epoch_mean")}
+                   | {"epochs_done": rec["curve"][-1]["epoch"] if rec["curve"] else 0})
+
+
+def train_epochs(args, model, rec, xtr, ytr_t, xte, yte, gen, dev, sums_dir, out, ckpt, start_epoch,
+                 tracker):
     for epoch in range(start_epoch + 1, args.epochs + 1):
         model.train()
         torch.cuda.reset_peak_memory_stats(dev)
@@ -178,6 +204,7 @@ def main():
                              "peak_gib": torch.cuda.max_memory_reserved(dev) / 2**30})
         print(f"[{args.spec}] epoch {epoch:3d} test {acc:5.2f}% train-running {tr:5.2f}% | "
               f"{train_s:.0f}s + {test_s:.0f}s", flush=True)
+        tracker.epoch(rec["curve"][-1])
         if epoch == args.epochs:
             last = np.array([c["test_acc"] for c in rec["curve"][-LAST_EPOCHS:]])
             rec.update(status="done", test_acc_final=acc,
