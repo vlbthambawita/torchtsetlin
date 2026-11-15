@@ -23,8 +23,13 @@ METRICS = ("val_acc", "best_val_acc", "epochs_since_improvement", "test_acc", "t
            "mean_clause_len", "frac_empty_clauses", "vote_saturation", "elapsed_s")
 
 
+# Round 2 (2026-11-10): early stopping with min_delta=0. The round-1 runs (min_delta=0.05) were
+# deleted from W&B; new ids avoid reusing the ids of deleted runs.
+ROUND = "r2"
+
+
 def run_id(arm, tag):
-    return f"mbc-{'smoke-' if arm == 'smoke' else ''}{tag}"
+    return f"mbc-{ROUND}-{'smoke-' if arm == 'smoke' else ''}{tag}"
 
 
 class Tracker:

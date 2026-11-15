@@ -31,6 +31,11 @@ def build_model(model, clauses, T, sequential):
     b = BASE[model]
     kw = dict(weighted=b["weighted"], boost_true_positive=b["boost_true_positive"],
               feedback_mode="sequential" if sequential else "batch")
+    if model == "conv3":
+        return tt.Conv3dTsetlinMachine(10, clauses, T, b["s"], patch_size=(b["kd"], b["patch_size"], b["patch_size"]),
+                                       stride=b["stride"], position_encoding=b["position_encoding"],
+                                       input_shape=(1, b["planes"], 28, 28),
+                                       max_chunk_elements=b["max_chunk_elements"], **kw)
     if model == "conv":
         return tt.ConvTsetlinMachine(10, clauses, T, b["s"], patch_size=b["patch_size"],
                                      stride=b["stride"], position_encoding=b["position_encoding"],
@@ -69,7 +74,7 @@ def main():
                     choices=["grid", "control_T", "control_seq", "smoke", "phase0", "resume_check"])
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--patience", type=int, default=EARLY["patience"])
-    ap.add_argument("--min-delta", type=float, default=EARLY["min_delta"], help="pp of validation acc")
+    ap.add_argument("--min-delta", type=float, default=EARLY["min_delta"], help="pp of validation acc a new best must add (0: any)")
     ap.add_argument("--min-epochs", type=int, default=EARLY["min_epochs"])
     ap.add_argument("--max-epochs", type=int, default=EARLY["max_epochs"])
     ap.add_argument("--time-cap-h", type=float, default=EARLY["time_cap_h"])
@@ -100,6 +105,8 @@ def main():
 
     def to_x(a):
         t = torch.from_numpy(np.ascontiguousarray(a)).to(torch.bool)
+        if args.model == "conv3":                    # (N, 8, 28, 28) planes -> (N, 1, D=8, 28, 28)
+            return t.reshape(len(a), 1, 8, 28, 28).to(dev)
         return (t.reshape(len(a), 1, 28, 28) if args.model == "conv" else t.reshape(len(a), -1)).to(dev)
 
     xtr, xva, xte = to_x(d["x_train"]), to_x(d["x_val"]), to_x(d["x_test"])
@@ -117,7 +124,8 @@ def main():
               commits_per_epoch=math.ceil(n_tr / args.batch_size), seed=args.seed,
               n_states=int(model.n_states), max_chunk_elements=int(model.max_chunk_elements),
               **({k: b[k] for k in ("patch_size", "stride", "position_encoding")}
-                 if args.model == "conv" else {}),
+                 if args.model in ("conv", "conv3") else {}),
+              **({k: b[k] for k in ("kd", "planes")} if args.model == "conv3" else {}),
               early_stopping=dict(monitor="val_acc", patience=args.patience, min_delta_pp=args.min_delta,
                                   min_epochs=args.min_epochs, max_epochs=args.max_epochs,
                                   time_cap_h=args.time_cap_h),
@@ -189,7 +197,8 @@ def json_status(path):
 def train(args, model, rec, T, xtr, ytr, xva, yva, xte, yte, gen, dev, out, ckpt, start, tracker):
     n_tr, n_va = xtr.shape[0], xva.shape[0]
     bs = args.batch_size
-    need = math.ceil(args.min_delta / 100 * n_va - 1e-9)          # validation examples to improve
+    # Validation examples a new best must add: >= 1 (a tie is not an improvement), more with min_delta.
+    need = max(1, math.ceil(args.min_delta / 100 * n_va - 1e-9))
     es = rec["early"]
     epoch = start
     while True:
@@ -222,7 +231,7 @@ def train(args, model, rec, T, xtr, ytr, xva, yva, xte, yte, gen, dev, out, ckpt
         test_acc = 100 * float((te_pred == yte).mean())
         inc = model.include_count.float()
 
-        if val_correct >= es["best_val_correct"] + need or es["best_val_correct"] < 0:
+        if es["best_val_correct"] < 0 or val_correct >= es["best_val_correct"] + need:
             es.update(best_val_correct=val_correct, best_epoch=epoch, since=0)
         else:
             es["since"] += 1

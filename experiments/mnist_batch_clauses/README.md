@@ -29,8 +29,8 @@ feedback* section. Plan (decisions D0–D10, hypotheses, cost): `plans/mnist-bat
   conv 5 000) in the grid; T fixed at T_ref in the `control_T` arm (D2).
 - **Training:** `feedback_mode="batch"` with batch B (`control_seq`: `"sequential"`, D6). The data order
   depends only on the seed (identical across B and C, D7).
-- **Early stopping (D3):** stop after **25 epochs** without a validation improvement of **≥ 0.05 pp**
-  (counted in examples, 5 of 10 000), not before epoch 30, at most 500 epochs or 24 h of
+- **Early stopping (D3):** stop after **25 epochs** without **any** new best validation accuracy
+  (`min_delta = 0`: one more correct example counts, a tie does not; round 1 used 0.05 pp and is archived), not before epoch 30, at most 500 epochs or 24 h of
   train + eval time. The stopping state (best value, best epoch, counter) is part of the checkpoint,
   so an interrupted and resumed run stops exactly where an uninterrupted one would
   (`results/smoke/resume_check.json`: bit-identical curves on CPU and CUDA).
@@ -44,7 +44,7 @@ feedback* section. Plan (decisions D0–D10, hypotheses, cost): `plans/mnist-bat
 |---|---|
 | `code/common.py` | paths, grid (`CLAUSES`, `BATCHES`, `jobs(arm)`), B4/B7 configs, T rule, data + split, records |
 | `code/train.py` | one run (or `--calibrate N` for Phase 0 pricing) |
-| `code/tracking.py` | W&B mirror, `simulamet_mlc/torchtsetlin`, group `mnist_batch_clauses`, run id `mbc-<tag>` |
+| `code/tracking.py` | W&B mirror, `simulamet_mlc/torchtsetlin`, group `mnist_batch_clauses`, run id `mbc-r2-<tag>` |
 | `code/queue_runner.py` | one GPU's worker over an arm; claims in `.cache/claims/`; seed-0 grid only on a 3090 |
 | `code/report.py` | `REPORT.md`, `results/summary.json`, `figures/`; `--paper` writes the paper's `generated/batch_clauses_*.tex` + figures |
 | `code/smoke.sh` | the smoke test |

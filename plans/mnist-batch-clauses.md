@@ -5,6 +5,10 @@ smoke runs are fine. v2: clause counts confirmed by the user as **per class** (D
 large batches may need more epochs than B = 1, so the fixed 30-epoch budget is replaced by
 **early stopping with patience 25 epochs** (D3); the equal-update control (old D5) is dropped,
 because early stopping already lets every batch size train until it stops improving.
+v4 (user, 2026-11-10): **any** validation improvement resets the patience (`min_delta = 0`,
+was 0.05 pp). Round 1 (7 grid cells + 1 sequential check under v3) was stopped, its records
+archived in `results/archive/2026-11-10_min_delta_0.05/` and its W&B runs deleted; everything
+restarted. W&B ids are now `mbc-r2-<tag>`.
 
 Target: the JMLR draft (`PAPER---torchtsetlin--Journal-of-Machine-Learning-Research/paper/`,
 section *Performance and Fidelity*), extending the existing *Batched versus sequential feedback*
@@ -68,7 +72,7 @@ conv ≈ 0.6 GB. Both fit either GPU.
 | D0 | Clause count | **Per class** (user, 2026-11-10): `n_clauses=C` in torchtsetlin, as in tmu and the Optimized Toolbox paper; 64k/class = 640 000 clauses. All tables, figures, W&B tags (`c<C>`) and macros use the per-class number and say so. |
 | D1 | Hyper-parameters | B4 / B7 as above; nothing tuned per cell. Only `C`, `B` (and `T`, D2) vary. |
 | D2 | **T vs clause count** | **Main grid: T ∝ C** (`T = T_ref · C / 2000`: flat 25 … 1 600; conv 2 500 … 160 000), so the vote margin per clause is constant. **Control arm: T fixed** at `T_ref` for C ∈ {2k, 16k, 64k} × B ∈ {1, 32, 256} × both models, seed 0 (18 runs). Answers H2 and explains the CIFAR-10 diagnostic. |
-| D3 | **Epochs: early stopping** (user, v3) | Large batches make far fewer commits per epoch (b1024: 49/epoch vs b1: 50 000), so a fixed epoch budget would penalise them unfairly. Every run trains until **no improvement for 25 consecutive epochs** (patience 25). "Improvement" = monitored accuracy exceeds the best so far by **≥ 0.05 pp** (5 of 10 000 examples), so noise-level wiggles do not reset the patience. Limits: **min 30 epochs**, **max 500 epochs**, and a **24 GPU-h wall-clock cap** per run; a run ending on a cap is flagged `stop_reason="max_epochs"` / `"time_cap"` and reported as such (not dropped). The reported test accuracy is the one at the best-validation epoch, read from the per-epoch curve (test is evaluated every epoch, so no best-model checkpoint is kept). |
+| D3 | **Epochs: early stopping** (user, v3) | Large batches make far fewer commits per epoch (b1024: 49/epoch vs b1: 50 000), so a fixed epoch budget would penalise them unfairly. Every run trains until **no improvement for 25 consecutive epochs** (patience 25). "Improvement" = **any** new best validation accuracy, i.e. at least one more correct validation example (`min_delta = 0`, user, v4); a tie does not count. (v3 used ≥ 0.05 pp; the flat sanity run showed it stopped before slow late gains.) Limits: **min 30 epochs**, **max 500 epochs**, and a **24 GPU-h wall-clock cap** per run; a run ending on a cap is flagged `stop_reason="max_epochs"` / `"time_cap"` and reported as such (not dropped). The reported test accuracy is the one at the best-validation epoch, read from the per-epoch curve (test is evaluated every epoch, so no best-model checkpoint is kept). |
 | D3a | **What is monitored** | Early stopping looks at a **validation set, not the test set**: 10 000 images held out of the 60 000 MNIST training images (stratified, fixed split seed 0, the same for every run), training on the other 50 000. Stopping on test accuracy and then reporting test accuracy would select on the test set and inflate every number by the max-over-noise (on 10 000 examples ≈ +0.1–0.2 pp, larger for the noisier large-batch curves), biasing exactly the B comparison we want. Test accuracy is still computed and logged every epoch (curves, W&B) but never used for a decision. |
 | D4 | Statistic | Per run: **test accuracy at the best-validation epoch** (primary), plus best-validation accuracy, last-epoch test accuracy, `best_epoch`, `commits_to_best`, `gpu_s_to_best`, `stop_reason`. Cell: mean ± sd over 3 seeds. A fixed-budget view is also reported for free from the curves: test accuracy at epoch 30 (every run has ≥ 30 epochs). |
 | D6 | B = 1 | `feedback_mode="batch", batch_size=1` (exact online semantics, binomial draws). **Fidelity check:** `feedback_mode="sequential"` with B = 32 at C ∈ {2k, 16k}, both models, seed 0 (4 runs); must match the b1 cells within seed noise. |
@@ -95,6 +99,27 @@ under early stopping of **~60 epochs for B ≤ 64** (best near epoch 30–40 + 2
 | 3 seeds | ~420–560 GPU-h |
 | controls D2 + D6 | ~40 GPU-h |
 | **total** | **~450–600 GPU-h ≈ 10–13 days on both GPUs** (uncertainty ±2×) |
+
+**Sanity gate (2026-11-10, `results/grid/{flat_c2000_b32,conv_c2000_b16}_Tscaled_s0.json`).**
+conv: 99.05 % at best epoch 37 (B7 99.1; at epoch 30 99.08 vs 99.11) → pass. flat: 97.47 % at best
+epoch 48, stopped at 73; B4 at the same epochs 97.56 / 97.64 (5 seeds) → the harness reproduces B4,
+but patience 25 stops before flat's slow creep (+0.3 pp from epoch 50 to 250, ~0.0015 pp/epoch,
+below validation noise), so flat cells sit ~0.4 pp under their 250-epoch values. **User decision
+(2026-11-10): keep patience 25**; the paper states this. Seed-0 grid started on the 3090 the same day.
+
+**Measured (Phase 0 pricing, 2026-11-10, torchtsetlin 0.7.1 @ `6d5651c2`, RTX 3090, `results/phase0/`),
+s/epoch incl. validation + test:**
+
+| | B=1 | B=32 | B=1024 |
+|---|---|---|---|
+| flat 1k / 8k / 64k | 18 / 113 / 859 | 0.8 / 5.1 / 40 | 0.7 / 3.2 / 41 |
+| conv 1k / 8k / 64k | 15 / 36 / 221 | 2.7 / 13 / 240 | 5.3 / 37 / 228 |
+
+Batching stops paying off early: flat gains nothing beyond B=32, conv is *slowest* at B=1024 for
+C ≤ 8k, and at 64k conv B=1 is as fast as any batch. Interpolated over the grid (log-log in C and B),
+one seed costs **~120 GPU-h if large batches stop at ~100 epochs, ~220 GPU-h if at ~250**
+(flat 42–61, conv 79–160; the B=1 column ~40 of it). Three seeds: ~360–660 GPU-h. The large-batch
+conv cells, not B=1, are now the main uncertainty.
 
 Early stopping roughly triples the 30-epoch cost (~200 GPU-h in v2): the patience alone adds 25
 epochs to every run. Seed 0 therefore runs first and its measured run lengths decide seeds 1–2.
@@ -169,7 +194,8 @@ stopping.
 2. **D2 T-fixed control** (18 runs) — answers H2 early.
 3. **Checkpoint with the user:** seed 0's measured run lengths and GPU-hours → confirm or trim
    seeds 1–2 (§4).
-4. Seeds 1 and 2 (3080 + 3090 when free).
+4. Seeds 1 and 2 (3080 + 3090 when free). **Deferred (user, 2026-11-12): seed 0 only for now**; the
+   paper reports single-seed numbers until seeds 1–2 are approved, so D4's mean ± sd becomes the seed-0 value.
 All runs (grid and controls) use the same early-stopping rule (D3). `report.py` after each step;
 W&B aggregate run after each.
 
@@ -202,3 +228,19 @@ W&B aggregate run after each.
 - **T scaling choice** is the main design lever; the control arm reports the other choice, so the
   paper can show both.
 - conv `position_encoding=True` is right for MNIST (B7 uses it; see CLAUDE.md caveat).
+
+## Addendum 2026-11-13: 3D convolution path (user)
+
+- **Model `conv3`**: `Conv3dTsetlinMachine` on the 8 bit planes of the raw MNIST pixels (MSB first,
+  `BitPlaneEncoder(8)`, input `(1, 8, 28, 28)`), window `(kd=8, 10, 10)`, B7 settings (s = 5,
+  T_ref = 5000 at 2k, weighted, position encoding), `max_chunk_elements = 2**30` (FMNIST FB-1).
+  Same as `fmnist_bitplanes` conv3 × bit8. A 3D conv on the 1-plane B7 input would equal the 2D conv
+  bit for bit, so the bit-plane input is required (user choice of bit planes over Gray/thermometer).
+- **Reduced grid** (user): B ∈ {1, 32, 256, 1024} × C ∈ {1k, 2k, 4k, 8k}, T scaled, seed 0, same
+  split and early stopping. 16 runs, arm `grid`, tags `conv3_c<C>_b<B>_Tscaled_s0`.
+- **Order** (user): after the flat/conv grid and control_T on the 3090
+  (`code/after_grid_3090.sh`, logs `q_control_T_3090.log`, `q_grid3d_s0.log`).
+- Checked: planes reconstruct the raw pixels exactly; labels and split equal B7's; CPU smoke for
+  conv3/flat/conv after the edit.
+- Caveat for the paper: conv3 differs from conv in the input (8 bit planes vs the AGT plane) as well as
+  the operator, so conv vs conv3 is not a pure 2D-vs-3D comparison.

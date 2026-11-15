@@ -28,22 +28,32 @@ PAPER = Path("/work/vajira/DL2026/PAPER---torchtsetlin--Journal-of-Machine-Learn
 # The paper's own MNIST Booleanizations (experiments/paper_experiments/code/prepare_data.py b4 / b7),
 # reused byte for byte; the sha256 is checked against that programme's data manifest.
 PE = REPO / "experiments" / "paper_experiments"
-DATA = {"flat": "B4", "conv": "B7"}
+DATA = {"flat": "B4", "conv": "B7", "conv3": "BIT8"}
+# conv3 (user, 2026-11-13): 3D conv TM on the 8 bit planes of the raw MNIST pixels (MSB first,
+# torchtsetlin.data.BitPlaneEncoder), window (kd=8, 10, 10): the fmnist_bitplanes conv3 x bit8 setup.
+RAW_MNIST = PE / ".cache" / "data" / "raw" / "mnist.npz"   # the file prepare_data.py builds B4/B7 from
 
 # ---------------------------------------------------------------- grid (plan §2-§3)
 CLAUSES = [1000, 2000, 4000, 8000, 16000, 32000, 64000]       # per class (D0)
 BATCHES = [1, 16, 32, 64, 128, 256, 512, 1024]
 SEEDS = [0, 1, 2]
 MODELS = ["flat", "conv"]
+# conv3 runs a reduced grid (user, 2026-11-13), after the flat/conv grid and control_T.
+GRID_3D = dict(clauses=[1000, 2000, 4000, 8000], batches=[1, 32, 256, 1024])
 C_REF = 2000
 # D1: B4 (flat) and B7 (conv) of the paper, T given at C_REF clauses/class.
 BASE = {
     "flat": dict(T_ref=50, s=10.0, weighted=False, boost_true_positive=True),
     "conv": dict(T_ref=5000, s=5.0, weighted=True, boost_true_positive=True, patch_size=10,
                  stride=1, position_encoding=True),
+    # B7 settings over 8 bit planes. max_chunk_elements: fmnist_bitplanes LIBRARY_GAPS FB-1 (the
+    # default budget splits the patch axis and leaves the fused CUDA path); a memory/speed knob only.
+    "conv3": dict(T_ref=5000, s=5.0, weighted=True, boost_true_positive=True, patch_size=10,
+                  stride=1, position_encoding=True, kd=8, planes=8, max_chunk_elements=2**30),
 }
-# D3: early stopping on validation accuracy (D3a).
-EARLY = dict(patience=25, min_delta=0.05, min_epochs=30, max_epochs=500, time_cap_h=24.0)
+# D3: early stopping on validation accuracy (D3a). min_delta=0 (user, 2026-11-10): any new best
+# validation accuracy (>= 1 more correct example) resets the patience; was 0.05 pp.
+EARLY = dict(patience=25, min_delta=0.0, min_epochs=30, max_epochs=500, time_cap_h=24.0)
 N_VAL = 10000
 SPLIT_SEED = 0
 
@@ -67,6 +77,9 @@ def jobs(arm, seeds=SEEDS):
                 for c in CLAUSES:
                     for b in BATCHES:
                         out.append((m, c, b, "scaled", seed, False))
+            for c in GRID_3D["clauses"]:
+                for b in GRID_3D["batches"]:
+                    out.append(("conv3", c, b, "scaled", seed, False))
     elif arm == "control_T":            # D2: T fixed; C = 2k equals the grid cell, so 16k and 64k
         for m in MODELS:
             for c in (16000, 64000):
@@ -85,6 +98,8 @@ def jobs(arm, seeds=SEEDS):
 def load_data(model):
     """Booleanized MNIST, split 50 000 train / 10 000 validation (fixed, stratified, D3a) + test."""
     bench = DATA[model]
+    if model == "conv3":
+        return _load_bitplanes()
     path = PE / ".cache" / "data" / f"{bench}.npz"
     manifest = json.loads((PE / "results" / "data_manifest.json").read_text())
     sha = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -95,6 +110,22 @@ def load_data(model):
     tr_idx, va_idx = split(ytr)
     return dict(x_train=xtr[tr_idx], y_train=ytr[tr_idx], x_val=xtr[va_idx], y_val=ytr[va_idx],
                 x_test=xte, y_test=yte, sha256=sha, bench=bench)
+
+
+def _load_bitplanes():
+    """Raw 8-bit MNIST -> 8 bit planes (N, 8, 28, 28), MSB first, same split as B4/B7."""
+    import torchtsetlin as tt
+    sha = hashlib.sha256(RAW_MNIST.read_bytes()).hexdigest()
+    with np.load(RAW_MNIST) as d:
+        xtr, ytr, xte, yte = d["x_train"], d["y_train"].astype(np.int64), d["x_test"], d["y_test"].astype(np.int64)
+    enc = tt.data.BitPlaneEncoder(8)
+
+    def planes(x):
+        return enc(torch.from_numpy(np.ascontiguousarray(x))[:, None]).numpy().astype(bool)
+    tr_idx, va_idx = split(ytr)
+    xtr = planes(xtr)
+    return dict(x_train=xtr[tr_idx], y_train=ytr[tr_idx], x_val=xtr[va_idx], y_val=ytr[va_idx],
+                x_test=planes(xte), y_test=yte, sha256=sha, bench="BIT8")
 
 
 def split(y):
