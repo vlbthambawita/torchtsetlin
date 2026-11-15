@@ -266,7 +266,7 @@ reports `[k/n] <config> (elapsed, eta)` per measured configuration through the m
 ## Research experiments
 
 `experiments/{convtm,generation,mctm}/` are research programmes built *on top of* the library — not part
-of the package, not covered by `pytest`/`ruff` in CI. Each has a `PLAN.md` (and `convtm` a one-page
+of the package, not covered by `pytest`/`ruff` in CI. Each has a `PLAN.md` (in `torchtsetlin_plans/experiments/<name>/`, see below; `convtm` also has a one-page
 `CHARTER.md`, read first) whose hard rule C1 is that **`src/torchtsetlin/**` is read-only while working
 in an experiment** unless the user explicitly confirms otherwise; library defects found there go into
 that programme's `LIBRARY_GAPS.md` instead of being fixed. Reported numbers must come from the
@@ -276,8 +276,9 @@ programme's `results/*.json` records, never hand-typed. The `.claude/agents/` pe
 ## Plans and ideas
 
 Design plans, proofs and research ideas live in the **private** sibling repository
-`../torchtsetlin_plans` (`plans/`, `ideas/`, `task.md`; moved out on 2026-11-15), not in this
-repo. References written `torchtsetlin_plans/plans/<name>.md` point there. Write new plans there,
+`../torchtsetlin_plans` (`plans/`, `ideas/`, `task.md`, and each programme's
+`experiments/<name>/PLAN.md` plus its idea/proof-plan files at the same paths; moved out on
+2026-11-15), not in this repo. References written `torchtsetlin_plans/plans/<name>.md` point there. Write new plans there,
 and never link to them from the public docs.
 
 ## Docs

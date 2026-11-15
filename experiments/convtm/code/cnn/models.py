@@ -28,7 +28,7 @@ Architecture provenance
                     (patch = the CTM's patch, stride = the CTM's stride), a pointwise
                     non-linearity, a global pool over patch positions, and a linear vote.
                     ``pool='max'`` is exactly the CTM's OR over patches; ``pool='mean'`` is
-                    the counting pool of PLAN.md §9.2(1); ``binary=True`` makes filters and
+                    the counting pool of torchtsetlin_plans/experiments/convtm/PLAN.md §9.2(1); ``binary=True`` makes filters and
                     activations 1-bit, i.e. the closest differentiable analogue of a clause.
                     This arm separates *architecture* from *learning algorithm* and is the
                     cheapest decisive control in the whole programme.
@@ -258,7 +258,7 @@ class CtmShaped(nn.Module):
 
     With ``pool='max'`` and a binary activation this is the CTM up to the learning
     algorithm: the OR over patch positions *is* a max over binary indicators. With
-    ``pool='mean'`` it is the counting pool of PLAN.md §9.2(1). Comparing the two, at equal
+    ``pool='mean'`` it is the counting pool of torchtsetlin_plans/experiments/convtm/PLAN.md §9.2(1). Comparing the two, at equal
     filter count, prices the pooling choice on a substrate where we can train exactly.
     """
 

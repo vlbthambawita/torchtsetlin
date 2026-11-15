@@ -1,6 +1,6 @@
 """The result record: schema, construction, validation, and the one place selection happens.
 
-PLAN.md Section 6.2 defines the schema; this module is its executable form. ``validate()``
+torchtsetlin_plans/experiments/convtm/PLAN.md Section 6.2 defines the schema; this module is its executable form. ``validate()``
 is not a formality -- ``write()`` refuses to write a record that fails it, so an inadmissible
 result never reaches ``results/`` and therefore never reaches the report (constraint C4).
 

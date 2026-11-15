@@ -1,4 +1,4 @@
-"""PLAN_HTM.md E-H3a and E-H3b: job lists, freeze, finals.
+"""torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md E-H3a and E-H3b: job lists, freeze, finals.
 
     python -m experiments.transformer_concepts.code.htm.exp_h3 jobs     # jobs_htm_h3.json (E-H3a + E-H3b search)
     python -m experiments.transformer_concepts.code.htm.exp_h3 freeze   # results/htm/frozen_h3.json

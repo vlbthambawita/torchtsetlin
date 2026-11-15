@@ -11,10 +11,10 @@ Claim tags per CHARTER: `[FACT: source]` citable, `[MEASURED: id]` a record in `
 
 ## 0. The headline finding of this review
 
-**PLAN.md §2's target ladder rests on a number that the primary literature does not support, and it
+**torchtsetlin_plans/experiments/convtm/PLAN.md §2's target ladder rests on a number that the primary literature does not support, and it
 is 14.7 points too low.**
 
-| PLAN.md says | What the primary sources say |
+| torchtsetlin_plans/experiments/convtm/PLAN.md says | What the primary sources say |
 |---|---|
 | "Published CTM best on CIFAR-10 is **60.7%**" (T0/T2) | 60.7% traces to a **2020 University of Agder Master's thesis** on a **modified** CIFAR-10, cited at third hand. `[FACT: Grønningsæter et al. 2024 §V + ref 14]` |
 | "the honest single-model bar" = 60.7% | The honest single-model bar is **75.4%** — 5×5 Colour Thermometers CTM, 64 000 clauses `[FACT: Grønningsæter et al. 2024, Table IV]`; with Drop Clause, **75.1%** at 60 000 clauses `[FACT: Sharma et al. AAAI 2023, Table 2]`; **vanilla CTM alone reaches 69.3%** at that budget `[FACT: Sharma et al. AAAI 2023, Table 2, p=0 column]` |

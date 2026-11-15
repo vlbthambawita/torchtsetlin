@@ -1,4 +1,4 @@
-"""Fixed HTM-style registers as TM features (PLAN_HTM.md E-H3b; THEORY_HTM H3.3-H3.5).
+"""Fixed HTM-style registers as TM features (torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md E-H3b; THEORY_HTM H3.3-H3.5).
 
 All registers are computed per mini-batch on the device from the tokens ``x`` (B, L):
 

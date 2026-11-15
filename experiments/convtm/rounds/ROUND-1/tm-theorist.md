@@ -92,7 +92,7 @@ and the reason this programme has somewhere to go.
   is 1 whether it matches 1 patch or 841, and only `|M_j| = 0` is punished (by Type Ib). The learning
   pressure is therefore exactly "match ≥ 1 patch of as many target images as possible and 0 patches
   of as many negative images as possible", which drives clauses toward knife-edge detectors.
-- `[MEASURED: experiments/mctm, PLAN.md §3.1]` Corroborated: trained layer-1 clauses fire on
+- `[MEASURED: experiments/mctm, torchtsetlin_plans/experiments/convtm/PLAN.md §3.1]` Corroborated: trained layer-1 clauses fire on
   **0.14% of patch positions** — on an 841-position grid, **≈ 1.2 matching patches per firing
   clause**. **The OR in `⋁_b c_j^b` is, in the trained regime, almost never an OR over more than one
   term.**

@@ -1,6 +1,6 @@
 """Implementability smoke (not a result): tiny runs of the baselines and the pair TM.
 
-Checks that every arm of PLAN.md section 3 runs on the unchanged library and measures seconds
+Checks that every arm of torchtsetlin_plans/experiments/transformer_concepts/PLAN.md section 3 runs on the unchanged library and measures seconds
 per epoch for the cost estimate. Writes results/smoke.json. Never reads a test split (there is
 none here: the data are generated).
 

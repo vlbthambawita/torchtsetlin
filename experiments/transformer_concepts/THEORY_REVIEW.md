@@ -53,7 +53,7 @@ $L = 64$ (89 KB packed, but **0.72 MB** as the Boolean input tensor the library 
 1.45 MB as literals) and $F = 561$ at $L = 256$ (**37 MB** as Boolean, not 10 MB). The relevant
 number for the harness is the dataset: 20,000 examples at $L = 64$ are 14.5 GB as Boolean pair
 columns. Consequence: pair columns must be gathered per mini-batch, never pre-built (D8 in
-`DECISIONS.md`, §8 of `PLAN.md`). A table with the recomputed values replaces the sentence.
+`DECISIONS.md`, §8 of `torchtsetlin_plans/experiments/transformer_concepts/PLAN.md`). A table with the recomputed values replaces the sentence.
 
 ### 4. D.1 — flat-TM clause counts were mislabelled
 

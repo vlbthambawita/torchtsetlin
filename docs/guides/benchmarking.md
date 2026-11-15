@@ -51,8 +51,8 @@ before trusting a run on a new machine.
 
 ### Benchmarks and their published hyperparameters
 
-`C` is clauses **per class** (pyTsetlinMachine's convention). Every value comes from the source
-named in `PLAN.md` §3; nothing is tuned.
+`C` is clauses **per class** (pyTsetlinMachine's convention). Every value comes from the
+benchmark's paper or its reference code; nothing is tuned.
 
 | ID | Model | C | T | s | Boost TP | Weighted | Other | Epochs | Runs |
 |---|---|---|---|---|---|---|---|---|---|
@@ -118,7 +118,7 @@ is installed and called correctly:
 | Test | every cell | the upstream held-out test set, predicted after **every** epoch | the **final-epoch** value is the result; `best_epoch_logged_only` is kept for diagnosis |
 
 A failed reproduction does not stop the comparison: the failure and its likely cause are
-reported under *Deviations* in `PLAN.md`.
+reported as a deviation.
 
 ## 4. What to measure, and how
 

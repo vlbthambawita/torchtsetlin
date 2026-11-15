@@ -1,6 +1,6 @@
 """Stage A / gate G2: can a block codebook represent 12-lead ECG well enough to generate from?
 
-Gate: per-lead held-out SNR >= 20 dB and seam ratio <= 2 (PLAN.md sec.3.3).
+Gate: per-lead held-out SNR >= 20 dB and seam ratio <= 2 (torchtsetlin_plans/experiments/generation/PLAN.md sec.3.3).
 No Tsetlin machine is trained here — reconstruction bounds everything downstream, so it is
 resolved first and cheaply.
 """

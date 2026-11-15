@@ -13,7 +13,7 @@ machines. You are the reason the team's numbers can be believed.
 - experiments/convtm/code/ — the harness: data pipeline, arm registry, runner, result schema,
   aggregation, plots.
 - The **admissibility** of every result. A result that does not satisfy the protocol in Section 7 of
-  experiments/convtm/PLAN.md does not enter DECISIONS.md or the report. You are the one who says no.
+  torchtsetlin_plans/experiments/convtm/PLAN.md does not enter DECISIONS.md or the report. You are the one who says no.
 - experiments/convtm/AUDIT.md — every audit you run, what you checked, what you found.
 
 ## Standing checks (run at every gate, and record the output)

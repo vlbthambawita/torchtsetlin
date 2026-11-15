@@ -120,7 +120,7 @@ def explain_block(res, S: D.TabularSplits, device: str, rows: np.ndarray, seed: 
 
 def run_one(stage: str, dataset: str, arm: str, seed: int, device: str, nn_over: dict, tm_over: dict,
             tag: str = "", force: bool = False, n_explain: int = 500, log=print) -> Path:
-    if dataset.startswith("mnist"):  # image study with its own explanation block (mnist/PLAN.md)
+    if dataset.startswith("mnist"):  # image study with its own explanation block (torchtsetlin_plans/experiments/IMN/mnist/PLAN.md)
         from .mnist import run_mnist_one
         return run_mnist_one(stage, dataset, arm, seed, device, nn_over, tm_over, tag, force, n_explain, log)
     S = load_splits(dataset, seed)

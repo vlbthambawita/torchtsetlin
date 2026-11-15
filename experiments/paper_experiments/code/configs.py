@@ -1,4 +1,4 @@
-"""Frozen per-cell configurations (config_map.md §(b); decisions in PLAN.md §8).
+"""Frozen per-cell configurations (config_map.md §(b); decisions in torchtsetlin_plans/experiments/paper_experiments/PLAN.md §8).
 
 `cell_config(bench, lib, mode)` returns everything an adapter needs: the task, the epoch count,
 the library-neutral model description and the library-specific constructor arguments. Nothing

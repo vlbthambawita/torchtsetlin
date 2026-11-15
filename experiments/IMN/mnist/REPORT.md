@@ -2,7 +2,7 @@
 
 # IMN and IMN-TM on MNIST: accuracy and explainability
 
-*IMN × TM research programme, `experiments/IMN/mnist`. Plan: [`PLAN.md`](PLAN.md); decisions MD1–MD6 in
+*IMN × TM research programme, `experiments/IMN/mnist`. Plan: `torchtsetlin_plans/experiments/IMN/mnist/PLAN.md`; decisions MD1–MD6 in
 [`../DECISIONS.md`](../DECISIONS.md). Every number below is filled in from `results/mnist*/` by
 `python -m experiments.IMN.code.mnist_report` (rule C2).*
 

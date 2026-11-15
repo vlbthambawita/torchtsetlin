@@ -2,7 +2,7 @@
 
 **Question.** Can a block codebook represent 12-lead ECG well enough that a Tsetlin machine
 generating *token sequences* could produce usable waveforms? Reconstruction bounds everything
-downstream, so `PLAN.md` §3.3 resolves it before any TM is trained.
+downstream, so `torchtsetlin_plans/experiments/generation/PLAN.md` §3.3 resolves it before any TM is trained.
 
 **Data.** PTB-XL v1.0.1 at `/work/vajira/DATA/EXG_PTB_XL/physionet/files/ptb-xl/1_0_1`.
 21 837 records / 18 885 patients, 10 s at 500 Hz, 12 leads in mV. Official `strat_fold`:
@@ -114,7 +114,7 @@ held-out ECG scores on the same statistic:
 
 The metric divides a *mean* at block joins by a *median* within blocks, and |Δx| on ECG is heavy
 tailed (mean/median = 4.60). **Its floor is ~4.6, not 1.0, so the ≤ 2 threshold was unachievable
-by real ECG itself.** I set that threshold when writing `PLAN.md` without computing the null.
+by real ECG itself.** I set that threshold when writing `torchtsetlin_plans/experiments/generation/PLAN.md` without computing the null.
 The metric now reports `seam_ratio_real` and `seam_excess = seam_hat / seam_real` alongside, so
 it is self-normalising; 1.0 means block joins are statistically indistinguishable from real
 signal. This is the third time in this programme that a pre-registered number needed checking

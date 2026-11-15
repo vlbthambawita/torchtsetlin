@@ -24,7 +24,7 @@ RESULTS = EXP_DIR / "results"
 
 ARM_ORDER = ["lr", "dt", "rf", "gbdt", "tabresnet", "imn", "tm", "clause_lr", "imn_tm", "imn_tm_rand",
              "imn_hybrid", "tm_gated"]
-# Preregistered comparisons (PLAN.md section 4): (arm A, arm B, question id)
+# Preregistered comparisons (torchtsetlin_plans/experiments/IMN/PLAN.md section 4): (arm A, arm B, question id)
 PAIRS: List[Tuple[str, str, str]] = [
     ("imn_tm", "tm", "Q1"), ("imn_tm", "imn", "Q2"), ("imn_hybrid", "imn", "Q3"),
     ("imn_hybrid", "imn_tm", "Q3"), ("tm_gated", "lr", "Q4"), ("tm_gated", "tm", "Q4"),

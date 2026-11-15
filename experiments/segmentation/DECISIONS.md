@@ -4,7 +4,7 @@ Initial state, 2026-10-13: repo HEAD `f5168bdf656d597461a5ef14f463afd1eee90eeb`,
 `src/torchtsetlin` tree hash `453d2e8bb264fb6b9d0bdca1c52f248ad6a663351cdbc04878bbc240e318e928`
 (`code/record.py::src_tree_hash`, recorded in every run's `env.src_tree_sha256`).
 
-## D-001 (2026-10-13) — compressed execution of PLAN.md
+## D-001 (2026-10-13) — compressed execution of torchtsetlin_plans/experiments/segmentation/PLAN.md
 
 The user asked for the plan to be executed and reported in one working session. PLAN §8
 budgets 112 device-hours over 4–6 weeks. This run keeps the plan's structure (gates G0–G4,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reproduce every number of experiments/paper_experiments (PLAN.md §6).
+# Reproduce every number of experiments/paper_experiments (torchtsetlin_plans/experiments/paper_experiments/PLAN.md §6).
 #
 #   ./reproduce.sh                  # everything, in order (about 3 days on an RTX 3090 + 3080)
 #   ./reproduce.sh setup            # Phase 0: one virtualenv per external library

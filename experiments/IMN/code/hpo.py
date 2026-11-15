@@ -1,4 +1,4 @@
-"""Phase 3: equal-budget random-search HPO (PLAN.md section 6, DECISIONS.md D11/D20-D22).
+"""Phase 3: equal-budget random-search HPO (torchtsetlin_plans/experiments/IMN/PLAN.md section 6, DECISIONS.md D11/D20-D22).
 
     python -m experiments.IMN.code.hpo trials --name hpo_a --arms lr dt rf gbdt tm tabresnet imn
     python -m experiments.IMN.code.hpo trials --name hpo_b --arms clause_lr imn_tm imn_tm_rand imn_hybrid tm_gated

@@ -1,1 +1,0 @@
-I want to test and do experiments with positional encoding and attension mechanism using Key , query and value concept to Tsetline machine. Make a plan and write a mathametical proof, how it works into a .md file. 

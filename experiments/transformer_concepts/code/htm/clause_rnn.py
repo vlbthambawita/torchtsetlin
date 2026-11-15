@@ -1,4 +1,4 @@
-"""PLAN_HTM.md E-H3c: a clause RNN whose state is learned with local, self-supervised targets.
+"""torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md E-H3c: a clause RNN whose state is learned with local, self-supervised targets.
 
 State h_t in {0,1}^m = outputs of a library ``CoalescedTsetlinMachine(multi_label=True)`` that
 reads [e(x_t) | (e(x_{t-1})) | h_{t-1}] at every step; no gradients, no credit across time.

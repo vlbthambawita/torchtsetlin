@@ -17,7 +17,7 @@ Design decisions worth knowing about
   `data.load_float(augment=True)` hands back a callable rather than pre-augmented tensors;
   the arm calls it on each batch, on the batch's own device. `data._augment_batch` is
   channel-agnostic, so `cnn-boolean-aug` augments the *Boolean planes* with exactly the
-  transformation the float arms get -- which is also precisely the operation PLAN.md
+  transformation the float arms get -- which is also precisely the operation torchtsetlin_plans/experiments/convtm/PLAN.md
   §9.2(5) proposes for the TM side. One implementation, three families, no drift.
 * **Selection is on validation.** The arm keeps the best-val weights in CPU memory and
   `restore_selected()` puts them back before the single test evaluation. The arm never

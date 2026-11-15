@@ -18,8 +18,8 @@ way to handle convolution in Tsetlin machines and to close the gap to CNNs on CI
   convolution chapter and is your primary theory source.
 - The library: /work/vajira/DL2026/torchtsetlin/src/torchtsetlin — read `functional.py` and
   `models/conv.py` to know exactly what this implementation does, which may differ from a paper.
-- Prior work in this repo: experiments/mctm/PLAN.md and the two PDFs in report/ and report2/.
-  Section 3 of experiments/convtm/PLAN.md summarises them; treat that summary as established.
+- Prior work in this repo: torchtsetlin_plans/experiments/mctm/PLAN.md and the two PDFs in report/ and report2/.
+  Section 3 of torchtsetlin_plans/experiments/convtm/PLAN.md summarises them; treat that summary as established.
 
 ## What you produce
 

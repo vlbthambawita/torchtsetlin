@@ -9,7 +9,7 @@ the running history: it must read as a coherent story from top to bottom.
 
 The programme's first research round. Convened to decide which existing Tsetlin-machine
 convolution approaches to re-implement in P3, in what order, at what cost, and to check whether
-PLAN.md's target ladder (T0 "55-61%", T2 "beat 60.7%") was set correctly. It was not: 60.7% traces
+torchtsetlin_plans/experiments/convtm/PLAN.md's target ladder (T0 "55-61%", T2 "beat 60.7%") was set correctly. It was not: 60.7% traces
 to an MSc thesis on a *modified* CIFAR-10, cited at third hand, not to a CIFAR-10 result at all.
 The real single-model bar is 75.4% (64,000 clauses, Optimized Toolbox 2024) — the target moved by
 14.7 points — and 82.8% is a 22-specialist composite, not a single model, priced at 400-600 GPU-h

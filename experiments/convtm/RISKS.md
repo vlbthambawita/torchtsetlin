@@ -1,6 +1,6 @@
 # Live risk register
 
-Seeded from Section 13 of PLAN.md. Updated whenever a risk fires, is retired, or a new one appears.
+Seeded from Section 13 of torchtsetlin_plans/experiments/convtm/PLAN.md. Updated whenever a risk fires, is retired, or a new one appears.
 
 | # | Risk | Likelihood | Status | Mitigation / stop condition |
 |---|---|---|---|---|

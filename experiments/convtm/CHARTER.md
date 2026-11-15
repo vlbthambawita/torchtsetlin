@@ -1,6 +1,6 @@
 # Team charter — read this first, every time
 
-One page. The full contract is `PLAN.md`; this is what you must not get wrong.
+One page. The full contract is `torchtsetlin_plans/experiments/convtm/PLAN.md`; this is what you must not get wrong.
 
 ## The six hard constraints
 
@@ -23,7 +23,7 @@ One page. The full contract is `PLAN.md`; this is what you must not get wrong.
 
 Untagged text is read as `[HYPOTHESIS]`. A decision record with no `[MEASURED]` entry is rejected.
 
-## Experimental protocol (Section 7 of PLAN.md, compressed)
+## Experimental protocol (Section 7 of torchtsetlin_plans/experiments/convtm/PLAN.md, compressed)
 
 - **Split**: CIFAR-10, fixed stratified **45 000 train / 5 000 val**, `split_seed=1234`, identical for
   every arm, TM and CNN alike. Official 10 000 test.

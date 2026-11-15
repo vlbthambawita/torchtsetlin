@@ -1,7 +1,7 @@
 # TM query-key attention on MNIST
 
-Tests the spec [tm-query-key-attention-mnist-implementation-plan.md](tm-query-key-attention-mnist-implementation-plan.md)
-against a flat TM and a convolutional TM. Plan: [PLAN.md](PLAN.md). Deviations: [DECISIONS.md](DECISIONS.md).
+Tests the spec `torchtsetlin_plans/experiments/transformer_like/tm-query-key-attention-mnist-implementation-plan.md`
+against a flat TM and a convolutional TM. Plan: `torchtsetlin_plans/experiments/transformer_like/PLAN.md`. Deviations: [DECISIONS.md](DECISIONS.md).
 Results: [report/REPORT.md](report/REPORT.md) (generated from `results/**/*.json`).
 
 Run from the repository root (`src/torchtsetlin` is read-only here):

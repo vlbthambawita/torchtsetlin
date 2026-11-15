@@ -1,8 +1,8 @@
 # Hierarchical Temporal Memory ideas in Tsetlin machines: theory for H1–H3
 
 Companion to `THEORY.md` (notation §0, rectangle property, pair clause §B.1, drift formula §C2).
-Plan: `PLAN_HTM.md`. Status labels as in `THEORY.md`: **[proved]**, **[checked]** (brute force,
-to be run as X13–X16 of `PLAN_HTM.md`), **[sketch]**, **[conjecture]**, **[empirical]**.
+Plan: `torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md`. Status labels as in `THEORY.md`: **[proved]**, **[checked]** (brute force,
+to be run as X13–X16 of `torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md`), **[sketch]**, **[conjecture]**, **[empirical]**.
 
 **Changelog.** 2026-11-09: first version (design only). Same day, after X13–X16: the $w \ge 2$
 sketch of H3.1 was false (counterexample from X13), now Conjecture H3.1b; X13–X16 otherwise pass.

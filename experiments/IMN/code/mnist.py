@@ -1,4 +1,4 @@
-"""MNIST study (``mnist/PLAN.md``): accuracy and explainability of IMN, IMN-TM and references.
+"""MNIST study (``torchtsetlin_plans/experiments/IMN/mnist/PLAN.md``): accuracy and explainability of IMN, IMN-TM and references.
 
 Datasets (``--dataset``):
 

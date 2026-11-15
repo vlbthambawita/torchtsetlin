@@ -5,7 +5,7 @@ what order, at what cost — and was the programme's target ladder set correctly
 
 ## What happened
 
-- The team checked the number PLAN.md's targets were built on (60.7%) against the primary sources
+- The team checked the number torchtsetlin_plans/experiments/convtm/PLAN.md's targets were built on (60.7%) against the primary sources
   and found it does not describe a CIFAR-10 result.
 - Both specialists (theorist, DL expert) each pre-registered a falsifiable prediction on the
   round's two hardest questions (does a counting pool help; is the TM capacity-limited or

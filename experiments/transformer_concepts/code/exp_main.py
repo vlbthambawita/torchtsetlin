@@ -1,4 +1,4 @@
-"""PROOF_PLAN Part III: the main comparison (PLAN.md section 3-5), search -> freeze -> finals.
+"""PROOF_PLAN Part III: the main comparison (torchtsetlin_plans/experiments/transformer_concepts/PLAN.md section 3-5), search -> freeze -> finals.
 
     python -m experiments.transformer_concepts.code.exp_main search   # jobs_search.json
     python -m experiments.transformer_concepts.code.exp_main freeze   # results/frozen_experiment.json

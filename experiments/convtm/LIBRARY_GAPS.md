@@ -23,7 +23,7 @@ re-checked against `src/` as of **2026-10-17 (0.3.1)** and each now carries a st
 | LG-011 | Conv `_encode` override cannot wrap the parent's | OPEN | scope grew: `_Conv3dMixin._encode` duplicates the check |
 
 **Numbering** starts at LG-003. No LG-001 or LG-002 was ever filed in this file (checked against its
-git history); the first entry took its number from the `PLAN.md` §12 template. They are not missing.
+git history); the first entry took its number from the `torchtsetlin_plans/experiments/convtm/PLAN.md` §12 template. They are not missing.
 
 **Recommended order once C1 is lifted** — the first five are small and additive:
 
@@ -35,7 +35,7 @@ git history); the first entry took its number from the `PLAN.md` §12 template. 
 
 LG-006, LG-008 and LG-009 are features rather than fixes and should wait for a measured need.
 
-**Stale cross-references (orchestrator's to fix):** `PLAN.md` §12 still uses LG-003's original
+**Stale cross-references (orchestrator's to fix):** `torchtsetlin_plans/experiments/convtm/PLAN.md` §12 still uses LG-003's original
 "median 75" claim as its template example, and `CHARTER.md` silent-failure mode 2 describes the
 soft-cap overshoot. Both predate the 0.3.0 hard cap.
 

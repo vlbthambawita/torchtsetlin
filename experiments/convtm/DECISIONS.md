@@ -28,9 +28,9 @@ Template:
 ## DR-000 — Programme configuration accepted; P0 and P1 launched
 - **Date**: 2026-09-20
 - **Round / phase**: Gate 0 → P0/P1
-- **Question**: Do we run the programme as specified in PLAN.md, and with what targets, budget and autonomy?
+- **Question**: Do we run the programme as specified in torchtsetlin_plans/experiments/convtm/PLAN.md, and with what targets, budget and autonomy?
 - **Decision**: Yes, with the plan's defaults, confirmed by the user:
-  - target ladder as in PLAN.md §2 — **T2 (beat 60.7%, the single-model TM SOTA) is the primary
+  - target ladder as in torchtsetlin_plans/experiments/convtm/PLAN.md §2 — **T2 (beat 60.7%, the single-model TM SOTA) is the primary
     objective**; T3 (82.8%) and T4 (within 5 points of our own small CNN) are stretch;
   - compute budget 220–300 GPU-hours across the two GPUs;
   - P3 shortlist target ~12 arms, to be fixed by DR-001;
@@ -38,19 +38,19 @@ Template:
     `experiments/mctm`'s `best_test_acc` numbers; prior arms reused as baselines are re-run;
   - autonomy: proceed G0→G7, report at every gate, stop for user approval at **G4** (limitations)
     and before **P6**'s large runs.
-  - P0 and P1 run **concurrently** rather than in sequence as PLAN.md §14.3 had them — P1 is pure
+  - P0 and P1 run **concurrently** rather than in sequence as torchtsetlin_plans/experiments/convtm/PLAN.md §14.3 had them — P1 is pure
     reading and does not depend on the harness. Saves roughly a day of wall-clock.
 - **Evidence**: this is a process decision, not a method decision, so constraint C3 does not apply.
   No method is selected here. The one substantive input is
   [MEASURED: experiments/mctm/results/*] — the prior programme's 99 result files, which set the
-  starting point recorded in PLAN.md §3 and are the reason greedy supervised stacking is not on the
+  starting point recorded in torchtsetlin_plans/experiments/convtm/PLAN.md §3 and are the reason greedy supervised stacking is not on the
   P3 list.
 - **Dissent**: none recorded; the team had not yet been convened.
 - **Falsifier**: if P0's measured throughput shows the ~12-arm P3 shortlist cannot fit in 300
   GPU-hours, the shortlist shrinks and DR-001 records the cut.
 - **Supersedes / Superseded by**: —
 
-### Deviation from PLAN.md worth recording
+### Deviation from torchtsetlin_plans/experiments/convtm/PLAN.md worth recording
 `.claude/agents/*.md` are not loaded into an already-running Claude Code session. The five agent
 files are written and will register on restart; for this session the specialists run as
 general-purpose agents whose first instruction is to read their own role file. Same role definition,

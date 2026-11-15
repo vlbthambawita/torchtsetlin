@@ -1,4 +1,4 @@
-# config_map.md: Phase 0 configuration audit (PLAN.md section 4.1)
+# config_map.md: Phase 0 configuration audit (torchtsetlin_plans/experiments/paper_experiments/PLAN.md section 4.1)
 
 **Status: DRAFT 2026-10-22, written by the research engineer. It must be reviewed by the user before any measured run (PLAN section 6, Phase 0 gate).**
 Items marked **[DECIDE]** need a user decision. Every other item is frozen.

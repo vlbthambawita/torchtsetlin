@@ -1,9 +1,9 @@
 # Decisions and deviations (rule C4)
 
-Spec: `boolean-gated-linear-tsetlin-implementation.md` (frozen). Plan: `PLAN.md`.
+Spec: `boolean-gated-linear-tsetlin-implementation.md` (frozen). Plan: `torchtsetlin_plans/experiments/linearModel/PLAN.md`.
 Library revision at start: `3cede48c9e7b9761e30976ea073c6c5aecd2be15` (`torchtsetlin` 0.3.1),
 2026-10-15: HEAD moved to `e805000` mid-session (commit by the user; `src/` unchanged, `git diff --stat src/` empty).
-`git diff --stat src/` empty. (PLAN.md was written against `06a2ce5`; the commits since touch
+`git diff --stat src/` empty. (torchtsetlin_plans/experiments/linearModel/PLAN.md was written against `06a2ce5`; the commits since touch
 only `experiments/IMN`, not `src/`.)
 
 ## 2026-10-15 — day 1 (PLAN §2.2)

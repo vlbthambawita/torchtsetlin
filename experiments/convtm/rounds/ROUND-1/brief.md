@@ -14,9 +14,9 @@ Everything after this round needs `[MEASURED]` evidence.
 
 ## Inputs
 
-- `PLAN.md` (the contract), `CHARTER.md` (the rules card)
+- `torchtsetlin_plans/experiments/convtm/PLAN.md` (the contract), `CHARTER.md` (the rules card)
 - `source_documents/papers/**` (~45 PDFs), `source_documents/book_chapters/**`
-- `experiments/mctm/` — this repo's prior programme, summarised in PLAN.md Section 3
+- `experiments/mctm/` — this repo's prior programme, summarised in torchtsetlin_plans/experiments/convtm/PLAN.md Section 3
 - `src/torchtsetlin/` — what the library can express today (READ-ONLY)
 - `code/CONTRACT.md` — the harness interface
 
@@ -28,7 +28,7 @@ Everything after this round needs `[MEASURED]` evidence.
 | dl-expert | `LITERATURE_CNN.md`, `MECHANISMS.md`, `rounds/ROUND-1/dl-expert.md` | see agent definition |
 | research-engineer | `rounds/ROUND-1/research-engineer.md` | feasibility: for each proposed arm, can the harness express it, what does it cost, what would have to be written |
 
-Position papers use the fixed format in PLAN.md Section 5.1 (answer in one sentence; claims with
+Position papers use the fixed format in torchtsetlin_plans/experiments/convtm/PLAN.md Section 5.1 (answer in one sentence; claims with
 tags; what I need measured, ranked with cost; what would change my mind).
 
 ## What the round must produce

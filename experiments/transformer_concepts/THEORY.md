@@ -6,7 +6,7 @@ brute force (`code/verify_theory.py` → `results/theory_checks.json`, or a unit
 **[conjecture]** believed, not proved; **[empirical]** only an experiment can answer it.
 
 **Changelog.** 2026-11-08: first version; review (`THEORY_REVIEW.md`). 2026-11-08/09 overnight
-(`PROOF_PLAN.md`, evidence in `REPORT.md`): new Proposition A3b and Proposition D1, new Conjecture
+(`torchtsetlin_plans/experiments/transformer_concepts/PROOF_PLAN.md`, evidence in `REPORT.md`): new Proposition A3b and Proposition D1, new Conjecture
 B7.3, B6.2 shown tight, the C2 drift formula corrected to the library's `boost_true_positive`
 default, and the C2 dilution prediction tested (direction confirmed, magnitude partly).
 
@@ -490,7 +490,7 @@ the convolutional TM, so none transfers to the pair TM. The heuristic that does 
   explains the first bullet: an offset-specific literal such as $\lnot[j - i > 3]$ is true on the
   drawn pair of roughly a $1/(L-1)$ share of T1 positives, so it is kept iff $s \gtrsim L - 1$.
   Large $s$ is thus needed to *find* the key literal and at the same time lets the clause
-  over-specialise; the search in `PLAN.md` §4 is designed around this trade-off.
+  over-specialise; the search in `torchtsetlin_plans/experiments/transformer_concepts/PLAN.md` §4 is designed around this trade-off.
 
   *Test (D2, 2026-11-08 night; `REPORT.md` Part II).* With the default boost the prediction is
   $s > s_\text{pred} = 1/\rho - 1$, $\rho = 1/L + (1 - 1/L)\pi$. **Direction confirmed; magnitude
@@ -628,6 +628,6 @@ advantage here is sharing across slots, not clause count.
 **Novelty.** No paper in `source_documents/papers/` or `benchmarks/literature/` defines attention
 for TMs. The closest prior work is the graph TM (message passing over given edges) and
 `experiments/transformer_like/` (this repository, negative on MNIST). That does not rule out work
-outside the local collection; a literature search is task P0.2 of `PLAN.md`. The pair-token
+outside the local collection; a literature search is task P0.2 of `torchtsetlin_plans/experiments/transformer_concepts/PLAN.md`. The pair-token
 construction is a direct consequence of the convolutional TM and should be presented as such,
 not as a new learning algorithm.

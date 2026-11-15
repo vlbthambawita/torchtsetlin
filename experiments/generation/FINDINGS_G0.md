@@ -204,7 +204,7 @@ Finding 4 and multiple seeds — treat it as an optimisation to be re-validated,
 
 **Cost consequence for Phases 1 and 2.** At batch 50 the harness sustains ~570 `update()` calls/s
 here, i.e. ~29 k examples/s. MNIST-AR at all 784 positions per image is 47 M examples/epoch →
-~27 min/epoch. This is why `PLAN.md` §3.2 samples ~100 positions per image per epoch (6 M examples →
+~27 min/epoch. This is why `torchtsetlin_plans/experiments/generation/PLAN.md` §3.2 samples ~100 positions per image per epoch (6 M examples →
 ~3.5 min/epoch); that decision is now forced rather than merely prudent. Sequential mode is not an
 escape: 500 s for 500 k examples (40× batch-50) for mae 0.081 versus batch-50's 0.096.
 

@@ -1,4 +1,4 @@
-"""Part I of PROOF_PLAN.md: exact verification of the formal claims of THEORY.md.
+"""Part I of torchtsetlin_plans/experiments/transformer_concepts/PROOF_PLAN.md: exact verification of the formal claims of THEORY.md.
 
 Each check X1..X11 writes ``results/exact/<id>.json`` with ``pass`` and the evidence. Checks
 that involve a model load hand-built clauses into real torchtsetlin models (``code/hand.py``)

@@ -1,4 +1,4 @@
-"""PLAN_HTM.md Part H1: tolerant clauses (E-H1a equivalence, E-H1b noise, E-H1c CIFAR-10 flat).
+"""torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md Part H1: tolerant clauses (E-H1a equivalence, E-H1b noise, E-H1c CIFAR-10 flat).
 
     python -m experiments.transformer_concepts.code.htm.exp_h1 jobs        # jobs_htm_h1a.json, jobs_htm_h1b_search.json
     python -m experiments.transformer_concepts.code.htm.exp_h1 freeze      # results/htm/frozen_h1b.json

@@ -101,7 +101,7 @@ Throughout, "presences" means the values `(C_1(x),…,C_C(x))` for a *fixed* cla
 
 * **"A present AND B absent."** Give the clause detecting A weight `+1` and the clause detecting B
   weight `−1` (a negative-polarity clause, or a negative coalesced weight). The class score is
-  `1_A − 1_B`, which separates. ✅ `[FACT: this follows from §2; matches PLAN.md §3.1]`
+  `1_A − 1_B`, which separates. ✅ `[FACT: this follows from §2; matches torchtsetlin_plans/experiments/convtm/PLAN.md §3.1]`
 * **Any threshold over presences**: "at least 3 of {A,…,E} occur" is `Σ 1_• ≥ 3`. ✅
 * **Any conjunction or disjunction of presences**, including position-tagged ones: "A in the top
   half AND B in the bottom-right" is `1_{A∈R1} + 1_{B∈R2} ≥ 2`. ✅ — because each clause carries its
@@ -132,7 +132,7 @@ this**, because enlarging the clause set only adds coordinates that are themselv
 conjunctions over single patches, and any such coordinate is a function of `(1_A, 1_B)` only through
 monotone existential facts; the XOR of two independent existentials is not among them.
 `[FACT: derivation]` `[MEASURED: experiments/mctm — an XOR-of-presences task is capped at 75% for
-one layer, and reaches 87.9% with an unsupervised patch-autoencoder layer 1; PLAN.md §3.1]`
+one layer, and reaches 87.9% with an unsupervised patch-autoencoder layer 1; torchtsetlin_plans/experiments/convtm/PLAN.md §3.1]`
 
 **Escape hatch, and the only one:** enlarge the window until A and B co-occur inside it, so that
 "A and B" becomes a single conjunction `π_j` over one patch. That is why receptive field (§5) is the
@@ -156,7 +156,7 @@ again a *single-patch* existential. **The only representable route is, again, to
 window.** `[FACT: derivation]`
 
 **Measured corroboration**: `[MEASURED: experiments/mctm]` a proximity task on which one layer is at
-chance *by construction* reaches 99.9% with an unsupervised patch-autoencoder layer 1 (PLAN.md §3.1).
+chance *by construction* reaches 99.9% with an unsupervised patch-autoencoder layer 1 (torchtsetlin_plans/experiments/convtm/PLAN.md §3.1).
 
 ### 3.5 Corollary 3 — the layer is blind to object count
 
@@ -335,7 +335,7 @@ Let `M_j(x) = { b : c_j^b(x) = 1 }` and let the update patch be `b* ~ Uniform(M_
    So the *mode* is 1 and a third of firing events have nothing to count — point 2 is visible — but
    **64.6% of firing events have `|M| ≥ 2` and 30.3% have `|M| ≥ 5`**, and the mean is tail-dominated.
    The earlier claim that the OR is "almost never an OR over more than one term" is **withdrawn**.
-   The older `[MEASURED: experiments/mctm; PLAN.md §3.1]` 0.14% per-patch figure is not in conflict:
+   The older `[MEASURED: experiments/mctm; torchtsetlin_plans/experiments/convtm/PLAN.md §3.1]` 0.14% per-patch figure is not in conflict:
    it is a *per-patch* firing rate for layer-1 clauses in a greedily trained stack, a different
    quantity on a different model.
 4. **Restated prediction.** `[HYPOTHESIS]` The information a count pool adds to the vote is small —

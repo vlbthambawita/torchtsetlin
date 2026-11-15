@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Phase 0: one isolated virtualenv per external TM library (PLAN.md §2, rule P7).
+# Phase 0: one isolated virtualenv per external TM library (torchtsetlin_plans/experiments/paper_experiments/PLAN.md §2, rule P7).
 #   code/setup_envs.sh [lib ...]      libs: pytm pytmpar pytmcuda tmu gt   (default: all)
 # PyCUDA venvs (pytmcuda, tmu) must run with LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libstdc++.so.6:
 # pycuda builds against the system libstdc++, the conda python would load an older one.

@@ -205,7 +205,7 @@ off the encoding. Assert it.
 
 1. **Baselines** (E5, P6). Without them neither result can be interpreted.
 2. **Named gates.** Both list metrics to "report". Neither states a number that would stop the work.
-   Phase gates are in `PLAN.md` §3.
+   Phase gates are in `torchtsetlin_plans/experiments/generation/PLAN.md` §3.
 3. **Compute budget.** Both are silent; §5 shows both fit comfortably.
 4. **Seeds.** Single-seed generative results are not evidence — `experiments/convtm` already
    established a ±0.6 pp seed band on a *classification* metric; sampling adds a second noise source.

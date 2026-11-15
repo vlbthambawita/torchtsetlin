@@ -1,5 +1,5 @@
 """Comparison table of the Graph TM reproduction, generated from results/graphtm/*.json only
-(PLAN.md rule P2). Writes results/graphtm/REPORT.md and prints it.
+(torchtsetlin_plans/experiments/paper_experiments/PLAN.md rule P2). Writes results/graphtm/REPORT.md and prints it.
 
 Statistic as in the paper (Sec. 3.2): mean test accuracy over the final 5 of 30 epochs; the
 paper's +- is over those epochs, so ours is too ("last-5 sd"). Across seeds we report the mean

@@ -50,7 +50,7 @@ def write(rec, path) -> None      # validates against the schema; refuses to wri
 def validate(rec) -> list[str]    # [] == valid
 ```
 
-Schema: Section 6.2 of PLAN.md. Mandatory keys — `arm, family, paper, seed, argv, git_sha, env,
+Schema: Section 6.2 of torchtsetlin_plans/experiments/convtm/PLAN.md. Mandatory keys — `arm, family, paper, seed, argv, git_sha, env,
 started, wall_s, data, hp, capacity, curve, selected_epoch, val_acc, test_acc, test_acc_per_class,
 test_predictions_sha, diagnostics, notes`.
 

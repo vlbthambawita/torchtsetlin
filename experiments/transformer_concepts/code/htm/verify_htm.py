@@ -1,4 +1,4 @@
-"""Exact checks X13-X16 for THEORY_HTM.md (PLAN_HTM.md Part 0). CPU only.
+"""Exact checks X13-X16 for THEORY_HTM.md (torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md Part 0). CPU only.
 
     python -m experiments.transformer_concepts.code.htm.verify_htm [X13 X14 X15 X16]
 

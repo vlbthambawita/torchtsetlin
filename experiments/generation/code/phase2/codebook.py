@@ -1,7 +1,7 @@
 """Stage A: block codebooks for 12-lead ECG, and the metrics that gate G2.
 
 The generator cannot recover anything the codebook discards, so reconstruction quality is
-measured FIRST and bounds everything downstream (PLAN.md §3.3 Stage A).
+measured FIRST and bounds everything downstream (torchtsetlin_plans/experiments/generation/PLAN.md §3.3 Stage A).
 """
 from __future__ import annotations
 
@@ -148,7 +148,7 @@ def seam_ratio(xh, B):
     NOTE: this divides a MEAN at joins by a MEDIAN within blocks, and |dx| on ECG is heavy
     tailed, so the statistic's floor is mean/median ~ 4.6 on real data, NOT 1.0. Always read it
     against `seam_ratio` of the real signal (see `evaluate`, which reports the normalised
-    version). The original <=2 gate in PLAN.md was set without computing this null and is not
+    version). The original <=2 gate in torchtsetlin_plans/experiments/generation/PLAN.md was set without computing this null and is not
     achievable by real ECG either.
     """
     d = np.abs(np.diff(xh, axis=-1))

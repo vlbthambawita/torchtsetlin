@@ -239,7 +239,7 @@ Mathisen & Smørvik MSc thesis (cited at third hand, unreachable).
 `calib_zratio5x5_gpu0.json`; `results/lg003_budget_sweep.json` and `code/repro/lg003.py`;
 `results/ctm-small-budget32_seed{0,1,2}.json`; the `ctm-small-chunk29` and `ctm-small-protocol`
 waves (`AUDIT.md` A19); `jobs/r1_protocol_penalty.txt`; `screen/cnn-ctmshape-max_seed0.json` and
-`screen/cnn-ctmshape-sum_seed0.json`. Prior-programme evidence: `experiments/mctm/PLAN.md §3.1`
+`screen/cnn-ctmshape-sum_seed0.json`. Prior-programme evidence: `torchtsetlin_plans/experiments/mctm/PLAN.md §3.1`
 (firing-rate calibration 15.4%→42.6%; credit-propagation failure).
 
 ## The decision taken

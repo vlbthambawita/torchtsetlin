@@ -17,7 +17,7 @@ is analogous. It transfers if and only if a TM experiment says so. Everything in
 ## 0. The two anchors this document is built on
 
 **Anchor 1 — this translation exercise has already paid off once.**
-[FACT: PLAN.md §3.1, from `experiments/mctm/report2/`] Firing-rate calibration — a label-free
+[FACT: torchtsetlin_plans/experiments/convtm/PLAN.md §3.1, from `experiments/mctm/report2/`] Firing-rate calibration — a label-free
 controller walking each clause to a target per-patch firing rate — took a 2-layer stack from
 **15.4 %** (greedy supervised) to **42.6 ± 0.7 %**, past both single-layer baselines at matched
 clause budget and matched receptive field (35.4 % / 37.8 %). Structurally that controller is a
@@ -26,7 +26,7 @@ derived from BatchNorm, but it is the same mechanism, and it is the single large
 improvement in this repository's prior programme. §5 below takes it further.
 
 **Anchor 2 — one whole family of translations is closed.**
-[FACT: PLAN.md §3.1] **Credit propagation through clause inclusion does not work**, for four
+[FACT: torchtsetlin_plans/experiments/convtm/PLAN.md §3.1] **Credit propagation through clause inclusion does not work**, for four
 *structural* reasons, not implementation bugs:
 1. there is no forgetting term in the propagated signal;
 2. Type Ib must be **blamed** rather than sampled;

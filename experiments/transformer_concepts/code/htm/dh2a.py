@@ -1,4 +1,4 @@
-"""D-H2a (PLAN_HTM.md, tests THEORY_HTM H2.2): is the trained `qkv` inbox saturated?
+"""D-H2a (torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md, tests THEORY_HTM H2.2): is the trained `qkv` inbox saturated?
 
 Reads the saved final `qkv` model (results/cifar/qkv_*_seed1_e30.pt) and 1,000 validation
 images. Reports, per patch node: the share f of the 2,000 layer-0 parts that match (split into

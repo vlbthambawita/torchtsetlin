@@ -1,6 +1,6 @@
 # Decisions and deviations (rule C4)
 
-Spec: `tm-query-key-attention-mnist-implementation-plan.md` (frozen). Plan: `PLAN.md`.
+Spec: `torchtsetlin_plans/experiments/transformer_like/tm-query-key-attention-mnist-implementation-plan.md` (frozen). Plan: `torchtsetlin_plans/experiments/transformer_like/PLAN.md`.
 Library revision at start: `40f17e68fbbf594851effe7bb93c885cdc51f363` (`torchtsetlin` 0.3.1),
 `git diff --stat HEAD -- src/` empty. Environment: `environment.json`.
 

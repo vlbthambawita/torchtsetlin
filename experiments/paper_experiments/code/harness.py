@@ -1,4 +1,4 @@
-"""Measurement harness shared by every library adapter (PLAN.md §5).
+"""Measurement harness shared by every library adapter (torchtsetlin_plans/experiments/paper_experiments/PLAN.md §5).
 
 Runs inside each library's own virtualenv, so it depends only on the standard library, numpy,
 psutil and nvidia-ml-py (all installed by code/setup_envs.sh). torchtsetlin runs in the main env.

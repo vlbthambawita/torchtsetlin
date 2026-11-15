@@ -1,7 +1,7 @@
 # Investigation: B2 (2-D Noisy XOR, conv) results for torchtsetlin 0.6.0
 
 Opened 2026-11-01 after the full GPU run (`859e229`, `REPORT.md`). Library changes need the
-user's go-ahead, and so does any re-run of timing/seed cells (see `PLAN.md`).
+user's go-ahead, and so does any re-run of timing/seed cells (see `torchtsetlin_plans/experiments/paper_experiments/PLAN.md`).
 
 ## What the run shows
 

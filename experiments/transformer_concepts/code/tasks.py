@@ -1,4 +1,4 @@
-"""Synthetic sequence tasks with controllable length (PLAN.md section 2).
+"""Synthetic sequence tasks with controllable length (torchtsetlin_plans/experiments/transformer_concepts/PLAN.md section 2).
 
 Every generator returns ``(tokens, labels)``: ``tokens`` a ``(N, L)`` int64 tensor over a
 vocabulary of ``V`` symbols, ``labels`` a ``(N,)`` int64 tensor. All randomness comes from the

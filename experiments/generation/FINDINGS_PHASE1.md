@@ -1,7 +1,7 @@
 # Phase 1 — autoregressive MNIST generation with a Tsetlin machine
 
 **Question.** Can a TM be used as an autoregressive generative model over binarised MNIST, and does
-it beat honest baselines on held-out likelihood? (`PLAN.md` §3.2, hypotheses H2 and H3.)
+it beat honest baselines on held-out likelihood? (`torchtsetlin_plans/experiments/generation/PLAN.md` §3.2, hypotheses H2 and H3.)
 
 **Setup.** MNIST binarised at `pixel > 0.3`, split **by image** into 50 000 train / 10 000
 validation / 10 000 test. Raster order, `P(image | digit) = Π P(x_i | x_{<i}, digit)`. The model is
@@ -150,7 +150,7 @@ Three things worth separating:
    drifting prefixes.
 
 Compute was therefore redirected from the remaining seeds of a gate-failing configuration into the
-window-size sweep (`PLAN.md` P1.3), which is the designed response to exactly this.
+window-size sweep (`torchtsetlin_plans/experiments/generation/PLAN.md` P1.3), which is the designed response to exactly this.
 
 ## Window size: the binding constraint was global structure, and bigger is not monotonically better
 
@@ -216,7 +216,7 @@ sharpens it on a distribution of contexts it never sees while sampling, where it
 have already drifted.
 
 **Practical consequence:** a generative TM must be early-stopped on a *sample-quality* metric, not
-on validation likelihood. `PLAN.md` §3.2 selected checkpoints on validation NLL — that rule is wrong
+on validation likelihood. `torchtsetlin_plans/experiments/generation/PLAN.md` §3.2 selected checkpoints on validation NLL — that rule is wrong
 for this purpose and is superseded.
 
 ## Calibration is what keeps the sampler on-distribution (P1.5 control)

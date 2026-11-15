@@ -1,4 +1,4 @@
-"""Phase 1: Booleanize every benchmark dataset once (PLAN.md rule P5).
+"""Phase 1: Booleanize every benchmark dataset once (torchtsetlin_plans/experiments/paper_experiments/PLAN.md rule P5).
 
     python code/prepare_data.py [B1 B2 ...]      # default: all
 

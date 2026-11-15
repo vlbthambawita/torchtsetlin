@@ -172,7 +172,7 @@ with crop+flip, against a 94.8 % full-precision baseline in the same paper — a
 about 1 point**. Note this keeps the first and last layers in full precision and uses augmentation.
 
 **Why this matters more than anything else in this file.** Published single-model CTM best on
-CIFAR-10 is **60.7 %** and TM SOTA (a composite) is **82.8 %** [FACT: PLAN.md §2 / §3.3, to be
+CIFAR-10 is **60.7 %** and TM SOTA (a composite) is **82.8 %** [FACT: torchtsetlin_plans/experiments/convtm/PLAN.md §2 / §3.3, to be
 verified by tm-theorist in `LITERATURE_TM.md`]. A network with the same 1-bit substrate reaches
 93.75 %. **So the TM's ~33-point gap to CNNs is not explained by binary computation.**
 [HYPOTHESIS] at most ~1–5 points of the gap is attributable to 1-bit arithmetic; the remainder is

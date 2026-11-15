@@ -1,6 +1,6 @@
 # Decisions and deviations (rule C4)
 
-Brief: `idea_v2.md`. Theory: `THEORY.md`. Plan: `PLAN.md`.
+Brief: `torchtsetlin_plans/experiments/transformer_concepts/idea_v2.md`. Theory: `THEORY.md`. Plan: `torchtsetlin_plans/experiments/transformer_concepts/PLAN.md`.
 Library: `torchtsetlin` 0.7.0 at commit `de03558f`, `src/` unchanged.
 
 ## 2026-11-08 — design round
@@ -45,7 +45,7 @@ Library: `torchtsetlin` 0.7.0 at commit `de03558f`, `src/` unchanged.
   for $L = 32$; if the best $s$ is the largest value, extend the grid to $\{40, 60\}$ before
   freezing (to log at G3).
 
-## 2026-11-08 — overnight proof run (PROOF_PLAN.md)
+## 2026-11-08 — overnight proof run (torchtsetlin_plans/experiments/transformer_concepts/PROOF_PLAN.md)
 
 - **D10 GPU pinning (LG-1).** Triton kernels fail for a model on `cuda:1` while the current device
   is 0, and the library falls back to slower paths. Every worker pins its GPU with
@@ -95,7 +95,7 @@ Library: `torchtsetlin` 0.7.0 at commit `de03558f`, `src/` unchanged.
   hours, its final is seed 1 only; every other arm (including `qkv_d1`) keeps seeds 1–3. The
   report compares `qkv` seed 1 against each arm's seed-1 run and against the 3-seed spread.
 
-## 2026-11-09 — HTM programme (PLAN_HTM.md, user go-ahead: "run the HTM plan after CIFAR-10")
+## 2026-11-09 — HTM programme (torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md, user go-ahead: "run the HTM plan after CIFAR-10")
 
 - **D18 Exact checks: two test bugs, one theory error.** X15 first run failed only because a
   Monte Carlo density of exactly 1.0 has standard error 0 (tolerance now `3 * max(se, 1/T)`);

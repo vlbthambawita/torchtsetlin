@@ -9,7 +9,7 @@ Usage
     python code/cnn/train.py --list                                     # registry
     python code/cnn/train.py --arm cnn-small --seed 0 --smoke           # 2 epochs, 2000 imgs
 
-The protocol this file enforces (PLAN.md §7, CHARTER.md):
+The protocol this file enforces (torchtsetlin_plans/experiments/convtm/PLAN.md §7, CHARTER.md):
 
 * The 45 000 / 5 000 split comes from `data.split_indices()` and nothing else.
 * **The test tensor is not loaded while training happens.** `load_*(splits=('train','val'))`
@@ -59,7 +59,7 @@ else:  # imported as a package
 def set_seed(seed: int) -> None:
     """Seed everything that can move. cuDNN stays benchmarking (deterministic kernels cost
     ~2x here and the programme quantifies seed noise rather than eliminating it -- see
-    PLAN.md §7.2, which measures the seed band in P0)."""
+    torchtsetlin_plans/experiments/convtm/PLAN.md §7.2, which measures the seed band in P0)."""
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)

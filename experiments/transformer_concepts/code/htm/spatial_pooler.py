@@ -1,4 +1,4 @@
-"""PLAN_HTM.md E-H2b: a literal spatial pooler (from scratch) as the value layer of attention.
+"""torchtsetlin_plans/experiments/transformer_concepts/PLAN_HTM.md E-H2b: a literal spatial pooler (from scratch) as the value layer of attention.
 
 Stage 1 (unsupervised, training images only). Each 4x4 therm4 CIFAR-10 patch token (192 bits)
 becomes literals [u, NOT u] (384). ``m`` columns each have a random potential pool (half of the
