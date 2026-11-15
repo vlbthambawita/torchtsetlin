@@ -74,7 +74,7 @@ variants (`class ConvTsetlinMachine(_ConvMixin, TsetlinMachine)`). See `docs/gui
 (`_grid`, `_encode`, `_coerce_input`, ...). Its `_coerce_input` must skip `_ConvMixin`'s via
 `super(_ConvMixin, self)`, which would otherwise reshape to 4D. Its `_evaluate`/`_feedback_counts` only
 add patch-axis blocking and defer to the 2D code when there is a single block, which keeps the
-`D = kd = 1` model bit-identical to the 2D one (`tests/test_conv3d.py` pins this; proofs are in `plans/conv3d.md`).
+`D = kd = 1` model bit-identical to the 2D one (`tests/test_conv3d.py` pins this; proofs are in `torchtsetlin_plans/plans/conv3d.md`).
 
 `models/segmentation.py::_DenseMixin` is the other input-structure mixin: it *drops* the convolutional
 OR over patches and folds the patch axis into the batch axis (`B' = B * P`, one patch per pixel), so each
@@ -249,7 +249,7 @@ from the records when present, otherwise from the reviewable proposal CSVs in
 `EXTRACTION_V2.md` (`build_catalog.py --check-v2 [ids]` validates them without writing; a full
 build refuses to run while any sidecar is invalid); record errors found that way go into the
 `corrections` table, not straight into the records. Plan
-and status: `plans/literature-db-v2.md`. `docs/literature.md` queries the database in the browser with sql.js
+and status: `torchtsetlin_plans/plans/literature-db-v2.md`. `docs/literature.md` queries the database in the browser with sql.js
 (`docs/javascripts/literature.js`). Keep ranking queries on narrow columns and join the long
 text only for the drawn page: dragging `notes`/`config` through the window functions made every
 regroup about 3× slower. The same database also backs the Gradio app in `space/app.py`, deployed
@@ -272,6 +272,13 @@ in an experiment** unless the user explicitly confirms otherwise; library defect
 that programme's `LIBRARY_GAPS.md` instead of being fixed. Reported numbers must come from the
 programme's `results/*.json` records, never hand-typed. The `.claude/agents/` personas (`tm-theorist`,
 `dl-expert`, `research-engineer`, `notetaker`) belong to the `convtm` team.
+
+## Plans and ideas
+
+Design plans, proofs and research ideas live in the **private** sibling repository
+`../torchtsetlin_plans` (`plans/`, `ideas/`, `task.md`; moved out on 2026-11-15), not in this
+repo. References written `torchtsetlin_plans/plans/<name>.md` point there. Write new plans there,
+and never link to them from the public docs.
 
 ## Docs
 

@@ -3,7 +3,7 @@
 `propose_mappings.py` parses the free-text fields of `papers/*.json` into the controlled values of
 `vocab.json` and writes these CSVs. `build_catalog.py` reads them as a proposal layer: a value in a
 paper record always wins, and every value in the database carries `v2_source`
-(`record` / `reviewed` / `proposed`). Plan: `plans/literature-db-v2.md`.
+(`record` / `reviewed` / `proposed`). Plan: `torchtsetlin_plans/plans/literature-db-v2.md`.
 
 | File | One row per | Feeds |
 |---|---|---|

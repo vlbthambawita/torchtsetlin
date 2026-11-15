@@ -37,7 +37,7 @@ restarts.
 ## 0.7.0 (2026-11-08)
 
 **New: graph Tsetlin machine** (`GraphTsetlinMachine`, `torchtsetlin.data.GraphBatch`,
-`torchtsetlin.data.SymbolTable`; Granmo et al., arXiv:2507.14874; issue #8, `plans/graph-tm.md`).
+`torchtsetlin.data.SymbolTable`; Granmo et al., arXiv:2507.14874; issue #8, `torchtsetlin_plans/plans/graph-tm.md`).
 Deep clauses over graphs with typed edges: one clause component per layer, connected by
 messages that clauses send to neighbouring nodes. Random, double-hashed or one-hot messages,
 node types, batched and sequential feedback, and clause decoding in the paper's `right1:0`
@@ -47,7 +47,7 @@ a tensor. A specificity per layer (`s=(s0, s1, ...)`, as the reference implement
 new `functional.apply_feedback_blocks`), `explain_node` (traces a clause at one node back to
 the symbols of the neighbours that sent its messages) and `rules(symbols=...)`.
 
-**Graph TM on the CUDA fast paths** (`plans/graph-tm-fast-paths.md`). `GraphBatch.pad(max_nodes,
+**Graph TM on the CUDA fast paths** (`torchtsetlin_plans/plans/graph-tm-fast-paths.md`). `GraphBatch.pad(max_nodes,
 max_edges)` gives a fixed-shape layout (edges as a `(B, E, 2)` array with a mask) whose slices
 have static shapes and never synchronise with the host. Batched updates run in events mode
 (the fused Triton commit) for flat and padded batches. Padded batches also take the compiled
@@ -65,7 +65,7 @@ Fashion-MNIST with 40,000 clauses trains in ~12 s per epoch on an RTX 3090.
 
 `CoalescedTsetlinMachine.rules` forwards extra keyword arguments to `clause_expression`.
 
-**Paper reproduction** (`plans/graph-tm-reproduction.md`,
+**Paper reproduction** (`torchtsetlin_plans/plans/graph-tm-reproduction.md`,
 `experiments/paper_experiments/results/graphtm/REPORT.md`, 5 seeds each): three consecutive A's
 100.00 (paper 100); MNIST GraphTM 98.07 (98.42), CoTM 98.49 (98.93); Fashion-MNIST GraphTM 88.59
 (89.49), CoTM 90.70 (91.05). All within tolerance, and the paper's ordering CoTM > GraphTM holds.
@@ -278,7 +278,7 @@ sequences with time as depth.
   `examples/shapes_conv3d.py` gets 1.000 on it, against 0.83–0.98 for the 2D model on
   slices stacked as channels and 0.73–0.80 for a flat machine.
 - Docs: a "3D volumes" section with two new figures in *Convolution*, a `conv3d` benchmark
-  suite on the CPU-vs-GPU page, and the design and proofs in `plans/conv3d.md`.
+  suite on the CPU-vs-GPU page, and the design and proofs in `torchtsetlin_plans/plans/conv3d.md`.
 
 ## 0.3.0 (2026-10-01)
 

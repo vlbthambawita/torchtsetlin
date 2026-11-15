@@ -1,4 +1,4 @@
-"""Propose schema-v2 values for the existing free-text fields (step 2 of plans/literature-db-v2.md).
+"""Propose schema-v2 values for the existing free-text fields (step 2 of torchtsetlin_plans/plans/literature-db-v2.md).
 
 Writes reviewable CSVs to benchmarks/literature/mappings/. Nothing here touches papers/*.json.
 build_catalog.py reads the CSVs as a proposal layer under the records (see mappings/README.md

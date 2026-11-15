@@ -3,7 +3,7 @@
 **Question.** How do batch size (1–1024) and clauses per class (1k–32k) affect final CIFAR-10 accuracy
 and training time of flat, 2D convolutional and 3D convolutional Tsetlin machines? The CIFAR-10
 companion of `mnist_batch_clauses`. Plan (questions, hypotheses, decisions D0–D15, cost):
-`plans/cifar10-batch-clauses.md`. Runs on a server with four 32 GB V100s; W&B mirror:
+`torchtsetlin_plans/plans/cifar10-batch-clauses.md`. Runs on a server with four 32 GB V100s; W&B mirror:
 https://forge.coreweave.com/wandb/simulamet_mlc/TM_CIFAR
 
 ## Quick start (on the V100 server)

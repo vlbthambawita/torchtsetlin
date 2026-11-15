@@ -1,6 +1,6 @@
 """Train one cell of the batch-size x clause-count grid on MNIST until early stopping.
 
-Plan: plans/mnist-batch-clauses.md. Model = the paper's B4 (flat) or B7 (conv) configuration with
+Plan: torchtsetlin_plans/plans/mnist-batch-clauses.md. Model = the paper's B4 (flat) or B7 (conv) configuration with
 ``n_clauses`` per class and T scaled with it (D2); batched feedback with ``--batch-size`` (or the
 exact sequential algorithm with ``--sequential``, D6). Training set = 50 000 MNIST images, the other
 10 000 are the validation set that early stopping watches (D3a); the test set is evaluated every

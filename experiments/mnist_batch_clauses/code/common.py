@@ -2,7 +2,7 @@
 
 Rules (../README.md): ``src/torchtsetlin/**`` is read-only here; every reported number comes from a
 ``results/<arm>/<tag>.json`` record carrying ``argv``, ``seed``, ``git_sha`` and ``env``.
-Plan: ``plans/mnist-batch-clauses.md``.
+Plan: ``torchtsetlin_plans/plans/mnist-batch-clauses.md``.
 """
 
 import hashlib

@@ -1,6 +1,6 @@
 """Graph Tsetlin machine vs the published numbers of Granmo et al. (arXiv:2507.14874).
 
-Plan: ``plans/graph-tm-reproduction.md``. Only experiments with published numbers we can
+Plan: ``torchtsetlin_plans/plans/graph-tm-reproduction.md``. Only experiments with published numbers we can
 rebuild are run:
 
 * G0: three consecutive A's (Sec. 3.1): 100% test accuracy, depth 2, 4 clauses, 4 epochs.

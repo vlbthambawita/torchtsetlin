@@ -1,4 +1,4 @@
-"""Graph Tsetlin machine (plans/graph-tm.md): data container, evaluation against a naive
+"""Graph Tsetlin machine (torchtsetlin_plans/plans/graph-tm.md): data container, evaluation against a naive
 reference, the depth-1 reduction to the convolutional coalesced TM, and learning."""
 
 import pytest
@@ -557,7 +557,7 @@ def test_padded_slicing_never_synchronises():
 
 
 # ----------------------------------------------------------------------------- CUDA fast paths
-# (plans/graph-tm-fast-paths.md: events mode, fused sequential commits, CUDA graphs)
+# (torchtsetlin_plans/plans/graph-tm-fast-paths.md: events mode, fused sequential commits, CUDA graphs)
 
 from torchtsetlin import _triton as K  # noqa: E402
 

@@ -1,4 +1,4 @@
-"""Phase 0 checks for the augmentation runs (plans/fmnist-bitplanes-augmentation.md §4).
+"""Phase 0 checks for the augmentation runs (torchtsetlin_plans/plans/fmnist-bitplanes-augmentation.md §4).
 
 1. encode_gpu == common.encode, bit for bit, on all 60 000 training images (bit8, gray8).
 2. Zero shift and no flip is the identity; a shift moves the pixels where expected; a flip mirrors.

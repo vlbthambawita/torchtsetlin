@@ -696,7 +696,7 @@ def write_sqlite(papers, catalog, path, sidecars):
     con.close()
 
 
-# Schema v2 (plans/literature-db-v2.md): field path -> vocabulary list in vocab.json. Only fields
+# Schema v2 (torchtsetlin_plans/plans/literature-db-v2.md): field path -> vocabulary list in vocab.json. Only fields
 # that are present are checked, so records can be migrated one at a time. "not_reported" (the
 # paper does not say) is always allowed; null means not extracted yet.
 VOCAB_FIELDS = {

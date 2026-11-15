@@ -513,7 +513,7 @@ class _Conv3dMixin(_ConvMixin):
     (``[d > k]``, ``[y > k]``, ``[x > k]``). Only the *geometry* differs from the 2D mixin:
     clause evaluation (an OR over patches) and the random-matching-patch feedback are
     inherited unchanged, because they never look at how the patch axis was produced — see
-    ``plans/conv3d.md`` (Theorem 4). With ``D = kd = 1`` the literal tensor is bitwise the
+    ``torchtsetlin_plans/plans/conv3d.md`` (Theorem 4). With ``D = kd = 1`` the literal tensor is bitwise the
     one :class:`ConvTsetlinMachine` builds, so the two models train identically.
 
     Volumes have many patches, so a single example can exceed ``max_chunk_elements``. Then

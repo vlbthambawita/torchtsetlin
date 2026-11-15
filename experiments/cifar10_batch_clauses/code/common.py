@@ -2,7 +2,7 @@
 
 Rules (../README.md): ``src/torchtsetlin/**`` is read-only here; every reported number comes from a
 ``results/<arm>/<tag>.json`` record carrying ``argv``, ``seed``, ``git_sha`` and ``env``.
-Plan: ``plans/cifar10-batch-clauses.md`` (decisions D0-D12 are referenced below).
+Plan: ``torchtsetlin_plans/plans/cifar10-batch-clauses.md`` (decisions D0-D12 are referenced below).
 """
 
 import hashlib

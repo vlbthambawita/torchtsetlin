@@ -1,6 +1,6 @@
 """Train one cell (architecture x encoding x clauses x s [x kd]) on Fashion-MNIST until early stopping.
 
-Plan: plans/fmnist-bitplanes.md. Architectures: ``flat`` (B4 base, planes flattened), ``conv2``
+Plan: torchtsetlin_plans/plans/fmnist-bitplanes.md. Architectures: ``flat`` (B4 base, planes flattened), ``conv2``
 (B8 base, planes as channels), ``conv3`` (B8 base, planes along depth, window ``(kd, 10, 10)``).
 Encodings: ``agt`` (the paper's B8), ``therm8``/``therm4`` (thermometer), ``bit8``/``bit4`` (bit
 planes), ``gray8`` (Gray-coded bit planes). T scales with the clauses per class (D4); batched

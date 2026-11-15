@@ -106,7 +106,7 @@ other model, and reuses the convolutional feedback code. Only evaluation is new,
 depends on the previous layer's matches at the neighbours. It runs layer by layer: match
 component `i` on the inputs of layer `i`, AND it into the running match, and send the result
 along the edges (a scatter-OR, then a matrix product with the shifted message positions). The
-derivation is in `plans/graph-tm.md`.
+derivation is in the module docstring of `torchtsetlin.models.graph`.
 
 Two consequences:
 

@@ -1,4 +1,4 @@
-"""3D convolutional Tsetlin machines. The test ids (T1...) refer to ``plans/conv3d.md``."""
+"""3D convolutional Tsetlin machines. The test ids (T1...) refer to ``torchtsetlin_plans/plans/conv3d.md``."""
 
 import itertools
 

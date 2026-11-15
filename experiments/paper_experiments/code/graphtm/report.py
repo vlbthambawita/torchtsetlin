@@ -71,7 +71,7 @@ def main() -> None:
     lines += ["", f"torchtsetlin {r0['torchtsetlin']} at `{r0['git_sha']}`; GPUs: "
               f"{'; '.join(r0['env'].get('gpus', []))}.",
               "", "Skipped (no comparable published number): CIFAR-10 (preprocessing not reconstructible: "
-              "2,500 symbols), multivalue noisy XOR (curves only). See `plans/graph-tm-reproduction.md`."]
+              "2,500 symbols), multivalue noisy XOR (curves only). See `torchtsetlin_plans/plans/graph-tm-reproduction.md`."]
     text = "\n".join(lines) + "\n"
     (RES / "REPORT.md").write_text(text)
     print(text)

@@ -7,7 +7,7 @@ there, each bound to the type of the edge it travelled along. The clause is True
 iff the deep clause holds at some node (the OR over patches of the convolutional TM), and the
 votes and feedback are those of the coalesced TM.
 
-Implementation (``plans/graph-tm.md``): the per-layer inputs of a node are concatenated into
+Implementation (``torchtsetlin_plans/plans/graph-tm.md``): the per-layer inputs of a node are concatenated into
 one literal row ``[H^0 | H^1 | ... | H^{D-1}]``, so a clause is a single row of automata and
 the deep clause is that row's AND (Lemma 1). Feedback goes, for every layer at once, to the
 row of one random node where the full clause matches, which is exactly the convolutional

@@ -1,4 +1,4 @@
-"""Training-time augmentation on uint8 pixels, before Booleanization (plans/fmnist-bitplanes-augmentation.md §2).
+"""Training-time augmentation on uint8 pixels, before Booleanization (torchtsetlin_plans/plans/fmnist-bitplanes-augmentation.md §2).
 
 Booleanizing first and shifting bits would be equivalent for a shift, but a pixel's bit planes must
 move together and no interpolation may create values that are not uint8 codes, so augmentation

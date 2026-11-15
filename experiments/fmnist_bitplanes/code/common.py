@@ -1,6 +1,6 @@
 """Shared paths, data, encodings, cells and records for the fmnist_bitplanes programme.
 
-Plan: ``plans/fmnist-bitplanes.md``. Rules (../README.md): ``src/torchtsetlin/**`` is read-only;
+Plan: ``torchtsetlin_plans/plans/fmnist-bitplanes.md``. Rules (../README.md): ``src/torchtsetlin/**`` is read-only;
 every reported number comes from a ``results/<arm>/<tag>.json`` record carrying ``argv``, ``seed``,
 ``git_sha`` and ``env``.
 """
@@ -101,7 +101,7 @@ def chosen(arch, enc):
     return None
 
 
-# Augmentation (plans/fmnist-bitplanes-augmentation.md; user 2026-11-14: "apply both" = shift and
+# Augmentation (torchtsetlin_plans/plans/fmnist-bitplanes-augmentation.md; user 2026-11-14: "apply both" = shift and
 # flip together, no policy pilot; replay without augmentation only for the best stage-A cell).
 AUGMENTS = {"none": None, "shift2": dict(shift=2, flip_p=0.0), "shift2flip": dict(shift=2, flip_p=0.5)}
 AUG_POLICY = "shift2flip"

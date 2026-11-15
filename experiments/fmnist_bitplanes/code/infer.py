@@ -1,4 +1,4 @@
-"""Reload a saved best-validation model and run inference (plans/fmnist-bitplanes-augmentation.md §5).
+"""Reload a saved best-validation model and run inference (torchtsetlin_plans/plans/fmnist-bitplanes-augmentation.md §5).
 
 1. Rebuild the model from the file's hp, load the state, predict the test set in eval() mode and
    assert the accuracy equals the one stored at save time (load/rebuild check).

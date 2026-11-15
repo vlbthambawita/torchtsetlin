@@ -1,4 +1,4 @@
-# Schema-v2 extraction from the PDFs (step 3 of plans/literature-db-v2.md)
+# Schema-v2 extraction from the PDFs (step 3 of torchtsetlin_plans/plans/literature-db-v2.md)
 
 You fill the **structured** fields for one paper by reading its PDF. You write one file,
 `benchmarks/literature/papers_v2/<paper_id>.json`, and nothing else. Never edit `papers/*.json`,

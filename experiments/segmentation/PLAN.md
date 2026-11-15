@@ -3,8 +3,8 @@
 Status: **executed (compressed) on 2026-10-13 — see [report/REPORT.md](report/REPORT.md) and
 [DECISIONS.md](DECISIONS.md) for what was run, cut and changed.** Written 2026-10-13 against
 `torchtsetlin` v0.3.1, revision `f5168bdf656d597461a5ef14f463afd1eee90eeb`.
-Task: [segimporvements_task.md](../../ideas/segimporvements_task.md).
-The [earlier plan](../../ideas/segmentation_plan.md) records the already implemented
+Task: `torchtsetlin_plans/ideas/segimporvements_task.md`.
+The earlier plan (`torchtsetlin_plans/ideas/segmentation_plan.md`) records the already implemented
 segmentation API; this program investigates improvements before library integration.
 
 ## 1. Objective and scope

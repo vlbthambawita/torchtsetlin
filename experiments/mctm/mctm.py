@@ -3,7 +3,7 @@
 A CTM layer normally OR-pools each clause over all patch positions and votes. Here the
 *spatial* clause-activation map is kept instead and used as the Boolean input channels of
 the next CTM layer, following the greedy layer-wise scheme of
-``ideas/multilayer_convolutional_tsetlin_machine_pseudocode.md``.
+``torchtsetlin_plans/ideas/multilayer_convolutional_tsetlin_machine_pseudocode.md``.
 
 The library computes the full ``(B, P, C)`` patch-match tensor inside
 ``_ConvMixin._evaluate`` and discards the layout; :func:`conv_clause_maps` reshapes it to

@@ -1,6 +1,6 @@
 """Train one cell of the batch-size x clause-count grid on CIFAR-10 until early stopping.
 
-Plan: plans/cifar10-batch-clauses.md. Models (D1): ``conv`` (3x3 colour-thermometer ConvTM, the
+Plan: torchtsetlin_plans/plans/cifar10-batch-clauses.md. Models (D1): ``conv`` (3x3 colour-thermometer ConvTM, the
 Optimized Toolbox setting), ``conv3`` (3D ConvTM over 8 bit planes per colour, window (8, 3, 3)),
 ``flat`` (flat TM on a 3-level colour thermometer). ``n_clauses`` per class, T scaled with it (D7),
 batched feedback with ``--batch-size`` (or the exact sequential algorithm, ``--sequential``, D8).
