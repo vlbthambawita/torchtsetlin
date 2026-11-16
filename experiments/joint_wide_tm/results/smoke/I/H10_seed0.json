@@ -1,0 +1,200 @@
+{
+ "kind": "run",
+ "argv": [
+  "train.py",
+  "--phase",
+  "smoke",
+  "--arm",
+  "I",
+  "--seed",
+  "0",
+  "--device",
+  "cuda:1",
+  "--member",
+  "H10",
+  "--subset",
+  "2000",
+  "--no-wandb",
+  "--keep-epochs"
+ ],
+ "git_sha": "20e3cc2d9961b2eb7b8dd5b30b6e37611f5552ae",
+ "env": {
+  "python": "3.10.11",
+  "torch": "2.10.0+cu128",
+  "torchtsetlin": "0.7.1",
+  "numpy": "2.2.6",
+  "host": "mimir",
+  "cuda": "12.8",
+  "gpu": "NVIDIA GeForce RTX 3080"
+ },
+ "started": "2026-11-16T11:09:03",
+ "phase": "smoke",
+ "arm": "I",
+ "tag": "H10_seed0",
+ "hp": {
+  "arm": "I",
+  "team": null,
+  "rule": "none",
+  "rule_arg": null,
+  "shared_negative": true,
+  "members": {
+   "H10": {
+    "enc": "therm8",
+    "patch": 10,
+    "T": 1500,
+    "s": 2.5,
+    "clauses": 2000,
+    "planes": 8,
+    "clauses_total": 20000,
+    "n_features": 836,
+    "n_literals": 1672
+   }
+  },
+  "T_joint": {
+   "H10": 1500.0
+  },
+  "combine_weights": {
+   "H10": 1.0
+  },
+  "model_kw": {
+   "weighted": true,
+   "max_included_literals": 32,
+   "boost_true_positive": true,
+   "position_encoding": true,
+   "feedback_mode": "batch"
+  },
+  "batch_size": 32,
+  "epochs": 2,
+  "seed": 0,
+  "commits_per_epoch": 63,
+  "data": {
+   "sha256": {
+    "x_train": "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84",
+    "y_train": "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845",
+    "x_test": "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073",
+    "y_test": "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5"
+   },
+   "n_train": 2000,
+   "n_val": 500,
+   "n_test": 500,
+   "subset": 2000,
+   "split": "fmnist_bitplanes/results/split.json"
+  }
+ },
+ "curve": [
+  {
+   "epoch": 1,
+   "val_acc": 65.6,
+   "best_val_acc": 65.6,
+   "test_acc": 64.4,
+   "test_acc_per_class": [
+    89.0909090909091,
+    92.3076923076923,
+    6.153846153846154,
+    76.08695652173914,
+    75.43859649122807,
+    82.05128205128204,
+    25.53191489361702,
+    93.61702127659575,
+    47.72727272727273,
+    70.83333333333334
+   ],
+   "train_acc_running": 46.7,
+   "members": {
+    "H10": {
+     "val_acc": 65.60000000000001,
+     "test_acc": 64.4,
+     "mean_clause_len": 18.345048904418945,
+     "frac_empty_clauses": 0.0015999999595806003,
+     "mean_weight": 5.045899868011475,
+     "type_i_per_example": 672.3435,
+     "type_ii_per_example": 672.576,
+     "vote_share": 1.0
+    }
+   },
+   "train_s": 1.6084253787994385,
+   "eval_s": 0.21905994415283203,
+   "examples_per_s": 1243.4521528706796,
+   "peak_gpu_mib": 1024.0,
+   "elapsed_s": 1.8274853229522705
+  },
+  {
+   "epoch": 2,
+   "val_acc": 72.2,
+   "best_val_acc": 72.2,
+   "test_acc": 74.0,
+   "test_acc_per_class": [
+    69.0909090909091,
+    86.53846153846155,
+    58.46153846153847,
+    93.47826086956522,
+    59.64912280701754,
+    79.48717948717949,
+    27.659574468085108,
+    91.48936170212765,
+    93.18181818181817,
+    91.66666666666666
+   ],
+   "train_acc_running": 71.35,
+   "members": {
+    "H10": {
+     "val_acc": 72.2,
+     "test_acc": 74.0,
+     "mean_clause_len": 17.07564926147461,
+     "frac_empty_clauses": 0.001349999918602407,
+     "mean_weight": 6.5680999755859375,
+     "type_i_per_example": 378.8615,
+     "type_ii_per_example": 378.483,
+     "vote_share": 1.0
+    }
+   },
+   "train_s": 1.0580222606658936,
+   "eval_s": 0.23183369636535645,
+   "examples_per_s": 1890.3193953038838,
+   "peak_gpu_mib": 1024.0,
+   "elapsed_s": 3.1173412799835205
+  }
+ ],
+ "status": "done",
+ "best": {
+  "val_correct": 361,
+  "epoch": 2
+ },
+ "elapsed_s": 3.1173412799835205,
+ "wandb_url": null,
+ "best_model": "/work/vajira/DL2026/torchtsetlin/experiments/joint_wide_tm/models/smoke/I/H10_seed0.pt",
+ "best_epoch": 2,
+ "best_val_acc": 72.2,
+ "test_acc_at_best": 74.0,
+ "test_acc_per_class_at_best": [
+  69.0909090909091,
+  86.53846153846155,
+  58.46153846153847,
+  93.47826086956522,
+  59.64912280701754,
+  79.48717948717949,
+  27.659574468085108,
+  91.48936170212765,
+  93.18181818181817,
+  91.66666666666666
+ ],
+ "members_at_best": {
+  "H10": {
+   "val_acc": 72.2,
+   "test_acc": 74.0,
+   "mean_clause_len": 17.07564926147461,
+   "frac_empty_clauses": 0.001349999918602407,
+   "mean_weight": 6.5680999755859375,
+   "type_i_per_example": 378.8615,
+   "type_ii_per_example": 378.483,
+   "vote_share": 1.0
+  }
+ },
+ "epochs_run": 2,
+ "gpu_s_to_best": 3.1173412799835205,
+ "test_acc_last": 74.0,
+ "train_s_per_epoch_mean": 1.333223819732666,
+ "eval_s_per_epoch_mean": 0.22544682025909424,
+ "peak_gpu_mib": 1024.0,
+ "finished": "2026-11-16T11:09:06"
+}

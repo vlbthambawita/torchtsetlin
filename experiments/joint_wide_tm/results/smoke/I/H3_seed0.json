@@ -1,0 +1,200 @@
+{
+ "kind": "run",
+ "argv": [
+  "train.py",
+  "--phase",
+  "smoke",
+  "--arm",
+  "I",
+  "--seed",
+  "0",
+  "--device",
+  "cuda:1",
+  "--member",
+  "H3",
+  "--subset",
+  "2000",
+  "--no-wandb",
+  "--keep-epochs"
+ ],
+ "git_sha": "20e3cc2d9961b2eb7b8dd5b30b6e37611f5552ae",
+ "env": {
+  "python": "3.10.11",
+  "torch": "2.10.0+cu128",
+  "torchtsetlin": "0.7.1",
+  "numpy": "2.2.6",
+  "host": "mimir",
+  "cuda": "12.8",
+  "gpu": "NVIDIA GeForce RTX 3080"
+ },
+ "started": "2026-11-16T11:08:49",
+ "phase": "smoke",
+ "arm": "I",
+ "tag": "H3_seed0",
+ "hp": {
+  "arm": "I",
+  "team": null,
+  "rule": "none",
+  "rule_arg": null,
+  "shared_negative": true,
+  "members": {
+   "H3": {
+    "enc": "therm8",
+    "patch": 3,
+    "T": 1500,
+    "s": 2.5,
+    "clauses": 2000,
+    "planes": 8,
+    "clauses_total": 20000,
+    "n_features": 122,
+    "n_literals": 244
+   }
+  },
+  "T_joint": {
+   "H3": 1500.0
+  },
+  "combine_weights": {
+   "H3": 1.0
+  },
+  "model_kw": {
+   "weighted": true,
+   "max_included_literals": 32,
+   "boost_true_positive": true,
+   "position_encoding": true,
+   "feedback_mode": "batch"
+  },
+  "batch_size": 32,
+  "epochs": 2,
+  "seed": 0,
+  "commits_per_epoch": 63,
+  "data": {
+   "sha256": {
+    "x_train": "3aede38d61863908ad78613f6a32ed271626dd12800ba2636569512369268a84",
+    "y_train": "a04f17134ac03560a47e3764e11b92fc97de4d1bfaf8ba1a3aa29af54cc90845",
+    "x_test": "346e55b948d973a97e58d2351dde16a484bd415d4595297633bb08f03db6a073",
+    "y_test": "67da17c76eaffca5446c3361aaab5c3cd6d1c2608764d35dfb1850b086bf8dd5"
+   },
+   "n_train": 2000,
+   "n_val": 500,
+   "n_test": 500,
+   "subset": 2000,
+   "split": "fmnist_bitplanes/results/split.json"
+  }
+ },
+ "curve": [
+  {
+   "epoch": 1,
+   "val_acc": 59.8,
+   "best_val_acc": 59.8,
+   "test_acc": 59.4,
+   "test_acc_per_class": [
+    96.36363636363636,
+    96.15384615384616,
+    0.0,
+    36.95652173913043,
+    75.43859649122807,
+    79.48717948717949,
+    14.893617021276595,
+    100.0,
+    29.545454545454547,
+    75.0
+   ],
+   "train_acc_running": 38.8,
+   "members": {
+    "H3": {
+     "val_acc": 59.8,
+     "test_acc": 59.4,
+     "mean_clause_len": 16.06049919128418,
+     "frac_empty_clauses": 0.003700000001117587,
+     "mean_weight": 4.876800060272217,
+     "type_i_per_example": 697.9665,
+     "type_ii_per_example": 697.978,
+     "vote_share": 1.0
+    }
+   },
+   "train_s": 1.4683058261871338,
+   "eval_s": 0.05912065505981445,
+   "examples_per_s": 1362.1140530331877,
+   "peak_gpu_mib": 604.0,
+   "elapsed_s": 1.5274264812469482
+  },
+  {
+   "epoch": 2,
+   "val_acc": 71.4,
+   "best_val_acc": 71.4,
+   "test_acc": 73.8,
+   "test_acc_per_class": [
+    67.27272727272727,
+    88.46153846153845,
+    58.46153846153847,
+    93.47826086956522,
+    63.1578947368421,
+    64.1025641025641,
+    40.42553191489361,
+    87.2340425531915,
+    93.18181818181817,
+    89.58333333333334
+   ],
+   "train_acc_running": 69.25,
+   "members": {
+    "H3": {
+     "val_acc": 71.39999999999999,
+     "test_acc": 73.8,
+     "mean_clause_len": 14.986350059509277,
+     "frac_empty_clauses": 0.0032499998342245817,
+     "mean_weight": 6.232100009918213,
+     "type_i_per_example": 387.702,
+     "type_ii_per_example": 387.153,
+     "vote_share": 1.0
+    }
+   },
+   "train_s": 0.32279300689697266,
+   "eval_s": 0.05878257751464844,
+   "examples_per_s": 6195.921092672089,
+   "peak_gpu_mib": 604.0,
+   "elapsed_s": 1.9090020656585693
+  }
+ ],
+ "status": "done",
+ "best": {
+  "val_correct": 357,
+  "epoch": 2
+ },
+ "elapsed_s": 1.9090020656585693,
+ "wandb_url": null,
+ "best_model": "/work/vajira/DL2026/torchtsetlin/experiments/joint_wide_tm/models/smoke/I/H3_seed0.pt",
+ "best_epoch": 2,
+ "best_val_acc": 71.4,
+ "test_acc_at_best": 73.8,
+ "test_acc_per_class_at_best": [
+  67.27272727272727,
+  88.46153846153845,
+  58.46153846153847,
+  93.47826086956522,
+  63.1578947368421,
+  64.1025641025641,
+  40.42553191489361,
+  87.2340425531915,
+  93.18181818181817,
+  89.58333333333334
+ ],
+ "members_at_best": {
+  "H3": {
+   "val_acc": 71.39999999999999,
+   "test_acc": 73.8,
+   "mean_clause_len": 14.986350059509277,
+   "frac_empty_clauses": 0.0032499998342245817,
+   "mean_weight": 6.232100009918213,
+   "type_i_per_example": 387.702,
+   "type_ii_per_example": 387.153,
+   "vote_share": 1.0
+  }
+ },
+ "epochs_run": 2,
+ "gpu_s_to_best": 1.9090020656585693,
+ "test_acc_last": 73.8,
+ "train_s_per_epoch_mean": 0.8955494165420532,
+ "eval_s_per_epoch_mean": 0.058951616287231445,
+ "peak_gpu_mib": 604.0,
+ "finished": "2026-11-16T11:08:51"
+}
