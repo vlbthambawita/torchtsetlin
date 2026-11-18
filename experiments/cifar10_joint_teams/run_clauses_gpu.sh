@@ -8,7 +8,10 @@
 # of the batch-size study.
 #   CJT_CLAUSES=16000,32000 ./run_clauses_gpu0.sh     other sizes (per class and member)
 #   CJT_CLAUSE_BATCH=32 ./run_clauses_gpu0.sh         another batch size
-#   CJT_T_MODE=scaled ./run_clauses_gpu0.sh           T in proportion to the clauses (tag ..._Tscaled)
+#   CJT_SCALED_CLAUSES=32000,64000 ./run_clauses_gpu0.sh   sizes that ALSO run with T scaled in
+#                                                     proportion to the clauses (default 32000,
+#                                                     tag ..._Tscaled; none = off)
+#   CJT_T_MODE=scaled ./run_clauses_gpu0.sh           every size with scaled T only
 #   CJT_TIME_CAP_H=72 ./run_clauses_gpu0.sh           time cap per run
 #   CJT_PHASES=cprice ./run_clauses_gpu0.sh           only the cost table
 #   CJT_FG=1 ./run_clauses_gpu0.sh                    stay in the foreground

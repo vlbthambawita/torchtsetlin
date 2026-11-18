@@ -51,8 +51,9 @@ members, one run per GPU, largest first. Start one script per tmux session:
 It first times 30 updates per size (`cprice`: s/epoch and peak memory in `./status.sh`), then runs
 16 000, 32 000, 64 000 and 128 000 clauses per class and member (tags `M_b64_<policy>_s0_c<N>`,
 phase `clauses`, checkpoint every epoch, time cap 120 h). T stays at the Toolbox value of each
-member. Options (use the same in all sessions): `CJT_CLAUSES=16000,32000`, `CJT_CLAUSE_BATCH=32`,
-`CJT_T_MODE=scaled` (T in proportion to the clauses, tag `..._Tscaled`), `CJT_TIME_CAP_H=72`,
+member; 32 000 also runs with T scaled in proportion to the clauses (tag `..._Tscaled`,
+`CJT_SCALED_CLAUSES=32000,64000` or `none`). Options (use the same in all sessions): `CJT_CLAUSES=16000,32000`, `CJT_CLAUSE_BATCH=32`,
+`CJT_T_MODE=scaled` (every size with scaled T only), `CJT_TIME_CAP_H=72`,
 `CJT_PHASES=cprice` (cost table only).
 
 Results come back with `rsync -a <server>:<path>/results/ results/` and
