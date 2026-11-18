@@ -30,7 +30,7 @@ from common import (
 EPOCH_MARKS = (60, 100)
 UPDATE_MARKS = (20_000, 50_000, 100_000)
 TOL_PP = 1.0
-PHASE_LIST = ("pricing", "pilot", "grid", "ext", "large")
+PHASE_LIST = ("pricing", "pilot", "grid", "ext", "large", "cprice", "clauses")
 
 
 def records(phase):
@@ -69,20 +69,20 @@ def status():
             claimed = (CACHE / "claims" / ph / j["tag"]).exists()
             if r and r.get("status") == "done":
                 done += 1
-                if ph == "pricing":
-                    lines.append(f"    {j['tag']:22s} {r['train_s_per_epoch'] + r['eval_s_per_epoch']:8.0f} s/epoch  "
+                if ph in ("pricing", "cprice"):
+                    lines.append(f"    {j['tag']:30s} {r['train_s_per_epoch'] + r['eval_s_per_epoch']:8.0f} s/epoch  "
                                  f"peak {r['peak_gpu_mib'] / 1024:5.1f} GiB  aug {r['aug_s_per_epoch']:.0f} s")
                 else:
-                    lines.append(f"    {j['tag']:22s} done    test {r['test_acc_at_best']:.2f} @ epoch "
+                    lines.append(f"    {j['tag']:30s} done    test {r['test_acc_at_best']:.2f} @ epoch "
                                  f"{r['best_epoch']}/{r['epochs_run']}  ({r['elapsed_s'] / 3600:.1f} h)")
             elif r and r.get("curve"):
                 run += claimed
                 c = r["curve"][-1]
-                lines.append(f"    {j['tag']:22s} {'running' if claimed else 'paused '} epoch {c['epoch']:3d}  val "
+                lines.append(f"    {j['tag']:30s} {'running' if claimed else 'paused '} epoch {c['epoch']:3d}  val "
                              f"{c['val_acc']:.2f}  best {c['best_val_acc']:.2f}  ({r['elapsed_s'] / 3600:.1f} h)")
             elif claimed:
                 run += 1
-                lines.append(f"    {j['tag']:22s} starting")
+                lines.append(f"    {j['tag']:30s} starting")
         print(f"{ph:8s} {done}/{len(js)} done, {run} running")
         print("\n".join(lines)) if lines else None
     c = read_json(RESULTS / "pilot" / "choice.json")

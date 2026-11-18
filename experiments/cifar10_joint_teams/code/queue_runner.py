@@ -10,6 +10,9 @@ job that is not finished and not claimed, in this order (plan §8):
   3. grid      teams M and S x 7 batch sizes with the chosen policy, longest first
   4. ext       team M at B = 1 and 4        (only with CJT_PHASES=...,ext)
   5. large     team L at CJT_LARGE_BATCHES  (only with CJT_PHASES=...,large)
+  6. cprice    clause sweep, 30 timed updates per size -> s/epoch and peak memory
+  7. clauses   team M, B = 64, chosen policy, 16 000 ... 128 000 clauses per class and member
+               (run_clauses_gpu<K>.sh; CJT_CLAUSES, CJT_CLAUSE_BATCH, CJT_T_MODE, CJT_TIME_CAP_H)
 
 Phases: ``--phases`` or CJT_PHASES (default ``pricing,pilot,grid``).
 
@@ -36,6 +39,7 @@ import time
 import torch
 from common import (
     CACHE,
+    CLAUSE_SWEEP,
     FINAL,
     LOGS,
     PILOT,
@@ -56,7 +60,9 @@ CLAIMS = CACHE / "claims"
 DEVICE = os.environ.get("CJT_DEVICE", "cuda:0")
 INTERRUPTED = {143, -15, 130, -2, 137, -9}          # SIGTERM / SIGINT / SIGKILL: not a failure
 HOST = socket.gethostname()
-ORDER = ["pricing", "pilot", "grid", "ext", "large"]
+ORDER = ["pricing", "pilot", "grid", "ext", "large", "cprice", "clauses"]
+LONGEST_FIRST = ("grid", "ext", "large", "clauses")
+NEEDS_POLICY = ("grid", "ext", "large", "cprice", "clauses")
 
 
 def ordered_jobs(phases):
@@ -65,12 +71,12 @@ def ordered_jobs(phases):
         if ph not in phases:
             continue
         js = jobs(ph)
-        out += sorted(js, key=est_cost, reverse=True) if ph in ("grid", "ext", "large") else js
+        out += sorted(js, key=est_cost, reverse=True) if ph in LONGEST_FIRST else js
     return out
 
 
 def waits_for_pilot(phases):
-    return policy_choice() is None and any(p in phases for p in ("grid", "ext", "large"))
+    return policy_choice() is None and any(p in phases for p in NEEDS_POLICY)
 
 
 def choose_policy():
@@ -129,6 +135,13 @@ def claim(job, gpu):
 def command(job):
     cmd = [sys.executable, "train.py", "--phase", job["phase"], "--team", job["team"], "--batch-size",
            str(job["batch"]), "--policy", job["policy"], "--seed", str(job["seed"]), "--device", DEVICE]
+    if job.get("clauses"):                            # clause sweep: larger members, own tag suffix
+        cmd += ["--clauses", str(job["clauses"]), "--t-mode", job["t_mode"],
+                "--tag-suffix", job["tag"].split(f"_s{job['seed']}", 1)[1]]
+    if job["phase"] == "clauses":                     # long epochs: checkpoint each one, longer cap
+        cmd += ["--ckpt-every", "1", "--time-cap-h", os.environ.get("CJT_TIME_CAP_H") or str(CLAUSE_SWEEP["time_cap_h"])]
+    if job["phase"] == "cprice":
+        cmd += ["--calibrate", str(CLAUSE_SWEEP["price_updates"]), "--no-wandb"]
     if job["phase"] == "pricing":
         cmd += ["--calibrate", "300", "--no-wandb"]
     if job["phase"] == "smoke":

@@ -95,6 +95,8 @@ def main():
     ap.add_argument("--policy", default="full", choices=POLICIES)
     ap.add_argument("--seed", type=int, default=SEED)
     ap.add_argument("--clauses", type=int, default=CLAUSES, help="per class and member")
+    ap.add_argument("--t-mode", default="fixed", choices=["fixed", "scaled"],
+                    help="scaled: every member's T in proportion to --clauses")
     ap.add_argument("--patience", type=int, default=None)
     ap.add_argument("--min-epochs", type=int, default=None)
     ap.add_argument("--max-epochs", type=int, default=None)
@@ -121,7 +123,7 @@ def main():
         torch.cuda.set_device(dev)
     tt.seed_everything(args.seed)
     tag = tag_of(args.team, args.batch_size, args.policy, args.seed, args.tag_suffix)
-    cfgs = member_cfgs(args.team, args.clauses)
+    cfgs = member_cfgs(args.team, args.clauses, args.t_mode)
     names = list(cfgs)
     encs = [cfgs[n]["enc"] for n in names]
     data = load_cifar(args.subset)
@@ -135,7 +137,7 @@ def main():
     pan = dict(raw=data["val"][0][pidx], y=y["val"][pidx], xs=[x[pidx] for x in xs["val"]])
     gen = torch.Generator(device="cpu").manual_seed(1000 + args.seed)      # data order = f(seed)
     train_data = TrainData(data["train"][0], encs, args.policy, args.seed, dev)
-    hp = dict(team=args.team, rule=RULE, shared_negative=True,
+    hp = dict(team=args.team, rule=RULE, shared_negative=True, clauses=args.clauses, t_mode=args.t_mode,
               members={n: dict(c, clauses_total=int(m.n_clauses_total), n_features=int(m.n_features),
                                n_literals=int(m.n_literals), max_chunk_elements=int(m.max_chunk_elements))
                        for (n, c), m in zip(cfgs.items(), team.members)},
@@ -186,7 +188,7 @@ def run(args, team, hp, tag, train_data, xs, y, ytr, pan, gen, dev):
     rec["status"] = "running"
     tracker = Tracker(args.phase, args.team, tag,
                       dict(hp, tag=tag, phase=args.phase, git_sha=rec["git_sha"], env=rec["env"]),
-                      [args.phase, f"team{args.team}", f"b{args.batch_size}", f"aug-{args.policy}",
+                      [args.phase, f"team{args.team}", f"b{args.batch_size}", f"c{args.clauses}", f"aug-{args.policy}",
                        f"seed{args.seed}", rec["env"].get("gpu", args.device)] + team.names,
                       enabled=not args.no_wandb)
     rec["wandb_url"] = tracker.url or rec.get("wandb_url")

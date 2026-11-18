@@ -7,7 +7,7 @@ adds the 3D member and builds / saves / reloads CIFAR-10 teams. The library is n
 import time
 
 import torch
-from common import ENC_SHAPE, MEMBERS, MODEL_KW, N_CLASSES, REPO, RULE, TEAMS, _load
+from common import ENC_SHAPE, MEMBERS, MODEL_KW, N_CLASSES, REPO, RULE, TEAMS, _load, member_T
 
 import torchtsetlin as tt
 
@@ -19,8 +19,8 @@ class JointConv3d(joint._JointMixin, tt.Conv3dTsetlinMachine):
     """A 3D convolutional member. Without ``_joint_on`` it is the library model plus a counter."""
 
 
-def member_cfgs(team, clauses):
-    return {n: dict(MEMBERS[n], clauses=clauses) for n in TEAMS[team]}
+def member_cfgs(team, clauses, t_mode="fixed"):
+    return {n: dict(MEMBERS[n], clauses=clauses, T=member_T(n, clauses, t_mode)) for n in TEAMS[team]}
 
 
 def build_member(c, max_batch, dev):

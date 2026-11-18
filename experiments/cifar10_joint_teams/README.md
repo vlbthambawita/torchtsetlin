@@ -41,6 +41,20 @@ CJT_PHASES=large CJT_LARGE_BATCHES=32,128,1024 ./run_gpu0.sh   # the five-member
 CJT_PHASES=pricing ./run_gpu0.sh                               # only the cost table
 ```
 
+Clause sweep (2026-11-18, after the batch grid): the best team (M) at batch 64 with larger
+members, one run per GPU, largest first. Start one script per tmux session:
+
+```bash
+./run_clauses_gpu0.sh   # ... ./run_clauses_gpu3.sh
+```
+
+It first times 30 updates per size (`cprice`: s/epoch and peak memory in `./status.sh`), then runs
+16 000, 32 000, 64 000 and 128 000 clauses per class and member (tags `M_b64_<policy>_s0_c<N>`,
+phase `clauses`, checkpoint every epoch, time cap 120 h). T stays at the Toolbox value of each
+member. Options (use the same in all sessions): `CJT_CLAUSES=16000,32000`, `CJT_CLAUSE_BATCH=32`,
+`CJT_T_MODE=scaled` (T in proportion to the clauses, tag `..._Tscaled`), `CJT_TIME_CAP_H=72`,
+`CJT_PHASES=cprice` (cost table only).
+
 Results come back with `rsync -a <server>:<path>/results/ results/` and
 `rsync -a <server>:<path>/figures/ figures/` (or a commit); then `python code/report.py`. The
 best-epoch teams stay in `models/` on the server (git-ignored).
@@ -111,6 +125,7 @@ sums to its class vote, the member maps add up to the team score. For a saved te
 |---|---|
 | `setup.sh`, `env.sh` | one-time setup; shared environment (venv, W&B host, telemetry off) |
 | `run_gpu0.sh` … `run_gpu3.sh`, `run_gpu.sh`, `gpu_device.sh` | one runner per GPU slot |
+| `run_clauses_gpu0.sh` … `run_clauses_gpu3.sh`, `run_clauses_gpu.sh` | the same runners on the clause sweep |
 | `status.sh`, `stop.sh` | progress; graceful / immediate stop |
 | `code/common.py` | members, teams, grid, paths, data + split, records |
 | `code/augment.py` | AlbumentationsX policies, per-image seeding, look-ahead worker pool |

@@ -69,7 +69,10 @@ PILOT = dict(team="M", batch=32, epochs=40, tie_pp=0.5)
 EARLY = dict(patience=30, min_epochs=60, max_epochs=200, time_cap_h=48.0)
 VIZ_EVERY = 10
 PANEL_PER_CLASS = 2                                    # fixed validation images for the maps
-PHASES = ["smoke", "check", "pricing", "pilot", "grid", "ext", "large"]
+# Clause sweep (2026-11-18, after the batch grid): best team at one batch size, larger members.
+CLAUSE_SWEEP = dict(team="M", batch=64, clauses=[16000, 32000, 64000, 128000],
+                    time_cap_h=120.0, price_updates=30)
+PHASES = ["smoke", "check", "pricing", "pilot", "grid", "ext", "large", "cprice", "clauses"]
 FINAL = ("done",)
 CLASSES = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
@@ -94,11 +97,43 @@ def large_batches():
     return [int(b) for b in v.split(",") if b.strip()]
 
 
+def sweep_clauses():
+    """Clauses per class and member of the clause sweep: CJT_CLAUSES=16000,32000 overrides."""
+    v = os.environ.get("CJT_CLAUSES", "")
+    return [int(c) for c in v.split(",") if c.strip()] or CLAUSE_SWEEP["clauses"]
+
+
+def sweep_batch():
+    return int(os.environ.get("CJT_CLAUSE_BATCH") or CLAUSE_SWEEP["batch"])
+
+
+def t_mode():
+    """``fixed``: every member keeps its Toolbox T at any size (the paper's setting up to 64 000
+    clauses). ``scaled`` (CJT_T_MODE=scaled): T grows in proportion to the clauses."""
+    m = os.environ.get("CJT_T_MODE") or "fixed"
+    if m not in ("fixed", "scaled"):
+        raise SystemExit(f"CJT_T_MODE must be fixed or scaled, not {m}")
+    return m
+
+
+def clause_suffix(clauses, mode):
+    return f"_c{clauses}" + ("_Tscaled" if mode == "scaled" else "")
+
+
+def member_T(name, clauses, mode="fixed"):
+    T = MEMBERS[name]["T"]
+    return int(round(T * clauses / CLAUSES)) if mode == "scaled" else T
+
+
 def jobs(phase):
-    """Job dicts of one phase: team, batch, policy, seed, tag."""
-    def j(team, batch, policy):
-        return dict(phase=phase, team=team, batch=batch, policy=policy, seed=SEED,
-                    tag=tag_of(team, batch, policy))
+    """Job dicts of one phase: team, batch, policy, seed, tag (clause sweep: + clauses, t_mode)."""
+    def j(team, batch, policy, clauses=None):
+        d = dict(phase=phase, team=team, batch=batch, policy=policy, seed=SEED,
+                 tag=tag_of(team, batch, policy))
+        if clauses:
+            d.update(clauses=clauses, t_mode=t_mode(),
+                     tag=tag_of(team, batch, policy, suffix=clause_suffix(clauses, t_mode())))
+        return d
     pol = policy_choice()
     if phase == "smoke":
         return [j(t, b, "full") for t in TEAMS for b in (16, 1024)]
@@ -114,11 +149,18 @@ def jobs(phase):
         return [j("M", b, pol) for b in EXT_BATCHES]
     if phase == "large":
         return [j("L", b, pol) for b in large_batches()]
+    if phase in ("cprice", "clauses"):
+        return [j(CLAUSE_SWEEP["team"], sweep_batch(), pol, c) for c in sweep_clauses()]
     raise KeyError(phase)
 
 
 def est_cost(job):
     """Seconds per epoch from the nearest pricing record (for longest-first ordering)."""
+    if job.get("clauses"):                             # clause sweep: its own pricing, else linear
+        r = read_json(RESULTS / "cprice" / f"{job['tag']}.json")
+        if r and r.get("train_s_per_epoch"):
+            return r["train_s_per_epoch"] + r["eval_s_per_epoch"]
+        return 60.0 * job["clauses"] / CLAUSES
     best = None
     for p in jobs("pricing"):
         if p["team"] != job["team"]:

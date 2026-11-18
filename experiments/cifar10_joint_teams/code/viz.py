@@ -41,6 +41,8 @@ def evidence(model, x, k, top=3, step=2):
     Returns pixel maps (B, 32, 32), votes (B,), and per image the ``top`` strongest matching
     clauses of class k: [(signed weight, n literals, clause index, pixel map (32, 32))]."""
     ph, pw = model.patch_size[-2:]
+    if model.n_clauses_total > 100_000:                # (step, P, C) patch matches: one image at a time
+        step = 1
     ones = torch.ones(1, 1, ph, pw, device=x.device)
     w = model._signed_weights().view(model.n_classes, model.n_clauses)
     lens = model.include_count.view(model.n_classes, model.n_clauses)
