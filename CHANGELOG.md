@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.2 (2026-11-19)
+
+No change to the learning code: models train and predict exactly as in 0.7.1.
+
+**The package now carries the paper's title**, *torchtsetlin: Fast, Interpretable Tsetlin Machines
+for the PyTorch Ecosystem*, in the package description (PyPI), the module docstring, the
+documentation home page and the site description.
+
+**New benchmark page: Batch size × clauses** (`docs/batch-size-clauses.md`). 128 MNIST runs over
+batch sizes 1 to 1024 and 1,000 to 64,000 clauses per class, for flat, convolutional and 3D
+convolutional models, with accuracy and GPU-time heatmaps, a time-against-error plot, full tables
+and two controls (fixed `T`, sequential mode). Batches of 16 to 64 are both the most accurate and
+the cheapest setting; a batch of 1024 loses accuracy on every model and does not save time. The
+page and its figures are generated from the run records by
+`experiments/mnist_batch_clauses/code/summary_fig.py --docs`.
+
 ## 0.7.1 (2026-11-10)
 
 **Fix: out of memory on large models when counting included literals.** Every refresh of
