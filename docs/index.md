@@ -1,6 +1,6 @@
 # torchtsetlin
 
-**GPU-enabled, PyTorch-native Tsetlin machines.**
+**Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem.**
 
 !!! release "Latest release: torchtsetlin %%version%%"
     `pip install torchtsetlin==%%version%%`. See the [changelog](changelog.md) for what's new.

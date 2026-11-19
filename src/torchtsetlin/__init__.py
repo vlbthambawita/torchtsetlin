@@ -1,4 +1,4 @@
-"""torchtsetlin — GPU-enabled, PyTorch-native Tsetlin machines.
+"""torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem.
 
 Quick start::
 
