@@ -7,6 +7,7 @@
 
 Every number comes from results/grid/*.json (seed 0, T scaled).
 Usage: python code/summary_fig.py            # figures/*.png
+       python code/summary_fig.py --docs     # also docs/batch-size-clauses.md + light/dark figures
        python code/summary_fig.py --paper    # also the paper's figures/batch_clauses_heatmaps.pdf
                                              # and generated/batch_summary_numbers.tex (R{bcs/...} macros)
 """
@@ -26,18 +27,32 @@ from matplotlib.colors import LinearSegmentedColormap, LogNorm, Normalize
 
 PROG = Path(__file__).resolve().parents[1]
 PAPER = Path("/work/vajira/DL2026/PAPER---torchtsetlin--Journal-of-Machine-Learning-Research/paper")
-INK, INK2, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#fcfcfb"
+DOCS = PROG.parents[1] / "docs"
 BLUES = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5", "#2a78d6",
          "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b"]
-BLUE = LinearSegmentedColormap.from_list("blue", BLUES)
-ORANGE = LinearSegmentedColormap.from_list("orange", ["#fde6d9", "#f6b08f", "#eb6834", "#b8491d", "#7a2d0e"])
+ORANGES = ["#fde6d9", "#f6b08f", "#eb6834", "#b8491d", "#7a2d0e"]
+
+
+def theme(dark=False):
+    """Light or dark chart chrome. On the dark surface the ramps run the other way, so that a
+    low value still recedes into the surface and a high one stands out."""
+    global INK, INK2, MUTED, GRID, SURFACE, AXIS, BLUE, ORANGE, HIGH
+    if dark:
+        INK, INK2, MUTED, GRID, SURFACE, AXIS = "#f0efec", "#c3c2b7", "#898781", "#2c2c2a", "#1a1a19", "#383835"
+    else:
+        INK, INK2, MUTED, GRID, SURFACE, AXIS = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#fcfcfb", "#c3c2b7"
+    HIGH = "Lighter" if dark else "Darker"
+    BLUE = LinearSegmentedColormap.from_list("blue", BLUES[::-1] if dark else BLUES)
+    ORANGE = LinearSegmentedColormap.from_list("orange", ORANGES[::-1] if dark else ORANGES)
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9, "axes.edgecolor": AXIS,
+                         "axes.labelcolor": INK2, "xtick.color": MUTED, "ytick.color": MUTED,
+                         "text.color": INK, "figure.facecolor": SURFACE, "axes.facecolor": SURFACE,
+                         "savefig.facecolor": SURFACE})
+
+
+theme()
 MODELS = [("flat", "Flat TM"), ("conv", "Conv 2D TM"), ("conv3", "Conv 3D TM (bit planes)")]
 ACC_FLOOR = {"flat": 96.0, "conv": 98.4, "conv3": 96.5}      # colour scale floor; values stay printed
-plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9, "axes.edgecolor": "#c3c2b7",
-                     "axes.labelcolor": INK2, "xtick.color": MUTED, "ytick.color": MUTED,
-                     "text.color": INK, "figure.facecolor": SURFACE, "axes.facecolor": SURFACE,
-                     "savefig.facecolor": SURFACE})
-
 
 def load():
     out = {}
@@ -58,7 +73,7 @@ def axes_of(d, model):
 
 def ink_on(rgba):
     r, g, b = rgba[:3]
-    return "#ffffff" if 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.45 else INK
+    return "#ffffff" if 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.45 else "#0b0b0b"
 
 
 def heat(ax, grid, cmap, norm, fmt, cs, bs, title):
@@ -79,8 +94,9 @@ def heat(ax, grid, cmap, norm, fmt, cs, bs, title):
     ax.set_title(title, loc="left", fontsize=9.5, color=INK, pad=6)
 
 
-def heatmaps(d, paper=False):
-    fig, axs = plt.subplots(3, 2, figsize=(11.5, 9.0 if paper else 9.6), height_ratios=[7, 7, 4.3])
+def heatmaps(d, out, bare=False):
+    """``bare``: no title or footnote (the paper's caption carries them)."""
+    fig, axs = plt.subplots(3, 2, figsize=(11.5, 9.0 if bare else 9.6), height_ratios=[7, 7, 4.3])
     for row, (model, name) in enumerate(MODELS):
         cs, bs = axes_of(d, model)
         acc = np.array([[d.get((model, c, b), {}).get("acc", np.nan) for b in bs] for c in cs])
@@ -93,22 +109,22 @@ def heatmaps(d, paper=False):
         axs[row, 0].set_ylabel("clauses per class")
     for ax in axs[2]:
         ax.set_xlabel("batch size")
-    if paper:                                          # the caption carries title and notes
+    if bare:
         fig.tight_layout(h_pad=1.6, w_pad=2.0)
-        fig.savefig(PAPER / "figures" / "batch_clauses_heatmaps.pdf")
+        fig.savefig(out)
         plt.close(fig)
         return
     fig.suptitle("MNIST: batch size x clauses, accuracy and training time", x=0.012, ha="left",
                  fontsize=12.5, fontweight="bold")
     fig.text(0.012, 0.012, "Seed 0, T scaled with clauses, early stopping on validation accuracy (patience 25). "
-             "Accuracy = test accuracy at the best-validation epoch. Darker = higher.", fontsize=8, color=INK2)
+             f"Accuracy = test accuracy at the best-validation epoch. {HIGH} = higher.", fontsize=8, color=INK2)
     fig.tight_layout(rect=(0, 0.025, 1, 0.965), h_pad=1.6, w_pad=2.0)
-    fig.savefig(PROG / "figures" / "summary_heatmaps.png", dpi=160)
+    fig.savefig(out, dpi=160)
     plt.close(fig)
 
 
-def write_macros(d):
-    """\\R{bcs/<model>/...} values quoted in the paper's text (no number is typed there)."""
+def numbers(d):
+    """The values quoted in the paper's text and on the docs page (never typed by hand)."""
     def acc(model, bs):
         return [v["acc"] for (m, _, b), v in d.items() if m == model and b in bs]
 
@@ -133,11 +149,153 @@ def write_macros(d):
     for model, bs in (("flat", (1, 16)), ("conv", (16, 1024)), ("conv3", (32, 1024))):
         for b in bs:
             m[f"{model}/hours/b{b}"] = hours(model, cmax[model], b)
+    return m
+
+
+def write_macros(d):
+    """\\R{bcs/<key>} macros for the paper."""
     lines = ["% generated by experiments/mnist_batch_clauses/code/summary_fig.py from results/grid/*.json; do not edit",
              "\\providecommand{\\R}[1]{\\ifcsname R@#1\\endcsname\\csname R@#1\\endcsname"
              "\\else\\textcolor{red}{??#1}\\fi}"]
-    lines += [f"\\expandafter\\def\\csname R@bcs/{k}\\endcsname{{{v}}}" for k, v in sorted(m.items())]
+    lines += [f"\\expandafter\\def\\csname R@bcs/{k}\\endcsname{{{v}}}" for k, v in sorted(numbers(d).items())]
     (PAPER / "generated" / "batch_summary_numbers.tex").write_text("\n".join(lines) + "\n")
+
+
+def md_grid(d, model, key, fmt):
+    cs, bs = axes_of(d, model)
+    rows = ["| clauses per class | " + " | ".join(f"batch {b}" for b in bs) + " |", "|---|" + "---|" * len(bs)]
+    for c in cs:
+        rows.append(f"| {c:,} | " + " | ".join(fmt(d[(model, c, b)][key]) if (model, c, b) in d else "–"
+                                                for b in bs) + " |")
+    return "\n".join(rows)
+
+
+def controls():
+    """Fixed-T and sequential-mode control runs, next to the matching grid cell."""
+    out = {"control_T": [], "control_seq": []}
+    for arm in out:
+        for f in sorted((PROG / "results" / arm).glob("*.json")):
+            r = json.loads(f.read_text())
+            if r.get("status") == "done":
+                h = r["hp"]
+                out[arm].append((h["model"], h["clauses_per_class"], h["batch_size"], r["test_acc_at_best"]))
+        order = [m for m, _ in MODELS]
+        out[arm].sort(key=lambda t: (order.index(t[0]), t[1], t[2]))
+    return out
+
+
+def write_docs(d):
+    """docs/batch-size-clauses.md and its light/dark figures. The page is generated whole."""
+    assets = DOCS / "assets" / "benchmarks"
+    for dark in (False, True):
+        theme(dark)
+        sfx = "_dark" if dark else ""
+        heatmaps(d, assets / f"batch-clauses-heatmaps{sfx}.png")
+        pareto_fig(d, assets / f"batch-clauses-pareto{sfx}.png")
+    theme()
+    n, ctl = numbers(d), controls()
+    name = dict(MODELS)
+    gain = max(max(v["acc"] for k, v in d.items() if k[0] == m and k[2] <= 512)
+               - max(v["acc"] for k, v in d.items() if k[0] == m and k[1] == 1000 and k[2] <= 512) for m, _ in MODELS)
+    tdiff = {m: [a - d[(mm, c, b)]["acc"] for mm, c, b, a in ctl["control_T"] if mm == m] for m in ("flat", "conv")}
+    hrs = lambda v: f"{v:.2f}" if v < 10 else f"{v:.1f}"                      # noqa: E731
+    L = [f"""# Batch size × clauses on MNIST
+
+<!-- Generated by experiments/mnist_batch_clauses/code/summary_fig.py --docs from the run
+     records in experiments/mnist_batch_clauses/results/. Do not edit by hand. -->
+
+How large can a mini-batch be before accuracy suffers, and does a larger batch save time?
+This page answers that for three models on MNIST, over batch sizes 1 to 1024 and 1,000 to
+64,000 clauses per class: {n['runs']} runs on torchtsetlin {n['version']}, one NVIDIA RTX 3090.
+
+- **Flat**: `TsetlinMachine`, pixel > 75, unweighted, `s = 10`, `T = 50` at 2,000 clauses.
+- **Conv 2D**: `ConvTsetlinMachine`, pixel ≥ 75, 10×10 window, weighted, `s = 5`, `T = 5000` at
+  2,000 clauses.
+- **Conv 3D**: `Conv3dTsetlinMachine` over the eight bit planes of each pixel, 8×10×10 window,
+  same `s` and `T` as Conv 2D.
+
+`T` grows in proportion to the clause count. Training uses 50,000 images and stops when the
+accuracy on the remaining 10,000 has not improved for 25 epochs (at least 30, at most 500).
+Every cell is **one seed**, so differences of a few tenths of a point between neighbouring
+cells are noise.
+
+## Accuracy and time at a glance
+
+Left: test accuracy at the best validation epoch. Right: GPU hours until that epoch. The
+stronger the colour, the higher the value; the accuracy colour scales are clipped at the value
+given in each title.
+
+![Batch size against clauses: accuracy and GPU hours](assets/benchmarks/batch-clauses-heatmaps.png#only-light)
+![Batch size against clauses: accuracy and GPU hours](assets/benchmarks/batch-clauses-heatmaps_dark.png#only-dark)
+
+## What the grid shows
+
+- **Batches of 16 to 64 are both the most accurate and the cheapest setting.** This is the
+  range the [batching page](concepts/batching.md) recommends.
+- **Conv 2D** reaches {n['conv/small/min']}–{n['conv/small/max']} % at every clause count for
+  batches up to 64, {n['conv/b256/min']}–{n['conv/b256/max']} % at 256 and
+  {n['conv/b1024/min']}–{n['conv/b1024/max']} % at 1024.
+- **Conv 3D** degrades faster: {n['conv3/small/min']}–{n['conv3/small/max']} % at batches 1 and
+  32, {n['conv3/b256/min']}–{n['conv3/b256/max']} % at 256 and
+  {n['conv3/b1024/min']}–{n['conv3/b1024/max']} % at 1024.
+- **Flat** shows no clear trend up to a batch of 512
+  ({n['flat/small/min']}–{n['flat/small/max']} %) and fails at 1024
+  ({n['flat/b1024/min']}–{n['flat/b1024/max']} %).
+- **A large batch does not save time**, because it needs more epochs. With 64,000 clauses,
+  Conv 2D takes {n['conv/hours/b1024']} GPU hours to its best epoch at batch 1024 and
+  {n['conv/hours/b16']} at batch 16.
+- **Single-example batches are the slowest way to the same accuracy**: the flat model with
+  64,000 clauses needs {n['flat/hours/b1']} hours at batch 1 and {n['flat/hours/b16']} at
+  batch 16.
+- **More clauses buy little on MNIST**: for every model, the best cell is at most {gain:.2f}
+  points above the best cell of its 1,000-clause row.
+
+## Time against error
+
+One point per run; lower left is better. The line joins the runs that no other run beats on
+both time and error, labelled with batch size and clause count.
+
+![Test error against GPU hours](assets/benchmarks/batch-clauses-pareto.png#only-light)
+![Test error against GPU hours](assets/benchmarks/batch-clauses-pareto_dark.png#only-dark)
+
+## Tables
+"""]
+    for model, _ in MODELS:
+        L += [f"### {name[model]}\n", "Test accuracy (%) at the best validation epoch:\n",
+              md_grid(d, model, "acc", lambda v: f"{v:.2f}"), "\nGPU hours to the best epoch:\n",
+              md_grid(d, model, "hours", hrs), ""]
+    L += ["## Controls\n",
+          "**Fixed `T`.** The same models with `T` kept at its 2,000-clause value instead of scaled "
+          "(the scaled grid cell is in brackets):\n",
+          "| model | clauses per class | batch | test accuracy (%) |", "|---|---|---|---|"]
+    for model, c, b, a in ctl["control_T"]:
+        L.append(f"| {name[model]} | {c:,} | {b} | {a:.2f} ({d[(model, c, b)]['acc']:.2f}) |")
+    L += [f"\nWith a fixed `T` the flat model loses {-max(tdiff['flat']):.2f} to {-min(tdiff['flat']):.2f} "
+          f"points in every cell, while Conv 2D stays within {max(abs(x) for x in tdiff['conv']):.2f} points."]
+    L += ["\n**Sequential mode.** The exact per-example algorithm (`feedback_mode=\"sequential\"`), "
+          "with the batch-1 grid cell in brackets:\n",
+          "| model | clauses per class | test accuracy (%) |", "|---|---|---|"]
+    for model, c, _, a in ctl["control_seq"]:
+        L.append(f"| {name[model]} | {c:,} | {a:.2f} ({d[(model, c, 1)]['acc']:.2f}) |")
+    L += [f"""
+Reading the last epoch instead of the best validation epoch changes no Conv 2D cell by more
+than {n['conv/lastgap']} points and no Conv 3D cell by more than {n['conv3/lastgap']}. The flat
+model is less stable at its last epoch: it differs by up to {n['flat/lastgap']} points for batches
+up to 512, and {n['flat/b1024/lastmin']}–{n['flat/b1024/lastmax']} % at 1024.
+
+## Reproducing
+
+The runs, their records and the scripts are in `experiments/mnist_batch_clauses/`:
+
+```bash
+cd experiments/mnist_batch_clauses
+python code/queue_runner.py --arm grid --seeds 0 --device cuda:0   # the grid (several GPU days)
+python code/queue_runner.py --arm control_T --device cuda:0        # and control_seq
+python code/report.py                                              # REPORT.md with every table
+python code/summary_fig.py --docs                                  # this page and its figures
+```
+"""]
+    (DOCS / "batch-size-clauses.md").write_text("\n".join(L))
 
 
 def pareto(pts):
@@ -151,7 +309,7 @@ def pareto(pts):
     return front
 
 
-def pareto_fig(d):
+def pareto_fig(d, out):
     all_bs = sorted({b for _, _, b in d})
     col = {b: BLUE(0.28 + 0.72 * k / (len(all_bs) - 1)) for k, b in enumerate(all_bs)}
     ymax = {"flat": 4.5, "conv": 1.7, "conv3": 3.6}
@@ -202,20 +360,24 @@ def pareto_fig(d):
     fig.suptitle("MNIST: what accuracy does each GPU hour buy?  Lower-left is better", x=0.012, ha="left",
                  fontsize=12.5, fontweight="bold")
     fig.tight_layout(rect=(0, 0.1, 1, 0.95))
-    fig.savefig(PROG / "figures" / "summary_pareto.png", dpi=160)
+    fig.savefig(out, dpi=160)
     plt.close(fig)
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--paper", action="store_true")
+    ap.add_argument("--docs", action="store_true", help="write docs/batch-size-clauses.md and its figures")
     args = ap.parse_args()
     data = load()
     if args.paper:
-        heatmaps(data, paper=True)
+        heatmaps(data, PAPER / "figures" / "batch_clauses_heatmaps.pdf", bare=True)
         write_macros(data)
         print("paper: figures/batch_clauses_heatmaps.pdf, generated/batch_summary_numbers.tex")
+    if args.docs:
+        write_docs(data)
+        print("docs: batch-size-clauses.md, assets/benchmarks/batch-clauses-*.png")
     (PROG / "figures").mkdir(exist_ok=True)
-    heatmaps(data)
-    pareto_fig(data)
+    heatmaps(data, PROG / "figures" / "summary_heatmaps.png")
+    pareto_fig(data, PROG / "figures" / "summary_pareto.png")
     print(f"{len(data)} runs -> figures/summary_heatmaps.png, figures/summary_pareto.png")

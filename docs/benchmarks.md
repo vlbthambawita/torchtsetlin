@@ -13,6 +13,11 @@ count, the model zoo, and where the time inside one `update()` goes — lives on
 Results are kept per library version, and **[Version history](benchmark-history.md)** puts
 every release's numbers side by side.
 
+How accuracy and training time depend on the batch size and the number of clauses, for flat,
+convolutional and 3D convolutional models on MNIST, is measured on
+**[Batch size × clauses](batch-size-clauses.md)** (128 runs, batch sizes 1 to 1024, up to 64,000
+clauses per class).
+
 How torchtsetlin is compared with the other Tsetlin-machine libraries (pyTsetlinMachine and its
 parallel and CUDA variants, tmu, green-tsetlin) — data, training, testing and what is measured —
 is set out in the **[benchmarking guideline](guides/benchmarking.md)**.
@@ -51,7 +56,9 @@ clauses per class. The cost of a batched update is dominated by per-clause work
 | 50 | 200 | 8 000 | 0.993 / 0.965 / 0.877 |
 | 200 | 400 | 4 000 | 0.788 / 0.771 / 0.889 |
 
-See [Batched vs sequential feedback](concepts/batching.md) for the interpretation.
+See [Batched vs sequential feedback](concepts/batching.md) for the interpretation. The same
+question at MNIST scale, with up to 64,000 clauses per class, is on
+[Batch size × clauses](batch-size-clauses.md).
 
 ## Reproducing
 
