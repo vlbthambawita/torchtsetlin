@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.3 (2026-11-20)
+
+No change to the learning code: models train and predict exactly as in 0.7.2.
+
+**The title follows the paper**, which is now *torchtsetlin: Fast, Interpretable Tsetlin Machines
+for PyTorch*: the package description (PyPI), the module docstring, the README, the documentation
+home page and site description, `CITATION.cff` and the BibTeX entries. The technical report and
+the white paper are rebuilt with this title; their content still describes version 0.3.2.
+
 ## 0.7.2 (2026-11-19)
 
 No change to the learning code: models train and predict exactly as in 0.7.1.

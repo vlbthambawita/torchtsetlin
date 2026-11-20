@@ -1,6 +1,6 @@
 # torchtsetlin
 
-**Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem.**
+**Fast, Interpretable Tsetlin Machines for PyTorch.**
 
 !!! release "Latest release: torchtsetlin %%version%%"
     `pip install torchtsetlin==%%version%%`. See the [changelog](changelog.md) for what's new.

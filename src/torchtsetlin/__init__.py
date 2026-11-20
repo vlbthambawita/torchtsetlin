@@ -1,4 +1,4 @@
-"""torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem.
+"""torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch.
 
 Quick start::
 
@@ -43,7 +43,7 @@ from .train import (
 )
 from .utils import seed_everything
 
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 __all__ = [
     "__version__",
     # sub-packages

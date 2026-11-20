@@ -1,4 +1,4 @@
-# torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem
+# torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch
 
 Models, data preparation, training, evaluation, interpretation and visualisation in one
 package, GPU-enabled and PyTorch-native.
@@ -143,7 +143,7 @@ other formats are at <https://vajira.info/torchtsetlin/cite/>, and GitHub's
 ```bibtex
 @techreport{thambawita2026torchtsetlin,
   author      = {Thambawita, Vajira},
-  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for the PyTorch Ecosystem},
+  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch},
   institution = {Simula Metropolitan Center for Digital Engineering},
   type        = {Technical report},
   year        = {2026},
