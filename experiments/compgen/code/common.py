@@ -72,8 +72,9 @@ def both_max_epochs():
 
 
 def with_ref():
-    """CG_REF=0 drops the reference-library runs (no pycuda on the server)."""
-    return os.environ.get("CG_REF", "1") != "0"
+    """The reference-library runs (arm ``ref``) are off unless CG_REF=1 (user, 2026-11-23: only
+    the torchtsetlin arms are run; the arm needs pycuda and a CUDA toolkit with a working nvcc)."""
+    return os.environ.get("CG_REF", "0") == "1"
 
 
 def tag_of(arm, feedback, seed, clauses=None):

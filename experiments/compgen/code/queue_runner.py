@@ -4,12 +4,12 @@ Started by ``run_gpu<K>.sh`` (one per GPU / tmux session). Each runner repeatedl
 job that is not finished and not claimed, in this order (plan §5, §8):
 
   1. price   every cell for 3 epochs (seed 0) -> seconds per epoch, used to order the jobs
-  2. p1      port and batching: arm ``neg`` at seq, b8, b32, b128, b512 and arm ``ref`` (the
-             reference library), all seeds; longest first
+  2. p1      port and batching: arm ``neg`` at seq, b8, b32, b128, b512, all seeds, longest
+             first (with CG_REF=1 also arm ``ref``, the reference library)
   3. p2      the standard TM: arm ``both`` at seq and b32, and at 1 000 and 10 000 clauses per class
 
-Phases: ``--phases`` or CG_PHASES (default ``price,p1,p2``). CG_SEEDS=0 runs one seed, CG_REF=0
-drops the reference runs, CG_BOTH_MAX_EPOCHS=500 shortens phase 2.
+Phases: ``--phases`` or CG_PHASES (default ``price,p1,p2``). CG_SEEDS=0 runs one seed, CG_REF=1
+adds the reference-library runs (off by default), CG_BOTH_MAX_EPOCHS=500 shortens phase 2.
 
 A job is claimed by atomically creating ``.cache/claims/<phase>/<tag>/`` (with owner.json). A
 finished job is skipped. A crashed job leaves ``<tag>.failed-<runner>`` so this runner does not
@@ -72,7 +72,9 @@ def ref_env():
     e = dict(os.environ)
     root = REF_BASE / "cuda_root"
     if root.exists():
-        e["PATH"] = f"{root.read_text().strip()}/bin:{e.get('PATH', '')}"
+        r = root.read_text().strip()
+        e["PATH"] = f"{r}/bin:{e.get('PATH', '')}"
+        e["LD_LIBRARY_PATH"] = f"{r}/lib64:{e.get('LD_LIBRARY_PATH', '')}"
     return e
 
 

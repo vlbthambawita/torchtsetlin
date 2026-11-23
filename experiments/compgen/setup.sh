@@ -5,10 +5,11 @@
 #   2. GPU check: every visible GPU runs a small update on the fast CUDA path.
 #   3. Data: the benchmark's generator for every seed (about 1 min per seed), pattern statistics.
 #   4. W&B login check (https://forge.coreweave.com/wandb/simulamet_mlc/TM_COMPGEN).
-#   5. The reference library in its own environment (setup_ref.sh; needs nvcc). CG_REF=0 skips it.
+#   5. Only with CG_REF=1: the reference library in its own environment (setup_ref.sh; needs a
+#      CUDA toolkit with a working nvcc). Off by default: only the torchtsetlin arms are run.
 #   6. Checks M0-M3 and a smoke test on GPU slot 0.
 # Knobs: CG_VENV=none (use the active python), CG_SKIP_INSTALL=1, TORCH_INDEX=<wheel index>,
-# PYTHON=python3.12, CG_SKIP_SMOKE=1, CG_SEEDS=0, CG_REF=0, CUDA_ROOT=<CUDA toolkit for pycuda>.
+# PYTHON=python3.12, CG_SKIP_SMOKE=1, CG_SEEDS=0, CG_REF=1, CUDA_ROOT=<CUDA toolkit for pycuda>.
 # PyTorch build: the default wheel needs a CUDA 13 driver. When the driver is older (the V100
 # server: CUDA 12.2) the CUDA 12.6 build is installed instead (the build the earlier V100 runs
 # used), and a wrong build left in .venv by an earlier setup is replaced. TORCH_INDEX overrides.
@@ -118,14 +119,14 @@ fi
 mkdir -p logs
 DEV0=$(./gpu_device.sh 0)
 echo "== 5/6 reference library (arm ref)"
-if [ "${CG_REF:-1}" = 0 ]; then
-  echo "  skipped (CG_REF=0)"
+if [ "${CG_REF:-0}" != 1 ]; then
+  echo "  skipped: only the torchtsetlin arms are run (CG_REF=1 adds the reference library)"
 elif CUDA_VISIBLE_DEVICES=$DEV0 ./setup_ref.sh > logs/setup_ref.log 2>&1; then
   tail -n 2 logs/setup_ref.log
 else
   tail -n 5 logs/setup_ref.log | sed 's/^/  /'
   echo "  The reference environment could not be built (logs/setup_ref.log). The torchtsetlin runs do not"
-  echo "  need it: start the runners with CG_REF=0, or fix it (CUDA_ROOT=<toolkit with nvcc>) and re-run setup.sh."
+  echo "  need it: start the runners without CG_REF=1, or fix it (CUDA_ROOT=<toolkit with nvcc>) and re-run setup.sh."
 fi
 
 if [ "${CG_SKIP_SMOKE:-0}" = 1 ]; then echo "== 6/6 checks and smoke test skipped"; exit 0; fi
@@ -135,16 +136,16 @@ echo "== 6/6 checks and smoke test on GPU slot 0 (logs/checks.log, logs/smoke.lo
 grep -E "PASS|FAIL" logs/checks.log | sed 's/^/  /'
 CUDA_VISIBLE_DEVICES=$DEV0 python code/queue_runner.py --gpu 0 --phases smoke > logs/smoke.log 2>&1 \
   || { tail -20 logs/smoke.log; exit 1; }
-if [ "${CG_REF:-1}" != 0 ] && [ -x .cache/ref/venv/bin/python ]; then
-  ( cd code && CUDA_VISIBLE_DEVICES=$DEV0 PATH="$(cat ../.cache/ref/cuda_root)/bin:$PATH" ../.cache/ref/venv/bin/python run_ref.py \
+if [ "${CG_REF:-0}" = 1 ] && [ -x .cache/ref/venv/bin/python ]; then
+  ( cd code && CUDA_VISIBLE_DEVICES=$DEV0 PATH="$(cat ../.cache/ref/cuda_root)/bin:$PATH" LD_LIBRARY_PATH="$(cat ../.cache/ref/cuda_root)/lib64:${LD_LIBRARY_PATH:-}" ../.cache/ref/venv/bin/python run_ref.py \
       --phase smoke --seed 0 --subset 4000 --max-epochs 2 ) >> logs/smoke.log 2>&1 || { tail -20 logs/smoke.log; exit 1; }
 fi
 python - <<'EOF'
 import sys
 sys.path.insert(0, "code")
-from common import RESULTS, jobs, read_json, tag_of
+from common import RESULTS, jobs, read_json, tag_of, with_ref
 bad = []
-tags = [j["tag"] for j in jobs("smoke")] + [tag_of("ref", "seq", 0)]
+tags = [j["tag"] for j in jobs("smoke")] + ([tag_of("ref", "seq", 0)] if with_ref() else [])
 for t in tags:
     r = read_json(RESULTS / "smoke" / f"{t}.json")
     if r is None and t.startswith("ref"):
@@ -161,7 +162,7 @@ cat <<EOF
 
 Setup done. Start one runner per GPU / tmux session (each resumes where it stopped if re-run):
   ./run_gpu0.sh    ./run_gpu1.sh    ./run_gpu2.sh    ./run_gpu3.sh
-They run: price (3 epochs per cell) -> phase 1 (port and batching, 18 runs) -> phase 2 (standard TM, 12 runs).
+They run: price (3 epochs per cell) -> phase 1 (batching, 15 runs) -> phase 2 (standard TM, 12 runs).
 Progress: ./status.sh      Results: python code/report.py (writes REPORT.md)
 Stop: ./stop.sh (after current runs) or ./stop.sh --now
 EOF

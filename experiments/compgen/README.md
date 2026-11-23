@@ -13,7 +13,7 @@ W&B mirror: https://forge.coreweave.com/wandb/simulamet_mlc/TM_COMPGEN (runs `cg
 ```bash
 git clone -b compgen https://github.com/vlbthambawita/torchtsetlin.git
 cd torchtsetlin/experiments/compgen
-./setup.sh          # once, in any session: environments, GPU check, data, checks, smoke test (~15 min)
+./setup.sh          # once, in any session: environment, GPU check, data, checks, smoke test (~10 min)
 . .venv/bin/activate && wandb login --host https://api.forge.coreweave.com   # once
 ./run_gpu0.sh       # tmux session 1
 ./run_gpu1.sh       # tmux session 2
@@ -28,7 +28,7 @@ All four must run in the same folder: they share one job list through `.cache/cl
 keeps it in the foreground of the tmux pane instead.
 
 The runners work through **price** (every cell for 3 epochs, gives the cost table and the job
-order) → **phase 1** (18 runs) → **phase 2** (12 runs) and exit when nothing is left. Re-running
+order) → **phase 1** (15 runs) → **phase 2** (12 runs) and exit when nothing is left. Re-running
 a script resumes: finished runs are skipped, interrupted runs continue from their checkpoint
 (every 25 epochs). `./stop.sh` stops after the current runs, `./stop.sh --now` immediately;
 remove `STOP` to continue.
@@ -39,7 +39,7 @@ Options (use the same in all four sessions):
 |---|---|
 | `CG_PHASES=price,p1` | only these phases (`price`, `p1`, `p2`) |
 | `CG_SEEDS=0` | one seed instead of 0, 1, 2 |
-| `CG_REF=0` | no reference-library runs (when pycuda cannot be built) |
+| `CG_REF=1` | also run the reference library (arm `ref`, off by default; set it for `setup.sh` and the runners) |
 | `CG_BOTH_MAX_EPOCHS=500` | shorter cap for the standard-TM runs of phase 2 (default 3 000) |
 | `CG_SLOTS=2` | two runners per GPU (the models need well under 1 GB) |
 | `CG_WANDB=0`, `CG_WANDB_PROJECT=…` | no W&B, or another project |
@@ -80,9 +80,13 @@ symbol is *not* here" and must find a concept by elimination.
 
 ## Design
 
+Only the torchtsetlin arms run by default (user decision, 2026-11-23). The reference library is
+an optional third arm, `CG_REF=1`: it needs pycuda and a CUDA toolkit whose `nvcc` works with the
+machine's compiler (`setup_ref.sh` picks one; the V100 server's default, CUDA 10.1, does not).
+
 | Arm | Model | Literals | Clauses |
 |---|---|---|---|
-| `ref` | the reference library at commit `226d8b64`, built as the script's `--vanilla` branch | negated input only | 200, one output |
+| `ref` (optional) | the reference library at commit `226d8b64`, built as the script's `--vanilla` branch | negated input only | 200, one output |
 | `neg` | `tt.TsetlinMachine`, 2 classes, `literals="negated"` (torchtsetlin ≥ 0.7.4) | negated only | 2 × 100 |
 | `both` | `tt.TsetlinMachine`, 2 classes | both kinds (the standard TM) | 2 × 100; 2 × 1 000 and 2 × 10 000 with T × 10, × 100 |
 
@@ -91,7 +95,7 @@ All: T = 10, s = 25, 256 states per automaton, unweighted, boost true positive, 
 | Phase | Runs |
 |---|---|
 | `price` | every cell below for 3 epochs, seed 0 |
-| `p1` | `neg` × {sequential, batch 8, 32, 128, 512} × seeds 0–2, and `ref` × seeds 0–2 |
+| `p1` | `neg` × {sequential, batch 8, 32, 128, 512} × seeds 0–2 (with `CG_REF=1` also `ref` × seeds 0–2) |
 | `p2` | `both` × {sequential, batch 32} × seeds 0–2, and `both` at 1 000 and 10 000 clauses per class × batch 32 × seeds 0–2 |
 
 **Training.** One pass over the training set per epoch. torchtsetlin runs shuffle every epoch;

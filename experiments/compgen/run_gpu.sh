@@ -4,7 +4,7 @@
 #   CG_PHASES=price ./run_gpu0.sh            only the cost table
 #   CG_PHASES=price,p1 ./run_gpu0.sh         without the standard-TM runs (phase 2)
 #   CG_SEEDS=0 ./run_gpu0.sh                 one seed instead of 0,1,2
-#   CG_REF=0 ./run_gpu0.sh                   without the reference-library runs
+#   CG_REF=1 ./run_gpu0.sh                   also the reference-library runs (off by default)
 #   CG_BOTH_MAX_EPOCHS=500 ./run_gpu0.sh     shorter cap for the standard-TM runs (default 3000)
 #   CG_SLOTS=2 ./run_gpu0.sh                 two runners on this GPU (the models are tiny)
 #   CG_FG=1 ./run_gpu0.sh                    stay in the foreground (log also in logs/gpuK.log)
