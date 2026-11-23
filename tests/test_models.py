@@ -7,8 +7,8 @@ import torchtsetlin as tt
 from torchtsetlin.data import make_noisy_xor, make_shapes
 
 
-def _train_xor(model, device, epochs=40, bs=10, n=2000):
-    x, y = make_noisy_xor(n, noise=0.4, seed=0, device=device)
+def _train_xor(model, device, epochs=40, bs=10, n=2000, noise=0.4):
+    x, y = make_noisy_xor(n, noise=noise, seed=0, device=device)
     xt, yt = make_noisy_xor(2000, noise=0.0, seed=1, device=device)
     for _ in range(epochs):
         perm = torch.randperm(n, device=device)
@@ -573,7 +573,10 @@ def test_fused_sequential_mode_learns_and_tracks_caches(compiled, monkeypatch):
                           weighted=True, max_included_literals=6).to(dev)
     m.cuda_graphs = False  # count the Python-level calls (a CUDA graph replays without them)
     assert m._fuse_single_examples()
-    acc = _train_xor(m, dev, epochs=10, bs=100, n=1000)
+    # Issue #24: with 40 % label noise this setting reached 0.56-0.89 depending on the random
+    # stream (12 seeds, compiled and eager kernels), so the old "> 0.8" held for one stream only.
+    # With 10 % noise the same 24 runs give 0.94-1.00.
+    acc = _train_xor(m, dev, epochs=10, bs=100, n=1000, noise=0.1)
     assert acc > 0.8, acc
     assert len(calls) == 10 * 1000
     ml = tt.CoalescedTsetlinMachine(12, 2, 60, T=20, s=3.9, multi_label=True, n_states=50,

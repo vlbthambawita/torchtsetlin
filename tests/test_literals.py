@@ -18,22 +18,6 @@ needs_triton = pytest.mark.skipif(
 KINDS = ["positive", "negated"]
 
 
-@pytest.fixture(autouse=True, scope="module")
-def _leave_no_compiled_kernels():
-    """The compiled kernels are shared by the whole process, and every new argument pattern (here:
-    a literal mask where other tests pass ``None``) is one more specialisation; after a few,
-    ``torch.compile`` silently runs a kernel eagerly, with another random stream. Tests that pin
-    an accuracy for one seed would then see different numbers, so this module starts and ends
-    with fresh kernels."""
-    import torch._dynamo
-
-    from torchtsetlin import functional as F
-
-    yield
-    F._KERNELS.clear()
-    torch._dynamo.reset()
-
-
 def _graphs(n, F, gen):
     feats, edges, types = [], [], []
     for _ in range(n):
