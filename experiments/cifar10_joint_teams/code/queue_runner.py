@@ -13,6 +13,14 @@ job that is not finished and not claimed, in this order (plan §8):
   6. cprice    clause sweep, 30 timed updates per size -> s/epoch and peak memory
   7. clauses   team M, B = 64, chosen policy, 16 000 ... 128 000 clauses per class and member
                (run_clauses_gpu<K>.sh; CJT_CLAUSES, CJT_CLAUSE_BATCH, CJT_T_MODE, CJT_TIME_CAP_H)
+  8. lprice    longer training + drop clause: 30 timed updates per model -> s/epoch, peak memory
+  9. long      team M, B = 64, geo+col, T scaled with the clauses, early stopping with patience 75
+               and NO epoch limit (run_long_gpu<K>.sh). Stage 1: 32 000 clauses at drop_clause_p
+               0, 0.25, 0.1, 0.5. Stage 2: 64 000 clauses at p = 0 (first free GPU) and at p*
+               (when stage 1 is done: results/long/choice.json = the p > 0 with the best
+               validation accuracy, within 0.5 pp the smaller p). CJT_LONG_PSTAR=0.25 fixes p* at
+               once, CJT_LONG_BIG=none skips stage 2, CJT_LONG_PATIENCE=150 raises the patience
+               and continues finished runs from their kept last checkpoint.
 
 Phases: ``--phases`` or CJT_PHASES (default ``pricing,pilot,grid``).
 
@@ -42,12 +50,15 @@ from common import (
     CLAUSE_SWEEP,
     FINAL,
     LOGS,
+    LONG,
     PILOT,
     POLICIES,
     PROG,
     RESULTS,
     est_cost,
     jobs,
+    long_choice,
+    long_patience,
     policy_choice,
     read_json,
     status_of,
@@ -60,7 +71,7 @@ CLAIMS = CACHE / "claims"
 DEVICE = os.environ.get("CJT_DEVICE", "cuda:0")
 INTERRUPTED = {143, -15, 130, -2, 137, -9}          # SIGTERM / SIGINT / SIGKILL: not a failure
 HOST = socket.gethostname()
-ORDER = ["pricing", "pilot", "grid", "ext", "large", "cprice", "clauses"]
+ORDER = ["pricing", "pilot", "grid", "ext", "large", "cprice", "clauses", "lprice", "long"]
 LONGEST_FIRST = ("grid", "ext", "large", "clauses")
 NEEDS_POLICY = ("grid", "ext", "large", "cprice", "clauses")
 
@@ -95,6 +106,41 @@ def choose_policy():
                         f"within {PILOT['tie_pp']} pp the stronger policy wins",
                 "written": time.strftime("%Y-%m-%dT%H:%M:%S")}, RESULTS / "pilot" / "choice.json")
     print(f"== pilot choice: augmentation policy {pol} (val {val})", flush=True)
+
+
+def choose_drop():
+    """Once the four stage-1 runs of ``long`` are done: p* = the p > 0 with the best validation
+    accuracy; values within ``tie_pp`` of it are tied and the smallest wins. If no p > 0 comes
+    within ``tie_pp`` of p = 0, drop clause did not help at this size and stage 2 still runs the
+    fallback p (the question at the larger size stays open)."""
+    if long_choice() is not None:
+        return
+    recs = {j["drop"]: read_json(RESULTS / "long" / f"{j['tag']}.json")
+            for j in jobs("long") if j["clauses"] == LONG["clauses"]}
+    if any(r is None or r.get("status") != "done" for r in recs.values()):
+        return
+    val = {p: r["best_val_acc"] for p, r in recs.items()}
+    pos = {p: v for p, v in val.items() if p > 0}
+    helped = max(pos.values()) >= val[0.0] - LONG["tie_pp"]
+    p = min(q for q, v in pos.items() if v >= max(pos.values()) - LONG["tie_pp"]) if helped else LONG["fallback_drop"]
+    write_json({"drop_clause_p": p, "helped_at_stage1": helped, "best_val_acc": {f"{q:g}": v for q, v in val.items()},
+                "test_acc_at_best": {f"{q:g}": r["test_acc_at_best"] for q, r in recs.items()},
+                "rule": f"p > 0 with the highest best-validation accuracy at {LONG['clauses']} clauses; within "
+                        f"{LONG['tie_pp']} pp the smaller p wins; if none is within {LONG['tie_pp']} pp of p = 0, "
+                        f"the fallback p = {LONG['fallback_drop']}",
+                "written": time.strftime("%Y-%m-%dT%H:%M:%S")}, RESULTS / "long" / "choice.json")
+    print(f"== long: stage 2 runs drop_clause_p = {p:g} (stage-1 validation accuracy {val})", flush=True)
+
+
+def continuable(job):
+    """A finished ``long`` run that a larger CJT_LONG_PATIENCE lets train on: it stopped by
+    patience, its last checkpoint was kept, and the new patience is larger than the old one."""
+    if job["phase"] != "long":
+        return False
+    r = read_json(RESULTS / "long" / f"{job['tag']}.json") or {}
+    return (str(r.get("stop_reason", "")).startswith("no validation improvement")
+            and long_patience() > r["hp"]["early_stopping"]["patience"]
+            and (CACHE / "ckpt" / "long" / f"{job['tag']}.final.pt").exists())
 
 
 def stop_reason():
@@ -140,6 +186,14 @@ def command(job):
                 "--tag-suffix", job["tag"].split(f"_s{job['seed']}", 1)[1]]
     if job["phase"] == "clauses":                     # long epochs: checkpoint each one, longer cap
         cmd += ["--ckpt-every", "1", "--time-cap-h", os.environ.get("CJT_TIME_CAP_H") or str(CLAUSE_SWEEP["time_cap_h"])]
+    if job.get("drop"):
+        cmd += ["--drop-clause-p", f"{job['drop']:g}"]
+    if job["phase"] == "long":                        # patience only: no epoch limit, safety time cap
+        cmd += ["--patience", str(long_patience()), "--min-epochs", str(LONG["min_epochs"]), "--max-epochs", "0",
+                "--ckpt-every", "1", "--time-cap-h", os.environ.get("CJT_TIME_CAP_H") or str(LONG["time_cap_h"]),
+                "--train-eval", str(LONG["train_eval"]), "--keep-final", "--continue-final"]
+    if job["phase"] == "lprice":
+        cmd += ["--calibrate", str(LONG["price_updates"]), "--no-wandb"]
     if job["phase"] == "cprice":
         cmd += ["--calibrate", str(CLAUSE_SWEEP["price_updates"]), "--no-wandb"]
     if job["phase"] == "pricing":
@@ -193,6 +247,8 @@ def main():
     while True:
         if not smoke:
             choose_policy()
+            if "long" in phases:
+                choose_drop()
             why = stop_reason()
             if why:
                 print(f"== {me}: stopping ({why})", flush=True)
@@ -200,7 +256,7 @@ def main():
         todo = jobs("smoke") if smoke else ordered_jobs(phases)
         pending, waiting = [], 0
         for j in todo:
-            if status_of(j["phase"], j["tag"]) in FINAL:
+            if status_of(j["phase"], j["tag"]) in FINAL and not continuable(j):
                 continue
             if (CLAIMS / j["phase"] / f"{j['tag']}.failed-{me}").exists():
                 continue
@@ -254,7 +310,7 @@ def main():
             shutil.rmtree(CLAIMS / job["phase"] / job["tag"], ignore_errors=True)
             print(f"== {me}: interrupted, exiting", flush=True)
             return
-        if rc != 0 and st not in FINAL:
+        if rc != 0 and (st not in FINAL or continuable(job)):
             (CLAIMS / job["phase"] / f"{job['tag']}.failed-{me}").touch()
         shutil.rmtree(CLAIMS / job["phase"] / job["tag"], ignore_errors=True)
 

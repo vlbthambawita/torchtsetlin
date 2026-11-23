@@ -16,6 +16,12 @@ class and the feedback counter are therefore registered buffers of a fixed size,
 a graphed update is always a single chunk, so the cursor is 0 there. ``_joint_T``,
 ``_joint_shared`` and ``_joint_on`` are constants of a captured graph: never change them on a
 member that has already been updated.
+
+Drop clause (cifar10_joint_teams, 2026-11-23): a joint update evaluates every member twice (pass A
+for the votes, then the member's own ``update``), and both passes must see the same clause mask.
+Members are therefore built with ``drop_granularity="epoch"`` (their ``update`` never resamples),
+``JointTeam.update`` draws one mask per member and update, and ``learning_votes`` applies it. With
+``drop_clause_p = 0`` no mask and no random number is drawn: the update is the one above.
 """
 
 from typing import Any, List, Optional, Sequence, Tuple
@@ -101,8 +107,10 @@ class JointConv(_JointMixin, tt.ConvTsetlinMachine):
 @torch.no_grad()
 def learning_votes(m, x) -> Tensor:
     """Pass A: raw, unclamped vote sums of ``m`` with learning semantics (an empty clause is
-    True), RNG-free. On CUDA this is the fused kernel the update itself evaluates with."""
-    assert not m._joint_on and m.drop_clause_p == 0.0 and m.drop_literal_p == 0.0
+    True), RNG-free. On CUDA this is the fused kernel the update itself evaluates with. Clauses
+    switched off by the member's current drop-clause mask do not vote, as in its update."""
+    assert not m._joint_on and m.drop_literal_p == 0.0
+    active = m._clause_active
     xb = m._prepare(x)
     B = xb.shape[0]
     P = m._patches_per_example(xb)
@@ -113,6 +121,8 @@ def learning_votes(m, x) -> Tensor:
         lit = m._encode(xb[i:i + step])
         res = _triton.conv_eval(m._neg_bits(lit), m.include_bits(), lit.shape[0], P, draw=False) if fused else None
         co = res[0] if res is not None else m._evaluate_dense(lit, True)[0]
+        if active is not None:
+            co = co & active.unsqueeze(0)
         out.append(m._votes(co, clamp=False))
     return torch.cat(out, dim=0)
 
@@ -149,6 +159,13 @@ class JointTeam:
         for m in self.members:
             m.eval()
 
+    def resample_dropout(self) -> None:
+        """One new clause mask per member, shared by pass A and the member's update."""
+        for m in self.members:
+            if m.drop_clause_p > 0.0:
+                assert m.drop_granularity == "epoch", "joint members must not resample in update()"
+                m.resample_dropout()
+
     def offsets(self, vs: List[Tensor]) -> List[Tensor]:
         """What each member adds to its own votes: sum over the others of c_ij * v_j."""
         out = []
@@ -167,6 +184,7 @@ class JointTeam:
     @torch.no_grad()
     def update(self, xs: Sequence[Tensor], y: Tensor) -> Tensor:
         """One joint update; returns the team's pre-update score (learning semantics)."""
+        self.resample_dropout()
         if self.rule == "none":
             return self.members[0].update(xs[0], y)
         vs = [learning_votes(m, x) for m, x in zip(self.members, xs)]

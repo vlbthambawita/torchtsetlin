@@ -72,7 +72,14 @@ PANEL_PER_CLASS = 2                                    # fixed validation images
 # Clause sweep (2026-11-18, after the batch grid): best team at one batch size, larger members.
 CLAUSE_SWEEP = dict(team="M", batch=64, clauses=[16000, 32000, 64000, 128000], scaled=[32000],
                     time_cap_h=120.0, price_updates=30)
-PHASES = ["smoke", "check", "pricing", "pilot", "grid", "ext", "large", "cprice", "clauses"]
+# Longer training and drop clause (2026-11-23, plan PLAN_LONG_DROPOUT.md): the best run of the
+# clause sweep (team M, B = 64, geo+col, T scaled with the clauses) with early stopping at
+# patience 75 and no epoch limit. Stage 1: 32 000 clauses at four drop-clause probabilities
+# (in this order). Stage 2: 64 000 clauses at p = 0 and at the p chosen from stage 1.
+LONG = dict(team="M", batch=64, policy="geo+col", t_mode="scaled", clauses=32000, drops=[0.0, 0.25, 0.1, 0.5],
+            big_clauses=64000, fallback_drop=0.25, tie_pp=0.5, patience=75, min_epochs=60, time_cap_h=240.0,
+            price_updates=30, train_eval=5000)
+PHASES = ["smoke", "check", "pricing", "pilot", "grid", "ext", "large", "cprice", "clauses", "lprice", "long"]
 FINAL = ("done",)
 CLASSES = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
 
@@ -129,6 +136,50 @@ def clause_suffix(clauses, mode):
     return f"_c{clauses}" + ("_Tscaled" if mode == "scaled" else "")
 
 
+def drop_suffix(p):
+    return f"_dc{p:g}"
+
+
+def long_patience():
+    """Patience of the ``long`` phase: CJT_LONG_PATIENCE=150 overrides (a larger value also lets
+    finished runs continue from their last checkpoint, see queue_runner)."""
+    return int(os.environ.get("CJT_LONG_PATIENCE") or LONG["patience"])
+
+
+def long_big():
+    """Stage-2 size (clauses per class and member): CJT_LONG_BIG=none switches stage 2 off."""
+    v = (os.environ.get("CJT_LONG_BIG") or "").strip().lower()
+    return None if v == "none" else int(v or LONG["big_clauses"])
+
+
+def long_choice():
+    """The drop-clause probability of the second stage-2 run: CJT_LONG_PSTAR=0.25 fixes it at
+    once; otherwise results/long/choice.json, written when the four stage-1 runs are done."""
+    v = os.environ.get("CJT_LONG_PSTAR")
+    if v:
+        return float(v)
+    c = read_json(RESULTS / "long" / "choice.json")
+    return None if c is None else float(c["drop_clause_p"])
+
+
+def long_jobs(phase):
+    """``long``: stage 1 in the order of LONG["drops"], then stage 2. ``lprice``: the same models,
+    30 timed updates each (stage 2 at p = 0 and the fallback p)."""
+    def j(clauses, p):
+        return dict(phase=phase, team=LONG["team"], batch=LONG["batch"], policy=LONG["policy"], seed=SEED,
+                    clauses=clauses, t_mode=LONG["t_mode"], drop=float(p),
+                    tag=tag_of(LONG["team"], LONG["batch"], LONG["policy"],
+                               suffix=clause_suffix(clauses, LONG["t_mode"]) + drop_suffix(p)))
+    out = [j(LONG["clauses"], p) for p in LONG["drops"]]
+    big = long_big()
+    if big:
+        out.append(j(big, 0.0))
+        p = LONG["fallback_drop"] if phase == "lprice" else long_choice()
+        if p:
+            out.append(j(big, p))
+    return out
+
+
 def member_T(name, clauses, mode="fixed"):
     T = MEMBERS[name]["T"]
     return int(round(T * clauses / CLAUSES)) if mode == "scaled" else T
@@ -144,6 +195,8 @@ def jobs(phase):
             d.update(clauses=clauses, t_mode=mode,
                      tag=tag_of(team, batch, policy, suffix=clause_suffix(clauses, mode)))
         return d
+    if phase in ("lprice", "long"):                    # policy fixed in LONG, no pilot needed
+        return long_jobs(phase)
     pol = policy_choice()
     if phase == "smoke":
         return [j(t, b, "full") for t in TEAMS for b in (16, 1024)]
@@ -168,7 +221,8 @@ def jobs(phase):
 def est_cost(job):
     """Seconds per epoch from the nearest pricing record (for longest-first ordering)."""
     if job.get("clauses"):                             # clause sweep: its own pricing, else linear
-        r = (read_json(RESULTS / "cprice" / f"{job['tag']}.json")
+        r = (read_json(RESULTS / "lprice" / f"{job['tag']}.json")
+             or read_json(RESULTS / "cprice" / f"{job['tag']}.json")
              or read_json(RESULTS / "cprice" / f"{job['tag'].replace('_Tscaled', '')}.json"))
         if r and r.get("train_s_per_epoch"):
             return r["train_s_per_epoch"] + r["eval_s_per_epoch"]

@@ -56,6 +56,39 @@ member; 32 000 also runs with T scaled in proportion to the clauses (tag `..._Ts
 `CJT_T_MODE=scaled` (every size with scaled T only), `CJT_TIME_CAP_H=72`,
 `CJT_PHASES=cprice` (cost table only).
 
+Longer training and drop clause (2026-11-23): the best run of the clause sweep (team M, batch 64,
+`geo+col`, 32 000 clauses, T scaled with the clauses: 77.47 % test, stopped by patience 30 at
+epoch 127) trained with **patience 75 and no epoch limit**, with and without drop clause. Needs
+no pilot or earlier results, so it also runs on a fresh clone. One script per tmux session:
+
+```bash
+./setup.sh              # once
+./run_long_gpu0.sh      # ... ./run_long_gpu3.sh
+```
+
+It first times 30 updates per model (`lprice`), then runs six jobs from one shared list:
+
+| Order | Clauses per class and member | `drop_clause_p` | Starts |
+|---|---|---|---|
+| 1–4 | 32 000 (joint T 104 000) | 0, 0.25, 0.1, 0.5 | at once, one per GPU |
+| 5 | 64 000 (joint T 208 000) | 0 | on the first free GPU |
+| 6 | 64 000 | `p*` | when runs 1–4 are done |
+
+`p*` = the `p > 0` with the best validation accuracy among runs 2–4, within 0.5 pp the smaller
+one (`results/long/choice.json`). A run ends only when 75 epochs pass without a new best
+validation accuracy (or after the 240 h safety cap; it can be resumed). Tags
+`M_b64_geocol_s0_c<N>_Tscaled_dc<p>`, phase `long`, checkpoint every epoch. Each epoch also
+records `train_eval_acc` (prediction mode on 5 000 fixed un-augmented training images) and
+`gap` = that minus the validation accuracy. The last checkpoint of a finished run is kept in
+`.cache/ckpt/long/<tag>.final.pt`, so a run can train on later with a larger patience. Options
+(use the same in all sessions): `CJT_LONG_PSTAR=0.25` (run 6 does not wait), `CJT_LONG_BIG=none`
+(no 64 000-clause runs), `CJT_LONG_PATIENCE=150` (larger patience; runs that already stopped
+continue), `CJT_TIME_CAP_H=120`, `CJT_PHASES=lprice` (cost table only).
+
+Drop clause in a joint team: every member draws one clause mask per joint update, and the same
+mask is used when the team's vote sum is computed and when the member learns. Dropped clauses do
+not vote and get no feedback in that update; prediction uses all clauses; T is not rescaled.
+
 Results come back with `rsync -a <server>:<path>/results/ results/` and
 `rsync -a <server>:<path>/figures/ figures/` (or a commit); then `python code/report.py`. The
 best-epoch teams stay in `models/` on the server (git-ignored).
@@ -127,6 +160,7 @@ sums to its class vote, the member maps add up to the team score. For a saved te
 | `setup.sh`, `env.sh` | one-time setup; shared environment (venv, W&B host, telemetry off) |
 | `run_gpu0.sh` … `run_gpu3.sh`, `run_gpu.sh`, `gpu_device.sh` | one runner per GPU slot |
 | `run_clauses_gpu0.sh` … `run_clauses_gpu3.sh`, `run_clauses_gpu.sh` | the same runners on the clause sweep |
+| `run_long_gpu0.sh` … `run_long_gpu3.sh`, `run_long_gpu.sh` | the same runners on longer training + drop clause |
 | `status.sh`, `stop.sh` | progress; graceful / immediate stop |
 | `code/common.py` | members, teams, grid, paths, data + split, records |
 | `code/augment.py` | AlbumentationsX policies, per-image seeding, look-ahead worker pool |
@@ -137,5 +171,6 @@ sums to its class vote, the member maps add up to the team score. For a saved te
 | `code/tracking.py` | W&B mirror, id `cjt-<phase>-<tag>`, group `cjt-<team>` |
 | `code/queue_runner.py` | shared job list, claims, pilot choice |
 | `code/check_team.py`, `code/resume_check.py` | phase-0 checks |
+| `code/check_dropout.py` | drop clause in a joint team, resume / continue, no epoch limit (D1–D6) |
 | `code/report.py` | `REPORT.md`, `results/summary.json`; `--status` for progress |
 | `models/<phase>/<tag>.pt` | **not in git**: the team at its best-validation epoch |

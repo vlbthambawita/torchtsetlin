@@ -5,9 +5,11 @@
 #   2. GPU check: every visible GPU runs a small 2D and 3D joint update on the fast CUDA path.
 #   3. CIFAR-10: download, md5/sha256 check, 45 000 / 5 000 split (shared with cifar10_batch_clauses).
 #   4. W&B login check (https://forge.coreweave.com/wandb/simulamet_mlc/TM_CIFAR).
-#   5. Correctness checks (joint update, 3D member, encoders, augmentation determinism).
+#   5. Correctness checks (joint update, 3D member, encoders, augmentation determinism, drop clause
+#      in a joint team: check_dropout.py D1-D3).
 #   6. Smoke test on GPU slot 0: every team at B = 16 and 1024 on 2 000 images, activation maps,
-#      resume check, reload of a saved team.
+#      resume check, reload of a saved team; drop clause and patience-only runs (check_dropout.py
+#      D4-D6: resume with drop clause, continuing a finished run, no epoch limit).
 # Environment knobs: CJT_VENV=none (use the active python), CJT_SKIP_INSTALL=1, TORCH_INDEX=<url>,
 # PYTHON=python3.12, CJT_SKIP_SMOKE=1, CJT_CIFAR_DIR=<folder with cifar-10-python.tar.gz>.
 set -euo pipefail
@@ -132,19 +134,23 @@ if [ "${CJT_SKIP_SMOKE:-0}" = 1 ]; then echo "== 5/6, 6/6 checks and smoke test 
 mkdir -p logs
 DEV0=$(./gpu_device.sh 0)
 export CJT_OUTER_CVD=${CUDA_VISIBLE_DEVICES:-}
-echo "== 5/6 correctness checks on GPU slot 0 (log: logs/checks.log, ~4 min)"
+echo "== 5/6 correctness checks on GPU slot 0 (log: logs/checks.log, ~5 min)"
 { CUDA_VISIBLE_DEVICES=$DEV0 JW_RESULTS=$PROG_DIR/.cache/joint_wide_tm_checks \
     python ../joint_wide_tm/code/check_joint.py --device cuda:0 \
-  && CUDA_VISIBLE_DEVICES=$DEV0 python code/check_team.py --device cuda:0; } > logs/checks.log 2>&1 \
+  && CUDA_VISIBLE_DEVICES=$DEV0 python code/check_team.py --device cuda:0 \
+  && CUDA_VISIBLE_DEVICES=$DEV0 python code/check_dropout.py --device cuda:0 --only D1,D2,D3; } > logs/checks.log 2>&1 \
   || { grep -E "PASS|FAIL" logs/checks.log; tail -5 logs/checks.log; echo "checks FAILED (logs/checks.log)"; exit 1; }
 grep -E "PASS|FAIL" logs/checks.log | sed 's/^/  /'
 
-echo "== 6/6 smoke test on GPU slot 0 (log: logs/smoke.log, ~5 min)"
+echo "== 6/6 smoke test on GPU slot 0 (log: logs/smoke.log, ~7 min)"
 CUDA_VISIBLE_DEVICES=$DEV0 python code/queue_runner.py --gpu 0 --phases smoke > logs/smoke.log 2>&1 \
   || { tail -20 logs/smoke.log; exit 1; }
 CUDA_VISIBLE_DEVICES=$DEV0 python code/resume_check.py >> logs/smoke.log 2>&1 || { tail -20 logs/smoke.log; exit 1; }
 CUDA_VISIBLE_DEVICES=$DEV0 python code/viz.py models/smoke/M_b16_full_s0.pt --device cuda:0 >> logs/smoke.log 2>&1 \
   || { tail -20 logs/smoke.log; exit 1; }
+( cd code && CJT_QUIET=1 CUDA_VISIBLE_DEVICES=$DEV0 python check_dropout.py --device cuda:0 --only D4,D5,D6 ) >> logs/smoke.log 2>&1 \
+  || { grep -E "^D[0-9]: " logs/smoke.log; tail -5 logs/smoke.log; echo "drop clause / long-run checks FAILED (logs/smoke.log)"; exit 1; }
+grep -E "^D[0-9]: " logs/smoke.log | sed 's/^/  /'
 python - <<'EOF'
 import sys
 sys.path.insert(0, "code")
@@ -168,6 +174,8 @@ cat <<EOF
 Setup done. Start one runner per GPU / tmux session (each resumes where it stopped if re-run):
   ./run_gpu0.sh    ./run_gpu1.sh    ./run_gpu2.sh    ./run_gpu3.sh
 They run: pricing (cost table) -> augmentation pilot (3 runs) -> batch-size grid (14 runs).
+Longer training + drop clause (patience 75, no epoch limit, scaled T; needs no pilot):
+  ./run_long_gpu0.sh    ./run_long_gpu1.sh    ./run_long_gpu2.sh    ./run_long_gpu3.sh
 Progress: ./status.sh      Results: python code/report.py (writes REPORT.md)
 Stop: ./stop.sh (after current runs) or ./stop.sh --now
 EOF

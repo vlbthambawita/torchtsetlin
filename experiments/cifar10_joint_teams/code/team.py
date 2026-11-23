@@ -19,17 +19,26 @@ class JointConv3d(joint._JointMixin, tt.Conv3dTsetlinMachine):
     """A 3D convolutional member. Without ``_joint_on`` it is the library model plus a counter."""
 
 
-def member_cfgs(team, clauses, t_mode="fixed"):
-    return {n: dict(MEMBERS[n], clauses=clauses, T=member_T(n, clauses, t_mode)) for n in TEAMS[team]}
+def member_cfgs(team, clauses, t_mode="fixed", drop_clause_p=0.0):
+    extra = {"drop_clause_p": float(drop_clause_p)} if drop_clause_p else {}
+    return {n: dict(MEMBERS[n], clauses=clauses, T=member_T(n, clauses, t_mode), **extra) for n in TEAMS[team]}
+
+
+def drop_kw(c):
+    """Drop clause for a joint member: the team draws the mask once per joint update (pass A and
+    the member's update must share it), so the member itself never resamples (``"epoch"``)."""
+    p = float(c.get("drop_clause_p") or 0.0)
+    return dict(drop_clause_p=p, drop_granularity="epoch") if p else {}
 
 
 def build_member(c, max_batch, dev):
     shape = ENC_SHAPE[c["enc"]]
+    kw = dict(MODEL_KW, **drop_kw(c))
     if c["conv"] == "3d":
         def make(**extra):
             return JointConv3d(N_CLASSES, c["clauses"], c["T"], c["s"],
                                patch_size=(c["kd"], c["patch"], c["patch"]), stride=1, input_shape=shape,
-                               **MODEL_KW, **extra)
+                               **kw, **extra)
         m = make()
         # FB-1 (GitHub #17): the chunk budget must hold one whole example as ONE patch block, or
         # the model leaves the fused CUDA path (as cifar10_batch_clauses.train.chunk_budget).
@@ -40,7 +49,7 @@ def build_member(c, max_batch, dev):
             m = make(max_chunk_elements=need)
     else:
         m = JointConv(N_CLASSES, c["clauses"], c["T"], c["s"], patch_size=c["patch"], stride=1,
-                      input_shape=shape, **MODEL_KW)
+                      input_shape=shape, **kw)
     return m.joint_setup(max_batch).to(dev)
 
 
@@ -68,7 +77,7 @@ def save_team(path, team, rec, row):
 
 def load_team(path, dev):
     st = torch.load(path, map_location="cpu", weights_only=False)
-    cfgs = {n: {k: c[k] for k in ("enc", "conv", "patch", "T", "s", "clauses", "kd") if k in c}
+    cfgs = {n: {k: c[k] for k in ("enc", "conv", "patch", "T", "s", "clauses", "kd", "drop_clause_p") if k in c}
             for n, c in st["hp"]["members"].items()}
     team = build_team(cfgs, 1, dev, st["hp"]["rule"])
     for m, n in zip(team.members, team.names):

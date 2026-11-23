@@ -7,6 +7,13 @@ validation epoch is kept in ``models/<phase>/<tag>.pt``. Every ``--viz-every`` e
 activation-map panel of the fixed validation images goes to ``figures/activation/`` and W&B.
 Statistic: test accuracy at the best-validation epoch.
 
+Phase ``long`` (plan PLAN_LONG_DROPOUT.md): ``--drop-clause-p`` (one clause mask per member and
+joint update), ``--max-epochs 0`` (no epoch limit: only patience or the time cap end the run),
+``--train-eval N`` (accuracy in prediction mode on N fixed un-augmented training images, the
+comparable training accuracy; ``gap`` = that minus the validation accuracy) and ``--keep-final``
+(the last checkpoint survives the end of the run; ``--continue-final`` with a larger
+``--patience`` trains on from it).
+
 Usage:  python code/train.py --phase grid --team M --batch-size 32 --policy full
         python code/train.py --phase pricing --team M --batch-size 32 --calibrate 300
 """
@@ -48,6 +55,13 @@ from tracking import Tracker
 from viz import panel
 
 import torchtsetlin as tt
+
+UNLIMITED = 10**9                                      # --max-epochs 0
+
+
+def train_eval_indices(n_train, n):
+    """The fixed training images of ``train_eval_acc``: the same for every run and seed."""
+    return np.sort(np.random.default_rng(0).permutation(n_train)[:min(n, n_train)])
 
 
 def sync(dev):
@@ -99,7 +113,13 @@ def main():
                     help="scaled: every member's T in proportion to --clauses")
     ap.add_argument("--patience", type=int, default=None)
     ap.add_argument("--min-epochs", type=int, default=None)
-    ap.add_argument("--max-epochs", type=int, default=None)
+    ap.add_argument("--max-epochs", type=int, default=None, help="0 = no epoch limit")
+    ap.add_argument("--drop-clause-p", type=float, default=0.0)
+    ap.add_argument("--train-eval", type=int, default=0,
+                    help="images of the un-augmented training set evaluated every epoch (0 = off)")
+    ap.add_argument("--keep-final", action="store_true", help="keep the last checkpoint when the run ends")
+    ap.add_argument("--continue-final", action="store_true",
+                    help="continue a finished run from its kept last checkpoint (with a larger --patience)")
     ap.add_argument("--time-cap-h", type=float, default=EARLY["time_cap_h"])
     ap.add_argument("--viz-every", type=int, default=VIZ_EVERY, help="0 = no activation maps")
     ap.add_argument("--device", default="cuda:0")
@@ -113,7 +133,8 @@ def main():
     args = ap.parse_args()
     fixed = PILOT["epochs"] if args.phase == "pilot" else None      # pilot: same budget for every policy
     args.min_epochs = args.min_epochs or fixed or EARLY["min_epochs"]
-    args.max_epochs = args.max_epochs or fixed or EARLY["max_epochs"]
+    args.max_epochs = (UNLIMITED if args.max_epochs == 0 and not fixed
+                       else args.max_epochs or fixed or EARLY["max_epochs"])
     args.patience = args.patience or (10**6 if fixed else EARLY["patience"])
     if not telemetry_off():
         raise SystemExit("augmentation telemetry is not switched off")
@@ -123,7 +144,7 @@ def main():
         torch.cuda.set_device(dev)
     tt.seed_everything(args.seed)
     tag = tag_of(args.team, args.batch_size, args.policy, args.seed, args.tag_suffix)
-    cfgs = member_cfgs(args.team, args.clauses, args.t_mode)
+    cfgs = member_cfgs(args.team, args.clauses, args.t_mode, args.drop_clause_p)
     names = list(cfgs)
     encs = [cfgs[n]["enc"] for n in names]
     data = load_cifar(args.subset)
@@ -132,6 +153,11 @@ def main():
     team = build_team(cfgs, args.batch_size, dev)
     fixed_x = {k: {e: encode_fixed(e, data[k][0], dev) for e in set(encs)} for k in ("val", "test")}
     xs = {k: [fixed_x[k][e] for e in encs] for k in fixed_x}
+    if args.train_eval:                                # un-augmented training images, prediction mode
+        te_idx = train_eval_indices(n_tr, args.train_eval)
+        te_x = {e: encode_fixed(e, data["train"][0][te_idx], dev) for e in set(encs)}
+        xs["train_eval"] = [te_x[e] for e in encs]
+        y["train_eval"] = y["train"][te_idx]
     ytr = torch.from_numpy(y["train"]).to(dev)
     pidx = panel_indices(y["val"])
     pan = dict(raw=data["val"][0][pidx], y=y["val"][pidx], xs=[x[pidx] for x in xs["val"]])
@@ -142,17 +168,23 @@ def main():
                                n_literals=int(m.n_literals), max_chunk_elements=int(m.max_chunk_elements))
                        for (n, c), m in zip(cfgs.items(), team.members)},
               T_joint=dict(zip(names, team.T_joint)), model_kw=MODEL_KW, batch_size=args.batch_size,
+              drop_clause_p=args.drop_clause_p,
+              drop=dict(mask="one per member and joint update, shared by pass A and the member update",
+                        literal_p=0.0, T_rescaled=False) if args.drop_clause_p else None,
               augmentation=dict(policy=args.policy, per_image_seed="SeedSequence([seed, epoch, index])",
                                 workers=train_data.src.workers),
               early_stopping=dict(monitor="val_acc", patience=args.patience, min_epochs=args.min_epochs,
-                                  max_epochs=args.max_epochs, time_cap_h=args.time_cap_h),
+                                  max_epochs=None if args.max_epochs >= UNLIMITED else args.max_epochs,
+                                  time_cap_h=args.time_cap_h),
               seed=args.seed, updates_per_epoch=math.ceil(n_tr / args.batch_size), viz_every=args.viz_every,
               data=dict(sha256=cbc.CIFAR_SHA256, n_train=n_tr, n_val=len(y["val"]), n_test=len(y["test"]),
+                        n_train_eval=len(y["train_eval"]) if args.train_eval else 0,
                         subset=args.subset, split="cifar10_batch_clauses/results/split.json", panel=pidx))
     print(f"[{tag}] team {args.team} rule={RULE} members="
           + ", ".join(f"{n}({c['enc']},{c['conv']},{c['patch']}x{c['patch']},{c['clauses']}/class,T={c['T']},s={c['s']})"
                       for n, c in cfgs.items())
-          + f" B={args.batch_size} aug={args.policy} ({train_data.src.workers} workers) {args.device}", flush=True)
+          + f" B={args.batch_size} aug={args.policy} ({train_data.src.workers} workers) "
+          f"drop_clause_p={args.drop_clause_p:g} {args.device}", flush=True)
     try:
         if args.calibrate:
             calibrate(args, team, hp, tag, train_data, xs, ytr, gen, dev)
@@ -166,6 +198,9 @@ def run(args, team, hp, tag, train_data, xs, y, ytr, pan, gen, dev):
     out = RESULTS / args.phase / f"{tag}.json"
     ckpt = CACHE / "ckpt" / args.phase / f"{tag}.pt"
     ckpt.parent.mkdir(parents=True, exist_ok=True)
+    final = ckpt.with_suffix(".final.pt")              # --keep-final: the state at the end of the run
+    if args.continue_final and final.exists() and not ckpt.exists():
+        final.replace(ckpt)                            # train on from where the finished run stopped
     rec = new_record("run", device=dev, phase=args.phase, tag=tag, hp=hp, curve=[], status="running",
                      best={"val_correct": -1, "epoch": 0}, elapsed_s=0.0)
     start = 0
@@ -178,6 +213,10 @@ def run(args, team, hp, tag, train_data, xs, y, ytr, pan, gen, dev):
         if dev.type == "cuda":
             torch.cuda.set_rng_state(st["cuda_rng"], dev)
         rec, start = st["rec"], st["epoch"]
+        es = rec["hp"]["early_stopping"]               # the limits of this start (a continued run)
+        if (es["patience"], es["time_cap_h"]) != (args.patience, args.time_cap_h):
+            rec.setdefault("early_stopping_history", []).append(dict(es, until_epoch=start))
+            es.update(hp["early_stopping"])
         rec["curve"] = [c for c in rec["curve"] if c["epoch"] <= start]
         rec.setdefault("resumed_at", []).append({"epoch": start, "argv": sys.argv,
                                                  "time": time.strftime("%Y-%m-%dT%H:%M:%S")})
@@ -189,12 +228,12 @@ def run(args, team, hp, tag, train_data, xs, y, ytr, pan, gen, dev):
     tracker = Tracker(args.phase, args.team, tag,
                       dict(hp, tag=tag, phase=args.phase, git_sha=rec["git_sha"], env=rec["env"]),
                       [args.phase, f"team{args.team}", f"b{args.batch_size}", f"c{args.clauses}", f"aug-{args.policy}",
-                       f"seed{args.seed}", rec["env"].get("gpu", args.device)] + team.names,
+                       f"seed{args.seed}", f"dc{args.drop_clause_p:g}", rec["env"].get("gpu", args.device)] + team.names,
                       enabled=not args.no_wandb)
     rec["wandb_url"] = tracker.url or rec.get("wandb_url")
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     try:
-        loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, start, tracker)
+        loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, final, start, tracker)
     except BaseException as e:
         if isinstance(e, SystemExit) and e.code == 0:
             raise
@@ -202,10 +241,11 @@ def run(args, team, hp, tag, train_data, xs, y, ytr, pan, gen, dev):
         raise
     tracker.end({k: rec.get(k) for k in ("status", "stop_reason", "test_acc_at_best", "best_val_acc", "best_epoch",
                                          "epochs_run", "test_acc_last", "train_s_per_epoch_mean", "elapsed_s",
-                                         "peak_gpu_mib")})
+                                         "peak_gpu_mib", "train_eval_acc_at_best", "gap_at_best",
+                                         "test_acc_tail_mean", "test_acc_tail_std", "tail_epochs")})
 
 
-def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, start, tracker):
+def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, final, start, tracker):
     n_tr, bs, names, tag = len(y["train"]), args.batch_size, team.names, rec["tag"]
     best = rec["best"]
     for epoch in range(start + 1, args.max_epochs + 1):
@@ -231,6 +271,13 @@ def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, star
         sync(dev)
         eval_s = time.time() - t0
         score = {k: team.combine(sums[k]) for k in sums}
+        clean = {}
+        if "train_eval" in xs:                         # not in elapsed_s: a diagnostic, RNG-free
+            t0 = time.time()
+            te = team.combine([s.float().cpu().numpy() for s in team.member_sums(xs["train_eval"], args.eval_batch)])
+            sync(dev)
+            clean["train_eval_acc"] = acc(te, y["train_eval"])
+            clean["train_eval_s"] = time.time() - t0
         val_correct = int((score["val"].argmax(1) == y["val"]).sum())
         te_pred = score["test"].argmax(1)
         members = {}
@@ -257,6 +304,8 @@ def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, star
                "eval_s": eval_s, "aug_wait_s": aug_wait, "examples_per_s": n_tr / train_s,
                "updates": epoch * math.ceil(n_tr / bs), "peak_gpu_mib": peak_mib(dev),
                "elapsed_s": rec["elapsed_s"], "gpu_hours": rec["elapsed_s"] / 3600}
+        if clean:
+            row.update(clean, gap=clean["train_eval_acc"] - row["val_acc"])
         if improved:
             rec["best_model"] = str(save_team(MODELS / args.phase / f"{tag}.pt", team, rec, row))
         if epoch - best["epoch"] >= args.patience and epoch >= args.min_epochs:
@@ -277,7 +326,9 @@ def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, star
         rec["curve"].append(row)
         tracker.epoch(row, images)
         print(f"[{tag}] epoch {epoch:3d} val {row['val_acc']:6.2f} test {row['test_acc']:6.2f} train "
-              f"{row['train_acc_running']:6.2f} | best {row['best_val_acc']:6.2f}@{best['epoch']} | "
+              f"{row['train_acc_running']:6.2f}"
+              + (f" clean {row['train_eval_acc']:6.2f} gap {row['gap']:5.2f}" if clean else "")
+              + f" | best {row['best_val_acc']:6.2f}@{best['epoch']} wait {epoch - best['epoch']:2d} | "
               f"{train_s:.1f}s + {eval_s:.1f}s (aug wait {aug_wait:.1f}s) | "
               + " ".join(f"{n}:{m['test_acc']:.2f}/len{m['mean_clause_len']:.1f}" for n, m in members.items()),
               flush=True)
@@ -291,7 +342,10 @@ def loop(args, team, rec, train_data, xs, y, ytr, pan, gen, dev, out, ckpt, star
                         "epoch": epoch, "rec": rec}, tmp)
             tmp.replace(ckpt)
         if reason:
-            ckpt.unlink(missing_ok=True)
+            if args.keep_final:
+                ckpt.replace(final)
+            else:
+                ckpt.unlink(missing_ok=True)
             print(f"[{tag}] done after {epoch} epochs ({reason}): best val {rec['best_val_acc']:.2f} @ "
                   f"{rec['best_epoch']}, test there {rec['test_acc_at_best']:.2f}", flush=True)
             return
@@ -312,6 +366,13 @@ def finish(rec, best, reason):
                eval_s_per_epoch_mean=float(np.mean([r["eval_s"] for r in c])),
                aug_wait_s_per_epoch_mean=float(np.mean([r["aug_wait_s"] for r in c])),
                peak_gpu_mib=max(r["peak_gpu_mib"] for r in c), finished=time.strftime("%Y-%m-%dT%H:%M:%S"))
+    if "train_eval_acc" in b:
+        rec.update(train_eval_acc_at_best=b["train_eval_acc"], gap_at_best=b["gap"])
+    # Validation is noisy, and the best epoch is a maximum over many epochs: also report the
+    # plateau, the test accuracy over the last epochs (the patience window when there is one).
+    pat = rec["hp"]["early_stopping"]["patience"]
+    tail = [r["test_acc"] for r in c[-(pat if pat < 10**5 else 20):]]
+    rec.update(test_acc_tail_mean=float(np.mean(tail)), test_acc_tail_std=float(np.std(tail)), tail_epochs=len(tail))
 
 
 def calibrate(args, team, hp, tag, train_data, xs, ytr, gen, dev):

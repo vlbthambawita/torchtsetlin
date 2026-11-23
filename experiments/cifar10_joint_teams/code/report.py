@@ -18,6 +18,7 @@ from common import (
     BATCHES,
     CACHE,
     EXT_BATCHES,
+    LONG,
     PROG,
     RESULTS,
     TEAMS,
@@ -30,7 +31,11 @@ from common import (
 EPOCH_MARKS = (60, 100)
 UPDATE_MARKS = (20_000, 50_000, 100_000)
 TOL_PP = 1.0
-PHASE_LIST = ("pricing", "pilot", "grid", "ext", "large", "cprice", "clauses")
+PHASE_LIST = ("pricing", "pilot", "grid", "ext", "large", "cprice", "clauses", "lprice", "long")
+# The run the `long` phase starts from (W&B cjt-clauses-M_b64_geocol_s0_c32000_Tscaled; its record
+# stayed on the old server, so it is quoted here and marked as such in the report).
+LONG_REFERENCE = dict(tag="M_b64_geocol_s0_c32000_Tscaled", val=77.70, test=77.47, best_epoch=97, epochs=127,
+                      patience=30)
 
 
 def records(phase):
@@ -69,7 +74,7 @@ def status():
             claimed = (CACHE / "claims" / ph / j["tag"]).exists()
             if r and r.get("status") == "done":
                 done += 1
-                if ph in ("pricing", "cprice"):
+                if ph in ("pricing", "cprice", "lprice"):
                     lines.append(f"    {j['tag']:30s} {r['train_s_per_epoch'] + r['eval_s_per_epoch']:8.0f} s/epoch  "
                                  f"peak {r['peak_gpu_mib'] / 1024:5.1f} GiB  aug {r['aug_s_per_epoch']:.0f} s")
                 else:
@@ -88,6 +93,68 @@ def status():
     c = read_json(RESULTS / "pilot" / "choice.json")
     if c:
         print(f"augmentation policy: {c['policy']} (pilot validation accuracy {c['best_val_acc']})")
+    c = read_json(RESULTS / "long" / "choice.json")
+    if c:
+        print(f"long, stage 2: drop_clause_p = {c['drop_clause_p']:g} (stage-1 validation accuracy {c['best_val_acc']})")
+
+
+def long_section():
+    """Longer training and drop clause (plan PLAN_LONG_DROPOUT.md): one row per run."""
+    recs = records("long")
+    if not recs:
+        return [], []
+    ref = LONG_REFERENCE
+    L = ["## Longer training and drop clause (team M, B = 64, `geo+col`, T scaled with the clauses)", "",
+         "Early stopping on validation accuracy without an epoch limit. *Tail* = mean ± standard deviation of the "
+         "test accuracy over the last epochs of the run (the patience window): the plateau, which does not depend "
+         "on picking one epoch. *Train (clean)* = accuracy in prediction mode on "
+         f"{LONG['train_eval']} fixed un-augmented training images at the best epoch; *gap* = that minus the "
+         "validation accuracy.", "",
+         "| Clauses | drop_clause_p | Test | Val | Best epoch / run | Tail (epochs) | Train (clean) | Gap | "
+         "Train (running) | s/epoch | h total | Stop |", "|" + "---|" * 12,
+         f"| 32000 | 0 (patience {ref['patience']}, earlier run, from W&B) | {ref['test']:.2f} | {ref['val']:.2f} | "
+         f"{ref['best_epoch']} / {ref['epochs']} | — | — | — | — | — | — | patience |"]
+    rows = []
+    for j, r in recs.values():
+        if r.get("status") != "done":
+            L.append(f"| {j['clauses']} | {j['drop']:g} | *running, epoch {len(r.get('curve', []))}* |" + " |" * 9)
+            continue
+        b = r["curve"][r["best_epoch"] - 1]
+        row = dict(tag=j["tag"], clauses=j["clauses"], drop=j["drop"], test=r["test_acc_at_best"], val=r["best_val_acc"],
+                   best_epoch=r["best_epoch"], epochs=r["epochs_run"], tail_mean=r["test_acc_tail_mean"],
+                   tail_std=r["test_acc_tail_std"], tail_epochs=r["tail_epochs"],
+                   train_eval=r.get("train_eval_acc_at_best"), gap=r.get("gap_at_best"),
+                   train_running=b["train_acc_running"],
+                   s_per_epoch=r["train_s_per_epoch_mean"] + r["eval_s_per_epoch_mean"], h_total=r["elapsed_s"] / 3600,
+                   stop=r["stop_reason"], collapses=sum(1 for x in r["curve"] if x["val_acc"] < r["best_val_acc"] - 5
+                                                        and x["epoch"] > r["best_epoch"] // 2),
+                   wandb=r.get("wandb_url"))
+        rows.append(row)
+        L.append(f"| {row['clauses']} | {row['drop']:g} | {row['test']:.2f} | {row['val']:.2f} | {row['best_epoch']} / "
+                 f"{row['epochs']} | {row['tail_mean']:.2f} ± {row['tail_std']:.2f} ({row['tail_epochs']}) | "
+                 f"{fmt(row['train_eval'])} | {fmt(row['gap'])} | {row['train_running']:.2f} | {row['s_per_epoch']:.0f} | "
+                 f"{row['h_total']:.1f} | {row['stop']} |")
+    L.append("")
+    base = {r["clauses"]: r for r in rows if r["drop"] == 0}
+    if LONG["clauses"] in base:
+        d = base[LONG["clauses"]]["test"] - ref["test"]
+        L += [f"More epochs (p = 0, {LONG['clauses']} clauses): {base[LONG['clauses']]['test']:.2f} % against "
+              f"{ref['test']:.2f} % of the earlier run, {d:+.2f} pp"
+              + (" (below the 0.5 pp tie band)." if abs(d) < LONG["tie_pp"] else "."), ""]
+    for r in rows:
+        if r["drop"] > 0 and r["clauses"] in base:
+            d = r["test"] - base[r["clauses"]]["test"]
+            L.append(f"- drop_clause_p = {r['drop']:g} at {r['clauses']} clauses: {d:+.2f} pp test against p = 0"
+                     + (" (tie)" if abs(d) < LONG["tie_pp"] else "") + ".")
+    ch = read_json(RESULTS / "long" / "choice.json")
+    if ch:
+        L += ["", f"Stage 2 drop_clause_p: **{ch['drop_clause_p']:g}** ({ch['rule']})."]
+    if any(r["collapses"] for r in rows):
+        L += ["", "Epochs later than half the best epoch whose validation accuracy is more than 5 pp below the "
+              "run's best: " + ", ".join(f"p = {r['drop']:g} / {r['clauses']}: {r['collapses']}"
+                                                            for r in rows) + "."]
+    L.append("")
+    return L, rows
 
 
 def team_table(team, recs):
@@ -168,6 +235,10 @@ def main():
             L.append(f"| {r['batch']} | " + " | ".join(f"{r['members'][n]:.2f} / {100 * r['vote_share'][n]:.0f} %"
                                                       for n in TEAMS[team]) + f" | {fmt(r['map_correlation'], 3)} |")
         L.append("")
+    long_lines, long_rows = long_section()
+    L += long_lines
+    if long_rows:
+        summary["long"] = long_rows
     if not summary:
         L += ["No finished grid runs yet.", ""]
     (PROG / "REPORT.md").write_text("\n".join(L) + "\n")

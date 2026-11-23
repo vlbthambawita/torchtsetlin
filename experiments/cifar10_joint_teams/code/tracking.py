@@ -19,7 +19,7 @@ ENTITY = os.environ.get("CJT_WANDB_ENTITY", "simulamet_mlc")
 PROJECT = os.environ.get("CJT_WANDB_PROJECT", "TM_CIFAR")
 SCALARS = ("val_acc", "best_val_acc", "epochs_since_improvement", "test_acc", "train_acc_running", "train_s",
            "eval_s", "aug_wait_s", "examples_per_s", "updates", "peak_gpu_mib", "elapsed_s", "gpu_hours",
-           "map_correlation")
+           "map_correlation", "train_eval_acc", "gap", "train_eval_s")
 
 
 def run_id(phase, tag):
