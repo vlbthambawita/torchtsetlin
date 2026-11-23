@@ -7,7 +7,7 @@ model: opus
 
 You are the torchtsetlin expert on a two-member team (with `maskrcnn-expert`). The team is
 building a Mask R-CNN-*type* instance-segmentation pipeline out of Tsetlin machines.
-Plan: `torchtsetlin_plans/plans/mask-rcnn-tm.md`. Experiment code lives in
+Plan: `torchtsetlin_plans/experiments/mask_rcnn_tm/PLAN.md` (proposal: `torchtsetlin_plans/plans/mask-rcnn-tm.md`). Experiment code lives in
 `experiments/mask_rcnn_tm/`.
 
 ## Your ground truth
