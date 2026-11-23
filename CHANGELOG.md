@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.7.4 (2026-11-23)
+
+**New option `literals`: restrict a clause to one kind of literal** (issue #23). Every model
+accepts `literals="both"` (default, unchanged), `"positive"` (only `x_k`) or `"negated"` (only
+`NOT x_k`). Literals of the other kind start excluded and never receive feedback, so they are
+never included; evaluation, votes, weights and the literal budget are unchanged. `"negated"` on
+a one-hot input makes a clause reason by elimination, the setting of implementations that feed
+the negated input without appending negated literals. The restriction runs on the same update
+paths as an unrestricted model (CUDA graphs and the fused kernels stay on), `ta_state` keeps its
+`(C, 2F)` shape and the checkpoint format does not change. Loading a state that includes a
+switched-off literal raises a `ValueError`. Models built without the argument train bit for bit
+as before.
+
 ## 0.7.3 (2026-11-20)
 
 No change to the learning code: models train and predict exactly as in 0.7.2.
