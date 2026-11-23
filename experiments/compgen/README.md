@@ -45,6 +45,11 @@ Options (use the same in all four sessions):
 | `CG_WANDB=0`, `CG_WANDB_PROJECT=…` | no W&B, or another project |
 | `CG_VENV=none`, `PYTHON=python3.12`, `TORCH_INDEX=<wheel index>`, `CUDA_ROOT=<toolkit>` | environment |
 
+PyTorch build: `setup.sh` reads the CUDA version the NVIDIA driver supports. Below 13 (the V100
+server, CUDA 12.2) it installs the CUDA 12.6 build (`…/whl/cu126`, the build of the earlier V100
+runs) and replaces a CUDA 13 build left by an earlier setup; otherwise it installs the default
+wheel. `TORCH_INDEX` overrides the choice.
+
 Results come back with `rsync -a <server>:<path>/results/ results/` (or a commit); then
 `python code/report.py` writes `REPORT.md` and `figures/`.
 

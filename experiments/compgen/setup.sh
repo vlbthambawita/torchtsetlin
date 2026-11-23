@@ -9,6 +9,9 @@
 #   6. Checks M0-M3 and a smoke test on GPU slot 0.
 # Knobs: CG_VENV=none (use the active python), CG_SKIP_INSTALL=1, TORCH_INDEX=<wheel index>,
 # PYTHON=python3.12, CG_SKIP_SMOKE=1, CG_SEEDS=0, CG_REF=0, CUDA_ROOT=<CUDA toolkit for pycuda>.
+# PyTorch build: the default wheel needs a CUDA 13 driver. When the driver is older (the V100
+# server: CUDA 12.2) the CUDA 12.6 build is installed instead (the build the earlier V100 runs
+# used), and a wrong build left in .venv by an earlier setup is replaced. TORCH_INDEX overrides.
 set -euo pipefail
 cd "$(dirname "$0")"
 PROG_DIR=$PWD
@@ -22,9 +25,22 @@ if [ "$CG_VENV" != none ] && [ ! -f "$CG_VENV/bin/activate" ]; then
   "$PY" -m venv "$CG_VENV"
 fi
 . ./env.sh
+# The newest CUDA version the installed NVIDIA driver supports (nvidia-smi header), e.g. 12.2.
+DRIVER_CUDA=$(nvidia-smi 2>/dev/null | sed -n 's/.*CUDA \(UMD \)\{0,1\}Version: *\([0-9][0-9]*\)\.\([0-9]*\).*/\2.\3/p' | head -1)
+GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1)
+if [ -z "${TORCH_INDEX:-}" ] && [ -n "$DRIVER_CUDA" ] && [ "${DRIVER_CUDA%%.*}" -lt 13 ]; then
+  TORCH_INDEX=https://download.pytorch.org/whl/cu126
+  echo "  ${GPU_NAME:-GPU} driver supports CUDA $DRIVER_CUDA: using the CUDA 12.6 PyTorch build ($TORCH_INDEX)"
+fi
 if [ "${CG_SKIP_INSTALL:-0}" != 1 ]; then
   python -m pip install -q -U pip
   python -m pip install -q torch ${TORCH_INDEX:+--index-url "$TORCH_INDEX"}
+  # An earlier setup may have left a build for a newer CUDA than the driver has: replace it.
+  HAVE=$(python -c "import torch; print((torch.version.cuda or '0').split('.')[0])")
+  if [ -n "$DRIVER_CUDA" ] && [ "$HAVE" -gt "${DRIVER_CUDA%%.*}" ]; then
+    echo "  the installed PyTorch is built for CUDA $HAVE, the driver supports $DRIVER_CUDA: reinstalling"
+    python -m pip install -q --force-reinstall torch ${TORCH_INDEX:+--index-url "$TORCH_INDEX"}
+  fi
   python -m pip install -q -e "$REPO_DIR" numpy scipy wandb matplotlib
 fi
 python - <<'EOF'
