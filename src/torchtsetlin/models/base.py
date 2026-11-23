@@ -130,6 +130,16 @@ class TsetlinMachineBase(nn.Module):
         drop_granularity: ``"batch"`` or ``"epoch"``.
         init: ``"boundary"`` starts every automaton just below the include boundary
             (``N-1``); ``"random"`` starts randomly at ``N-1`` or ``N``.
+        literals: which literals a clause may include. ``"both"`` (default): ``x_k`` and
+            ``NOT x_k``. ``"positive"``: only ``x_k``. ``"negated"``: only ``NOT x_k``. A
+            literal of the other kind starts excluded and never receives feedback, so it is
+            never included; evaluation, votes and the literal budget are unchanged. Use
+            ``"negated"`` for reasoning by elimination on one-hot inputs (a clause can only
+            rule values out), which is the setting of implementations that feed the negated
+            input without appending negated literals. Convolutional models apply the rule to
+            every literal column, position bits included. ``ta_state`` keeps its
+            ``(C, 2F)`` shape, so checkpoints are interchangeable in format; loading a state
+            that includes a switched-off literal raises an error.
         clamp_prediction_votes: clamp vote sums to ``[-T, T]`` in ``forward()`` / ``predict()``
             (pyTsetlinMachine's rule, under which saturated classes tie and the lowest index
             wins). ``None`` keeps the model's default (unclamped for classifiers, as in tmu).
@@ -178,6 +188,7 @@ class TsetlinMachineBase(nn.Module):
         feedback_mode: str = "batch",
         budget_mode: str = "soft",
         clamp_prediction_votes: Optional[bool] = None,
+        literals: str = "both",
     ) -> None:
         super().__init__()
         if clamp_prediction_votes is not None:
@@ -198,6 +209,8 @@ class TsetlinMachineBase(nn.Module):
             raise ValueError("drop_granularity must be 'batch' or 'epoch'")
         if feedback_mode not in ("batch", "sequential"):
             raise ValueError("feedback_mode must be 'batch' or 'sequential'")
+        if literals not in ("both", "positive", "negated"):
+            raise ValueError("literals must be 'both', 'positive' or 'negated'")
         if budget_mode not in ("hard", "soft"):
             raise ValueError("budget_mode must be 'hard' or 'soft'")
         self.n_features: Optional[int] = None
@@ -219,6 +232,7 @@ class TsetlinMachineBase(nn.Module):
         self.max_chunk_elements = int(max_chunk_elements)
         self.feedback_mode = feedback_mode
         self.budget_mode = budget_mode
+        self.literals = literals
         self.feature_names: Optional[List[str]] = None
         self._clause_active: Optional[Tensor] = None
         self._literal_active: Optional[Tensor] = None
@@ -227,6 +241,8 @@ class TsetlinMachineBase(nn.Module):
         self.register_buffer("ta_state", torch.empty(0, dtype=self.state_dtype))
         self.register_buffer("include", torch.empty(0, dtype=compute_dtype), persistent=False)
         self.register_buffer("include_count", torch.empty(0, dtype=torch.long), persistent=False)
+        # (2F,) 0/1 mask of the literals a clause may include; None when literals="both".
+        self.register_buffer("literal_allowed", None, persistent=False)
         self.register_load_state_dict_post_hook(_refresh_after_load)
         if n_features is not None:
             self._initialize_state(int(n_features))
@@ -264,6 +280,13 @@ class TsetlinMachineBase(nn.Module):
             state = torch.randint(N - 1, N + 1, shape, device=device, dtype=self.state_dtype)
         else:
             state = torch.full(shape, N - 1, device=device, dtype=self.state_dtype)
+        if self.literals != "both":
+            allowed = torch.zeros(shape[1], device=device, dtype=self.compute_dtype)
+            half = slice(0, self.n_features) if self.literals == "positive" else slice(self.n_features, None)
+            allowed[half] = 1
+            state[:, allowed == 0] = N - 1  # switched-off literals start (and stay) excluded
+            self.literal_allowed = allowed
+        self._literal_active = self.literal_allowed
         self.ta_state = state
         self._refresh_include()
         self._on_initialized()
@@ -293,6 +316,11 @@ class TsetlinMachineBase(nn.Module):
         out = super()._apply(fn, recurse)
         if self.is_initialized and self.include.dtype != self._include_dtype():
             self._refresh_include()
+        if self.literal_allowed is not None:  # the feedback mask follows the buffer to its device
+            if self.drop_literal_p > 0.0 and self._literal_active is not None:
+                self._literal_active = self._literal_active.to(self.literal_allowed.device)
+            else:
+                self._literal_active = self.literal_allowed
         return out
 
     def _refresh_include_at(self, rows: Tensor, pos: Tensor) -> None:
@@ -871,9 +899,12 @@ class TsetlinMachineBase(nn.Module):
             self._clause_active = None
         if self.drop_literal_p > 0.0 and self.is_initialized:
             keep = torch.rand(self.n_literals, device=dev) >= self.drop_literal_p
-            self._literal_active = keep.to(self.compute_dtype)
+            active = keep.to(self.compute_dtype)
+            if self.literal_allowed is not None:
+                active = active * self.literal_allowed
+            self._literal_active = active
         else:
-            self._literal_active = None
+            self._literal_active = self.literal_allowed  # None unless ``literals`` restricts
 
     # ------------------------------------------------------------------ introspection
     def included_mask(self) -> Tensor:
@@ -945,6 +976,8 @@ class TsetlinMachineBase(nn.Module):
             parts.append(f"drop_clause_p={self.drop_clause_p}")
         if self.drop_literal_p:
             parts.append(f"drop_literal_p={self.drop_literal_p}")
+        if self.literals != "both":
+            parts.append(f"literals={self.literals!r}")
         if self.feedback_mode != "batch":
             parts.append(f"feedback_mode={self.feedback_mode!r}")
         return ", ".join(parts)
@@ -978,4 +1011,12 @@ class TsetlinMachineBase(nn.Module):
 
 def _refresh_after_load(module: TsetlinMachineBase, incompatible_keys) -> None:
     if module.is_initialized:
+        allowed = module.literal_allowed
+        if allowed is not None:
+            off = (allowed == 0).to(module.ta_state.device)
+            if bool((module.ta_state[:, off] >= module.n_states).any()):
+                raise ValueError(
+                    f"the loaded state includes literals that literals={module.literals!r} "
+                    "switches off; build the model with the `literals` setting it was trained with"
+                )
         module._refresh_include()

@@ -172,6 +172,13 @@ book's Section 1.6 lists three effects:
   never triggers, and clauses freeze at exactly the budget. On the TM Composites CIFAR-10
   colour-thermometer specialists that cost 10-11 pp
   (`experiments/multi_convtm/REPORT.md`).
+* **One kind of literal** (`literals="positive"` or `"negated"`, default `"both"`): a clause
+  may include only `x_k`, or only `NOT x_k`. Literals of the other kind start excluded and
+  never receive feedback. With `"negated"` on a one-hot input a clause can only rule values
+  out, so it has to find a concept *by elimination*: excluding every symbol that does not
+  belong to it leaves all of its variants, including ones never seen in training. With both
+  kinds available a clause can memorise one variant instead, which fits the training data
+  and does not generalise.
 * **Drop clause / drop literal** (`drop_clause_p`, `drop_literal_p`): randomly excluded
   clauses neither vote nor learn for one batch or epoch (Sharma et al., 2023).
 * **Focused negative sampling**: choose the negative class proportionally to its current

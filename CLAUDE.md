@@ -212,6 +212,13 @@ do not reuse them after the call.
   allocates on the host and moves the tensor across will **not** catch a regression here; build
   the tensor on the device (`torch.rand(..., device=dev)`) so work stays queued on the stream
   (`tests/test_data_train.py::test_encoder_on_non_cpu_input_matches_cpu`).
+- **`literals="positive" | "negated"` (issue #23) is a static feedback mask, not a narrower
+  state.** `ta_state` stays `(C, 2F)`; the non-persistent buffer `literal_allowed` (None for
+  `"both"`) is what every commit path receives as `literal_active`, multiplied with the
+  literal-dropout mask in `resample_dropout`. `_literal_active` is a plain attribute that
+  aliases the buffer, so `_apply` re-points it after `.to(device)`. A new commit path must take
+  `literal_active`, or switched-off literals start learning
+  (`tests/test_literals.py` runs every model family on every path).
 - Optional dependencies are import-guarded: `viz` needs matplotlib, `data.load_*_boolean` needs torchvision,
   some examples need scikit-learn.
 

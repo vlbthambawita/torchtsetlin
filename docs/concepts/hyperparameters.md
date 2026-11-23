@@ -10,6 +10,7 @@
 | `weighted` | integer clause weights | `True` for images, often `False` for tiny problems |
 | `max_included_literals` | clause size budget (soft by default; `budget_mode`) | 8–32 for concise rules |
 | `drop_clause_p` | fraction of clauses dropped per batch/epoch | 0.25 (images) – 0.75 (text) |
+| `literals` | which literals a clause may include: `"both"`, `"positive"`, `"negated"` | `"both"`; `"negated"` for reasoning by elimination on one-hot inputs |
 | `focused_negative_sampling` | pick confusable negative classes | `True` for many classes |
 | `feedback_mode` | `"batch"` or `"sequential"` | `"batch"` with batch size 8–64 |
 
