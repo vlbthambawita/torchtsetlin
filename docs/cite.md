@@ -1,19 +1,28 @@
 # Cite torchtsetlin
 
-If you use `torchtsetlin` in your work, please cite the technical report below, **together with
+If you use `torchtsetlin` in your work, please cite the preprint below, **together with
 the Tsetlin machine papers whose algorithms you rely on**. Each concept page names the paper
 behind every option.
 
 <div class="grid cards" markdown>
 
--   :material-file-document-outline: **Technical report (5 pages): the document to cite**
+-   :material-file-document-outline: **Preprint: the document to cite**
 
     ---
 
-    *torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch*. Software version
+    V. Thambawita, P. Halvorsen and O.-C. Granmo. *torchtsetlin: Fast, Interpretable Tsetlin
+    Machines for PyTorch*. arXiv:2611.28195, 2026.
+
+    [Read on arXiv](https://arxiv.org/abs/2611.28195){ .md-button .md-button--primary }
+
+-   :material-file-outline: **Technical report (5 pages)**
+
+    ---
+
+    The short summary of the library that preceded the preprint. Software version
     %%version%%.
 
-    [Download the PDF](../assets/papers/torchtsetlin-report.pdf){ .md-button .md-button--primary }
+    [Download the PDF](../assets/papers/torchtsetlin-report.pdf){ .md-button }
 
 -   :material-book-open-page-variant-outline: **White paper (long form)**
 
@@ -29,22 +38,22 @@ behind every option.
 ## BibTeX
 
 ```bibtex
-@techreport{thambawita2026torchtsetlin,
-  author      = {Thambawita, Vajira},
-  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch},
-  institution = {Simula Metropolitan Center for Digital Engineering},
-  type        = {Technical report},
-  year        = {2026},
-  note        = {Software version %%version%%},
-  url         = {https://github.com/vlbthambawita/torchtsetlin}
+@misc{thambawita2026torchtsetlin,
+  author        = {Thambawita, Vajira and Halvorsen, P{\aa}l and Granmo, Ole-Christoffer},
+  title         = {torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch},
+  year          = {2026},
+  eprint        = {2611.28195},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  doi           = {10.48550/arXiv.2611.28195},
+  url           = {https://arxiv.org/abs/2611.28195}
 }
 ```
 
 ## Plain text
 
-V. Thambawita. *torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch*. Technical report,
-Simula Metropolitan Center for Digital Engineering, 2026. Software version %%version%%.
-<https://github.com/vlbthambawita/torchtsetlin>
+V. Thambawita, P. Halvorsen and O.-C. Granmo. *torchtsetlin: Fast, Interpretable Tsetlin Machines
+for PyTorch*. arXiv preprint arXiv:2611.28195, 2026. <https://doi.org/10.48550/arXiv.2611.28195>
 
 The repository's `CITATION.cff` carries the same entry, which is what GitHub's
 **Cite this repository** button shows.

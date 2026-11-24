@@ -135,20 +135,22 @@ details and references.
 
 ## Citation
 
-If you use torchtsetlin in research, please cite the five-page technical report, together with
-the Tsetlin machine papers whose algorithms you rely on (see the documentation). The PDF and
-other formats are at <https://vajira.info/torchtsetlin/cite/>, and GitHub's
-"Cite this repository" button reads `CITATION.cff`.
+If you use torchtsetlin in research, please cite the preprint
+([arXiv:2611.28195](https://arxiv.org/abs/2611.28195)), together with the Tsetlin machine papers
+whose algorithms you rely on (see the documentation). Other formats are at
+<https://vajira.info/torchtsetlin/cite/>, and GitHub's "Cite this repository" button reads
+`CITATION.cff`.
 
 ```bibtex
-@techreport{thambawita2026torchtsetlin,
-  author      = {Thambawita, Vajira},
-  title       = {torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch},
-  institution = {Simula Metropolitan Center for Digital Engineering},
-  type        = {Technical report},
-  year        = {2026},
-  note        = {Software version 0.3.2},
-  url         = {https://github.com/vlbthambawita/torchtsetlin}
+@misc{thambawita2026torchtsetlin,
+  author        = {Thambawita, Vajira and Halvorsen, P{\aa}l and Granmo, Ole-Christoffer},
+  title         = {torchtsetlin: Fast, Interpretable Tsetlin Machines for PyTorch},
+  year          = {2026},
+  eprint        = {2611.28195},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  doi           = {10.48550/arXiv.2611.28195},
+  url           = {https://arxiv.org/abs/2611.28195}
 }
 ```
 
