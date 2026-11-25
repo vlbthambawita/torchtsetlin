@@ -10,4 +10,4 @@ export KV_WANDB_PROJECT=${KV_WANDB_PROJECT:-TM_KVASIR}
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
 export ALBUMENTATIONS_NO_TELEMETRY=1 ALBUMENTATIONS_OFFLINE=1 NO_ALBUMENTATIONS_UPDATE=1
 # Kvasir-SEG: /work/vajira/DATA/Kvasir-SEG by default (code/data.py); KV_DATA=/other/path overrides
-[ -f "$PROG_DIR/.kv_data" ] && export KV_DATA=${KV_DATA:-$(cat "$PROG_DIR/.kv_data")}
+if [ -f "$PROG_DIR/.kv_data" ]; then export KV_DATA=${KV_DATA:-$(cat "$PROG_DIR/.kv_data")}; fi
