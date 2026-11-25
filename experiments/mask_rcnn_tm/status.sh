@@ -1,5 +1,6 @@
 #!/bin/bash
-# Progress of all runners (from results/runs/*.json) and current GPU use.  ./status.sh --price for the cost table.
+# Progress of all runners (from results/runs/*.json), gate K0b, the cost table once the pricing phase
+# is complete, and current GPU use.  ./status.sh --price prints only the cost table.
 cd "$(dirname "$0")"
 . ./env.sh
 python code/report.py ${1:---status}

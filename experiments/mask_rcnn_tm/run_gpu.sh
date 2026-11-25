@@ -1,5 +1,8 @@
 #!/bin/bash
-# Start (or resume) the queue on one GPU: ./run_gpu.sh <slot 0-3>   (run_gpu0.sh ... run_gpu3.sh)
+# Start (or resume) the queue on one GPU: ./run_gpu.sh <slot 0-3> [phases]   (run_gpu0.sh ... run_gpu3.sh)
+#   ./run_gpu0.sh                price (default)
+#   ./run_gpu0.sh base,p1        the same as KV_PHASES=base,p1 ./run_gpu0.sh      then: p2, alb, p3, final
+#   ./run_gpu0.sh base,p1 2      two runners on this GPU (the same as KV_SLOTS=2)
 # The four runners share one job list, so start one per GPU / tmux session, all in this folder.
 #   KV_PHASES=price ./run_gpu0.sh        3 epochs of everything + the oracle ceilings (default)
 #   KV_PHASES=base,p1 ./run_gpu0.sh      baselines and stage A        then: p2, alb, p3, final
@@ -9,7 +12,9 @@
 #   KV_SEEDS=0 ./run_gpu0.sh             one seed for the baselines and controls
 # Use the same options in all four sessions.
 set -euo pipefail
-K=${1:?usage: run_gpu.sh <gpu slot 0-3>}
+K=${1:?usage: run_gpu.sh <gpu slot 0-3> [phases] [runners per GPU]}
+if [ -n "${2:-}" ]; then export KV_PHASES=$2; fi
+if [ -n "${3:-}" ]; then export KV_SLOTS=$3; fi
 cd "$(dirname "$0")"
 . ./env.sh
 [ -f .cache/data/kvasir_128.pt ] || { echo "run ./setup.sh first"; exit 1; }

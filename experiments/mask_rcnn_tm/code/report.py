@@ -37,6 +37,16 @@ def status():
     print(f"total  {spent / 3600:.1f} GPU-hours recorded (cap of the plan: 230)")
     for f in sorted((CACHE / "claims").glob("*.failed-*")):
         print(f"FAILED {f.name}")
+    o = rec("oracle-K0b")
+    if o:
+        t = o["ceilings"]["train"]
+        print(f"\ngate K0b (oracle ceilings): {'PASSED' if o['K0b_pass'] else 'FAILED'}  {o['gates']}  "
+              f"best-anchor recall {t['O1_best_anchor_recall@0.5']:.3f} train / "
+              f"{o['ceilings']['val']['O1_best_anchor_recall@0.5']:.3f} val")
+    pj = JOBS.jobs("price")[0]
+    if all((rec(j["tag"]) or {}).get("status") == "done" for j in pj):
+        print("\npricing phase complete:")
+        price()
 
 
 def price():

@@ -19,8 +19,9 @@ git clone <this repository> && cd torchtsetlin/experiments/mask_rcnn_tm
 ./run_gpu1.sh                               # tmux session 1
 ./run_gpu2.sh                               # tmux session 2
 ./run_gpu3.sh                               # tmux session 3
-./status.sh                                 # progress, from anywhere
-./status.sh --price                         # after the pricing phase: s/epoch and the projected cost
+./status.sh                                 # progress, gate K0b, and (once pricing is done) s/epoch and projected cost
+./run_gpu0.sh base,p1                       # open the next phases; the same in sessions 1-3  (then p2, alb, p3, final)
+./run_gpu0.sh base,p1 2                     # ... with two runners per GPU
 ```
 
 The data is read from `/work/vajira/DATA/Kvasir-SEG` (the folder that holds `images/` and
