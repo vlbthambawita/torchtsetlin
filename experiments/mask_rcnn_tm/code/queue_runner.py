@@ -55,6 +55,26 @@ def clear_stale_claims():
             print(f"== released stale claim {d.name} (pid {o.get('pid')} gone)", flush=True)
 
 
+def retry_own_failures(me):
+    """A restart tries again what failed on this runner before (the cause may have been fixed)."""
+    old = sorted(CLAIMS.glob(f"*.failed-{me}"))
+    for f in old:
+        f.unlink(missing_ok=True)
+    if old:
+        print(f"== {me}: retrying {len(old)} job(s) that failed here before, e.g. {old[0].name.rsplit('.failed-', 1)[0]}",
+              flush=True)
+
+
+def summary(js, me):
+    done = sum(1 for j in js if is_done(j["tag"]))
+    failed = sorted({f.name.rsplit(".failed-", 1)[0] for f in CLAIMS.glob("*.failed-*")} & {j["tag"] for j in js})
+    failed = [t for t in failed if not is_done(t)]
+    line = f"{done} of {len(js)} listed job(s) done"
+    if failed:
+        line += f", {len(failed)} FAILED (logs/runs/<tag>.log), e.g. {failed[0]}"
+    return line
+
+
 def claim(job, me):
     d = CLAIMS / job["tag"]
     d.parent.mkdir(parents=True, exist_ok=True)
@@ -92,6 +112,7 @@ def main():
     (LOGS / "runs").mkdir(parents=True, exist_ok=True)
     if not args.dry_run:
         clear_stale_claims()
+        retry_own_failures(me)
         print(f"== {me} on {HOST} (CUDA_VISIBLE_DEVICES={cvd}), phases {','.join(phases)}", flush=True)
 
     idle = False
@@ -126,7 +147,7 @@ def main():
                           f"{[t for t in waiting[0]['needs'] if not is_done(t)][:2]}", flush=True)
                 for b in sorted(set(blocked)):
                     print(f"== {me}: later: {b}", flush=True)
-                print(f"== {me}: nothing left to do in {','.join(phases)}", flush=True)
+                print(f"== {me}: nothing left to do in {','.join(phases)}: {summary(js, me)}", flush=True)
                 return
             if not idle:
                 idle = True

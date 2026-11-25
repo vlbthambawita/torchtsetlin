@@ -31,6 +31,6 @@ for S in "${SUBS[@]}"; do
   setsid nohup python code/queue_runner.py --gpu "$K" --sub "$S" >> "logs/gpu$K$S.log" 2>&1 < /dev/null &
   echo $! > "logs/gpu$K$S.pid"
   sleep 3
-  tail -n 2 "logs/gpu$K$S.log"
+  tail -n 3 "logs/gpu$K$S.log"
   echo "GPU slot $K$S (device $DEV) runner started (pid $(cat "logs/gpu$K$S.pid")), phases ${KV_PHASES:-price}. Follow it with: tail -f $PWD/logs/gpu$K$S.log"
 done
