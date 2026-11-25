@@ -16,7 +16,7 @@ Dated entries. The plan is `torchtsetlin_plans/experiments/mask_rcnn_tm/PLAN_KVA
 | D8 | baselines use `alb` when the Tsetlin heads adopt it | baselines (i), (iii) and the dense TM are trained at both levels in phase `alb`; the report lists both | heads adopt `alb` one by one, so there is no single level to copy |
 | D9 | dense TM validation mIoU | monitored on every second pixel; the end-to-end jobs score the full grid | validation each epoch would otherwise cost several times a training epoch |
 | D10 | stage-2 sampling of §5 (64 RoIs per image, 25 % foreground) | used for the classifier; the box head takes up to 8 foreground RoIs per image, the mask head 2 | only foreground RoIs train these heads |
-| D11 | AlbumentationsX | tested here only with `albumentations==2.0.8` (the build machine has Python 3.10); `setup.sh` installs AlbumentationsX on Python ≥ 3.11 and test T12 runs there | |
+| D11 | AlbumentationsX | the pipeline picks its argument names from the installed library, because AlbumentationsX renamed them (`*_limit` → `*_range`, `BboxParams(format=)` → `coord_format=`); checked with AlbumentationsX 2.6.7 (Python 3.12) and `albumentations` 2.0.8 (Python 3.10), unknown-argument warnings treated as errors | the first server run (Python 3.14) failed test T12 on the 2.0.8 names |
 
 ## Not built yet
 

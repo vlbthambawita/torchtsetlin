@@ -41,30 +41,42 @@ def telemetry_off():
     return all(os.environ.get(k) == "1" for k in ("ALBUMENTATIONS_NO_TELEMETRY", "ALBUMENTATIONS_OFFLINE"))
 
 
+def _names(cls):
+    import inspect
+    return set(inspect.signature(cls.__init__).parameters)
+
+
 def build_alb(part="all"):
-    """The pipeline of PLAN_KVASIR §4. ``part``: all | photo | geo."""
+    """The pipeline of PLAN_KVASIR §4. ``part``: all | photo | geo.
+
+    AlbumentationsX renamed several arguments (``*_limit`` -> ``*_range``, ``BboxParams(format=)``
+    -> ``coord_format=``, ``clip=`` -> ``clip_after_transform=``); the names are chosen from the
+    installed signatures, so the same pipeline runs on ``albumentations`` 2.0.8."""
+    import warnings
+
     import albumentations as A
     import cv2
+    x = "brightness_range" in _names(A.RandomBrightnessContrast)      # AlbumentationsX argument names
     tf = []
     if part in ("all", "geo"):
         tf.append(A.Affine(scale=(0.8, 1.25), translate_percent=(-0.1, 0.1), rotate=(-20, 20), keep_ratio=True,
                            interpolation=cv2.INTER_LINEAR, mask_interpolation=cv2.INTER_NEAREST,
                            fill=0, fill_mask=IGNORE, p=1.0))
     if part in ("all", "photo"):
-        tf += [A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.8),
-               A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.8),
-               A.GaussianBlur(blur_limit=(3, 5), p=0.2)]
-    kw = {}
-    try:                                             # AlbumentationsX: telemetry is also a pipeline option
-        import inspect
-        if "telemetry" in inspect.signature(A.Compose.__init__).parameters:
-            kw["telemetry"] = False
-    except (TypeError, ValueError):
-        pass
-    import warnings
+        if x:
+            tf += [A.RandomBrightnessContrast(brightness_range=(-0.2, 0.2), contrast_range=(-0.2, 0.2), p=0.8),
+                   A.HueSaturationValue(hue_shift_range=(-10, 10), sat_shift_range=(-20, 20), val_shift_range=(-10, 10), p=0.8),
+                   A.GaussianBlur(blur_range=(3, 5), p=0.2)]
+        else:
+            tf += [A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.8),
+                   A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.8),
+                   A.GaussianBlur(blur_limit=(3, 5), p=0.2)]
+    kw = {"telemetry": False} if "telemetry" in _names(A.Compose) else {}
+    bn = _names(A.BboxParams)
+    bkw = {"coord_format" if "coord_format" in bn else "format": "pascal_voc", "label_fields": ["idx"],
+           "min_visibility": 0.0, "min_area": 0.0, "clip_after_transform" if "clip_after_transform" in bn else "clip": True}
     warnings.filterwarnings("ignore", message="Got processor for bboxes")
-    return A.Compose(tf, bbox_params=A.BboxParams(format="pascal_voc", label_fields=["idx"], min_visibility=0.0,
-                                                  min_area=0.0, clip=True), **kw)
+    return A.Compose(tf, bbox_params=A.BboxParams(**bkw), **kw)
 
 
 def _seed(tf, seed):
