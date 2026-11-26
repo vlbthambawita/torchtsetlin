@@ -19,7 +19,7 @@ after the plan was fixed is written here with its reason.
   `patches_per_commit=128` means about 22 000 commits per epoch on 700 images of 64×64, and the time per
   commit dominates. The plan's projection assumed the time grows with clauses × features, from a model that
   commits far less often. Expect the cost of the dense phases to be set mostly by the number of runs and
-  epochs. The pricing phase on the V100s decides; the trimming rule of the plan applies if it is over the cap.
+  epochs. The pricing phase on the A100s decides; the trimming rule of the plan applies if it is over the cap.
 - Training on sampled pixels through `ignore_index` does not make a dense epoch faster: every pixel is still
   evaluated.
 - Validation mIoU moves by several points from epoch to epoch. The best epoch is therefore partly a lucky
