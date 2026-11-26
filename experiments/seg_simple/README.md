@@ -20,7 +20,7 @@ cd experiments/seg_simple
 ./status.sh                # progress, running jobs, gate G0, the cost table once pricing is complete
 ```
 
-Kvasir-SEG is read from `/work/vajira/DATA/Kvasir-SEG` (`images/` and `masks/`); `SS_DATA=/other/path ./setup.sh`
+Kvasir-SEG is read from `/work/vajira/data/Kvasir-SEG` (`images/` and `masks/`); `SS_DATA=/other/path ./setup.sh`
 overrides it. The runners share one job list and resume after a stop or a crash.
 
 `run_gpuK.sh` runs on GPU index K. On the A100 server of the earlier programmes the three GPUs are 0, 3 and 1,

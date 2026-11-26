@@ -20,7 +20,7 @@ import torch
 from common import CACHE, MANIFESTS, S, read_json, sha256_file, write_json
 
 MANIFEST_SHA256 = "915e22eb119e5888"                 # first 16 hex digits of manifests/kvasir_split.json
-DATA_DIRS = ("/work/vajira/DATA/Kvasir-SEG", "/work/vajira/DATA/Kvasir_seg_original/Kvasir-SEG")
+DATA_DIRS = ("/work/vajira/data/Kvasir-SEG", "/work/vajira/DATA/Kvasir-SEG", "/work/vajira/DATA/Kvasir_seg_original/Kvasir-SEG")
 SPLITS = ("train", "val", "test")
 DEPTH = {"T4": 4, "T8": 8, "B8": 8}
 N_PANEL = 8

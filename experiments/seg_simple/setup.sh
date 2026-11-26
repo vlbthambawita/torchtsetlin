@@ -1,6 +1,6 @@
 #!/bin/bash
 # One-time setup on the GPU server (seg_simple PLAN section 9). Safe to re-run.
-#   ./setup.sh        Kvasir-SEG is read from /work/vajira/DATA/Kvasir-SEG (images/ and masks/);
+#   ./setup.sh        Kvasir-SEG is read from /work/vajira/data/Kvasir-SEG (images/ and masks/);
 #                     SS_DATA=/other/path ./setup.sh overrides it
 #   1. Python environment (.venv): PyTorch (the build that fits the driver), torchvision, this
 #      repository's torchtsetlin (editable), wandb, matplotlib, pytest.

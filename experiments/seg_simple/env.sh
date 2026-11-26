@@ -8,5 +8,5 @@ export PYTHONUNBUFFERED=1 CUDA_DEVICE_ORDER=PCI_BUS_ID
 export WANDB_BASE_URL=${WANDB_BASE_URL:-https://api.forge.coreweave.com}   # simulamet_mlc/TM_SEG_SIMPLE
 export SS_WANDB_PROJECT=${SS_WANDB_PROJECT:-TM_SEG_SIMPLE}
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
-# Kvasir-SEG: /work/vajira/DATA/Kvasir-SEG by default (code/data.py); SS_DATA=/other/path overrides
+# Kvasir-SEG: /work/vajira/data/Kvasir-SEG by default (code/data.py); SS_DATA=/other/path overrides
 if [ -f "$PROG_DIR/.ss_data" ]; then export SS_DATA=${SS_DATA:-$(cat "$PROG_DIR/.ss_data")}; fi
