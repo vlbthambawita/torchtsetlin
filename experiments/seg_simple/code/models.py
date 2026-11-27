@@ -3,6 +3,8 @@
     dense   tt.SegmentationTsetlinMachine: every pixel is an example of its k x k patch (the tutorial's
             model; plan section 5.1). ``sampled`` trains on 256 random pixels per image and epoch
             (the others carry ``ignore_index``).
+    pool    the same machine with patch 1 on pyramid planes (``data.pool_planes``), trained on pixels
+            sampled from all training images and mixed before they are committed (phase ``improve``)
     win2d   tt.ConvTsetlinMachine on the 9 x 9 window of a pixel, label = the centre pixel
     win3d   tt.Conv3dTsetlinMachine on the same window as a volume (3 colours, D planes, 9, 9)
 
@@ -13,11 +15,13 @@ sampled, px. Randomness comes from the global torch generators, which ``train.py
 import torch
 import torchtsetlin as tt
 from common import IGNORE, SAMPLED, WINDOW
-from data import augment, encode, planes
+from data import augment, encode, planes, pool_planes, sample_pixels
 
 BATCH_IMAGES = 8                                     # the tutorial's batch (dense models)
 BATCH_WINDOWS = 64                                   # window models (DECISIONS D2: 256 made the clauses collapse)
-EVAL_IMAGES = {"dense": 32, "win2d": 4, "win3d": 2}  # images per evaluation chunk
+EVAL_IMAGES = {"dense": 32, "pool": 16, "win2d": 4, "win3d": 2}  # images per evaluation chunk
+POOL_IMAGES = 50                                     # images encoded at a time when the pixel pool is built
+COMMIT = 128                                         # pixels per commit (dense and pool models)
 
 
 class Confusion:
@@ -53,7 +57,10 @@ class Net:
         if self.kind == "dense":
             self.m = tt.SegmentationTsetlinMachine(
                 2, n_clauses=n, T=T, s=10.0, patch_size=k, position_encoding=8 if job["pos"] else False,
-                patches_per_commit=128, pixel_order=job["order"], ignore_index=IGNORE if job["sampled"] else None, **kw)
+                patches_per_commit=COMMIT, pixel_order=job["order"], ignore_index=IGNORE if job["sampled"] else None, **kw)
+        elif self.kind == "pool":
+            self.m = tt.SegmentationTsetlinMachine(2, n_clauses=n, T=T, s=10.0, patch_size=1, position_encoding=False,
+                                                   patches_per_commit=COMMIT, **kw)
         elif self.kind == "win2d":
             self.m = tt.ConvTsetlinMachine(2, n, T=T, s=10.0, patch_size=k, position_encoding=True, **kw)
         elif self.kind == "win3d":
@@ -78,10 +85,45 @@ class Net:
         w = w.permute(0, 3, 4, 1, 2)                                         # (M, 3, D, 9, 9)
         return w.flatten(1, 2) if self.kind == "win2d" else w
 
+    def _planes(self, x):
+        return pool_planes(x, self.enc, self.job["scales"], self.job["pos"])
+
     # ---------------------------------------------------------------- training
+    @torch.no_grad()
+    def _pool_epoch(self, x, y):
+        """Sampled pixels of all images, mixed, then committed ``COMMIT`` at a time.
+
+        The library's ``update`` commits the pixels of one image chunk in order, so the pixels reach
+        the machine's own feedback path (``_accumulate_literals``, ``_commit``) directly here
+        (LIBRARY_GAPS SS-4). Nothing of the feedback is changed."""
+        job, conf, m = self.job, Confusion(), self.m
+        if m.input_shape is None:
+            self.votes(x[:1])                                                # lazy shapes
+        feats, labs = [], []
+        for i in range(0, x.shape[0], POOL_IMAGES):
+            xb, yb = x[i:i + POOL_IMAGES], y[i:i + POOL_IMAGES]
+            if job["aug"] == "sym":
+                xb, yb, _ = augment(xb, yb, None)
+            idx = sample_pixels(yb, job["pool_n"], job["pool_a"], job["pool_b"])           # (B, n)
+            f = self._planes(xb).flatten(2).transpose(1, 2)                                # (B, H*W, Z)
+            feats.append(f.gather(1, idx.unsqueeze(-1).expand(-1, -1, f.shape[-1])).flatten(0, 1))
+            labs.append(yb.flatten(1).gather(1, idx).flatten())
+        f, lab = torch.cat(feats), torch.cat(labs)
+        order = torch.randperm(lab.numel(), device=self.dev)
+        for i in range(0, lab.numel(), COMMIT):
+            j = order[i:i + COMMIT]
+            fj = f[j].to(m.compute_dtype)
+            acc = m._new_accumulator()
+            v = m._accumulate_literals(torch.cat([fj, 1.0 - fj], 1), lab[j], acc)
+            m._commit(acc)
+            conf.add(v.argmax(1), lab[j])
+        return conf
+
     def train_epoch(self, x, y):
         """One pass over the training images. Returns the running confusion (pre-update predictions)."""
         self.m.train()
+        if self.kind == "pool":
+            return self._pool_epoch(x, y)
         conf, N, (H, W) = Confusion(), x.shape[0], y.shape[-2:]
         if self.kind == "dense":
             job = self.job
@@ -124,6 +166,9 @@ class Net:
         if self.kind == "dense":
             for i in range(0, N, step):
                 out.append(self.m.vote_map(planes(x[i:i + step], self.enc)).float())
+        elif self.kind == "pool":
+            for i in range(0, N, step):
+                out.append(self.m.vote_map(self._planes(x[i:i + step])).float())
         else:
             P = self._padded(x, key) if key else torch.nn.functional.pad(encode(x, self.enc), (WINDOW // 2,) * 4)
             g = torch.arange(H * W, device=self.dev)

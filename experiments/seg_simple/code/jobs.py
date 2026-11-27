@@ -7,15 +7,17 @@ Phases, in the order they are meant to run:
     wide      extra member seeds, then the teams (evaluation only)
     price3d   3 epochs of every distinct window-model shape
     conv3d    dense references, 2D and 3D window models                      (69 runs)
+    improve   pixels sampled across images, wide OR pyramid, adaptive-threshold bits (15 runs)
 
 Tags: ``n<n>.k<k>[.<arm>...]__s<seed>`` for dense models, ``win2d.<enc>.k<k>.n<n>__s<seed>`` and
-``win3d.<enc>.k<k>.d<kd>.n<n>__s<seed>`` for window models, ``team-<name>__<repeat>`` for teams.
+``win3d.<enc>.k<k>.d<kd>.n<n>__s<seed>`` for window models, ``pool.<enc>.s<largest scale>.n<n>__s<seed>`` for the
+models of phase ``improve``, ``team-<name>__<repeat>`` for teams.
 """
 
 from common import SAMPLED, WINDOW, is_done
 from data import DEPTH
 
-PHASES = ["price", "main", "side", "wide", "price3d", "conv3d"]
+PHASES = ["price", "main", "side", "wide", "price3d", "conv3d", "improve"]
 SEEDS = (0, 1, 2)
 CLAUSE_LINE = [(n, 3) for n in (50, 100, 200, 400, 800, 1600, 3200)]
 PATCH_LINE = [(400, k) for k in (1, 3, 5, 7, 9, 13)]
@@ -24,12 +26,19 @@ GRID = [(n, k) for n in GRID_N for k in GRID_K]
 CELLS = sorted(set(CLAUSE_LINE + PATCH_LINE + GRID))                 # 18
 ARM_N = (100, 400, 1600)                                             # side arms at k = 3
 WIN_K, WIN_KD, WIN_ENC, WIN_N = (3, 5, 7), (2, 4), ("T8", "B8"), 400
+WIDE = (1, 2, 4, 8, 16, 32)                                          # scales of the wide OR pyramid
+POOL = dict(pool_n=512, pool_a=0.25, pool_b=0.25)                    # pixels per image and epoch; class and boundary shares
+IMPROVE_N = 400
+IMPROVE_ARMS = (("T4", (1,)), ("T4", WIDE), ("AG", WIDE), ("T4+AG", WIDE), ("T4+AG", (1,)))
 ASSUMED_EPOCHS = {"none": 150, "sym": 200}                           # cost projection only
 
 
 def J(phase, group, model="dense", n=400, k=3, kd=None, enc="T4", pos=True, t_ratio=0.2, aug="none", bal=False,
-      order="raster", sampled=False, px=64, seed=0, prefix="", **kw):
-    if model == "dense":
+      order="raster", sampled=False, px=64, seed=0, prefix="", scales=(1,), **kw):
+    if model == "pool":
+        t = f"pool.{enc}.s{max(scales)}.n{n}" + ("" if pos else ".nopos") + (".sym" if aug == "sym" else "")
+        k, kw = 3, {**POOL, "scales": list(scales), **kw}
+    elif model == "dense":
         t = f"n{n}.k{k}" + (f".{enc}" if enc != "T4" else "") + ("" if pos else ".nopos") \
             + (f".T{t_ratio}" if t_ratio != 0.2 else "") + (".sym" if aug == "sym" else "") + (".bal" if bal else "") \
             + (".shuffle" if order == "shuffle" else "") + (".sampled" if sampled else "") + (f".px{px}" if px != 64 else "")
@@ -47,6 +56,8 @@ def features(j):
     D = DEPTH[j["enc"]]
     if j["model"] == "dense":
         return 3 * D * j["k"] ** 2 + (16 if j["pos"] else 0)
+    if j["model"] == "pool":
+        return 3 * D * 9 * len(j["scales"]) + (16 if j["pos"] else 0)
     kd = j["kd"] if j["model"] == "win3d" else D
     return 3 * kd * j["k"] ** 2
 
@@ -57,6 +68,8 @@ def cost(j):
         return 0.0
     if j["model"] == "dense":
         return 2 * j["n"] * features(j) * j["px"] ** 2 * 700
+    if j["model"] == "pool":
+        return 2 * j["n"] * features(j) * (700 * j["pool_n"] + 150 * j["px"] ** 2)
     D = DEPTH[j["enc"]]
     kd = j["kd"] if j["model"] == "win3d" else D
     patches = (D - kd + 1) * (WINDOW - j["k"] + 1) ** 2
@@ -130,6 +143,11 @@ def conv3d_jobs():
     return out
 
 
+def improve_jobs():
+    """Section "improve" of DECISIONS (D8): every arm at 400 clauses per class, three seeds."""
+    return [J("improve", "improve", model="pool", n=IMPROVE_N, enc=e, scales=sc, seed=s) for s in SEEDS for e, sc in IMPROVE_ARMS]
+
+
 def price_jobs(phase):
     src = (main_jobs() + side_jobs() + wide_jobs()) if phase == "price" else conv3d_jobs()
     seen, out = set(), []
@@ -142,7 +160,7 @@ def price_jobs(phase):
 
 
 _BUILD = {"price": lambda: price_jobs("price"), "main": main_jobs, "side": side_jobs, "wide": wide_jobs,
-          "price3d": lambda: price_jobs("price3d"), "conv3d": conv3d_jobs}
+          "price3d": lambda: price_jobs("price3d"), "conv3d": conv3d_jobs, "improve": improve_jobs}
 
 
 def jobs(phase):
@@ -166,6 +184,7 @@ def smoke_jobs():
     a = [J("smoke", "smoke", n=50, k=3, **kw), J("smoke", "smoke", n=100, k=9, aug="sym", **kw),
          J("smoke", "smoke", n=50, k=9, enc="B8", pos=False, sampled=True, **kw),
          J("smoke", "smoke", n=50, k=3, bal=True, order="shuffle", t_ratio=0.4, **kw),
+         J("smoke", "smoke", model="pool", n=50, enc="T4+AG", scales=WIDE, **kw),
          J("smoke", "smoke", model="win2d", n=50, k=5, enc="T8", **kw),
          J("smoke", "smoke", model="win3d", n=50, k=3, kd=2, enc="B8", **kw)]
     return a + [team("smoke", "smoke-W", 0, [j["tag"] for j in a], limit=16),

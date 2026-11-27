@@ -38,12 +38,34 @@ Phases, to be opened one after the other with the same argument in every session
 | `wide` | `./run_gpuK.sh wide` | 18 extra member runs, then 33 team evaluations |
 | `price3d` | `./run_gpuK.sh price3d` | 3 epochs of every window-model shape (23 jobs) |
 | `conv3d` | `./run_gpuK.sh conv3d` | dense references, 2D and 3D window models; 69 runs and 3 team evaluations |
+| `improve` | `./run_gpuK.sh improve` | pixels sampled across images, wide OR pyramid, adaptive-threshold bits; 5 arms × 3 seeds = 15 runs (added 2026-11-27, `DECISIONS.md` D8) |
 
 Read `./status.sh` after `price` and after `price3d`: it prints the projected GPU-hours against the caps of the
 plan (160 without the 3D phase, 50 for it). Over a cap, apply the trimming rule of the plan before starting.
 
 Options: `./run_gpuK.sh main 3` starts three runners on the GPU (1 to 4, see below); `SS_WANDB=offline` or `0`; `SS_PATIENCE`
 (default 30) and `SS_MAX_EPOCHS` (300); `./stop.sh` stops after the current epoch, `./stop.sh --now` at once.
+
+## Phase `improve`
+
+The main phase gave a test mIoU of 0.50 to 0.53 for every clause count and patch size, the level of the
+position prior. This phase tests the two changes that helped in `experiments/segmentation` (October 2026), and
+adaptive-threshold bits, at 400 clauses per class:
+
+| Arm (tag) | Bits of a pixel | Features |
+|---|---|---|
+| `pool.T4.s1.n400` | T4, 3×3 neighbourhood: the bits of `n400.k3`. Only the training order changes | 124 |
+| `pool.T4.s32.n400` | T4, 3×3 neighbourhood at OR-pooled scales 1, 2, 4, 8, 16, 32 | 664 |
+| `pool.AG.s32.n400` | adaptive Gaussian threshold (one plane per colour), same pyramid | 178 |
+| `pool.T4+AG.s32.n400` | both, same pyramid | 826 |
+| `pool.T4+AG.s1.n400` | both, 3×3 neighbourhood only | 151 |
+
+All arms keep the 8 position bits per axis, T = 0.2 n, s = 10 and commits of 128 pixels. Training pixels: 512
+per image and epoch, drawn with replacement (half uniform, a quarter spread evenly over the classes of the
+image, a quarter from the 2-pixel boundary band), pooled over all 700 images and mixed before they are
+committed. The running training mIoU of these runs is measured on the sampled pixels, so it is not comparable
+with the dense runs; the mIoU of the full training split at the best epoch is. An epoch took about 4 s on an
+RTX 3090 in a local check, so the phase is small; no pricing phase belongs to it.
 
 ## Several runners per GPU
 
@@ -69,14 +91,15 @@ same within a phase.
 
 Tags: `n400.k3__s0` is 400 clauses per class, patch 3, seed 0. Suffixes name an arm: `.sym` augmentation,
 `.B8` bit planes, `.T8` 8-level thermometer, `.nopos` no position bits, `.T0.1` margin 0.1 n, `.bal`, `.shuffle`,
-`.sampled`, `.px128`. `win3d.T8.k5.d2.n400__s0` is a 3D window model with spatial patch 5 and depth 2.
+`.sampled`, `.px128`. `pool.T4+AG.s32.n400__s0` is a model of phase `improve`: encoding T4+AG, OR pyramid up to
+scale 32 (`s1` is the 3×3 neighbourhood alone), 400 clauses per class. `win3d.T8.k5.d2.n400__s0` is a 3D window model with spatial patch 5 and depth 2.
 
 ## Code
 
 | File | |
 |---|---|
-| `code/data.py` | manifest check, caches, encodings (T4, T8, B8), the 8 symmetries, floors |
-| `code/models.py` | the three kinds of model behind one interface, the confusion-matrix metrics |
+| `code/data.py` | manifest check, caches, encodings (T4, T8, B8, AG, T4+AG), pyramid planes and pixel sampling of phase `improve`, the 8 symmetries, floors |
+| `code/models.py` | the four kinds of model behind one interface, the confusion-matrix metrics |
 | `code/train.py` | one run: early stopping, checkpoints, record, panels |
 | `code/evals.py` | team evaluations |
 | `code/jobs.py` | the job list of every phase |

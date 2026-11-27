@@ -265,6 +265,25 @@ def report(upload=False):
     if chk:
         L += [f"Check: 3D with the full depth minus the 2D window model, {chk[0]:+.5f} (must be 0 on the same GPU model).", ""]
 
+    L += ["## Improvement arms (400 clauses per class, phase `improve`)", "",
+          "Models with patch 1 on planes that hold the 3 × 3 neighbourhood at each scale and the position bits. "
+          f"Training pixels: {JOBS.POOL['pool_n']} per image and epoch, drawn from all images and mixed before they are "
+          f"committed 128 at a time (class share {JOBS.POOL['pool_a']}, boundary share {JOBS.POOL['pool_b']}). "
+          "The first row is the dense model of the main phase (all pixels, raster order).", ""]
+    ref = cell(JOBS.IMPROVE_N, 3)
+    irows = [["dense, T4, 3 × 3 (main)", str(JOBS.features(JOBS.J("x", "x", n=JOBS.IMPROVE_N, k=3))), ms(vals(ref)),
+              ms(vals(ref, "val", "IoU_polyp")), ms(vals(ref, "test")), ms(vals(ref, "test", "IoU_polyp")), "",
+              ms(vals(ref, None, "gap_train_minus_val")), ms(vals(ref, None, "epochs"), 0), ms(vals(ref, None, "s_per_epoch"), 1)]]
+    for e, sc in JOBS.IMPROVE_ARMS:
+        j = JOBS.J("x", "x", model="pool", n=JOBS.IMPROVE_N, enc=e, scales=sc)
+        c, d = j["cell"], paired(vals(j["cell"]), vals(ref))
+        irows.append([f"sampled, {e}, " + ("3 × 3" if len(sc) == 1 else f"OR pyramid 1 to {max(sc)}"), str(JOBS.features(j)),
+                      ms(vals(c)), ms(vals(c, "val", "IoU_polyp")), ms(vals(c, "test")), ms(vals(c, "test", "IoU_polyp")),
+                      f"{d[0]:+.3f} ± {d[1]:.3f}" if d else "—", ms(vals(c, None, "gap_train_minus_val")),
+                      ms(vals(c, None, "epochs"), 0), ms(vals(c, None, "s_per_epoch"), 1)])
+    L += table(["model", "features", "val mIoU", "val polyp IoU", "test mIoU", "test polyp IoU", "val mIoU − main (± s.e.)",
+                "train − val", "epochs", "s / epoch"], irows)
+
     # ---------------------------------------------------------------- verdicts
     L += ["## Hypotheses", ""]
     V = []

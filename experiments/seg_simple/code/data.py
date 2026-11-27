@@ -10,6 +10,12 @@ Encodings give ``(B, 3 colours, D, H, W)`` Boolean; ``planes`` flattens them col
 layout of ``tt.data.ColorThermometerEncoder``:
     T4, T8   thermometer, plane d of a colour is ``value / 255 >= (d + 1) / (D + 1)``
     B8       bit planes of the raw 8-bit value, most significant bit first
+    AG       adaptive Gaussian threshold (block 11, C = 2), one plane per colour
+    T4+AG    the four T4 planes of a colour, then its AG plane
+
+Phase ``improve`` (models of kind ``pool``): ``pool_planes`` puts the 3 x 3 neighbourhood of every
+plane at several OR-pooled scales and the position bits into the planes of a pixel, and
+``sample_pixels`` draws the training pixels of an image.
 """
 
 import os
@@ -22,7 +28,7 @@ from common import CACHE, MANIFESTS, S, read_json, sha256_file, write_json
 MANIFEST_SHA256 = "915e22eb119e5888"                 # first 16 hex digits of manifests/kvasir_split.json
 DATA_DIRS = ("/work/vajira/data/Kvasir-SEG", "/work/vajira/DATA/Kvasir-SEG", "/work/vajira/DATA/Kvasir_seg_original/Kvasir-SEG")
 SPLITS = ("train", "val", "test")
-DEPTH = {"T4": 4, "T8": 8, "B8": 8}
+DEPTH = {"T4": 4, "T8": 8, "B8": 8, "AG": 1, "T4+AG": 5}
 N_PANEL = 8
 
 
@@ -115,6 +121,10 @@ _THR = {}
 
 def encode(x, enc):
     """uint8 images ``(B, 3, H, W)`` -> Boolean ``(B, 3, D, H, W)``."""
+    if enc == "AG":
+        return _adaptive(x).unsqueeze(2)
+    if enc == "T4+AG":
+        return torch.cat([encode(x, "T4"), _adaptive(x).unsqueeze(2)], 2)
     if enc == "B8":
         sh = torch.arange(7, -1, -1, device=x.device).view(1, 1, 8, 1, 1)
         return ((x.unsqueeze(2).to(torch.int16) >> sh) & 1).bool()
@@ -125,9 +135,72 @@ def encode(x, enc):
     return (x.float() / 255.0).unsqueeze(2) >= _THR[key].view(1, 1, -1, 1, 1)
 
 
+def _adaptive(x):
+    """uint8 images -> ``(B, 3, H, W)`` Boolean: a pixel is on when it is brighter than its neighbourhood."""
+    key = ("AG", x.device)
+    if key not in _THR:
+        from torchtsetlin.data.encoders import AdaptiveThresholdEncoder
+        _THR[key] = AdaptiveThresholdEncoder(block_size=11, C=2.0, method="gaussian").to(x.device)
+    return _THR[key](x.float()).bool()
+
+
 def planes(x, enc):
     """uint8 images -> Boolean planes ``(B, 3 * D, H, W)``, colour-major."""
     return encode(x, enc).flatten(1, 2)
+
+
+# --------------------------------------------------------------------------- phase improve
+POS_BITS = 8                                         # position bits per axis, as in the dense models
+
+
+def position_planes(H, W, device):
+    """``(2 * POS_BITS, H, W)`` Boolean: the position bits of ``SegmentationTsetlinMachine(position_encoding=8)``,
+    y bits first (bit i is ``coordinate > threshold i``, thresholds evenly spread)."""
+    def bits(n):
+        thr = torch.linspace(0, n - 1, POS_BITS + 2, device=device)[1:-1]
+        return torch.arange(n, device=device, dtype=torch.float32).unsqueeze(0) > thr.unsqueeze(1)      # (bits, n)
+    return torch.cat([bits(H)[:, :, None].expand(-1, H, W), bits(W)[:, None, :].expand(-1, H, W)], 0)
+
+
+def pool_planes(x, enc, scales, pos=True):
+    """uint8 images -> ``(B, Z, H, W)`` Boolean planes for a model with patch 1.
+
+    Per scale, the planes of the encoding are OR-pooled by that factor and every pixel gets the
+    3 x 3 neighbourhood at that level (the library's ``PyramidEncoder``). Scale 1 alone is the
+    3 x 3 patch of the dense model. The position bits are added last."""
+    from torchtsetlin.data.encoders import PyramidEncoder
+    p = PyramidEncoder(scales=tuple(scales), patch=3)(planes(x, enc))
+    if pos:
+        p = torch.cat([p, position_planes(*p.shape[-2:], p.device).unsqueeze(0).expand(len(p), -1, -1, -1)], 1)
+    return p
+
+
+def boundary_band(y, width=2):
+    """``(B, H, W)`` labels -> pixels that have a pixel of the other class within ``width`` pixels."""
+    f, k = y.float().unsqueeze(1), 2 * width + 1
+    mx = torch.nn.functional.max_pool2d(f, k, stride=1, padding=width)
+    mn = -torch.nn.functional.max_pool2d(-f, k, stride=1, padding=width)
+    return (mx != mn).squeeze(1)
+
+
+def sample_pixels(y, n, a, b):
+    """``n`` pixel indices per image, drawn with replacement: a share ``a`` spread evenly over the
+    classes present in the image, a share ``b`` from the boundary band, the rest uniform."""
+    B = y.shape[0]
+    P = y[0].numel()
+    yf = y.view(B, P)
+    p = torch.full((B, P), (1 - a - b) / P, device=y.device)
+    if a > 0:
+        onehot = torch.nn.functional.one_hot(yf, 2).float()                  # (B, P, 2)
+        cnt = onehot.sum(1)                                                  # (B, 2)
+        present = (cnt > 0).float()
+        w = present / present.sum(1, keepdim=True) / cnt.clamp_min(1)
+        p = p + a * (onehot * w.unsqueeze(1)).sum(-1)
+    if b > 0:
+        band = boundary_band(y).view(B, P).float()
+        nb = band.sum(1, keepdim=True)
+        p = p + b * torch.where(nb > 0, band / nb.clamp_min(1), torch.full_like(band, 1.0 / P))
+    return torch.multinomial(p, n, replacement=True)
 
 
 # --------------------------------------------------------------------------- augmentation (arm sym)

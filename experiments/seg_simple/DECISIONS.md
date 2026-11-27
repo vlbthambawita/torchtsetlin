@@ -12,6 +12,7 @@ after the plan was fixed is written here with its reason.
 | D5 | 66 window-phase runs. | 69 training runs: per encoding two dense references without position bits (all pixels, sampled pixels) instead of one new dense cell. | D1. |
 | D6 | `Wgreedy` is offered "the best" window model. | A separate team `Wgreedy3d` (phase `conv3d`) chooses among the 18 main cells and all window models of the same seed. | `Wgreedy` belongs to phase `wide`, which finishes before the window models exist. |
 | D7 | Four V100s, one runner each. | Three A100s (the user, 2026-11-26). `run_gpuK.sh` takes the GPU index and up to four runners per GPU; the wall-time estimate of the cost table uses `SS_GPUS` (default 3). | The hardware changed. The caps in GPU-hours are unchanged; an A100 hour is not a V100 hour, so the pricing phase on the A100s is what counts. Results are bit-reproducible only on the same GPU model. |
+| D8 | The plan has no phase after `conv3d`. | Phase `improve` (2026-11-27, asked for by the user after the main results): 5 arms × 3 seeds at 400 clauses per class, model kind `pool` (README, "Phase `improve`"). | Every main run scored at the level of the position prior. The October programme measured +0.05 mIoU from pixels sampled across images plus a wide OR pyramid; the adaptive-threshold bits did best in the heads of `mask_rcnn_tm`. Rule C5 (the tutorial's fixed model) holds for the earlier phases; this phase changes the training order and the input bits on purpose, and nothing else (T, s, commit size, position bits, weighted clauses stay). The sampling recipe (512 pixels, shares 0.25 / 0.25) is the October finalist's, not tuned here. |
 
 ## Observations before any run on the server (local RTX 3090, not results)
 
@@ -24,6 +25,13 @@ after the plan was fixed is written here with its reason.
   evaluated.
 - Validation mIoU moves by several points from epoch to epoch. The best epoch is therefore partly a lucky
   one; test is scored once from it, so the test number stays a fair estimate.
+
+## Observations before the `improve` runs (local RTX 3090, four epochs, not results)
+
+- About 4.3 s per epoch for both the smallest and the largest arm; peak GPU memory 0.3 and 1.9 GiB.
+- Validation mIoU still moved between 0.29 and 0.53 from epoch to epoch in these four epochs.
+- The largest arm (826 features) had 241 included literals per clause after four epochs with s = 10. If its
+  clauses keep growing, a clause budget or a larger s is the next thing to try; neither is in this phase.
 
 ## Not built
 

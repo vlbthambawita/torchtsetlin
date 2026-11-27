@@ -7,7 +7,8 @@ import torch
 
 import jobs as JOBS
 from common import IGNORE, WINDOW, model_dir, read_json, record_path
-from data import Data, augment, cache_path, encode, floors, manifest, planes, sym, sym_inv
+from data import (Data, augment, boundary_band, cache_path, encode, floors, manifest, planes, pool_planes, position_planes,
+                  sample_pixels, sym, sym_inv)
 from models import Confusion, Net
 
 DEV = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -77,6 +78,7 @@ def test_T4_all_background_floor():
 def test_T5_job_list():
     n = {ph: [j for j in JOBS.jobs(ph)[0] if j["kind"] == "train"] for ph in JOBS.PHASES}
     assert len(n["main"]) == 54 and len(n["side"]) == 113 and len(n["wide"]) == 18 and len(n["conv3d"]) == 69
+    assert len(n["improve"]) == 15 and {j["model"] for j in n["improve"]} == {"pool"}
     tags = [j["tag"] for j in JOBS.all_jobs(JOBS.PHASES)[0]]
     assert len(tags) == len(set(tags))
     cells = {(j["n"], j["k"]) for j in n["main"]}
@@ -150,3 +152,59 @@ def test_votes_cover_every_pixel_and_do_not_depend_on_chunking():
         assert v.shape == (6, 2, 64, 64)
         assert torch.equal(v[4:5], net.votes(d.x["val"][4:5]))
         assert torch.equal(net.predict(d.x["val"]), v.argmax(1))
+
+
+def test_pool_planes_match_the_dense_model():
+    """Scale 1 with position bits holds the bits the dense model sees for patch 3 (other order)."""
+    import torchtsetlin as tt
+    x = torch.randint(0, 256, (2, 3, 32, 32), dtype=torch.uint8, device=DEV)
+    for enc in ("T4", "AG", "T4+AG"):
+        assert planes(x, enc).shape[1] == 3 * JOBS.DEPTH[enc]
+        j = JOBS.J("x", "x", model="pool", n=10, enc=enc, scales=JOBS.WIDE)
+        assert pool_planes(x, enc, JOBS.WIDE).shape == (2, JOBS.features(j), 32, 32)
+    m = tt.SegmentationTsetlinMachine(2, n_clauses=4, T=2, patch_size=3, position_encoding=8).to(DEV)
+    lit = m._encode(m._prepare(planes(x, "T4")))                                 # (B*P, 2F), patch bits then position bits
+    F = lit.shape[1] // 2
+    mine = pool_planes(x, "T4", (1,)).flatten(2).transpose(1, 2).flatten(0, 1).float()
+    assert mine.shape[1] == F
+    assert torch.equal(mine[:, -16:], lit[:, F - 16:F])                           # the position bits, bit for bit
+    assert torch.equal(mine[:, :-16].sum(1), lit[:, :F - 16].sum(1))             # the same 3 x 3 neighbourhood
+    assert position_planes(32, 32, DEV).shape == (16, 32, 32)
+
+
+def test_sampled_pixels_follow_the_mixture():
+    y = torch.zeros(4, 32, 32, dtype=torch.long, device=DEV)
+    y[:3, 10:14, 10:14] = 1                                                      # 16 polyp pixels of 1024; image 3 has none
+    band = boundary_band(y)
+    assert band[0, 9, 9] and band[0, 12, 12] and not band[0, 20, 20] and not band[3].any()
+    torch.manual_seed(0)
+    idx = sample_pixels(y, 4000, 1.0, 0.0)
+    lab = y.flatten(1).gather(1, idx)
+    assert abs(lab[:3].float().mean().item() - 0.5) < 0.03 and lab[3].sum() == 0  # classes present get equal shares
+    idx = sample_pixels(y, 4000, 0.0, 1.0)
+    assert band.flatten(1).gather(1, idx)[:3].all()                              # only boundary pixels
+    assert idx[3].unique().numel() > 900                                         # no boundary: uniform
+    uni = y.flatten(1).gather(1, sample_pixels(y, 4000, 0.0, 0.0))[:3].float().mean().item()
+    assert abs(uni - 16 / 1024) < 0.01
+
+
+@needs_data
+def test_pool_model_learns_and_resumes():
+    import train
+    kw = dict(model="pool", n=40, enc="T4+AG", scales=JOBS.WIDE, limit=16)
+    whole = JOBS.J("smoke", "t", max_epochs=4, prefix="t7whole-", **kw)
+    part = JOBS.J("smoke", "t", max_epochs=2, prefix="t7part-", **kw)
+    _clean(whole["tag"], part["tag"])
+    try:
+        assert train.run(whole, DEV, wandb_on=False) == 0
+        assert train.run(part, DEV, wandb_on=False) == 0
+        assert train.run({**part, "max_epochs": 4}, DEV, wandb_on=False) == 0
+        a, b = read_json(record_path(whole["tag"])), read_json(record_path(part["tag"]))
+        assert [r["val_mIoU"] for r in a["history"]] == [r["val_mIoU"] for r in b["history"]]
+        assert a["model"]["n_features"] == JOBS.features(whole) == 826
+        d = Data(DEV, limit=6)
+        net = Net(whole, DEV)
+        v = net.votes(d.x["val"])
+        assert v.shape == (6, 2, 64, 64) and torch.equal(v[4:5], net.votes(d.x["val"][4:5]))
+    finally:
+        _clean(whole["tag"], part["tag"])
