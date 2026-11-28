@@ -245,7 +245,7 @@ def floors(data):
 
 if __name__ == "__main__":
     verify()
-    for size in (S, 128):
+    for size in (S, 128, 256):
         build(size)
     d = Data()
     print("data: splits", {sp: len(d.stems[sp]) for sp in SPLITS})

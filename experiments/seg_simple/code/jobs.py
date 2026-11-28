@@ -8,16 +8,19 @@ Phases, in the order they are meant to run:
     price3d   3 epochs of every distinct window-model shape
     conv3d    dense references, 2D and 3D window models                      (69 runs)
     improve   pixels sampled across images, wide OR pyramid, adaptive-threshold bits (15 runs)
+    coarse    convolutional machines that classify cells of a 256 px image from a window (30 runs)
+    multi     clause groups of several neighbourhood sizes per pixel, one joint vote sum   (27 runs)
 
 Tags: ``n<n>.k<k>[.<arm>...]__s<seed>`` for dense models, ``win2d.<enc>.k<k>.n<n>__s<seed>`` and
 ``win3d.<enc>.k<k>.d<kd>.n<n>__s<seed>`` for window models, ``pool.<enc>.s<largest scale>.n<n>__s<seed>`` for the
-models of phase ``improve``, ``team-<name>__<repeat>`` for teams.
+models of phase ``improve``, ``cell.c<cell>.w<window>.k<k>.<enc>.n<n>__s<seed>`` for those of phase ``coarse``,
+``multi.k<sizes>.n<clauses per class of each size>.<enc>[.indep].px256__s<seed>`` for those of phase ``multi``, ``team-<name>__<repeat>`` for teams.
 """
 
 from common import SAMPLED, WINDOW, is_done
 from data import DEPTH
 
-PHASES = ["price", "main", "side", "wide", "price3d", "conv3d", "improve"]
+PHASES = ["price", "main", "side", "wide", "price3d", "conv3d", "improve", "coarse", "multi"]
 SEEDS = (0, 1, 2)
 CLAUSE_LINE = [(n, 3) for n in (50, 100, 200, 400, 800, 1600, 3200)]
 PATCH_LINE = [(400, k) for k in (1, 3, 5, 7, 9, 13)]
@@ -30,12 +33,31 @@ WIDE = (1, 2, 4, 8, 16, 32)                                          # scales of
 POOL = dict(pool_n=512, pool_a=0.25, pool_b=0.25)                    # pixels per image and epoch; class and boundary shares
 IMPROVE_N = 400
 IMPROVE_ARMS = (("T4", (1,)), ("T4", WIDE), ("AG", WIDE), ("T4+AG", WIDE), ("T4+AG", (1,)))
+COARSE = dict(px=256, csize=16, win=64, k=5, enc="T4", n=400, pos=False)     # the reference cell model (256 px images)
+COARSE_ARMS = ({}, {"win": 32}, {"win": 96}, {"k": 3}, {"k": 9}, {"enc": "T4+AG"}, {"n": 1600}, {"pos": True}, {"csize": 32},
+               {"px": 64, "csize": 4, "win": 16})                             # last: the same field of view at 64 px
+MULTI_SIZES = (3, 5, 9, 17, 25)                                      # neighbourhood sizes of the groups
+MULTI_ARMS = (dict(), dict(sizes=(3,), counts=(400,)), dict(sizes=(9,), counts=(400,)), dict(sizes=(25,), counts=(400,)),
+              dict(counts=(160, 100, 80, 40, 20)), dict(counts=(20, 40, 80, 100, 160)), dict(counts=(320,) * 5),
+              dict(enc="T4+AG"), dict(joint=False))
 ASSUMED_EPOCHS = {"none": 150, "sym": 200}                           # cost projection only
 
 
 def J(phase, group, model="dense", n=400, k=3, kd=None, enc="T4", pos=True, t_ratio=0.2, aug="none", bal=False,
       order="raster", sampled=False, px=64, seed=0, prefix="", scales=(1,), **kw):
-    if model == "pool":
+    if model == "multi":
+        sizes, counts, joint = list(kw["sizes"]), list(kw["counts"]), kw.get("joint", True)
+        assert len(sizes) == len(counts) and sizes == sorted(sizes) and all(z % 2 == 1 for z in sizes), (sizes, counts)
+        cn = f"{counts[0]}x{len(counts)}" if len(set(counts)) == 1 and len(counts) > 1 else "-".join(map(str, counts))
+        t = f"multi.k{'-'.join(map(str, sizes))}.n{cn}.{enc}" + ("" if pos else ".nopos") + ("" if joint else ".indep") \
+            + (f".px{px}" if px != 64 else "")
+        n, k, kw = sum(counts), max(sizes), {**POOL, **kw, "sizes": sizes, "counts": counts, "joint": joint}
+    elif model == "cell":
+        c, win = kw.get("csize", COARSE["csize"]), kw.get("win", COARSE["win"])
+        assert px % c == 0 and (win - c) % 2 == 0 and win >= max(c, k), (c, win, k)
+        t = f"cell.c{c}.w{win}.k{k}.{enc}.n{n}" + (".pos" if pos else "") + (f".px{px}" if px != 64 else "")
+        kw = {**kw, "csize": c, "win": win}
+    elif model == "pool":
         t = f"pool.{enc}.s{max(scales)}.n{n}" + ("" if pos else ".nopos") + (".sym" if aug == "sym" else "")
         k, kw = 3, {**POOL, "scales": list(scales), **kw}
     elif model == "dense":
@@ -58,6 +80,10 @@ def features(j):
         return 3 * D * j["k"] ** 2 + (16 if j["pos"] else 0)
     if j["model"] == "pool":
         return 3 * D * 9 * len(j["scales"]) + (16 if j["pos"] else 0)
+    if j["model"] == "multi":                            # of the largest group
+        return 3 * D * j["k"] ** 2 + (16 if j["pos"] else 0)
+    if j["model"] == "cell":                             # without the patch-position bits the machine adds
+        return (3 * D + (14 if j["pos"] else 0)) * j["k"] ** 2
     kd = j["kd"] if j["model"] == "win3d" else D
     return 3 * kd * j["k"] ** 2
 
@@ -70,6 +96,10 @@ def cost(j):
         return 2 * j["n"] * features(j) * j["px"] ** 2 * 700
     if j["model"] == "pool":
         return 2 * j["n"] * features(j) * (700 * j["pool_n"] + 150 * j["px"] ** 2)
+    if j["model"] == "multi":
+        return sum(2 * c * (3 * DEPTH[j["enc"]] * z * z + 16) for c, z in zip(j["counts"], j["sizes"])) * (700 * j["pool_n"] + 850 * j["px"] ** 2)
+    if j["model"] == "cell":
+        return 2 * j["n"] * features(j) * (j["win"] - j["k"] + 1) ** 2 * 850 * (j["px"] // j["csize"]) ** 2
     D = DEPTH[j["enc"]]
     kd = j["kd"] if j["model"] == "win3d" else D
     patches = (D - kd + 1) * (WINDOW - j["k"] + 1) ** 2
@@ -148,6 +178,28 @@ def improve_jobs():
     return [J("improve", "improve", model="pool", n=IMPROVE_N, enc=e, scales=sc, seed=s) for s in SEEDS for e, sc in IMPROVE_ARMS]
 
 
+def coarse_job(seed=0, phase="coarse", group="coarse", **kw):
+    a = {**COARSE, **kw}
+    return J(phase, group, model="cell", n=a.pop("n"), k=a.pop("k"), enc=a.pop("enc"), pos=a.pop("pos"), px=a.pop("px"),
+             seed=seed, **a)
+
+
+def coarse_jobs():
+    """DECISIONS D9: the reference cell model and one change at a time, three seeds."""
+    return [coarse_job(s, **arm) for s in SEEDS for arm in COARSE_ARMS]
+
+
+def multi_job(seed=0, phase="multi", group="multi", **kw):
+    a = {"px": 256, "enc": "T4", "sizes": MULTI_SIZES, **kw}
+    a.setdefault("counts", (400,) if len(a["sizes"]) == 1 else (80,) * len(a["sizes"]))
+    return J(phase, group, model="multi", seed=seed, **a)
+
+
+def multi_jobs():
+    """DECISIONS D10: the mixed model, single-size controls, other splits of the clauses, three seeds."""
+    return [multi_job(s, **arm) for s in SEEDS for arm in MULTI_ARMS]
+
+
 def price_jobs(phase):
     src = (main_jobs() + side_jobs() + wide_jobs()) if phase == "price" else conv3d_jobs()
     seen, out = set(), []
@@ -160,7 +212,7 @@ def price_jobs(phase):
 
 
 _BUILD = {"price": lambda: price_jobs("price"), "main": main_jobs, "side": side_jobs, "wide": wide_jobs,
-          "price3d": lambda: price_jobs("price3d"), "conv3d": conv3d_jobs, "improve": improve_jobs}
+          "price3d": lambda: price_jobs("price3d"), "conv3d": conv3d_jobs, "improve": improve_jobs, "coarse": coarse_jobs, "multi": multi_jobs}
 
 
 def jobs(phase):
@@ -185,6 +237,8 @@ def smoke_jobs():
          J("smoke", "smoke", n=50, k=9, enc="B8", pos=False, sampled=True, **kw),
          J("smoke", "smoke", n=50, k=3, bal=True, order="shuffle", t_ratio=0.4, **kw),
          J("smoke", "smoke", model="pool", n=50, enc="T4+AG", scales=WIDE, **kw),
+         coarse_job(phase="smoke", group="smoke", n=50, px=64, csize=8, win=16, enc="T4+AG", pos=True, **kw),
+         multi_job(phase="smoke", group="smoke", px=64, sizes=(3, 9), counts=(20, 20), pool_n=64, **kw),
          J("smoke", "smoke", model="win2d", n=50, k=5, enc="T8", **kw),
          J("smoke", "smoke", model="win3d", n=50, k=3, kd=2, enc="B8", **kw)]
     return a + [team("smoke", "smoke-W", 0, [j["tag"] for j in a], limit=16),

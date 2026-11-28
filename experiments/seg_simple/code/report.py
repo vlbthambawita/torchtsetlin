@@ -284,6 +284,53 @@ def report(upload=False):
     L += table(["model", "features", "val mIoU", "val polyp IoU", "test mIoU", "test polyp IoU", "val mIoU − main (± s.e.)",
                 "train − val", "epochs", "s / epoch"], irows)
 
+    L += ["## Coarse cell classifier (phase `coarse`)", "",
+          "Images of 256 px. A convolutional machine decides for every cell whether at least half of its pixels are polyp, from a window "
+          "around the cell. Its cell map is enlarged to the image and scored on the pixels, so the numbers compare with "
+          "every table above. \"True cell map\" is the same score for the true cell labels: the most this cell size allows.", ""]
+    crows = []
+    ref_c = JOBS.coarse_job()
+    fl2 = next((r["floors"] for r in (done(f"{ref_c['cell']}__s{s}") for s in range(3)) if r and r.get("floors")), None)
+    if fl2:                                              # floors at the resolution of the reference, from its record
+        crows += [[f"floor at {ref_c['px']} px: {k}", "", f"{fl2[k]['val']['mIoU']:.3f}", f"{fl2[k]['val']['IoU_polyp']:.3f}",
+                   f"{fl2[k]['test']['mIoU']:.3f}", f"{fl2[k]['test']['IoU_polyp']:.3f}", "", "", "", ""]
+                  for k in ("all_background", "position_prior_best_threshold")]
+    names = {"": "reference: 256 px, cell 16, window 64, patch 5, T4, 400 clauses", "px": "image", "win": "window", "k": "patch", "enc": "encoding",
+             "n": "clauses per class", "pos": "with the cell's position in the image", "csize": "cell"}
+    for arm in JOBS.COARSE_ARMS:
+        j = JOBS.coarse_job(**arm)
+        c = j["cell"]
+        orc = [r["cell_oracle"]["test"]["mIoU"] for r in (done(f"{c}__s{s}") for s in range(3)) if r and r.get("cell_oracle")]
+        lab = names[""] if not arm else "; ".join(names[k] if k == "pos" else f"{names[k]} {v}" for k, v in arm.items())
+        crows.append([lab, ms(orc[:1]), ms(vals(c)), ms(vals(c, "val", "IoU_polyp")), ms(vals(c, "test")),
+                      ms(vals(c, "test", "IoU_polyp")), ms(vals(c, "test", "pixel_acc")), ms(vals(c, None, "gap_train_minus_val")),
+                      ms(vals(c, None, "epochs"), 0), ms(vals(c, None, "s_per_epoch"), 1)])
+    L += table(["model", "true cell map (test mIoU)", "val mIoU", "val polyp IoU", "test mIoU", "test polyp IoU",
+                "test pixel accuracy", "train − val", "epochs", "s / epoch"], crows)
+
+    L += ["## Clause groups of several neighbourhood sizes (phase `multi`)", "",
+          "Images of 256 px. Every pixel is judged by groups of clauses that read its 3 × 3, 5 × 5, 9 × 9, 17 × 17 and "
+          "25 × 25 neighbourhood (and the position bits). The groups learn from one joint vote sum, except in the row "
+          "\"trained apart\". Training pixels are sampled across images as in phase `improve`. "
+          "The last columns give the included literals per clause of the smallest and the largest group.", ""]
+    mrows = []
+    for arm in JOBS.MULTI_ARMS:
+        j = JOBS.multi_job(**arm)
+        c = j["cell"]
+        if len(j["sizes"]) == 1:
+            lab = f"one size: {j['sizes'][0]} × {j['sizes'][0]}, {j['counts'][0]} clauses"
+        else:
+            lab = "sizes " + ", ".join(map(str, j["sizes"])) + "; clauses " + (f"{j['counts'][0]} each" if len(set(j["counts"])) == 1
+                                                                              else ", ".join(map(str, j["counts"])))
+            lab += ("" if j["enc"] == "T4" else f"; {j['enc']}") + ("" if j["joint"] else "; trained apart")
+        rs = [r for r in (done(f"{c}__s{s}") for s in range(3)) if r]
+        lits = [ms([r["model"].get(f"literals_per_clause_k{k}") for r in rs if r["model"].get(f"literals_per_clause_k{k}") is not None], 0)
+                for k in (j["sizes"][0], j["sizes"][-1])]
+        mrows.append([lab, str(j["n"]), ms(vals(c)), ms(vals(c, "val", "IoU_polyp")), ms(vals(c, "test")), ms(vals(c, "test", "IoU_polyp")),
+                      ms(vals(c, None, "gap_train_minus_val")), ms(vals(c, None, "epochs"), 0), ms(vals(c, None, "s_per_epoch"), 1)] + lits)
+    L += table(["model", "clauses per class", "val mIoU", "val polyp IoU", "test mIoU", "test polyp IoU", "train − val", "epochs",
+                "s / epoch", "literals, smallest", "literals, largest"], mrows)
+
     # ---------------------------------------------------------------- verdicts
     L += ["## Hypotheses", ""]
     V = []

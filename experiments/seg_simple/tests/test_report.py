@@ -16,7 +16,7 @@ def _fake(j, rng):
     b = 0.5 + 0.02 * (j["n"] > 100) + 0.01 * j["k"] ** 0.5 + rng.random() / 100
     return {"tag": j["tag"], "status": "done", "best": b, "best_epoch": 40, "epochs": 70, "val": m(b), "test": m(b - 0.01),
             "train": m(b + 0.1), "gap_train_minus_val": 0.1 + j["n"] / 1e5 + rng.random() / 100, "s_per_epoch": 12.0,
-            "wall_s": 840.0, "history": [{"train_s": 9.0, "eval_s": 1.0}, {"train_s": 5.0, "eval_s": 1.0},
+            "wall_s": 840.0, "model": {"literals_per_clause_k3": 30.0, "literals_per_clause_k25": 200.0}, "history": [{"train_s": 9.0, "eval_s": 1.0}, {"train_s": 5.0, "eval_s": 1.0},
                                          {"train_s": 5.0, "eval_s": 1.0}]}
 
 

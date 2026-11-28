@@ -29,7 +29,7 @@ from common import (
     stop_requested,
     write_json,
 )
-from data import Data
+from data import Data, floors
 from models import Confusion, Net, margin
 from tracking import Tracker, panel_path, render
 
@@ -146,6 +146,11 @@ def run(job, device, wandb_on=True):
            "train_s_per_epoch": sum(r["train_s"] for r in h) / max(len(h), 1), "wall_s": st["wall_s"],
            "peak_gpu_mib": torch.cuda.max_memory_allocated(dev) / 2 ** 20 if dev.type == "cuda" else None,
            "history": h}
+    if job["model"] == "multi":
+        rec["floors"] = floors(data)                     # at this run's resolution (results/floors.json is 64 px)
+    if job["model"] == "cell":                           # the true cell map, scored like a prediction
+        rec["cell_oracle"] = {sp: Confusion().add(net.oracle(data.y[sp]), data.y[sp]).metrics() for sp in ("val", "test")}
+        rec["floors"] = floors(data)                     # at this run's resolution (results/floors.json is 64 px)
     write_json(rec, record_path(tag))
     tracker.summary({"best_val_mIoU": st["best"], "best_epoch": st["best_epoch"], "stop_reason": reason,
                      **{f"final_{sp}_{k}": v for sp in final for k, v in final[sp].items()},
