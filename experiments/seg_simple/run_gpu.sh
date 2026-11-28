@@ -17,6 +17,13 @@ cd "$(dirname "$0")"
 . ./env.sh
 [ -f .cache/data/kvasir_64.pt ] || { echo "run ./setup.sh first"; exit 1; }
 if [ -f STOP ]; then echo "STOP file present: remove it (rm STOP) to run again"; exit 1; fi
+# Phases coarse and multi use 256 px images: build that cache once (a lock keeps the other sessions waiting).
+case ",${SS_PHASES:-price}," in *,coarse,*|*,multi,*)
+  if [ ! -f .cache/data/kvasir_256.pt ]; then
+    echo "building the 256 px image cache (once, about a minute)"
+    flock .cache/data/.build256.lock python code/data.py || { echo "could not build .cache/data/kvasir_256.pt"; exit 1; }
+  fi ;;
+esac
 mkdir -p logs
 # Slot K -> one device. If this shell already restricts the GPUs (one GPU per tmux session, SLURM,
 # containers), gpu_device.sh uses that GPU / the K-th entry instead of the bare index K.
